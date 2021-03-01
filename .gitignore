@@ -51,5 +51,7 @@ setupgui/myodbc8S.dir/
 util/myodbc-util.dir/
 x64/
 x86/
+bin/
+lib/
 
 
