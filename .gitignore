@@ -34,3 +34,22 @@ INFO_SRC
 Install.bat
 myodbc3.spec
 Uninstall.bat
+
+getmysqlversion.c
+
+# CMake generated project and solution files for Visual Studio
+*.vcxproj*
+*.sln
+.vs
+
+# Build and test generated files
+dltest/dltest.dir/
+driver/myodbc8a.dir/
+driver/myodbc8w.dir/
+installer/myodbc-installer.dir/
+setupgui/myodbc8S.dir/
+util/myodbc-util.dir/
+x64/
+x86/
+
+
