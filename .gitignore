@@ -10,6 +10,7 @@ x86/**
 test/Testing/**
 # Ignore all test binaries, and keep everything else
 test/*
+!test/docker
 !test/CMakeLists.txt
 !test/*.c
 !test/*.cc
