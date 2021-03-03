@@ -1,0 +1,13 @@
+services:
+  mysql-odbc-test:
+    image: mysql:8.0.23
+    container_name: myodbc-test
+    restart: on-failure
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: "test"
+      OPENSSL_CONF: "/tmp/openssl.cnf"  # need to point to modified .cnf for accepting lower TLS min_version
+    volumes:
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
