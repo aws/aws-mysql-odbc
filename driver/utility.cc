@@ -78,6 +78,7 @@ SQLRETURN exec_stmt_query_std(STMT *stmt, const std::string &query,
     return rc;
   }
   stmt->buf_set_pos(0);
+  /* TODO: failover */
   return stmt->dbc->execute_query(query.c_str(), query.size(), req_lock);
 }
 

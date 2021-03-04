@@ -57,7 +57,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   SET(DRIVER_SRCS
     catalog.cc catalog_no_i_s.cc connect.cc cursor.cc desc.cc dll.cc error.cc execute.cc
     handle.cc info.cc driver.cc options.cc parse.cc prepare.cc results.cc transact.cc
-    my_prepared_stmt.cc my_stmt.cc utility.cc)
+    my_prepared_stmt.cc my_stmt.cc utility.cc
+	failover_handler.cc failover_reader_handler.cc failover_writer_handler.cc failover_topology.cc)
 
   IF(UNICODE)
     SET(DRIVER_SRCS ${DRIVER_SRCS} unicode.cc)
@@ -74,7 +75,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.def.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.def @ONLY)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
     SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc catalog.h driver.h
-                                   error.h myutil.h parse.h ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
+                                   error.h myutil.h parse.h failover.h ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
   ENDIF(WIN32)
 
   # Note: We build driver as a MODULE, because this is what it really is

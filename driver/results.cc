@@ -1614,6 +1614,7 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hstmt )
 #if MYSQL_VERSION_ID > 80023
       case ER_CLIENT_INTERACTION_TIMEOUT:
 #endif
+        /* TODO: failover */
         nReturn = stmt->set_error("08S01", mysql_error( stmt->dbc->mysql ), nRetVal );
         goto exitSQLMoreResults;
       case CR_COMMANDS_OUT_OF_SYNC:
