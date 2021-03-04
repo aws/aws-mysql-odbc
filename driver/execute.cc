@@ -211,6 +211,15 @@ SQLRETURN do_query(STMT *stmt,char *query, SQLULEN query_length)
     error= SQL_SUCCESS;
 
 exit:
+    /* TODO: failover */
+    if (error == SQL_ERROR) {
+       const char* newErrorCode;
+       const char* err = mysql_error(stmt->dbc->mysql);
+       SQLINTEGER errcode = mysql_errno(stmt->dbc->mysql);
+       if (stmt->dbc->fh->triggerFailoverIfNeeded(stmt->error.sqlstate.c_str(), newErrorCode)) {
+          stmt->set_error(newErrorCode, err, errcode);
+       }
+    }
 
     if (query != GET_QUERY(&stmt->query))
     {

@@ -75,7 +75,7 @@ static SQLRETURN my_transact(SQLHDBC hdbc, SQLSMALLINT CompletionType)
 
     LOCK_DBC(dbc);
     if (check_if_server_is_alive(dbc) ||
-	mysql_real_query(dbc->mysql,query,length))
+	      mysql_real_query(dbc->mysql,query,length))
     {
       result = ((DBC*)hdbc)->set_error(MYERR_S1000,
 			     mysql_error(dbc->mysql),

@@ -38,6 +38,7 @@
 #include "../MYODBC_CONF.h"
 #include "../MYODBC_ODBC.h"
 #include "installer.h"
+#include "failover.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -627,6 +628,8 @@ struct DBC
   // Connection have been put to the pool
   int           need_to_wakeup = 0;
   fido_callback_func fido_callback = nullptr;
+
+  FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
 
   DBC(ENV *p_env);
   void free_explicit_descriptors();

@@ -299,6 +299,11 @@ SQLRETURN handle_connection_error(STMT *stmt)
 #if MYSQL_VERSION_ID > 80023
   case ER_CLIENT_INTERACTION_TIMEOUT:
 #endif
+    /* TODO: failover */
+    const char* errorCode;
+    if (stmt->dbc->fh->triggerFailoverIfNeeded("08S01", errorCode)) {
+        return stmt->set_error(errorCode, mysql_error(stmt->dbc->mysql), err);
+    }
     return stmt->set_error("08S01", mysql_error(stmt->dbc->mysql), err);
   case CR_OUT_OF_MEMORY:
     return stmt->set_error("HY001", mysql_error(stmt->dbc->mysql), err);

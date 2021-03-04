@@ -1554,6 +1554,8 @@ SQLRETURN DBC::execute_query(const char* query,
   if (check_if_server_is_alive(this) ||
     mysql_real_query(mysql, query, query_length))
   {
+    /* TODO: failover */
+    
     result = set_error(MYERR_S1000, mysql_error(mysql),
       mysql_errno(mysql));
   }

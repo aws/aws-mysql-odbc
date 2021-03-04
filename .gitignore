@@ -1,6 +1,10 @@
 ﻿# Build artifacts
 bin/**
 lib/**
+out/**
+x64/**
+x86/**
+**/*.dir
 
 # Test artifacts
 test/Testing/**
@@ -20,8 +24,10 @@ CPack*.cmake
 **/CMakeCache.txt
 **/Makefile
 cmake/sql*.c
+*.cmake
 mysql_strings/uca900_ja_tbls.cc
 mysql_strings/uca900_zh_tbls.cc
+getmysqlversion.c
 
 driver/drivera.def
 driver/drivera.rc
@@ -35,18 +41,7 @@ Install.bat
 myodbc3.spec
 Uninstall.bat
 
-getmysqlversion.c
-
-# CMake generated project and solution files for Visual Studio
+# Visual Studio files
+/.vs
 *.vcxproj*
 *.sln
-.vs
-
-# Build and test generated files
-**/*.dir
-x64/
-x86/
-bin/
-lib/
-
-
