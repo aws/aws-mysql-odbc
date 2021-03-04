@@ -111,6 +111,8 @@ SQLRETURN odbc_stmt(DBC *dbc, const char *query,
   if ( check_if_server_is_alive(dbc) ||
        mysql_real_query(dbc->mysql, query, query_length) )
   {
+    /* TODO: failover */
+
     result= set_conn_error(dbc,MYERR_S1000,mysql_error(dbc->mysql),
                            mysql_errno(dbc->mysql));
   }

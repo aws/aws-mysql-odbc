@@ -38,6 +38,7 @@
 #include "../MYODBC_CONF.h"
 #include "../MYODBC_ODBC.h"
 #include "installer.h"
+#include "failover.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -604,6 +605,8 @@ struct DBC
   SQLULEN       sql_select_limit = -1;/* value of the sql_select_limit currently set for a session
                                        (SQLULEN)(-1) if wasn't set */
   int           need_to_wakeup = 0;      /* Connection have been put to the pool */
+
+  FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
 
   DBC(ENV *p_env);
   void free_explicit_descriptors();
