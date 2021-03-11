@@ -516,6 +516,10 @@ int list_datasource_details(DataSource *ds)
   if (ds->plugin_dir  ) printf("Plugin directory:    %s\n", ds_get_utf8attr(ds->plugin_dir, &ds->plugin_dir8));
   if (ds->default_auth) printf("Default Authentication Library: %s\n", ds_get_utf8attr(ds->default_auth, &ds->default_auth8));
   if (ds->oci_config_file) printf("OCI Config File: %s\n", ds_get_utf8attr(ds->oci_config_file, &ds->oci_config_file8));
+  /* Failover */
+  if (ds->host_pattern) printf("Failover Instance Host pattern:   %s\n", ds_get_utf8attr(ds->host_pattern, &ds->host_pattern8));
+  if (ds->cluster_id) printf("Failover Cluster ID:   %s\n", ds_get_utf8attr(ds->cluster_id, &ds->cluster_id8));
+
   printf("Options:\n");
   if (ds->return_matching_rows) printf("\tFOUND_ROWS\n");
   if (ds->allow_big_results) printf("\tBIG_PACKETS\n");
@@ -560,6 +564,16 @@ int list_datasource_details(DataSource *ds)
   if (ds->get_server_public_key) printf("\tGET_SERVER_PUBLIC_KEY\n");
   if (ds->enable_dns_srv) printf("\tENABLE_DNS_SRV\n");
   if (ds->multi_host) printf("\tMULTI_HOST\n");
+  /* Failover */
+  if (ds->disable_cluster_failover) printf("\tDISABLE_CLUSTER_FAILOVER\n");
+  if (ds->gather_perf_metrics) printf("\tGATHER_PERF_METRICS\n");
+  if (ds->topology_refresh_rate) printf("\tTOPOLOGY_REFRESH_RATE=%d\n", ds->topology_refresh_rate);
+  if (ds->failover_timeout) printf("\FAILOVER_TIMEOUT=%d\n", ds->failover_timeout);
+  if (ds->failover_topology_refresh_rate) printf("\FAILOVER_TOPOLOGY_REFRESH_RATE=%d\n", ds->failover_topology_refresh_rate);
+  if (ds->failover_writer_reconnect_interval) printf("\FAILOVER_WRITER_RECONNECT_INTERVAL=%d\n", ds->failover_writer_reconnect_interval);
+  if (ds->failover_reader_connect_timeout) printf("\FAILOVER_READER_CONNECT_TIMEOUT=%d\n", ds->failover_reader_connect_timeout);
+  if (ds->connect_timeout) printf("\CONNECT_TIMEOUT=%d\n", ds->connect_timeout);
+  if (ds->network_timeout) printf("\NETWORK_TIMEOUT=%d\n", ds->network_timeout);
 
   return 0;
 }
