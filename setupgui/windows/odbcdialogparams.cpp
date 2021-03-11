@@ -378,6 +378,7 @@ void btnDetails_Click (HWND hwnd)
 #if MFA_ENABLED
       L"MFA",
 #endif
+      L"Cluster Failover",
       L"Metadata",
       L"Cursors/Results",
       L"Debug",
@@ -391,10 +392,11 @@ void btnDetails_Click (HWND hwnd)
                     MAKEINTRESOURCE(IDD_TAB4),
                     MAKEINTRESOURCE(IDD_TAB5),
                     MAKEINTRESOURCE(IDD_TAB6),
-#if MFA_ENABLED
                     MAKEINTRESOURCE(IDD_TAB7),
+#if MFA_ENABLED
+                    MAKEINTRESOURCE(IDD_TAB8),
 #endif
-0};
+                    0};
 
     New_TabControl( &TabCtrl_1,                 // address of TabControl struct
                     GetDlgItem(hwnd, IDC_TAB1), // handle to tab control
@@ -406,7 +408,7 @@ void btnDetails_Click (HWND hwnd)
     flag = true;
 
 
-    HWND ssl_tab = TabCtrl_1.hTabPages[4];
+    HWND ssl_tab = TabCtrl_1.hTabPages[SSL_TAB-1];
     HWND combo = GetDlgItem(ssl_tab, IDC_EDIT_sslmode);
 
     ComboBox_ResetContent(combo);
@@ -419,12 +421,10 @@ void btnDetails_Click (HWND hwnd)
     ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_VERIFY_IDENTITY));
 
     syncTabs(hwnd, pParams);
-  }
-  // To increase the height of the window modify the expression:
-  int new_height = rect.bottom - rect.top + 355*mod;
-  MoveWindow( hwnd, rect.left, rect.top, rect.right - rect.left, new_height, TRUE );
-  // Then change the height for IDD_DIALOG1 and SysTabControl32 inside
-  // odbcdialogparams.rc
+	}
+  
+  int h = (mod == -1) ? 420 : 770; /* rect.bottom - rect.top + 310*mod */
+	MoveWindow( hwnd, rect.left, rect.top, rect.right - rect.left, h, TRUE );
 }
 
 
