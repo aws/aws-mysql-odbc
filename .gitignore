@@ -46,3 +46,5 @@ Uninstall.bat
 /.vs
 *.vcxproj*
 *.sln
+**/*.aps
+
