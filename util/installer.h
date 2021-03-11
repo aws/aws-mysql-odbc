@@ -192,6 +192,22 @@ typedef struct {
 
   BOOL enable_dns_srv;
   BOOL multi_host;
+
+  /* Failover */
+  BOOL disable_cluster_failover;
+  BOOL gather_perf_metrics;
+  SQLCHAR *host_pattern8;
+  SQLCHAR *cluster_id8;
+  SQLWCHAR *host_pattern;
+  SQLWCHAR *cluster_id;
+  unsigned int topology_refresh_rate;
+  unsigned int failover_timeout;
+  unsigned int failover_topology_refresh_rate;
+  unsigned int failover_writer_reconnect_interval;
+  unsigned int failover_reader_connect_timeout;
+  unsigned int connect_timeout;
+  unsigned int network_timeout;
+
 } DataSource;
 
 /* perhaps that is a good idea to have const ds object with defaults */

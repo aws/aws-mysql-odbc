@@ -35,11 +35,12 @@
 
 #define CONNECTION_TAB  1
 #define AUTH_TAB        2
-#define METADATA_TAB    3
-#define CURSORS_TAB     4
-#define DEBUG_TAB       5
-#define SSL_TAB         6
-#define MISC_TAB        7
+#define FAILOVER_TAB    3
+#define METADATA_TAB    4
+#define CURSORS_TAB     5
+#define DEBUG_TAB       6
+#define SSL_TAB         7
+#define MISC_TAB        8
 
 #else
 # include <gtk/gtk.h>
