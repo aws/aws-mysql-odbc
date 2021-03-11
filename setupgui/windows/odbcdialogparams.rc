@@ -52,9 +52,9 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 #include "..\..\VersionInfo.h"
 VS_VERSION_INFO VERSIONINFO
-  FILEVERSION MYODBC_FILEVER
-  PRODUCTVERSION MYODBC_PRODUCTVER
- FILEFLAGSMASK 0x3L
+FILEVERSION MYODBC_FILEVER
+PRODUCTVERSION MYODBC_PRODUCTVER
+FILEFLAGSMASK 0x3L
 #ifdef _DEBUG
  FILEFLAGS 0x29L
 #else
@@ -190,6 +190,34 @@ IDD_TAB3 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
+    CONTROL         "&Disable Cluster Failover",IDC_CHECK_disable_cluster_failover,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,89,10
+    CONTROL         "&Gather performance metrics",IDC_CHECK_gather_perf_metrics,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,27,105,10
+    RTEXT           "&Host pattern:",IDC_STATIC,12,43,117,8
+    EDITTEXT        IDC_EDIT_host_pattern,132,42,196,12,ES_AUTOHSCROLL
+    RTEXT           "&Cluster ID:",IDC_STATIC,12,58,116,8
+    EDITTEXT        IDC_EDIT_cluster_id,132,58,196,12,ES_AUTOHSCROLL
+    RTEXT           "Topology refresh rate (ms):",IDC_STATIC,12,73,116,8
+    EDITTEXT        IDC_EDIT_topology_refresh_rate,132,73,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Failover timeout (ms):",IDC_STATIC,12,88,116,8
+    EDITTEXT        IDC_EDIT_failover_timeout,132,88,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Failover topology refresh rate (ms):",IDC_STATIC,11,103,117,8
+    EDITTEXT        IDC_EDIT_failover_topology_refresh_rate,132,103,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Writer reconnect interval (ms):",IDC_STATIC,11,118,117,8
+    EDITTEXT        IDC_EDIT_failover_writer_reconnect_interval,132,118,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Reader connect timeout (ms):",IDC_STATIC,11,133,117,8
+    EDITTEXT        IDC_EDIT_failover_reader_connect_timeout,132,133,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Host Connect timeout (s):",IDC_STATIC,11,148,117,8
+    EDITTEXT        IDC_EDIT_connect_timeout,132,148,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Host Read/Write timeout (s):",IDC_STATIC,11,163,117,8
+    EDITTEXT        IDC_EDIT_network_timeout,132,163,64,12,ES_AUTOHSCROLL | ES_NUMBER
+END
+
+IDD_TAB4 DIALOGEX 0, 0, 209, 181
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
     CONTROL         "&Treat BIGINT columns as INT columns",IDC_CHECK_change_bigint_columns_to_int,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,135,10
     CONTROL         "&Always handle binary function results as character data",IDC_CHECK_handle_binary_as_char,
@@ -205,7 +233,7 @@ BEGIN
 
 END
 
-IDD_TAB4 DIALOGEX 0, 0, 209, 181
+IDD_TAB5 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -232,7 +260,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,125,138,10
 END
 
-IDD_TAB5 DIALOGEX 0, 0, 209, 181
+IDD_TAB6 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -240,7 +268,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,148,10
 END
 
-IDD_TAB6 DIALOGEX 0, 0, 509, 181
+IDD_TAB7 DIALOGEX 0, 0, 509, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -277,7 +305,7 @@ BEGIN
 END
 
 
-IDD_TAB7 DIALOGEX 0, 0, 209, 181
+IDD_TAB8 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -308,7 +336,6 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,175,12,138,10
     CONTROL         "Disable Date Overflow error", IDC_CHECK_no_date_overflow,
                     "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 175, 27, 138, 10
-
 END
 
 #ifdef APSTUDIO_INVOKED
@@ -355,9 +382,9 @@ IDB_LOGO                BITMAP                  "connector_odbc_header.bmp"
 GUIDELINES DESIGNINFO
 BEGIN
 #if MFA_ENABLED
-    IDD_TAB6, DIALOG
+    IDD_TAB7, DIALOG
 #else
-    IDD_TAB5, DIALOG
+    IDD_TAB6, DIALOG
 #endif
     BEGIN
         VERTGUIDE, 85

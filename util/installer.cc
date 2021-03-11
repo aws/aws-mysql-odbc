@@ -232,6 +232,20 @@ static SQLWCHAR W_SSL_CRL[] =
 static SQLWCHAR W_SSL_CRLPATH[] =
 { 'S', 'S', 'L', '-', 'C', 'R', 'L', 'P', 'A', 'T', 'H', 0};
 
+/* Failover */
+static SQLWCHAR W_DISABLE_CLUSTER_FAILOVER[] = { 'D', 'I', 'S', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
+static SQLWCHAR W_GATHER_PERF_METRICS[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', 0 };
+static SQLWCHAR W_HOST_PATTERN[] = { 'H', 'O', 'S', 'T', '_', 'P', 'A', 'T', 'T', 'E', 'R', 'N', 0 };
+static SQLWCHAR W_CLUSTER_ID[] = { 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'I', 'D', 0 };
+static SQLWCHAR W_TOPOLOGY_REFRESH_RATE[] = { 'T', 'O', 'P', 'O', 'L', 'O', 'G', 'Y', '_', 'R', 'R', 0 };
+static SQLWCHAR W_FAILOVER_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'T', 0 };
+static SQLWCHAR W_FAILOVER_TOPOLOGY_REFRESH_RATE[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'T', 'R', 'R', 0 };
+static SQLWCHAR W_FAILOVER_WRITER_RECONNECT_INTERVAL[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'W', 'R', 'I', 0 };
+static SQLWCHAR W_FAILOVER_READER_CONNECT_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'R', 'C', 'T', 0 };
+static SQLWCHAR W_CONNECT_TIMEOUT[] = { 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
+static SQLWCHAR W_NETWORK_TIMEOUT[] = { 'N', 'E', 'T', 'W', 'O', 'R', 'K', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
+
+
 /* DS_PARAM */
 /* externally used strings */
 const SQLWCHAR W_DRIVER_PARAM[]= {';', 'D', 'R', 'I', 'V', 'E', 'R', '=', 0};
@@ -271,7 +285,14 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         W_NO_TLS_1_2, W_NO_TLS_1_3,
                         W_SSLMODE, W_NO_DATE_OVERFLOW, W_LOAD_DATA_LOCAL_DIR,
                         W_OCI_CONFIG_FILE, W_OCI_CONFIG_PROFILE, W_AUTHENTICATION_KERBEROS_MODE,
-                        W_TLS_VERSIONS, W_SSL_CRL, W_SSL_CRLPATH};
+                        W_TLS_VERSIONS, W_SSL_CRL, W_SSL_CRLPATH,
+                        /* Failover */
+                        W_DISABLE_CLUSTER_FAILOVER, W_GATHER_PERF_METRICS, 
+                        W_HOST_PATTERN, W_CLUSTER_ID, W_TOPOLOGY_REFRESH_RATE,
+                        W_FAILOVER_TIMEOUT, W_FAILOVER_TOPOLOGY_REFRESH_RATE,
+                        W_FAILOVER_WRITER_RECONNECT_INTERVAL, 
+                        W_FAILOVER_READER_CONNECT_TIMEOUT, W_CONNECT_TIMEOUT,
+                        W_NETWORK_TIMEOUT};
 static const
 int dsnparamcnt= sizeof(dsnparams) / sizeof(SQLWCHAR *);
 /* DS_PARAM */
@@ -772,6 +793,11 @@ void ds_delete(DataSource *ds)
   x_free(ds->ssl_crlpath8);
   x_free(ds->load_data_local_dir8);
 
+  x_free(ds->host_pattern);
+  x_free(ds->cluster_id);
+  x_free(ds->host_pattern8);
+  x_free(ds->cluster_id8);
+
   x_free(ds);
 }
 
@@ -1023,7 +1049,30 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
   else if (!sqlwcharcasecmp(W_SSL_CRL, param))
     *strdest = &ds->ssl_crl;
   else if (!sqlwcharcasecmp(W_SSL_CRLPATH, param))
-    *strdest = &ds->ssl_crlpath;
+  *strdest = &ds->ssl_crlpath;
+  /* Failover*/
+  else if (!sqlwcharcasecmp(W_DISABLE_CLUSTER_FAILOVER, param))
+    *booldest = &ds->disable_cluster_failover;
+  else if (!sqlwcharcasecmp(W_GATHER_PERF_METRICS, param))
+    *booldest = &ds->gather_perf_metrics;
+  else if (!sqlwcharcasecmp(W_HOST_PATTERN, param))
+    *strdest = &ds->host_pattern;
+  else if (!sqlwcharcasecmp(W_CLUSTER_ID, param))
+    *strdest = &ds->cluster_id;
+  else if (!sqlwcharcasecmp(W_TOPOLOGY_REFRESH_RATE, param))
+    *intdest = &ds->topology_refresh_rate;
+  else if (!sqlwcharcasecmp(W_FAILOVER_TIMEOUT, param))
+    *intdest = &ds->failover_timeout;
+  else if (!sqlwcharcasecmp(W_FAILOVER_TOPOLOGY_REFRESH_RATE, param))
+    *intdest = &ds->failover_topology_refresh_rate;
+  else if (!sqlwcharcasecmp(W_FAILOVER_WRITER_RECONNECT_INTERVAL, param))
+    *intdest = &ds->failover_writer_reconnect_interval;
+  else if (!sqlwcharcasecmp(W_FAILOVER_READER_CONNECT_TIMEOUT, param))
+    *intdest = &ds->failover_reader_connect_timeout;
+  else if (!sqlwcharcasecmp(W_CONNECT_TIMEOUT, param))
+    *intdest = &ds->connect_timeout;
+  else if (!sqlwcharcasecmp(W_NETWORK_TIMEOUT, param))
+    *intdest = &ds->network_timeout;
 
   /* DS_PARAM */
 }
@@ -1565,7 +1614,20 @@ int ds_add(DataSource *ds)
   if (ds_add_strprop(ds->name, W_TLS_VERSIONS, ds->tls_versions)) goto error;
   if (ds_add_strprop(ds->name, W_SSL_CRL, ds->ssl_crl)) goto error;
   if (ds_add_strprop(ds->name, W_SSL_CRLPATH, ds->ssl_crlpath)) goto error;
-  /* DS_PARAM */
+  /* Failover */
+  if (ds_add_intprop(ds->name, W_DISABLE_CLUSTER_FAILOVER, ds->disable_cluster_failover)) goto error;
+  if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS, ds->gather_perf_metrics)) goto error;
+  if (ds_add_strprop(ds->name, W_HOST_PATTERN, ds->host_pattern)) goto error;
+  if (ds_add_strprop(ds->name, W_CLUSTER_ID, ds->cluster_id)) goto error;
+  if (ds_add_intprop(ds->name, W_TOPOLOGY_REFRESH_RATE, ds->topology_refresh_rate)) goto error;
+  if (ds_add_intprop(ds->name, W_FAILOVER_TIMEOUT, ds->failover_timeout)) goto error;
+  if (ds_add_intprop(ds->name, W_FAILOVER_TOPOLOGY_REFRESH_RATE, ds->failover_topology_refresh_rate)) goto error;
+  if (ds_add_intprop(ds->name, W_FAILOVER_WRITER_RECONNECT_INTERVAL, ds->failover_writer_reconnect_interval)) goto error;
+  if (ds_add_intprop(ds->name, W_FAILOVER_READER_CONNECT_TIMEOUT, ds->failover_reader_connect_timeout)) goto error;
+  if (ds_add_intprop(ds->name, W_CONNECT_TIMEOUT, ds->connect_timeout)) goto error;
+  if (ds_add_intprop(ds->name, W_NETWORK_TIMEOUT, ds->network_timeout)) goto error;
+
+ /* DS_PARAM */
 
   rc= 0;
 
