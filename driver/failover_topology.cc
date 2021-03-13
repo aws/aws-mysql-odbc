@@ -4,12 +4,14 @@
 */
 
 #include <stdio.h>  // temporary for quick printfs
-
 #include "failover.h"
 
-//TODO naming convensions
 
-ClusterTopologyInfo::~ClusterTopologyInfo() {
+CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO() {
+    update_time();
+}
+
+CLUSTER_TOPOLOGY_INFO::~CLUSTER_TOPOLOGY_INFO() {
     for (auto p : writers) {
         delete p;
     }
@@ -21,109 +23,142 @@ ClusterTopologyInfo::~ClusterTopologyInfo() {
     readers.clear();
 }
 
+void CLUSTER_TOPOLOGY_INFO::add_host(HOST_INFO* hi) {
+    hi->is_host_writer() ? writers.push_back(hi) : readers.push_back(hi);
+    update_time();
+}
+
+bool CLUSTER_TOPOLOGY_INFO::is_multi_writer_cluster() {
+    return writers.size() > 1;
+}
+
+int CLUSTER_TOPOLOGY_INFO::total_hosts() {
+    return writers.size() + readers.size();
+}
+
+std::time_t  CLUSTER_TOPOLOGY_INFO::time_last_updated() { 
+    return last_updated; 
+}
+
+std::vector<HOST_INFO*>& CLUSTER_TOPOLOGY_INFO::writer_hosts() {
+    return writers;
+}
+
+std::vector<HOST_INFO*>& CLUSTER_TOPOLOGY_INFO::reader_hosts() {
+    return readers;
+}
+
+// TODO harmonize time function accross objects so the times are comparable
+void CLUSTER_TOPOLOGY_INFO::update_time() {
+    last_updated = time(0);
+}
+
+
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE()
-    : clusterInstanceHost{ NULL }, refreshRateInMilliseconds{ DEFAULT_REFRESH_RATE_IN_MILLISECONDS }
+    : cluster_instance_host{ NULL }, refresh_rate_in_milliseconds{ DEFAULT_REFRESH_RATE_IN_MILLISECONDS }
 {
     //TODO get better initial cluster id
     time_t now = time(0);
-    clusterId = std::to_string(now) + ctime(&now);
+    cluster_id = std::to_string(now) + ctime(&now);
 }
 
-void TOPOLOGY_SERVICE::setClusterId(const char* clusterId) {
-    this->clusterId = clusterId;
+void TOPOLOGY_SERVICE::set_cluster_id(const char* cluster_id) {
+    this->cluster_id = cluster_id;
 }
 
-void TOPOLOGY_SERVICE::setClusterInstanceTemplate(HOST_INFO* hostTemplate) {
+void TOPOLOGY_SERVICE::set_cluster_instance_template(HOST_INFO* host_template) {
 
     // NOTE, this may not have to be a pointer. Copy the information passed to this function.
     // Alernatively the create host function should be part of the Topologyservice, even protected or private one
     // and host information passed as separate parameters.
-    if (clusterInstanceHost != NULL)
-        delete clusterInstanceHost;
+    if (cluster_instance_host != NULL)
+        delete cluster_instance_host;
 
-    clusterInstanceHost = hostTemplate;
+    cluster_instance_host = host_template;
 
 }
 
-void TOPOLOGY_SERVICE::setRefreshRate(int refreshRate) { refreshRateInMilliseconds = refreshRate; }
-//std::vector<HOST_INFO*>* TOPOLOGY_SERVICE::getTopology() { return nullptr; }
+void TOPOLOGY_SERVICE::set_refresh_rate(int refresh_rate) { 
+    refresh_rate_in_milliseconds = refresh_rate; 
+}
 
 //TODO (re)consider signagures of the following functions and implement  
+HOST_INFO* TOPOLOGY_SERVICE::get_last_used_reader_host() { return nullptr; }
+void TOPOLOGY_SERVICE::set_last_used_reader_host(HOST_INFO* reader) {}
+std::vector<std::string>* TOPOLOGY_SERVICE::get_down_hosts() { return nullptr; }
+void TOPOLOGY_SERVICE::add_to_down_host_list(HOST_INFO* down_host) {}
+void TOPOLOGY_SERVICE::remove_from_down_host_list(HOST_INFO* host) {}
 
-HOST_INFO* TOPOLOGY_SERVICE::getLastUsedReaderHost() { return nullptr; }
-void TOPOLOGY_SERVICE::setLastUsedReaderHost(HOST_INFO* reader) {}
-std::vector<std::string>* TOPOLOGY_SERVICE::getDownHosts() { return nullptr; }
-void TOPOLOGY_SERVICE::addToDownHostList(HOST_INFO* downHost) {}
-void TOPOLOGY_SERVICE::removeFromDownHostList(HOST_INFO* host) {}
-
-void TOPOLOGY_SERVICE::clearAll() {}
+void TOPOLOGY_SERVICE::clear_all() {}
 void TOPOLOGY_SERVICE::clear() {}
 TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE()
 {
-    if (clusterInstanceHost != NULL)
-        delete clusterInstanceHost;
+    if (cluster_instance_host != NULL)
+        delete cluster_instance_host;
 
-    for (auto p : topologyCache) {
+    for (auto p : topology_cache) {
         delete p.second;
     }
-    topologyCache.clear();
+    topology_cache.clear();
 }
 
 
-const ClusterTopologyInfo* TOPOLOGY_SERVICE::getCachedTopology() { return getInfoFromCache(); }
+const CLUSTER_TOPOLOGY_INFO* TOPOLOGY_SERVICE::get_cached_topology() { 
+    return get_from_cache(); 
+}
 
-//std::vector<HOST_INFO*>* TOPOLOGY_SERVICE::getTopology(MYSQL* conn)
+//std::vector<HOST_INFO*>* TOPOLOGY_SERVICE::get_topology(MYSQL* conn)
 //TODO consider the return value
-//Note to determine whether or not forceUpdate succeeded one would compare 
-// ClusterTopologyInfo->timeLastUpdated() prior and after the call if non-null information was given prior.
-const ClusterTopologyInfo* TOPOLOGY_SERVICE::getTopology(MYSQL* conn, bool forceUpdate)
+//Note to determine whether or not force_update succeeded one would compare 
+// CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
+const CLUSTER_TOPOLOGY_INFO* TOPOLOGY_SERVICE::get_topology(MYSQL* conn, bool force_update)
 {
     //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
-    // therefore instead of a map we can just keep ClusterTopologyInfo* topologyInfo member variable.
-    ClusterTopologyInfo* topologyInfo = getInfoFromCache();
+    // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
+    CLUSTER_TOPOLOGY_INFO* topology_info = get_from_cache();
 
-    if (topologyInfo == NULL
-        || forceUpdate
-        || refreshNeeded(topologyInfo->timeLastUpdated()))
+    if (topology_info == NULL
+        || force_update
+        || refresh_needed(topology_info->time_last_updated()))
     {
-        putInfoToCache(queryForTopology(conn));
-        topologyInfo = getInfoFromCache();
+        put_to_cache(query_for_topology(conn));
+        topology_info = get_from_cache();
     }
 
-    return topologyInfo;
+    return topology_info;
 }
 
 // TODO consider thread safety and usage of pointers
-ClusterTopologyInfo* TOPOLOGY_SERVICE::getInfoFromCache() {
-    if (topologyCache.empty())
+CLUSTER_TOPOLOGY_INFO* TOPOLOGY_SERVICE::get_from_cache() {
+    if (topology_cache.empty())
         return NULL;
-    auto result = topologyCache.find(clusterId);
-    return result != topologyCache.end() ? result->second : NULL;
+    auto result = topology_cache.find(cluster_id);
+    return result != topology_cache.end() ? result->second : NULL;
 }
 
 // TODO consider thread safety and usage of pointers
-void TOPOLOGY_SERVICE::putInfoToCache(ClusterTopologyInfo* topologyInfo) {
-    if (topologyInfo == NULL)
+void TOPOLOGY_SERVICE::put_to_cache(CLUSTER_TOPOLOGY_INFO* topology_info) {
+    if (topology_info == NULL)
         return;
-    if (!topologyCache.empty())
+    if (!topology_cache.empty())
     {
-        auto result = topologyCache.find(clusterId);
-        if (result != topologyCache.end()) {
+        auto result = topology_cache.find(cluster_id);
+        if (result != topology_cache.end()) {
             delete result->second;
-            result->second = topologyInfo;
+            result->second = topology_info;
             return;
         }
     }
-    topologyCache[clusterId] = topologyInfo;
+    topology_cache[cluster_id] = topology_info;
 }
 
 // TODO harmonize time function accross objects so the times are comparable
-bool TOPOLOGY_SERVICE::refreshNeeded(std::time_t last_updated) {
+bool TOPOLOGY_SERVICE::refresh_needed(std::time_t last_updated) {
 
-    return  time(0) - last_updated > (refreshRateInMilliseconds / 1000);
+    return  time(0) - last_updated > (refresh_rate_in_milliseconds / 1000);
 }
 
-HOST_INFO* TOPOLOGY_SERVICE::createHost(MYSQL_ROW& row) {
+HOST_INFO* TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 
     //TEMP and TODO figure out how to fetch values from row by name, not by ordinal for now this enum is matching 
     // order of columns in the query
@@ -138,103 +173,93 @@ HOST_INFO* TOPOLOGY_SERVICE::createHost(MYSQL_ROW& row) {
         return NULL;  // will not be able to generate host endpoint so no point. TODO: log this condition?
     }
 
-    std::string hostEndpoint = getHostEndpoint(row[SERVER_ID]);
-    printf("Endpoint %s\n", hostEndpoint.c_str());
+    std::string host_endpoint = get_host_endpoint(row[SERVER_ID]);
 
-    //TODO check clusterInstanceHost for NULL, or decide what is needed out of it
-    HOST_INFO* hostInfo = new HOST_INFO(
-        "", // TODO no URL for now, it can be deduced similarily as in getUrlFromEndpoint in JDBC, or instead of having it as field, have function that return the expected string
-        hostEndpoint,
-        clusterInstanceHost->getPort(),
-        clusterInstanceHost->getUser(),
-        clusterInstanceHost->getPassword()
+    //TODO check cluster_instance_host for NULL, or decide what is needed out of it
+    HOST_INFO* host_info = new HOST_INFO(
+        host_endpoint,
+        cluster_instance_host->get_port()
     );
 
     //TODO do case-insensitive comparison
     // side note: how stable this is on the server side? If it changes there we will not detect a writter.
     if (WRITER_SESSION_ID == row[SESSION])
     {
-        hostInfo->markAswriter(true);
+        host_info->mark_as_writer(true);
     }
 
     // add properties from server
-    hostInfo->addProperty(INSTANCE_NAME, row[SERVER_ID] ? row[SERVER_ID] : "");
-    hostInfo->addProperty(SESSION_ID, row[SESSION] ? row[SESSION] : "");
-    hostInfo->addProperty(LAST_UPDATED, row[LAST_UPDATE_TIMESTAMP] ? row[LAST_UPDATE_TIMESTAMP] : "");
-    hostInfo->addProperty(REPLICA_LAG, row[REPLICA_LAG_MILLISECONDS] ? row[REPLICA_LAG_MILLISECONDS] : "");
+    host_info->add_property(INSTANCE_NAME, row[SERVER_ID] ? row[SERVER_ID] : "");
+    host_info->add_property(SESSION_ID, row[SESSION] ? row[SESSION] : "");
+    host_info->add_property(LAST_UPDATED, row[LAST_UPDATE_TIMESTAMP] ? row[LAST_UPDATE_TIMESTAMP] : "");
+    host_info->add_property(REPLICA_LAG, row[REPLICA_LAG_MILLISECONDS] ? row[REPLICA_LAG_MILLISECONDS] : "");
 
-    // TODO copy properties from clusterInstanceHost equivalent from JDBC, but need to ponder about it
-    // if really needed to copy the same to each host info if they are present in clusterInstanceHost
+    // TODO copy properties from cluster_instance_host equivalent from JDBC, but need to ponder about it
+    // if really needed to copy the same to each host info if they are present in cluster_instance_host
     // depending on the full new interface of the topology service
     // here is a snippet from JDBC
-    //if (this.clusterInstanceHost != null) {
-    //    properties.putAll(this.clusterInstanceHost.getHostProperties());
+    //if (this.cluster_instance_host != null) {
+    //    properties.putAll(this.cluster_instance_host.host_properties());
    // }
 
-    //Temp Test properties TODO delete the printfs below.
-    printf("%s :  %s\n", INSTANCE_NAME.c_str(), hostInfo->getProperty(INSTANCE_NAME).c_str());
-    printf("%s :  %s\n", SESSION_ID.c_str(), hostInfo->getProperty(SESSION_ID).c_str());
-    printf("%s :  %s\n", LAST_UPDATED.c_str(), hostInfo->getProperty(LAST_UPDATED).c_str());
-    printf("%s :  %s\n", REPLICA_LAG.c_str(), hostInfo->getProperty(REPLICA_LAG).c_str());
-
-    return hostInfo;
+    return host_info;
 }
 
 // If no host information retrieved return NULL
-ClusterTopologyInfo* TOPOLOGY_SERVICE::queryForTopology(MYSQL* conn) {
+CLUSTER_TOPOLOGY_INFO* TOPOLOGY_SERVICE::query_for_topology(MYSQL* conn) {
 
-    ClusterTopologyInfo* topologyInfo = NULL;
+    CLUSTER_TOPOLOGY_INFO* topology_info = NULL;
 
-    MYSQL_RES* queryResult = NULL;
-    if ((mysql_query(conn, RETRIEVE_TOPOLOGY_SQL) == 0) && (queryResult = mysql_store_result(conn)) != NULL) {
-        topologyInfo = new ClusterTopologyInfo();
+    MYSQL_RES* query_result = NULL;
+    if ((mysql_query(conn, RETRIEVE_TOPOLOGY_SQL) == 0) && (query_result = mysql_store_result(conn)) != NULL) {
+        topology_info = new CLUSTER_TOPOLOGY_INFO();
         MYSQL_ROW row;
-        while ((row = mysql_fetch_row(queryResult))) {
-            HOST_INFO* hi = createHost(row);
+        while ((row = mysql_fetch_row(query_result))) {
+            HOST_INFO* hi = create_host(row);
             if (hi != NULL) {
-                topologyInfo->addHost(hi);
+                topology_info->add_host(hi);
             }
         }
-        mysql_free_result(queryResult);
+        mysql_free_result(query_result);
 
-        if (topologyInfo->totalHosts() == 0) {
-            delete topologyInfo;
-            topologyInfo = NULL;
+        if (topology_info->total_hosts() == 0) {
+            delete topology_info;
+            topology_info = NULL;
         }
     }
-    return topologyInfo;
+    return topology_info;
 }
 
 
-std::string TOPOLOGY_SERVICE::getHostEndpoint(const char* nodeName) {
-    std::string host = clusterInstanceHost->getHost();
-    host.replace(host.find("?"), 1, nodeName);
+std::string TOPOLOGY_SERVICE::get_host_endpoint(const char* node_name) {
+    std::string host = cluster_instance_host->get_host();
+    host.replace(host.find("?"), 1, node_name);
 
     return host;
 }
 
 
 //TDOO 
-// the entire HOST_INFO needs to be reviewed based on needed interfaces and other objects like ClusterTopologyInfo
-// most/all of the HOST_INFO potentially could be internal to ClusterTopologyInfo and specfic information may be accessed
-// through ClusterTopologyInfo
+// the entire HOST_INFO needs to be reviewed based on needed interfaces and other objects like CLUSTER_TOPOLOGY_INFO
+// most/all of the HOST_INFO potentially could be internal to CLUSTER_TOPOLOGY_INFO and specfic information may be accessed
+// through CLUSTER_TOPOLOGY_INFO
 // Move the implementation to it's own file
 
 HOST_INFO::HOST_INFO()
-    : HOST_INFO("", "", -1, "", "")
+    : HOST_INFO("", -1)
 {
     //this(null, null, NO_PORT, null, null, true, null);
 }
 
-HOST_INFO::HOST_INFO(std::string url, std::string host, int port, std::string user, std::string password)
-    : original_url{ url }, host{ host }, port{ port }, user{ user }, password{ password }, is_passwordless{ password == "" }, is_down{ false }, is_writer{ false }
+HOST_INFO::HOST_INFO(std::string host, int port)
+    : host{ host }, port{ port }, is_down{ false }, is_writer{ false }
 {
 
 }
 
 // would need some checks for nulls
-HOST_INFO::HOST_INFO(const char* url, const char* host, int port, const char* user, const char* password)
-    : original_url{ url }, host{ host }, port{ port }, user{ user }, password{ password }, is_passwordless{ password == NULL }, is_down{ false }, is_writer{ false }
+HOST_INFO::HOST_INFO(const char* host, int port)
+    : host{ host }, port{ port }, is_down{ false }, is_writer{ false }
 {
 
 }
@@ -245,7 +270,7 @@ HOST_INFO::HOST_INFO(const char* url, const char* host, int port, const char* us
  *
  * @return the host
  */
-std::string HOST_INFO::getHost() {
+std::string HOST_INFO::get_host() {
     return host;
 }
 
@@ -254,7 +279,7 @@ std::string HOST_INFO::getHost() {
  *
  * @return the port
  */
-int  HOST_INFO::getPort() {
+int  HOST_INFO::get_port() {
     return port;
 }
 
@@ -263,36 +288,8 @@ int  HOST_INFO::getPort() {
  *
  * @return the host:port representation of this host
  */
-std::string HOST_INFO::getHostPortPair() {
-    return getHost() + HOST_PORT_SEPARATOR + std::to_string(getPort());
-}
-
-/**
- * Returns the user name.
- *
- * @return the user name
- */
-std::string HOST_INFO::getUser() {
-    return user;
-}
-
-/**
- * Returns the password.
- *
- * @return the password
- */
-std::string HOST_INFO::getPassword() {
-    return password;
-}
-
-/**
- * Returns true if the is the default one, i.e., no password was provided in the connection URL or arguments.
- *
- * @return
- *         true if no password was provided in the connection URL or arguments.
- */
-bool  HOST_INFO::isPasswordless() {
-    return is_passwordless;
+std::string HOST_INFO::get_host_port_pair() {
+    return get_host() + HOST_PORT_SEPARATOR + std::to_string(get_port());
 }
 
 /**
@@ -300,8 +297,8 @@ bool  HOST_INFO::isPasswordless() {
  *
  * @return this host specific properties
  */
-std::map<std::string, std::string> HOST_INFO::getHostProperties() {
-    return  hostProperties;
+std::map<std::string, std::string> HOST_INFO::host_properties() {
+    return  properties;
 }
 
 /**
@@ -312,19 +309,19 @@ std::map<std::string, std::string> HOST_INFO::getHostProperties() {
  *
  * @return the connection argument for the given key
  */
-std::string HOST_INFO::getProperty(std::string key) {
-    if (hostProperties.empty())
+std::string HOST_INFO::get_property(std::string key) {
+    if (properties.empty())
         return "";
-    auto result = hostProperties.find(key);
-    return result != hostProperties.end() ? result->second : "";
+    auto result = properties.find(key);
+    return result != properties.end() ? result->second : "";
 }
 
 // TODO think about behaviour. Should adding value with a key that exists in the map be replaced?
 // Currently existing value for a key is replaced.
 // If not, false should be returned from this method. 
 // and use insert(std::make_pair()) instead of the [] operator
-void HOST_INFO::addProperty(std::string name, std::string value) {
-    hostProperties[name] = value;
+void HOST_INFO::add_property(std::string name, std::string value) {
+    properties[name] = value;
 }
 
 
@@ -333,51 +330,37 @@ void HOST_INFO::addProperty(std::string name, std::string value) {
  *
  * @return the database name
  */
-std::string HOST_INFO::getDatabase() {
-    // String database = this.hostProperties.get(PropertyKey.DBNAME.getKeyName());
+std::string HOST_INFO::get_database() {
+    // String database = this.properties.get(PropertyKey.DBNAME.getKeyName());
      //return isNullOrEmpty(database) ? "" : database;
     return "TODO";
 }
 
 /**
- * Exposes this host info as a single properties instance. The values for host, port, user and password are added to the properties map with their standard
- * keys.
- *
- * @return a {@link Properties} instance containing the full host information.
- */
- /*/
- public Properties exposeAsProperties() {
-     Properties props = new Properties();
-     this.hostProperties.entrySet().stream().forEach(e->props.setProperty(e.getKey(), e.getValue() == null ? "" : e.getValue()));
-     props.setProperty(PropertyKey.HOST.getKeyName(), getHost());
-     props.setProperty(PropertyKey.PORT.getKeyName(), String.valueOf(getPort()));
-     props.setProperty(PropertyKey.USER.getKeyName(), getUser());
-     props.setProperty(PropertyKey.PASSWORD.getKeyName(), getPassword());
-     return props;
- }
- */
-
- /**
-  * Returns the original database URL that produced this host info.
-  *
-  * @return the original database URL
-  */
-
-std::string HOST_INFO::getDatabaseUrl() {
-    return original_url;
-}
-
-/**
- * Checks if this {@link HostInfo} has the same host and port pair as the given {@link HostInfo}.
+ * Checks if this {@link host_info} has the same host and port pair as the given {@link host_info}.
  *
  * @param hi
- *            the {@link HostInfo} to compare with.
+ *            the {@link host_info} to compare with.
  * @return
  *         <code>true</code> if both objects have equal host and port pairs, <code>false</code> otherwise.
  */
-bool  HOST_INFO::equalHostPortPair(HOST_INFO& hi) {
-    // return (getHost() != null && getHost().equals(hi.getHost()) || getHost() == null && hi.getHost() == null) && getPort() == hi.getPort();
+bool  HOST_INFO::equal_host_port_pair(HOST_INFO& hi) {
+    // return (get_host() != null && get_host().equals(hi.get_host()) || get_host() == null && hi.get_host() == null) && get_port() == hi.get_port();
       //TODO implement
     return false;
 }
 
+bool HOST_INFO::is_host_down() {
+    return is_down;
+}
+
+void HOST_INFO::mark_as_down(bool down) {
+    is_down = down;
+}
+
+bool HOST_INFO::is_host_writer() {
+    return is_writer;
+}
+void HOST_INFO::mark_as_writer(bool writer) {
+    is_writer = writer;
+}
