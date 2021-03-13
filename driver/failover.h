@@ -6,9 +6,6 @@
 #ifndef __FAILOVER_H__
 #define __FAILOVER_H__
 
-//#include "sqltypes.h"
-//#include "sql.h"
-
 #include <stddef.h>
 #include <vector>
 #include <list>
@@ -29,85 +26,61 @@ struct DBC;
 struct HOST_INFO {
     HOST_INFO();
     //TODO - probably choose one of the following constructors, or more precisely choose which data type they should take
-    HOST_INFO(std::string url, std::string host, int port, std::string user, std::string password);
-    HOST_INFO(const char* url, const char* host, int port, const char* user, const char* password);
+    HOST_INFO(std::string host, int port);
+    HOST_INFO(const char* host, int port);
     const int NO_PORT = -1;
 
-    //TODO naming convention - should function names be get_host() instead of getHost() etc.?
-    std::string getHost();
-
-    int  getPort();
-    std::string getHostPortPair();
-    std::string getUser();
-    std::string getPassword();
-    bool  isPasswordless();
-    bool isDown() { return is_down; }
-    bool isWriter() { return is_writer; }
-    std::map<std::string, std::string> getHostProperties();
-    std::string getProperty(std::string key);
-    std::string getDatabase();
-    std::string getDatabaseUrl();
-    bool  equalHostPortPair(HOST_INFO& hi);
-    void markAsDown(bool down) { is_down = down; }
-    void markAswriter(bool writer) { is_writer = writer; }
-    void addProperty(std::string name, std::string value);
-
+    std::string get_host();
+    int  get_port();
+    std::string get_host_port_pair();
+    std::map<std::string, std::string> host_properties();
+    std::string get_property(std::string key);
+    void add_property(std::string name, std::string value);
+    std::string get_database();
+    bool  equal_host_port_pair(HOST_INFO& hi);
+    bool is_host_down();
+    bool is_host_writer();
+    void mark_as_down(bool down);
+    void mark_as_writer(bool writer);
 
 private:
     const std::string HOST_PORT_SEPARATOR = ":";
-
-    //const DatabaseUrlContainer originalUrl;  TODO - do we need an equivalent structure/class to DatabaseUrlContainer? Maybe not?
-    const std::string original_url;
     const std::string host;
     const int port;
-    const std::string user;
-    const std::string password;
-    const bool is_passwordless;
-    std::map<std::string, std::string> hostProperties;
-    bool is_down; // added, exploring possibility of using this vs having a separate set of down host - TODO decide if needed
+    std::map<std::string, std::string> properties;
+    bool is_down;
     bool is_writer;
-
 };
 
-struct ClusterTopologyInfo {
+class CLUSTER_TOPOLOGY_INFO {
 
 public:
-    ClusterTopologyInfo() { updateTime(); }
-    void addHost(HOST_INFO* hi) {
-        hi->isWriter() ? writers.push_back(hi) : readers.push_back(hi);
-        updateTime();
-    }
-    bool isMultiWriterCluster() { return writers.size() > 1; }
-    int totalHosts() { return writers.size() + readers.size(); }
+    CLUSTER_TOPOLOGY_INFO();
+    ~CLUSTER_TOPOLOGY_INFO();
+
+    void add_host(HOST_INFO* hi);
+    bool is_multi_writer_cluster();
+    int total_hosts();
+    std::time_t time_last_updated();
 
     //TODO perhaps no need to return the entire lists, have more specific functions, e.g. specific writter or reader info returned
     // or even specific property and not entire HOST_INFO so that other parts don't need to know about HOST_INFO
     // just brain storming
-
-    std::vector<HOST_INFO*>& Writers() { return writers; }
-    std::vector<HOST_INFO*>& Readers() { return readers; }
-
-    std::time_t timeLastUpdated() { return lastUpdated; }
-
-    ~ClusterTopologyInfo();
+    std::vector<HOST_INFO*>& writer_hosts();
+    std::vector<HOST_INFO*>& reader_hosts();
 
 private:
-    std::time_t lastUpdated;  // is this time_t sufficient or we need to think about something else
-    std::set<std::string> down_hosts;
+    std::time_t last_updated; 
+    std::set<std::string> down_hosts; // maybe not needed, HOST_INFO has is_host_down() method
     //std::vector<HOST_INFO*> hosts;
+    HOST_INFO last_used_reader;
 
     // TODO - can we do withthout pointers
     std::vector<HOST_INFO*> writers;
     std::vector<HOST_INFO*> readers;
 
-    HOST_INFO lastUsedReader;
-
-    // TODO harmonize time function accross objects so the times are comparable
-    void updateTime() {
-        lastUpdated = time(0);
-    }
+    void update_time();
 };
-
 
 
 class TOPOLOGY_SERVICE
@@ -118,12 +91,6 @@ private:
     const int DEFAULT_REFRESH_RATE_IN_MILLISECONDS = 30000;
     const int DEFAULT_CACHE_EXPIRE_MS = 5 * 60 * 1000; // 5 min
 
-    int refreshRateInMilliseconds;
-    //const std::string retrieve_topology_sql =
-    //	"select server_id, session_id, last_update_timestamp, replica_lag_in_milliseconds "
-    //    "from information_schema.replica_host_status "
-    //	"where time_to_sec(timediff(now(), last_update_timestamp)) <= 300 " // 5 min
-    //	"order by last_update_timestamp desc";
     const std::string GET_INSTANCE_NAME_SQL = "SELECT @@aurora_server_id";
     const std::string GET_INSTANCE_NAME_COL = "@@aurora_server_id";
     const std::string WRITER_SESSION_ID = "MASTER_SESSION_ID";
@@ -133,63 +100,51 @@ private:
     const std::string FIELD_LAST_UPDATED = "LAST_UPDATE_TIMESTAMP";
     const std::string FIELD_REPLICA_LAG = "REPLICA_LAG_IN_MILLISECONDS";
 
-
     const char* RETRIEVE_TOPOLOGY_SQL =
         "SELECT SERVER_ID, SESSION_ID, LAST_UPDATE_TIMESTAMP, REPLICA_LAG_IN_MILLISECONDS \
 		FROM information_schema.replica_host_status \
 		WHERE time_to_sec(timediff(now(), LAST_UPDATE_TIMESTAMP)) <= 300 \
 		ORDER BY LAST_UPDATE_TIMESTAMP DESC";
 
-
 protected:
     const int NO_CONNECTION_INDEX = -1;
+    int refresh_rate_in_milliseconds;
+    
+    std::string cluster_id;
+    HOST_INFO* cluster_instance_host;
 
-    //protected static final ExpiringCache<std::string, ClusterTopologyInfo> topologyCache =
-    //	new ExpiringCache<>(DEFAULT_CACHE_EXPIRE_MS);
-    //private static final Object cacheLock = new Object();
-
-    std::string clusterId;
-    HOST_INFO* clusterInstanceHost;
-
-    //ClusterAwareTimeMetricsHolder queryTopologyMetrics =
-        //new ClusterAwareTimeMetricsHolder("Topology Query");
-
-    bool gatherPerfMetrics = false;
-    ClusterTopologyInfo topologyInfoPlaceHolderForNow;
+    //TODO performance metrics
+    //bool gather_perf_Metrics = false;
 
     //TODO implement cache
-    std::map<std::string, ClusterTopologyInfo*> topologyCache;
-    bool refreshNeeded(std::time_t last_updated);
+    std::map<std::string, CLUSTER_TOPOLOGY_INFO*> topology_cache;
 
+    bool refresh_needed(std::time_t last_updated);
+    CLUSTER_TOPOLOGY_INFO* query_for_topology(MYSQL* conn);
+    HOST_INFO* create_host(MYSQL_ROW& row);
+    std::string  get_host_endpoint(const char* node_name);
 
-    ClusterTopologyInfo* queryForTopology(MYSQL* conn);
-    HOST_INFO* createHost(MYSQL_ROW& row);
-    std::string  getHostEndpoint(const char* nodeName);
-
-    ClusterTopologyInfo* getInfoFromCache();
-    void putInfoToCache(ClusterTopologyInfo* topologyInfo);
+    CLUSTER_TOPOLOGY_INFO* get_from_cache();
+    void put_to_cache(CLUSTER_TOPOLOGY_INFO* topology_info);
 
 public:
     TOPOLOGY_SERVICE();
-    void setClusterId(const char* clusterId);
-    void setClusterInstanceTemplate(HOST_INFO* hostTemplate);  //is this equivalent to setClusterInstanceHost
-    //std::vector<HOST_INFO*>* getTopology(MYSQL* conn);
-    const ClusterTopologyInfo* getTopology(MYSQL* conn, bool forceUpdate = false); // would this one make more sense returning ClusterTopologyInfo&?
-    const ClusterTopologyInfo* getCachedTopology();
-    // Should this one (in jdbc implementation use synchronized (cacheLock) {
-    // similarily in getTopology when calling topologyCache.get(this.clusterId); some getTopology maybe calling put
-    // or probably better, these locks could be inside the ExpiringCache itself, depends. how about other functions like clear, remove, values (while other thread is adding/removing things).
-    // but if all access to the ExpiringCache goes through Topology Service then, the synchronization could be in Topology service.
-
-    HOST_INFO* getLastUsedReaderHost();
-    void setLastUsedReaderHost(HOST_INFO* reader);
-    std::vector<std::string>* getDownHosts();
-    void addToDownHostList(HOST_INFO* downHost);
-    void removeFromDownHostList(HOST_INFO* host);
-    void setRefreshRate(int refreshRate);
-    void clearAll();
-    void clear();
     ~TOPOLOGY_SERVICE();
+
+    void set_cluster_id(const char* cluster_id);
+    void set_cluster_instance_template(HOST_INFO* host_template);  //is this equivalent to setcluster_instance_host
+    //std::vector<HOST_INFO*>* get_topology(MYSQL* conn);
+    const CLUSTER_TOPOLOGY_INFO* get_topology(MYSQL* conn, bool force_update = false); 
+    const CLUSTER_TOPOLOGY_INFO* get_cached_topology();
+
+    HOST_INFO* get_last_used_reader_host();
+    void set_last_used_reader_host(HOST_INFO* reader);
+    std::vector<std::string>* get_down_hosts();
+    void add_to_down_host_list(HOST_INFO* down_host);
+    void remove_from_down_host_list(HOST_INFO* host);
+    void set_refresh_rate(int refresh_rate);
+    void clear_all();
+    void clear();
 
     // Property Keys
     const std::string SESSION_ID = "TOPOLOGY_SERVICE_SESSION_ID";
