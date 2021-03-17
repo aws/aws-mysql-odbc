@@ -8,6 +8,3 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: "root"
       MYSQL_DATABASE: "test"
-      OPENSSL_CONF: "/tmp/openssl.cnf"  # point to modified .cnf for lowered TLS min_version for t_tls_opts test
-    volumes:
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d  # attach dir w/ custom init scripts
