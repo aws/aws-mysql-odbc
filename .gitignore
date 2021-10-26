@@ -17,6 +17,7 @@ test/*
 !test/*.h
 !test/*.in
 !test/unit.pl
+testing/build/**
 
 # CMake generated files
 CPack*.cmake
