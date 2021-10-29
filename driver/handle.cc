@@ -116,6 +116,9 @@ DBC::~DBC()
   if (ds)
     ds_delete(ds);
 
+  if (fh)
+      delete fh;
+
   free_explicit_descriptors();
 }
 
