@@ -301,7 +301,7 @@ SQLRETURN handle_connection_error(STMT *stmt)
 #endif
     /* TODO: failover */
     const char* errorCode;
-    if (stmt->dbc->fh->triggerFailoverIfNeeded("08S01", errorCode)) {
+    if (stmt->dbc->fh->trigger_failover_if_needed("08S01", errorCode)) {
         return stmt->set_error(errorCode, mysql_error(stmt->dbc->mysql), err);
     }
     return stmt->set_error("08S01", mysql_error(stmt->dbc->mysql), err);

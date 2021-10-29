@@ -216,7 +216,7 @@ exit:
        const char* newErrorCode;
        const char* err = mysql_error(stmt->dbc->mysql);
        SQLINTEGER errcode = mysql_errno(stmt->dbc->mysql);
-       if (stmt->dbc->fh->triggerFailoverIfNeeded(stmt->error.sqlstate.c_str(), newErrorCode)) {
+       if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), newErrorCode)) {
           stmt->set_error(newErrorCode, err, errcode);
        }
     }

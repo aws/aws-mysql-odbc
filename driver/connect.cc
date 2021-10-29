@@ -215,12 +215,6 @@ struct Prio
   }
 };
 
-struct Srv_host_detail
-{
-  std::string name;
-  unsigned int port = MYSQL_PORT;
-};
-
 
 /*
   Parse a comma separated list of hosts, each optionally specifying a port after
