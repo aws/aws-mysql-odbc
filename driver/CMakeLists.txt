@@ -57,8 +57,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   SET(DRIVER_SRCS
     catalog.cc catalog_no_i_s.cc connect.cc cursor.cc desc.cc dll.cc error.cc execute.cc
     handle.cc info.cc driver.cc options.cc parse.cc prepare.cc results.cc transact.cc
-    my_prepared_stmt.cc my_stmt.cc utility.cc
-	failover_handler.cc failover_reader_handler.cc failover_writer_handler.cc failover_topology.cc)
+    my_prepared_stmt.cc my_stmt.cc utility.cc failover_handler.cc failover_reader_handler.cc
+    failover_writer_handler.cc failover_topology.cc failover_connection_handler.cc)
 
   IF(UNICODE)
     SET(DRIVER_SRCS ${DRIVER_SRCS} unicode.cc)
