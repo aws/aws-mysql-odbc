@@ -57,7 +57,9 @@ private:
     bool is_writer;
 };
 
-// This class holds information for topology for one cluster.
+// This class holds topology information for one cluster.
+// Cluster topology consists of an instance endpoint, a set of nodes in the cluster,
+// the type of each node in the cluster, and the status of each node in the cluster.
 class CLUSTER_TOPOLOGY_INFO {
 
 public:
@@ -65,7 +67,7 @@ public:
     CLUSTER_TOPOLOGY_INFO(const CLUSTER_TOPOLOGY_INFO& src_info); //copy constructor
     virtual ~CLUSTER_TOPOLOGY_INFO();
 
-    void add_host(HOST_INFO* hi);
+    void add_host(HOST_INFO* host_info);
     bool is_multi_writer_cluster();
     int total_hosts();
     int num_readers(); // return number of readers in the cluster
@@ -75,7 +77,7 @@ public:
     HOST_INFO* get_next_reader();
     // TODO - Ponder if the get_reader below is needed. In general user of this should not need to deal with indexes. 
     // One case that comes to mind, if we were to try to do a random shuffle of readers or hosts in general like JDBC driver
-    // we could do random shuffle of host indeces and call the get_reader for specific index in order we wanted.
+    // we could do random shuffle of host indices and call the get_reader for specific index in order we wanted.
     HOST_INFO* get_reader(int i);  
    
 private:
@@ -85,14 +87,13 @@ private:
     //std::vector<HOST_INFO*> hosts;
     HOST_INFO last_used_reader;  // TODO perhaps this overlaps with current_reader and is not needed
 
-    // TODO - can we do withthout pointers - 
+    // TODO - can we do without pointers - 
     // perhaps ok for now, we are using copies CLUSTER_TOPOLOGY_INFO returned by get_topology and get_cached_topology from TOPOLOGY_SERVICE. 
     // However, perhaps smart shared pointers could be used.
     std::vector<HOST_INFO*> writers;
     std::vector<HOST_INFO*> readers;
 
     void update_time();
-    bool init_update_current_reader();
 };
 
 
