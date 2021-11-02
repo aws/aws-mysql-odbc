@@ -15,11 +15,11 @@ CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO() {
 CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO(const CLUSTER_TOPOLOGY_INFO& src_info)
     : current_reader{ src_info.current_reader }, last_updated{ src_info.last_updated }, last_used_reader{ src_info.last_used_reader }
 {
-    for (HOST_INFO* hi_source : src_info.writers) {
-        writers.push_back(new HOST_INFO(*hi_source)); //default copy
+    for (HOST_INFO* host_info_source : src_info.writers) {
+        writers.push_back(new HOST_INFO(*host_info_source)); //default copy
     }
-    for (HOST_INFO* hi_source : src_info.readers) {
-        readers.push_back(new HOST_INFO(*hi_source)); //default copy
+    for (HOST_INFO* host_info_source : src_info.readers) {
+        readers.push_back(new HOST_INFO(*host_info_source)); //default copy
     }
 }
 
@@ -35,8 +35,8 @@ CLUSTER_TOPOLOGY_INFO::~CLUSTER_TOPOLOGY_INFO() {
     readers.clear();
 }
 
-void CLUSTER_TOPOLOGY_INFO::add_host(HOST_INFO* hi) {
-    hi->is_host_writer() ? writers.push_back(hi) : readers.push_back(hi);
+void CLUSTER_TOPOLOGY_INFO::add_host(HOST_INFO* host_info) {
+    host_info->is_host_writer() ? writers.push_back(host_info) : readers.push_back(host_info);
     update_time();
 }
 
@@ -52,7 +52,7 @@ int CLUSTER_TOPOLOGY_INFO::num_readers() {
     return readers.size();
 }
 
-std::time_t  CLUSTER_TOPOLOGY_INFO::time_last_updated() { 
+std::time_t CLUSTER_TOPOLOGY_INFO::time_last_updated() { 
     return last_updated; 
 }
 
@@ -62,25 +62,40 @@ void CLUSTER_TOPOLOGY_INFO::update_time() {
 }
 
 HOST_INFO* CLUSTER_TOPOLOGY_INFO::get_writer() {
-    // TODO implement
-    return NULL;
+    if (writers.size() <= 0) {
+        throw "No writer available";
+    }
+
+    return writers[0];
 }
 
 HOST_INFO* CLUSTER_TOPOLOGY_INFO::get_next_reader() {
-    // TODO implement
-    return NULL;
+    int num_readers = readers.size();
+    if (num_readers <= 0) {
+        throw "No reader available";
+    }
+
+    if (current_reader == -1) { // initialize for the first time
+        current_reader = get_random_number() % num_readers;
+    }
+    else if (current_reader >= num_readers) {
+        // adjust current reader in case topology was refreshed.
+        current_reader = (current_reader) % num_readers;
+    }
+    else {
+        current_reader = (current_reader + 1) % num_readers;
+    }
+
+    return readers[current_reader];
 }
 
 HOST_INFO* CLUSTER_TOPOLOGY_INFO::get_reader(int i) {
-    // TODO implement
-    return NULL;
-}
+    if (i < 0 || i >= readers.size()) {
+        throw "No reader available at index " + i;
+    }
 
-bool CLUSTER_TOPOLOGY_INFO::init_update_current_reader() {
-    // TODO implement
-    return NULL;
+    return readers[i];
 }
-
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE()
     : cluster_instance_host{ NULL }, refresh_rate_in_milliseconds{ DEFAULT_REFRESH_RATE_IN_MILLISECONDS }

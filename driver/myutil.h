@@ -476,6 +476,8 @@ void free_connection_stmts(DBC *dbc);
 #define cmp_database(A,B) strcmp((A),(B))
 #endif
 
+int get_random_number();
+
 /*
   Check if an octet_length_ptr is a data-at-exec field.
   WARNING: This macro evaluates the argument multiple times.
