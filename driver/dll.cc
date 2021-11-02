@@ -170,7 +170,7 @@ void dll_location_init(HMODULE inst)
   std::string dll_loc;
   dll_loc.reserve(buflen);
 
-  GetModuleFileNameA((HMODULE)inst, dll_loc.data(), buflen);
+  GetModuleFileNameA((HMODULE)inst, (LPSTR)dll_loc.data(), buflen);
   current_dll_location = dll_loc.data();
   auto bs_pos = current_dll_location.find_last_of('\\');
   if (bs_pos != std::string::npos)
