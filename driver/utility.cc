@@ -4386,3 +4386,12 @@ const char get_identifier_quote(STMT *stmt)
   return empty;
 }
 
+/**
+  Initialize and return random number.
+
+  Returns random number.
+ */
+int get_random_number() {
+    std::srand(time(nullptr));
+    return rand();
+}
