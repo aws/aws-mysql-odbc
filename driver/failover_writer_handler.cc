@@ -28,55 +28,54 @@ bool FAILOVER_SYNC::is_done() {
     return done_;
 }
 
-// ************* FAILOVER_BASE ***********************************
-// common funcntionality of failover handlers
-FAILOVER_BASE::FAILOVER_BASE(FAILOVER_CONNECTION_HANDLER* ch) 
+// ************* FAILOVER ***********************************
+// Base class of two writer failover task handlers
+FAILOVER::FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> ch) 
     : conn_handler{ ch }, new_conn{ nullptr }, canceled{ false } {
 }
-FAILOVER_BASE::~FAILOVER_BASE() {
+FAILOVER::~FAILOVER() {
     close_connection();
 }
 
-void FAILOVER_BASE::cancel() { 
+void FAILOVER::cancel() { 
     canceled = true; 
 }
 
-bool FAILOVER_BASE::is_canceled() { 
+bool FAILOVER::is_canceled() { 
     return canceled;
 }
 
-bool FAILOVER_BASE::connected() {
+bool FAILOVER::connected() {
     return new_conn != nullptr;
 }
 
-bool FAILOVER_BASE::connect(HOST_INFO* host_info) {
-    new_conn = conn_handler->connect(host_info);
+bool FAILOVER::connect(std::shared_ptr<HOST_INFO> host_info) {
+    new_conn = std::make_shared<MYSQL>(*conn_handler->connect(host_info.get()));
     return new_conn != nullptr;
 }
 
-MYSQL* FAILOVER_BASE::move_connection() {
-    // TODO implement
-    return NULL;
+std::shared_ptr<MYSQL> FAILOVER::get_connection() {
+    return new_conn;
 }
 
-void FAILOVER_BASE::close_connection() {
-    // TODO implement
+void FAILOVER::close_connection() {
+    mysql_close(new_conn.get());
 }
 
-void FAILOVER_BASE::sleep(int miliseconds) {
+void FAILOVER::sleep(int miliseconds) {
     std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
 }
 
 // ************************ FAILOVER_RECONNECT_HANDLER
 //handler reconnecting to a given host, e.g. reconnect to a current writer
-FAILOVER_RECONNECT_HANDLER::FAILOVER_RECONNECT_HANDLER(FAILOVER_CONNECTION_HANDLER* ch, int conn_interval) 
-    : FAILOVER_BASE{ ch }, reconnect_interval_ms{ conn_interval } {
+FAILOVER_RECONNECT_HANDLER::FAILOVER_RECONNECT_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> ch, int conn_interval) 
+    : FAILOVER{ ch}, reconnect_interval_ms{ conn_interval } {
 }
 
 FAILOVER_RECONNECT_HANDLER::~FAILOVER_RECONNECT_HANDLER() {
 }
 
-void FAILOVER_RECONNECT_HANDLER::operator()(HOST_INFO* hi, FAILOVER_SYNC& f_sync) {  
+void FAILOVER_RECONNECT_HANDLER::operator()(std::shared_ptr<HOST_INFO> hi, FAILOVER_SYNC& f_sync) {  
     if (hi) {
         while (!is_canceled() && !connect(hi)) {
             sleep(reconnect_interval_ms);
@@ -87,8 +86,8 @@ void FAILOVER_RECONNECT_HANDLER::operator()(HOST_INFO* hi, FAILOVER_SYNC& f_sync
 
 // ************************ WAIT_NEW_WRITER_HANDLER
 
-WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(FAILOVER_CONNECTION_HANDLER* ch, TOPOLOGY_SERVICE* topology_service, FAILOVER_READER_HANDLER& failover_reader_handler, int conn_interval) // probably use smart shared pointer for ch
-    : FAILOVER_BASE{ ch }, topology_service{ topology_service }, reader_handler{ failover_reader_handler }, read_topology_interval_ms{ conn_interval } {
+WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> ch, std::shared_ptr<TOPOLOGY_SERVICE> topology_service, FAILOVER_READER_HANDLER& failover_reader_handler, int conn_interval)
+    : FAILOVER{ ch }, topology_service{ topology_service }, reader_handler{ failover_reader_handler }, read_topology_interval_ms{ conn_interval } {
 }
 
 WAIT_NEW_WRITER_HANDLER::~WAIT_NEW_WRITER_HANDLER() {
@@ -99,12 +98,12 @@ void WAIT_NEW_WRITER_HANDLER::operator()(FAILOVER_SYNC& f_sync) {
     // TODO implement
 }
 
-MYSQL* WAIT_NEW_WRITER_HANDLER::get_reader_connection() {
+std::shared_ptr<MYSQL> WAIT_NEW_WRITER_HANDLER::get_reader_connection() {
     // TODO implement
     return NULL;
 }
 
-bool WAIT_NEW_WRITER_HANDLER::refreshTopologyAndConnectToNewWriter(MYSQL* reader_connection) {
+bool WAIT_NEW_WRITER_HANDLER::refreshTopologyAndConnectToNewWriter(std::shared_ptr<MYSQL> reader_connection) {
     // TODO implement
     return false;
 }

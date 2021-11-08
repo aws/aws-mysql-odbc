@@ -285,54 +285,52 @@ private:
     bool is_done();
 };
 
-// TODO perhaps think about a better name for this class. 
-class FAILOVER_BASE {
+class FAILOVER {
 public:
-    FAILOVER_BASE(FAILOVER_CONNECTION_HANDLER* conn_handler);
-    virtual ~FAILOVER_BASE();
+    explicit FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> conn_handler);
+    virtual ~FAILOVER();
     void cancel();
     bool is_canceled();
     bool connected();
-    MYSQL* move_connection();
+    std::shared_ptr<MYSQL> get_connection();
 
 protected:
-    bool connect(HOST_INFO* host_info);
+    bool connect(std::shared_ptr<HOST_INFO> host_info);
     void sleep(int miliseconds);
-    FAILOVER_CONNECTION_HANDLER* conn_handler;
+    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> conn_handler;
 
 private:
-    bool canceled;
-    MYSQL* new_conn;  // TODO probably wrap this 'raw' MYSQL* pointer in some result class so all the methods and interfaces never show it directly
+    std::atomic_bool canceled;
+    std::shared_ptr<MYSQL> new_conn;  // TODO probably wrap this 'raw' MYSQL* pointer in some result class so all the methods and interfaces never show it directly
 
     void close_connection();
-
 };
 
-class FAILOVER_RECONNECT_HANDLER : public FAILOVER_BASE {
+class FAILOVER_RECONNECT_HANDLER : public FAILOVER {
 public:  
-    FAILOVER_RECONNECT_HANDLER(FAILOVER_CONNECTION_HANDLER* conn_handler, int conn_interval);  // probably use smart shared pointer here
+    FAILOVER_RECONNECT_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> conn_handler, int conn_interval);  // probably use smart shared pointer here
     ~FAILOVER_RECONNECT_HANDLER();
 
-    void operator()(HOST_INFO* hi, FAILOVER_SYNC& f_sync);
+    void operator()(std::shared_ptr<HOST_INFO> hi, FAILOVER_SYNC& f_sync);
 
    
 private:
     int reconnect_interval_ms; 
 };
 
-class WAIT_NEW_WRITER_HANDLER : public FAILOVER_BASE {
+class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
 public:
-    WAIT_NEW_WRITER_HANDLER(FAILOVER_CONNECTION_HANDLER* conn_handler, TOPOLOGY_SERVICE* topology_service, FAILOVER_READER_HANDLER& failover_reader_handler, int conn_interval);  
+    WAIT_NEW_WRITER_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> conn_handler, std::shared_ptr<TOPOLOGY_SERVICE> topology_service, FAILOVER_READER_HANDLER& failover_reader_handler, int conn_interval);
     ~WAIT_NEW_WRITER_HANDLER();
 
     void operator()(FAILOVER_SYNC& f_sync);
 private:
     int read_topology_interval_ms = 5000; // TODO - initialize in constructor and define constant for default value
-    TOPOLOGY_SERVICE* topology_service;
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
     FAILOVER_READER_HANDLER& reader_handler;
 
-    bool refreshTopologyAndConnectToNewWriter(MYSQL* reader_connection);
-    MYSQL* get_reader_connection();
+    bool refreshTopologyAndConnectToNewWriter(std::shared_ptr<MYSQL> reader_connection);
+    std::shared_ptr<MYSQL> get_reader_connection();
 };
 
 #endif /* __FAILOVER_H__ */
