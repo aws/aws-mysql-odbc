@@ -114,7 +114,7 @@ public:
     void set_cluster_id(const char* cluster_id);
     void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
 
-    std::unique_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(MYSQL* conn, bool force_update = false);
+    std::unique_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<MYSQL> connection, bool force_update = false);
     std::unique_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();
@@ -167,7 +167,7 @@ protected:
     std::mutex topology_cache_mutex;
 
     bool refresh_needed(std::time_t last_updated);
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(MYSQL* conn);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(std::shared_ptr<MYSQL> connection);
     std::shared_ptr<HOST_INFO> create_host(MYSQL_ROW& row);
     std::string get_host_endpoint(const char* node_name);
 
