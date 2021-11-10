@@ -215,17 +215,18 @@ public:
     ~FAILOVER_READER_HANDLER();
 };
 
+// This struct holds results of Writer Failover Process.
 struct WRITER_FAILOVER_RESULT {
-    bool is_connected;
-    bool is_new_host;
-    std::vector<HOST_INFO*>* new_hosts;
-    DBC* new_host_connection;
+    bool connected;
+    bool is_new_host;  // True if process connected to a new host. False if process re-connected to the same host
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology;
+    std::shared_ptr<MYSQL> new_connection;
 };
 
 class FAILOVER_WRITER_HANDLER {
 public:
     FAILOVER_WRITER_HANDLER(TOPOLOGY_SERVICE* topology_service, FAILOVER_READER_HANDLER* failover_reader_handler);
-    WRITER_FAILOVER_RESULT failover(TOPOLOGY_SERVICE* topology_service, FAILOVER_CONNECTION_HANDLER* conn_handler, FAILOVER_READER_HANDLER& failover_reader_handler);
+    WRITER_FAILOVER_RESULT failover(TOPOLOGY_SERVICE* topology_service, FAILOVER_CONNECTION_HANDLER* connection_handler, FAILOVER_READER_HANDLER& failover_reader_handler);
     ~FAILOVER_WRITER_HANDLER();
 protected: 
     int read_topology_interval_ms = 5000;   // 5 sec
@@ -294,7 +295,7 @@ private:
 
 class FAILOVER {
 public:
-    explicit FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> conn_handler);
+    FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler, std::shared_ptr<TOPOLOGY_SERVICE> topology_service);
     virtual ~FAILOVER();
     void cancel();
     bool is_canceled();
@@ -304,39 +305,40 @@ public:
 protected:
     bool connect(std::shared_ptr<HOST_INFO> host_info);
     void sleep(int miliseconds);
-    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> conn_handler;
+    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
 
 private:
     std::atomic_bool canceled;
-    std::shared_ptr<MYSQL> new_conn;  // TODO probably wrap this 'raw' MYSQL* pointer in some result class so all the methods and interfaces never show it directly
+    std::shared_ptr<MYSQL> new_connection;  // TODO probably wrap this shared MYSQL pointer in some result class so all the methods and interfaces never show it directly
 
     void close_connection();
 };
 
-class FAILOVER_RECONNECT_HANDLER : public FAILOVER {
+class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
 public:  
-    FAILOVER_RECONNECT_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> conn_handler, int conn_interval);  // probably use smart shared pointer here
-    ~FAILOVER_RECONNECT_HANDLER();
+    RECONNECT_TO_WRITER_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler, std::shared_ptr<TOPOLOGY_SERVICE> topology_servicets, int connection_interval);
+    ~RECONNECT_TO_WRITER_HANDLER();
 
-    void operator()(std::shared_ptr<HOST_INFO> hi, FAILOVER_SYNC& f_sync);
-
+    WRITER_FAILOVER_RESULT operator()(std::shared_ptr<HOST_INFO> original_writer, FAILOVER_SYNC& f_sync);
    
 private:
-    int reconnect_interval_ms; 
+    int reconnect_interval_ms;
+
+    bool is_current_host_writer(std::shared_ptr<HOST_INFO> original_writer, std::unique_ptr<CLUSTER_TOPOLOGY_INFO> latest_topology);
 };
 
 class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
 public:
-    WAIT_NEW_WRITER_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> conn_handler, std::shared_ptr<TOPOLOGY_SERVICE> topology_service, FAILOVER_READER_HANDLER& failover_reader_handler, int conn_interval);
+    WAIT_NEW_WRITER_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler, std::shared_ptr<TOPOLOGY_SERVICE> topology_service, FAILOVER_READER_HANDLER& failover_reader_handler, int connection_interval);
     ~WAIT_NEW_WRITER_HANDLER();
 
     void operator()(FAILOVER_SYNC& f_sync);
 private:
     int read_topology_interval_ms = 5000; // TODO - initialize in constructor and define constant for default value
-    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
     FAILOVER_READER_HANDLER& reader_handler;
 
-    bool refreshTopologyAndConnectToNewWriter(std::shared_ptr<MYSQL> reader_connection);
+    bool refresh_topology_and_connect_to_new_writer(std::shared_ptr<MYSQL> reader_connection);
     std::shared_ptr<MYSQL> get_reader_connection();
 };
 

@@ -19,7 +19,7 @@ MYSQL* FAILOVER_CONNECTION_HANDLER::connect(/*required info*/ HOST_INFO* hi) {
     return NULL;
 }
 
-void FAILOVER_CONNECTION_HANDLER::update_connection(MYSQL* new_conn) {
+void FAILOVER_CONNECTION_HANDLER::update_connection(MYSQL* new_connection) {
     // TODO implement
 }
 
