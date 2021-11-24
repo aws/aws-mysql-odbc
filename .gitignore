@@ -19,6 +19,9 @@ test/*
 !test/unit.pl
 testing/build/**
 
+# Test dependencies
+_deps/**
+
 # CMake generated files
 CPack*.cmake
 **/CMakeFiles
