@@ -18,6 +18,7 @@ test/*
 !test/*.in
 !test/unit.pl
 testing/build/**
+testing/bin/**
 
 # Test dependencies
 _deps/**
