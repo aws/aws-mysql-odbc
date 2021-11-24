@@ -48,14 +48,17 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(
-  hello_world_test
+  testing
   hello_world_test.cc
 )
 
 target_link_libraries(
-  hello_world_test
+  testing
   gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(hello_world_test)
+gtest_discover_tests(testing)
+
+set_target_properties(testing PROPERTIES
+                      RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
