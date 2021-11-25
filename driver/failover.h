@@ -41,6 +41,7 @@ struct HOST_INFO {
     void set_host_state(HOST_STATE state);
     bool is_host_writer();
     void mark_as_writer(bool writer);
+    static bool is_host_same(const std::shared_ptr<HOST_INFO>& h1, const std::shared_ptr<HOST_INFO>& h2);
 
     // used to be properties - TODO - remove the not needed one's
     std::string session_id;
@@ -114,8 +115,8 @@ public:
     void set_cluster_id(const char* cluster_id);
     void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
 
-    std::unique_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<MYSQL> connection, bool force_update = false);
-    std::unique_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<MYSQL> connection, bool force_update = false);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();
     void set_last_used_reader(std::shared_ptr<HOST_INFO> reader);
@@ -200,15 +201,15 @@ private:
 struct READER_FAILOVER_RESULT {
     bool is_connected;
     std::vector<HOST_INFO*>* new_hosts;
-    HOST_INFO* new_host;
-    DBC* new_host_connection;
+    std::shared_ptr<HOST_INFO> new_host;
+    std::shared_ptr<MYSQL> new_host_connection;
 };
 
 class FAILOVER_READER_HANDLER {
 public:
     FAILOVER_READER_HANDLER(TOPOLOGY_SERVICE* topology_service);
-    READER_FAILOVER_RESULT* failover(std::vector<HOST_INFO*>* hosts, HOST_INFO* current_host);
-    READER_FAILOVER_RESULT* getReaderConnection(std::vector<HOST_INFO*> hosts);
+    READER_FAILOVER_RESULT failover(std::vector<HOST_INFO*>* hosts, HOST_INFO* current_host);
+    READER_FAILOVER_RESULT getReaderConnection(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology);
 
     MYSQL* get_reader_connection(CLUSTER_TOPOLOGY_INFO& topology_info, FAILOVER_CONNECTION_HANDLER* conn_handler, const std::function <bool()> is_canceled);
 
@@ -218,32 +219,39 @@ public:
 // This struct holds results of Writer Failover Process.
 struct WRITER_FAILOVER_RESULT {
     bool connected;
-    bool is_new_host;  // True if process connected to a new host. False if process re-connected to the same host
+    bool is_new_host;  // True if process connected to a new host. False if
+                       // process re-connected to the same host
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology;
     std::shared_ptr<MYSQL> new_connection;
 };
 
 class FAILOVER_WRITER_HANDLER {
-public:
-    FAILOVER_WRITER_HANDLER(TOPOLOGY_SERVICE* topology_service, FAILOVER_READER_HANDLER* failover_reader_handler);
-    WRITER_FAILOVER_RESULT failover(TOPOLOGY_SERVICE* topology_service, FAILOVER_CONNECTION_HANDLER* connection_handler, FAILOVER_READER_HANDLER& failover_reader_handler);
+   public:
+    FAILOVER_WRITER_HANDLER(TOPOLOGY_SERVICE* topology_service,
+                            FAILOVER_READER_HANDLER* failover_reader_handler);
+    WRITER_FAILOVER_RESULT failover(
+        TOPOLOGY_SERVICE* topology_service,
+        FAILOVER_CONNECTION_HANDLER* connection_handler,
+        FAILOVER_READER_HANDLER& failover_reader_handler);
     ~FAILOVER_WRITER_HANDLER();
-protected: 
-    int read_topology_interval_ms = 5000;   // 5 sec
-    int reconnect_writer_interval_ms = 5000; // 5 sec
-    int writer_failover_timeout_ms = 300000; // 300 sec    TODO change it to something smaller e.g. - 60000; - 60 seconds, now for debuging is set to 5 minutes
-    // see if this function may need to be used in other places so move it to some 'util' or static, etc.
-    bool is_host_same(HOST_INFO* h1, HOST_INFO* h2);
-    void sleep(int miliseconds); // similarily this function maybe used in more places.
+
+   protected:
+    int read_topology_interval_ms = 5000;     // 5 sec
+    int reconnect_writer_interval_ms = 5000;  // 5 sec
+    int writer_failover_timeout_ms =
+        300000;  // 300 sec    TODO change it to something smaller e.g. - 60000;
+                 // - 60 seconds, now for debuging is set to 5 minutes
+    void sleep(int miliseconds);  // similarily this function maybe used in more
+                                  // places.
 };
 
 class FAILOVER_HANDLER {
-private:
+   private:
     DBC* dbc = nullptr;
     TOPOLOGY_SERVICE* topology_service;
     FAILOVER_READER_HANDLER* failover_reader_handler;
-    FAILOVER_WRITER_HANDLER* failover_writer_handler;      
-    std::vector<HOST_INFO*>* hosts = nullptr; //topology  - TODO not needed?
+    FAILOVER_WRITER_HANDLER* failover_writer_handler;
+    std::vector<HOST_INFO*>* hosts = nullptr;  // topology  - TODO not needed?
     HOST_INFO* current_host = nullptr;
     FAILOVER_CONNECTION_HANDLER* conn_handler = nullptr;
 
@@ -268,25 +276,27 @@ private:
     bool failover_to_writer(const char*& new_error_code);
     void refresh_topology();
 
-public:
+   public:
     FAILOVER_HANDLER(DBC* dbc, TOPOLOGY_SERVICE* topology_service);
-    bool trigger_failover_if_needed(const char* error_code, const char*& new_error_code);
+    bool trigger_failover_if_needed(const char* error_code,
+                                    const char*& new_error_code);
     ~FAILOVER_HANDLER();
 };
 
 // ************************************************************************************************
-// These are failover utilities/helpers. Perhaps belong to a separate header file, but here for now
-// 
+// These are failover utilities/helpers. Perhaps belong to a separate header
+// file, but here for now
+//
 
 // FAILOVER_SYNC enables synchronization between threads
 class FAILOVER_SYNC {
-public:
+   public:
     FAILOVER_SYNC();
     void mark_as_done();
     void wait_for_done();
     void wait_for_done(int milliseconds);
 
-private:
+   private:
     bool done_;
     std::mutex mutex_;
     std::condition_variable cond_var;
@@ -294,52 +304,78 @@ private:
 };
 
 class FAILOVER {
-public:
-    FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler, std::shared_ptr<TOPOLOGY_SERVICE> topology_service);
+   public:
+    FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+             std::shared_ptr<TOPOLOGY_SERVICE> topology_service);
     virtual ~FAILOVER();
     void cancel();
     bool is_canceled();
-    bool connected();
+    bool is_writer_connected();
     std::shared_ptr<MYSQL> get_connection();
 
-protected:
+   protected:
     bool connect(std::shared_ptr<HOST_INFO> host_info);
     void sleep(int miliseconds);
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
 
-private:
+   private:
     std::atomic_bool canceled;
-    std::shared_ptr<MYSQL> new_connection;  // TODO probably wrap this shared MYSQL pointer in some result class so all the methods and interfaces never show it directly
+    // TODO probably wrap this shared MYSQL pointer in some result class so all
+    // the methods and interfaces never show it directly
+    std::shared_ptr<MYSQL> new_connection;
 
     void close_connection();
 };
 
 class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
-public:  
-    RECONNECT_TO_WRITER_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler, std::shared_ptr<TOPOLOGY_SERVICE> topology_servicets, int connection_interval);
+   public:
+    RECONNECT_TO_WRITER_HANDLER(
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_servicets,
+        int connection_interval);
     ~RECONNECT_TO_WRITER_HANDLER();
 
-    WRITER_FAILOVER_RESULT operator()(std::shared_ptr<HOST_INFO> original_writer, FAILOVER_SYNC& f_sync);
-   
-private:
+    WRITER_FAILOVER_RESULT operator()(
+        const std::shared_ptr<HOST_INFO>& original_writer,
+        FAILOVER_SYNC& f_sync);
+
+   private:
     int reconnect_interval_ms;
 
-    bool is_current_host_writer(std::shared_ptr<HOST_INFO> original_writer, std::unique_ptr<CLUSTER_TOPOLOGY_INFO> latest_topology);
+    bool is_current_host_writer(
+        const std::shared_ptr<HOST_INFO>& original_writer,
+        const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& latest_topology);
 };
 
 class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
-public:
-    WAIT_NEW_WRITER_HANDLER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler, std::shared_ptr<TOPOLOGY_SERVICE> topology_service, FAILOVER_READER_HANDLER& failover_reader_handler, int connection_interval);
+   public:
+    WAIT_NEW_WRITER_HANDLER(
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+        std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
+        FAILOVER_READER_HANDLER& failover_reader_handler,
+        int connection_interval);
     ~WAIT_NEW_WRITER_HANDLER();
 
-    void operator()(FAILOVER_SYNC& f_sync);
-private:
-    int read_topology_interval_ms = 5000; // TODO - initialize in constructor and define constant for default value
-    FAILOVER_READER_HANDLER& reader_handler;
+    WRITER_FAILOVER_RESULT operator()(
+        const std::shared_ptr<HOST_INFO>& original_writer,
+        FAILOVER_SYNC& f_sync);
 
-    bool refresh_topology_and_connect_to_new_writer(std::shared_ptr<MYSQL> reader_connection);
-    std::shared_ptr<MYSQL> get_reader_connection();
+   private:
+    // TODO - initialize in constructor and define constant for default value
+    int read_topology_interval_ms = 5000;
+    FAILOVER_READER_HANDLER& reader_handler;
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
+    std::shared_ptr<MYSQL> reader_connection;  // To retrieve latest topology
+    std::shared_ptr<MYSQL> current_connection;
+    std::shared_ptr<HOST_INFO> current_reader_host;
+
+    void refresh_topology_and_connect_to_new_writer(
+        const std::shared_ptr<HOST_INFO>& original_writer);
+    void connect_to_reader();
+    bool connect_to_writer(const std::shared_ptr<HOST_INFO>& writer_candidate);
+    void clean_up_reader_connection();
 };
 
 #endif /* __FAILOVER_H__ */

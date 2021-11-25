@@ -232,19 +232,14 @@ TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
     topology_cache.clear();
 }
 
-std::unique_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
-    auto topology_info = get_from_cache();
-    if (topology_info) {
-        return std::make_unique<CLUSTER_TOPOLOGY_INFO>(*topology_info);
-    }
-
-    return std::unique_ptr<CLUSTER_TOPOLOGY_INFO>(nullptr);
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
+    return get_from_cache();
 }
 
 //TODO consider the return value
 //Note to determine whether or not force_update succeeded one would compare 
 // CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
-std::unique_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(std::shared_ptr<MYSQL> connection, bool force_update)
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(std::shared_ptr<MYSQL> connection, bool force_update)
 {
     //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
@@ -257,11 +252,7 @@ std::unique_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(std::share
         put_to_cache(topology_info);
     }
 
-    if (topology_info) {
-        return std::make_unique<CLUSTER_TOPOLOGY_INFO>(*topology_info);
-    }
-
-    return std::unique_ptr<CLUSTER_TOPOLOGY_INFO>(nullptr);
+    return topology_info;
 }
 
 // TODO consider thread safety and usage of pointers
@@ -447,4 +438,9 @@ bool HOST_INFO::is_host_writer() {
 }
 void HOST_INFO::mark_as_writer(bool writer) {
     is_writer = writer;
+}
+
+// Check if two host info have same instance name
+bool HOST_INFO::is_host_same(const std::shared_ptr<HOST_INFO>& h1, const std::shared_ptr<HOST_INFO>& h2) {
+    return h1->instance_name == h2->instance_name;
 }
