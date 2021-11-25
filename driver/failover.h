@@ -299,8 +299,7 @@ class FAILOVER_SYNC {
    private:
     bool done_;
     std::mutex mutex_;
-    std::condition_variable cond_var;
-    bool is_done();
+    std::condition_variable cv;
 };
 
 class FAILOVER {
