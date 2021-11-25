@@ -9,22 +9,24 @@
 #include "driver.h"
 
 // **** FAILOVER_SYNC ***************************************
-// used for thread syncronization
+// used for thread synchronization
 FAILOVER_SYNC::FAILOVER_SYNC() : done_{false} {}
 
 void FAILOVER_SYNC::mark_as_done() {
-    // TODO implement
+    std::lock_guard<std::mutex> lock(mutex_);
+    done_ = true;
+    cv.notify_one();
 }
 
 void FAILOVER_SYNC::wait_for_done() {
-    // TODO implement
+    std::unique_lock<std::mutex> lock(mutex_);
+    cv.wait(lock, [this] { return done_; });
 }
 
 void FAILOVER_SYNC::wait_for_done(int milliseconds) {
-    // TODO implement
+    std::unique_lock<std::mutex> lock(mutex_);
+    cv.wait_for(lock, std::chrono::milliseconds(milliseconds), [this] { return done_; });
 }
-
-bool FAILOVER_SYNC::is_done() { return done_; }
 
 // ************* FAILOVER ***********************************
 // Base class of two writer failover task handlers
