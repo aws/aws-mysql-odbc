@@ -6,6 +6,15 @@
 #include <stdio.h>  // temporary for quick printfs
 #include "failover.h"
 
+/**
+  Initialize and return random number.
+
+  Returns random number.
+ */
+int get_random_number() {
+    std::srand(time(nullptr));
+    return rand();
+}
 
 CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO() {
     update_time();

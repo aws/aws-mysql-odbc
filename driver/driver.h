@@ -37,7 +37,7 @@
 #include "../MYODBC_MYSQL.h"
 #include "../MYODBC_CONF.h"
 #include "../MYODBC_ODBC.h"
-#include "installer.h"
+#include "util/installer.h"
 #include "failover.h"
 #include "connect.h"
 class FAILOVER_HANDLER;
@@ -1241,7 +1241,7 @@ void          delete_param_bind(DYNAMIC_ARRAY *param_bind);
 
 
 #include "myutil.h"
-#include "stringutil.h"
+#include "util/stringutil.h"
 
 
 SQLRETURN SQL_API MySQLColAttribute(SQLHSTMT hstmt, SQLUSMALLINT column,
