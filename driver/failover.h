@@ -182,7 +182,7 @@ public:
     virtual ~FAILOVER_CONNECTION_HANDLER();
 
     MYSQL* connect(/*required info*/ HOST_INFO* = NULL); // should use original host if NULL passed to connect?
-    void update_connection(MYSQL* new_conn);
+    void update_connection(std::shared_ptr<MYSQL> new_connection);
     void release_connection(MYSQL* mysql);
 
 private:
@@ -227,22 +227,25 @@ struct WRITER_FAILOVER_RESULT {
 
 class FAILOVER_WRITER_HANDLER {
    public:
-    FAILOVER_WRITER_HANDLER(TOPOLOGY_SERVICE* topology_service,
-                            FAILOVER_READER_HANDLER* failover_reader_handler);
+    FAILOVER_WRITER_HANDLER(
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+        std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+        int writer_failover_timeout_ms, int read_topology_interval_ms,
+        int reconnect_writer_interval_ms);
     WRITER_FAILOVER_RESULT failover(
-        TOPOLOGY_SERVICE* topology_service,
-        FAILOVER_CONNECTION_HANDLER* connection_handler,
-        FAILOVER_READER_HANDLER& failover_reader_handler);
+        std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology);
     ~FAILOVER_WRITER_HANDLER();
 
    protected:
     int read_topology_interval_ms = 5000;     // 5 sec
     int reconnect_writer_interval_ms = 5000;  // 5 sec
-    int writer_failover_timeout_ms =
-        300000;  // 300 sec    TODO change it to something smaller e.g. - 60000;
-                 // - 60 seconds, now for debuging is set to 5 minutes
-    void sleep(int miliseconds);  // similarily this function maybe used in more
-                                  // places.
+    int writer_failover_timeout_ms = 60000;   // 60 sec
+
+   private:
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
+    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
+    std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
 };
 
 class FAILOVER_HANDLER {
@@ -353,7 +356,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
-        FAILOVER_READER_HANDLER& failover_reader_handler,
+        std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
         int connection_interval);
     ~WAIT_NEW_WRITER_HANDLER();
 
@@ -364,7 +367,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
    private:
     // TODO - initialize in constructor and define constant for default value
     int read_topology_interval_ms = 5000;
-    FAILOVER_READER_HANDLER& reader_handler;
+    std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
     std::shared_ptr<MYSQL> reader_connection;  // To retrieve latest topology
     std::shared_ptr<MYSQL> current_connection;
