@@ -13,7 +13,8 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, TOPOLOGY_SERVICE* topology_service)
 	this->dbc = dbc;
 	this->topology_service = topology_service;
 	this->failover_reader_handler = new FAILOVER_READER_HANDLER(topology_service);
-	this->failover_writer_handler = new FAILOVER_WRITER_HANDLER(topology_service, this->failover_reader_handler);
+	// TODO Change parameters to shared pointers
+	//this->failover_writer_handler = new FAILOVER_WRITER_HANDLER(topology_service, this->failover_reader_handler);
 	this->current_host = nullptr;
 	this->conn_handler = new FAILOVER_CONNECTION_HANDLER(dbc);
 
