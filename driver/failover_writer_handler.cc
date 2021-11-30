@@ -4,6 +4,7 @@
 */
 
 #include <chrono>
+#include <future>
 #include <thread>
 
 #include "driver.h"
@@ -37,6 +38,7 @@ FAILOVER::FAILOVER(
       topology_service{topology_service},
       new_connection{nullptr},
       canceled{false} {}
+
 FAILOVER::~FAILOVER() { close_connection(); }
 
 void FAILOVER::cancel() { canceled = true; }
@@ -80,6 +82,7 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
                 if (latest_topology->total_hosts() > 0 &&
                     is_current_host_writer(original_writer, latest_topology)) {
                     topology_service->unmark_host_down(original_writer);
+                    f_sync.mark_as_done();
                     return WRITER_FAILOVER_RESULT{true, false, latest_topology,
                                                   conn};
                 }
@@ -87,6 +90,7 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
             sleep(reconnect_interval_ms);
         }
     }
+    // Another thread finishes or both timeout, this thread is canceled
     f_sync.mark_as_done();
     return WRITER_FAILOVER_RESULT{false, false, nullptr, nullptr};
 }
@@ -108,10 +112,11 @@ WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
-    FAILOVER_READER_HANDLER& failover_reader_handler, int connection_interval)
+    std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
+    int connection_interval)
     : FAILOVER{connection_handler, topology_service},
       current_topology{current_topology},
-      reader_handler{failover_reader_handler},
+      reader_handler{reader_handler},
       read_topology_interval_ms{connection_interval} {}
 
 WAIT_NEW_WRITER_HANDLER::~WAIT_NEW_WRITER_HANDLER() {}
@@ -130,7 +135,7 @@ WRITER_FAILOVER_RESULT WAIT_NEW_WRITER_HANDLER::operator()(
         }
     }
     clean_up_reader_connection();
-    // Another thread finishes, this thread is canceled
+    // Another thread finishes or both timeout, this thread is canceled
     f_sync.mark_as_done();
     return WRITER_FAILOVER_RESULT{false, false, nullptr, nullptr};
 }
@@ -139,7 +144,7 @@ WRITER_FAILOVER_RESULT WAIT_NEW_WRITER_HANDLER::operator()(
 void WAIT_NEW_WRITER_HANDLER::connect_to_reader() {
     while (!is_canceled()) {
         auto connection_result =
-            reader_handler.getReaderConnection(current_topology);
+            reader_handler->getReaderConnection(current_topology);
         if (connection_result.is_connected &&
             connection_result.new_host_connection != nullptr) {
             reader_connection = connection_result.new_host_connection;
@@ -193,24 +198,66 @@ void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
 
 // ****************FAILOVER_WRITER_HANDLER  ************************************
 FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
-    TOPOLOGY_SERVICE* topology_service,
-    FAILOVER_READER_HANDLER* failover_reader_handler)
-    : read_topology_interval_ms{5000}  // 5 sec
-{}
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+    std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
+    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+    int writer_failover_timeout_ms, int read_topology_interval_ms,
+    int reconnect_writer_interval_ms)
+    : topology_service{topology_service},
+      reader_handler{reader_handler},
+      connection_handler{connection_handler},
+      writer_failover_timeout_ms{writer_failover_timeout_ms},
+      read_topology_interval_ms{read_topology_interval_ms},
+      reconnect_writer_interval_ms{reconnect_writer_interval_ms} {}
 
 FAILOVER_WRITER_HANDLER::~FAILOVER_WRITER_HANDLER() {}
 
-void FAILOVER_WRITER_HANDLER::sleep(int miliseconds) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
-}
-
-// see how this is used, but potentially set the TOPOLOGY_SERVICE* ts,
-// FAILOVER_CONNECTION_HANDLER* conn_handler in constructor and use memeber
-// variables
 WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
-    TOPOLOGY_SERVICE* topology_service,
-    FAILOVER_CONNECTION_HANDLER* conn_handler,
-    FAILOVER_READER_HANDLER& failover_reader_handler) {
-    // TODO implement
-    return WRITER_FAILOVER_RESULT{};
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology) {
+    if (!current_topology || current_topology->total_hosts() == 0) {
+        return WRITER_FAILOVER_RESULT{false, false, nullptr, nullptr};
+    }
+
+    FAILOVER_SYNC failover_sync;
+    // Constructing the function objects
+    RECONNECT_TO_WRITER_HANDLER reconnect_handler(
+        connection_handler, topology_service, reconnect_writer_interval_ms);
+    WAIT_NEW_WRITER_HANDLER new_writer_handler(
+        connection_handler, topology_service, current_topology, reader_handler,
+        read_topology_interval_ms);
+
+    auto original_writer = current_topology->get_writer();
+    topology_service->mark_host_down(original_writer);
+
+    // Try reconnecting to the original writer host
+    auto reconnect_future =
+        std::async(std::launch::async, std::ref(reconnect_handler),
+                   std::cref(original_writer), std::ref(failover_sync));
+    // Concurrently see if topology has changed and try connecting to a new writer
+    auto new_writer_future =
+        std::async(std::launch::async, std::ref(new_writer_handler),
+                   std::cref(original_writer), std::ref(failover_sync));
+
+    failover_sync.wait_for_done(writer_failover_timeout_ms);
+
+    // NOTE: Calling cancel on the handlers below indicates to the executing
+    // handlers stop what they're doing and return.
+    // If the handlers were at the point that they had a valid connection,
+    // cancel does not release this connection so it can be retrieved after
+    // calls to future.get(). cancel has no effect if the thread function has
+    // already completed.
+    reconnect_handler.cancel();
+    new_writer_handler.cancel();
+
+    auto reconnect_result = reconnect_future.get();
+    auto new_writer_result = new_writer_future.get();
+
+    if (reconnect_result.connected) {
+        return reconnect_result;
+    } else if (new_writer_result.connected) {
+        return new_writer_result;
+    } else {
+        // timeout
+        return WRITER_FAILOVER_RESULT{false, false, nullptr, nullptr};
+    }
 }
