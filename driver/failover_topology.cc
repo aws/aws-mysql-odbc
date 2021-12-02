@@ -316,7 +316,6 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
     //TODO check cluster_instance_host for NULL, or decide what is needed out of it
     std::shared_ptr<HOST_INFO> host_info = std::make_shared<HOST_INFO>(
         HOST_INFO(
-            "", // TODO not putting the URL yet, maybe not necessary.
             host_endpoint,
             cluster_instance_host->get_port()
         ));
@@ -384,22 +383,19 @@ std::string TOPOLOGY_SERVICE::get_host_endpoint(const char* node_name) {
 // Move the implementation to it's own file
 
 HOST_INFO::HOST_INFO()
-    : HOST_INFO("", "", -1)
+    : HOST_INFO("", -1)
 {
-    //this(null, null, NO_PORT, null, null, true, null);
 }
 
-HOST_INFO::HOST_INFO(std::string url, std::string host, int port)
-    : original_url{ url }, host{ host }, port{ port }, host_state{ UP }, is_writer{ false }
+HOST_INFO::HOST_INFO(std::string host, int port)
+    : host{ host }, port{ port }, host_state{ UP }, is_writer{ false }
 {
-
 }
 
 // would need some checks for nulls
-HOST_INFO::HOST_INFO(const char* url, const char* host, int port)
-    : original_url{ url }, host{ host }, port{ port }, host_state{ UP }, is_writer{ false }
+HOST_INFO::HOST_INFO(const char* host, int port)
+    : host{ host }, port{ port }, host_state{ UP }, is_writer{ false }
 {
-
 }
 
 /**
