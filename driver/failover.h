@@ -29,8 +29,8 @@ enum HOST_STATE { UP, DOWN };
 struct HOST_INFO {
     HOST_INFO();
     //TODO - probably choose one of the following constructors, or more precisely choose which data type they should take
-    HOST_INFO(std::string url, std::string host, int port);
-    HOST_INFO(const char* url, const char* host, int port);
+    HOST_INFO(std::string host, int port);
+    HOST_INFO(const char* host, int port);
     const int NO_PORT = -1;
 
     int get_port();
@@ -51,7 +51,6 @@ struct HOST_INFO {
 
 private:
     const std::string HOST_PORT_SEPARATOR = ":";  
-    const std::string original_url;
     const std::string host;
     const int port;
 
