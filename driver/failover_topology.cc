@@ -252,16 +252,19 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(std::share
 {
     //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
-    auto topology_info = get_from_cache();
-    if (!topology_info
+    auto cached_topology = get_from_cache();
+    if (!cached_topology
         || force_update
-        || refresh_needed(topology_info->time_last_updated()))
+        || refresh_needed(cached_topology->time_last_updated()))
     {
-        topology_info = query_for_topology(connection);
-        put_to_cache(topology_info);
+        auto latest_topology = query_for_topology(connection);
+        if (latest_topology) {
+            put_to_cache(latest_topology);
+            return latest_topology;
+        }
     }
 
-    return topology_info;
+    return cached_topology;
 }
 
 // TODO consider thread safety and usage of pointers
@@ -274,8 +277,6 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_from_cache() {
 
 // TODO consider thread safety and usage of pointers
 void TOPOLOGY_SERVICE::put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info) {
-    if (!topology_info)
-        return;
     if (!topology_cache.empty())
     {
         auto result = topology_cache.find(cluster_id);
