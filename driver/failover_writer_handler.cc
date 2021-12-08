@@ -3,11 +3,11 @@
   @brief Failover functions.
 */
 
+#include "failover.h"
+
 #include <chrono>
 #include <future>
 #include <thread>
-
-#include "driver.h"
 
 // **** FAILOVER_SYNC ***************************************
 // used for thread synchronization
@@ -48,8 +48,7 @@ bool FAILOVER::is_canceled() { return canceled; }
 bool FAILOVER::is_writer_connected() { return new_connection != nullptr; }
 
 bool FAILOVER::connect(std::shared_ptr<HOST_INFO> host_info) {
-    new_connection =
-        std::make_shared<MYSQL>(*connection_handler->connect(host_info.get()));
+    new_connection = connection_handler->connect(host_info);
     return new_connection != nullptr;
 }
 
@@ -192,7 +191,7 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
 // connection)
 void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
     if (reader_connection && current_connection != reader_connection) {
-        connection_handler->release_connection(reader_connection.get());
+        connection_handler->release_connection(reader_connection);
     }
 }
 

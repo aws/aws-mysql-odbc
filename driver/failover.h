@@ -176,25 +176,19 @@ protected:
 };
 
 class FAILOVER_CONNECTION_HANDLER {
-public:
-    FAILOVER_CONNECTION_HANDLER(DBC* dbc);
+   public:
+    FAILOVER_CONNECTION_HANDLER(std::shared_ptr<DBC> dbc);
     virtual ~FAILOVER_CONNECTION_HANDLER();
 
-    MYSQL* connect(/*required info*/ HOST_INFO* = NULL); // should use original host if NULL passed to connect?
+    std::shared_ptr<MYSQL> connect(std::shared_ptr<HOST_INFO> host_info);
     void update_connection(std::shared_ptr<MYSQL> new_connection);
-    void release_connection(MYSQL* mysql);
+    void release_connection(std::shared_ptr<MYSQL> mysql);
 
-private:
-    // originalHost information maybe here or maybe does not belong here. 
-    // The idea is that if no topology is available, re-connection may be attempted using initial user supplied information.
-    // just by caling connect(). This could be passed as a prameter to connect, but if used by failover handlers, they
-    // would need original host informatin as well, while the FAILOVER_CONNECTION_HANDLER is passed to them. Unless, like in JDBC the original URL is
-    // part of HOST_INFO
-    HOST_INFO* original_host; 
-    DBC* dbc;
-    
-    DBC* clone_dbc(DBC* source_dbc);
-    void release_dbc(DBC* dbc);
+   private:
+    std::shared_ptr<DBC> dbc;
+
+    std::shared_ptr<DBC> clone_dbc(std::shared_ptr<DBC> source_dbc);
+    void release_dbc(std::shared_ptr<DBC> dbc_clone);
 };
 
 struct READER_FAILOVER_RESULT {
@@ -255,7 +249,7 @@ class FAILOVER_HANDLER {
     FAILOVER_WRITER_HANDLER* failover_writer_handler;
     std::vector<HOST_INFO*>* hosts = nullptr;  // topology  - TODO not needed?
     HOST_INFO* current_host = nullptr;
-    FAILOVER_CONNECTION_HANDLER* conn_handler = nullptr;
+    FAILOVER_CONNECTION_HANDLER* connection_handler = nullptr;
 
     bool is_cluster_topology_available = false;
     bool is_multi_writer_cluster = false;

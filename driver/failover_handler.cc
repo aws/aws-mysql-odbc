@@ -8,15 +8,15 @@
 #include <sstream>
 #include <regex>
 
-//TODO: implement
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, TOPOLOGY_SERVICE* topology_service) {
 	this->dbc = dbc;
 	this->topology_service = topology_service;
+	// TODO Change parameters to shared pointers
+	//this->connection_handler = new FAILOVER_CONNECTION_HANDLER(dbc);
 	this->failover_reader_handler = new FAILOVER_READER_HANDLER(topology_service);
 	// TODO Change parameters to shared pointers
 	//this->failover_writer_handler = new FAILOVER_WRITER_HANDLER(topology_service, this->failover_reader_handler);
 	this->current_host = nullptr;
-	this->conn_handler = new FAILOVER_CONNECTION_HANDLER(dbc);
 
 	init_cluster_info();
 }
@@ -127,7 +127,7 @@ void FAILOVER_HANDLER::refresh_topology() {
 }
 
 FAILOVER_HANDLER::~FAILOVER_HANDLER() {
-	if (conn_handler != NULL) {
-		delete conn_handler;
+	if (connection_handler != NULL) {
+		delete connection_handler;
 	}
 }

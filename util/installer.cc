@@ -1785,3 +1785,183 @@ ulong ds_get_options(DataSource *ds)
 
   return options;
 }
+
+/*
+ *  copy values from ds_source to ds
+ */
+void ds_copy(DataSource *ds, DataSource *ds_source) {
+    if (ds == NULL || ds_source == NULL) {
+        return;
+    }
+
+    if (ds_source->name != nullptr) {
+        ds_set_strnattr(&ds->name, ds_source->name,
+                        sqlwcharlen(ds_source->name));
+
+        // probably don't need to set the '8' variables, they seem to be set as
+        // needed based on the non - '8', but it would look like this
+        if (ds_source->name8 != nullptr) {
+            ds_get_utf8attr(ds->name, &ds->name8);
+        }
+    }
+    if (ds_source->driver != nullptr) {
+        ds_set_strnattr(&ds->driver, ds_source->driver,
+                        sqlwcharlen(ds_source->driver));
+    }
+    if (ds_source->description != nullptr) {
+        ds_set_strnattr(&ds->description, ds_source->description,
+                        sqlwcharlen(ds_source->description));
+    }
+    if (ds_source->server != nullptr) {
+        ds_set_strnattr(&ds->server, ds_source->server,
+                        sqlwcharlen(ds_source->server));
+    }
+    if (ds_source->uid != nullptr) {
+        ds_set_strnattr(&ds->uid, ds_source->uid, sqlwcharlen(ds_source->uid));
+    }
+    if (ds_source->pwd != nullptr) {
+        ds_set_strnattr(&ds->pwd, ds_source->pwd, sqlwcharlen(ds_source->pwd));
+    }
+    if (ds_source->database != nullptr) {
+        ds_set_strnattr(&ds->database, ds_source->database,
+                        sqlwcharlen(ds_source->database));
+    }
+    if (ds_source->socket != nullptr) {
+        ds_set_strnattr(&ds->socket, ds_source->socket,
+                        sqlwcharlen(ds_source->socket));
+    }
+    if (ds_source->initstmt != nullptr) {
+        ds_set_strnattr(&ds->initstmt, ds_source->initstmt,
+                        sqlwcharlen(ds_source->initstmt));
+    }
+    if (ds_source->charset != nullptr) {
+        ds_set_strnattr(&ds->charset, ds_source->charset,
+                        sqlwcharlen(ds_source->charset));
+    }
+    if (ds_source->sslkey != nullptr) {
+        ds_set_strnattr(&ds->sslkey, ds_source->sslkey,
+                        sqlwcharlen(ds_source->sslkey));
+    }
+    if (ds_source->sslcert != nullptr) {
+        ds_set_strnattr(&ds->sslcert, ds_source->sslcert,
+                        sqlwcharlen(ds_source->sslcert));
+    }
+    if (ds_source->sslca != nullptr) {
+        ds_set_strnattr(&ds->sslca, ds_source->sslca,
+                        sqlwcharlen(ds_source->sslca));
+    }
+    if (ds_source->sslcapath != nullptr) {
+        ds_set_strnattr(&ds->sslcapath, ds_source->sslcapath,
+                        sqlwcharlen(ds_source->sslcapath));
+    }
+    if (ds_source->sslcipher != nullptr) {
+        ds_set_strnattr(&ds->sslcipher, ds_source->sslcipher,
+                        sqlwcharlen(ds_source->sslcipher));
+    }
+    if (ds_source->sslmode != nullptr) {
+        ds_set_strnattr(&ds->sslmode, ds_source->sslmode,
+                        sqlwcharlen(ds_source->sslmode));
+    }
+    if (ds_source->rsakey != nullptr) {
+        ds_set_strnattr(&ds->rsakey, ds_source->rsakey,
+                        sqlwcharlen(ds_source->rsakey));
+    }
+    if (ds_source->savefile != nullptr) {
+        ds_set_strnattr(&ds->savefile, ds_source->savefile,
+                        sqlwcharlen(ds_source->savefile));
+    }
+    if (ds_source->plugin_dir != nullptr) {
+        ds_set_strnattr(&ds->plugin_dir, ds_source->plugin_dir,
+                        sqlwcharlen(ds_source->plugin_dir));
+    }
+    if (ds_source->default_auth != nullptr) {
+        ds_set_strnattr(&ds->default_auth, ds_source->default_auth,
+                        sqlwcharlen(ds_source->default_auth));
+    }
+    if (ds_source->load_data_local_dir != nullptr) {
+        ds_set_strnattr(&ds->load_data_local_dir,
+                        ds_source->load_data_local_dir,
+                        sqlwcharlen(ds_source->load_data_local_dir));
+    }
+
+    ds->has_port = ds_source->has_port;
+    ds->port = ds_source->port;
+    ds->readtimeout = ds_source->readtimeout;
+    ds->writetimeout = ds_source->writetimeout;
+    ds->clientinteractive = ds_source->clientinteractive;
+
+    /*  */
+    ds->return_matching_rows = ds_source->return_matching_rows;
+    ds->allow_big_results = ds_source->allow_big_results;
+    ds->use_compressed_protocol = ds_source->use_compressed_protocol;
+    ds->change_bigint_columns_to_int = ds_source->change_bigint_columns_to_int;
+    ds->safe = ds_source->safe;
+    ds->auto_reconnect = ds_source->auto_reconnect;
+    ds->auto_increment_null_search = ds_source->auto_increment_null_search;
+    ds->handle_binary_as_char = ds_source->handle_binary_as_char;
+    ds->can_handle_exp_pwd = ds_source->can_handle_exp_pwd;
+    ds->enable_cleartext_plugin = ds_source->enable_cleartext_plugin;
+    ds->get_server_public_key = ds_source->get_server_public_key;
+    /*  */
+    ds->dont_prompt_upon_connect = ds_source->dont_prompt_upon_connect;
+    ds->dynamic_cursor = ds_source->dynamic_cursor;
+    ds->user_manager_cursor = ds_source->user_manager_cursor;
+    ds->dont_use_set_locale = ds_source->dont_use_set_locale;
+    ds->pad_char_to_full_length = ds_source->pad_char_to_full_length;
+    ds->dont_cache_result = ds_source->dont_cache_result;
+    /*  */
+    ds->return_table_names_for_SqlDescribeCol =
+        ds_source->return_table_names_for_SqlDescribeCol;
+    ds->ignore_space_after_function_names =
+        ds_source->ignore_space_after_function_names;
+    ds->force_use_of_named_pipes = ds_source->force_use_of_named_pipes;
+    ds->no_catalog = ds_source->no_catalog;
+    ds->read_options_from_mycnf = ds_source->read_options_from_mycnf;
+    ds->disable_transactions = ds_source->disable_transactions;
+    ds->force_use_of_forward_only_cursors =
+        ds_source->force_use_of_forward_only_cursors;
+    ds->allow_multiple_statements = ds_source->allow_multiple_statements;
+    ds->limit_column_size = ds_source->limit_column_size;
+
+    ds->min_date_to_zero = ds_source->min_date_to_zero;
+    ds->zero_date_to_min = ds_source->zero_date_to_min;
+    ds->default_bigint_bind_str = ds_source->default_bigint_bind_str;
+    /* debug */
+    ds->save_queries = ds_source->save_queries;
+    /* SSL */
+    ds->sslverify = ds_source->sslverify;
+    ds->cursor_prefetch_number = ds_source->cursor_prefetch_number;
+    ds->no_ssps = ds_source->no_ssps;
+
+    ds->no_tls_1_2 = ds_source->no_tls_1_2;
+    ds->no_tls_1_3 = ds_source->no_tls_1_3;
+
+    ds->no_date_overflow = ds_source->no_date_overflow;
+    ds->enable_local_infile = ds_source->enable_local_infile;
+
+    ds->enable_dns_srv = ds_source->enable_dns_srv;
+    ds->multi_host = ds_source->multi_host;
+
+    /* Failover */
+    if (ds_source->host_pattern != nullptr) {
+        ds_set_strnattr(&ds->host_pattern, ds_source->host_pattern,
+                        sqlwcharlen(ds_source->host_pattern));
+    }
+    if (ds_source->cluster_id != nullptr) {
+        ds_set_strnattr(&ds->cluster_id, ds_source->cluster_id,
+                        sqlwcharlen(ds_source->cluster_id));
+    }
+
+    ds->disable_cluster_failover = ds_source->disable_cluster_failover;
+    ds->gather_perf_metrics = ds_source->gather_perf_metrics;
+    ds->topology_refresh_rate = ds_source->topology_refresh_rate;
+    ds->failover_timeout = ds_source->failover_timeout;
+    ds->failover_topology_refresh_rate =
+        ds_source->failover_topology_refresh_rate;
+    ds->failover_writer_reconnect_interval =
+        ds_source->failover_writer_reconnect_interval;
+    ds->failover_reader_connect_timeout =
+        ds_source->failover_reader_connect_timeout;
+    ds->connect_timeout = ds_source->connect_timeout;
+    ds->network_timeout = ds_source->network_timeout;
+}
