@@ -142,11 +142,10 @@ WRITER_FAILOVER_RESULT WAIT_NEW_WRITER_HANDLER::operator()(
 // Connect to a reader to later retrieve the latest topology
 void WAIT_NEW_WRITER_HANDLER::connect_to_reader() {
     while (!is_canceled()) {
-        auto connection_result =
-            reader_handler->getReaderConnection(current_topology);
-        if (connection_result.is_connected &&
-            connection_result.new_host_connection != nullptr) {
-            reader_connection = connection_result.new_host_connection;
+        auto connection_result = reader_handler->get_reader_connection(
+            current_topology, [this] { return is_canceled(); });
+        if (connection_result.connected && connection_result.new_connection) {
+            reader_connection = connection_result.new_connection;
             current_reader_host = connection_result.new_host;
             break;
         }

@@ -61,8 +61,8 @@ int CLUSTER_TOPOLOGY_INFO::num_readers() {
     return readers.size();
 }
 
-std::time_t CLUSTER_TOPOLOGY_INFO::time_last_updated() { 
-    return last_updated; 
+std::time_t CLUSTER_TOPOLOGY_INFO::time_last_updated() {
+    return last_updated;
 }
 
 // TODO harmonize time function across objects so the times are comparable
@@ -104,6 +104,14 @@ std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_reader(int i) {
     }
 
     return readers[i];
+}
+
+std::vector<std::shared_ptr<HOST_INFO>> CLUSTER_TOPOLOGY_INFO::get_readers() {
+    return readers;
+}
+
+std::vector<std::shared_ptr<HOST_INFO>> CLUSTER_TOPOLOGY_INFO::get_writers() {
+    return writers;
 }
 
 std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_last_used_reader() {
@@ -152,8 +160,8 @@ void TOPOLOGY_SERVICE::set_cluster_instance_template(std::shared_ptr<HOST_INFO> 
 
 }
 
-void TOPOLOGY_SERVICE::set_refresh_rate(int refresh_rate) { 
-    refresh_rate_in_milliseconds = refresh_rate; 
+void TOPOLOGY_SERVICE::set_refresh_rate(int refresh_rate) {
+    refresh_rate_in_milliseconds = refresh_rate;
 }
 
 std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::get_last_used_reader() {
@@ -178,7 +186,7 @@ void TOPOLOGY_SERVICE::set_last_used_reader(std::shared_ptr<HOST_INFO> reader) {
 
 std::set<std::string> TOPOLOGY_SERVICE::get_down_hosts() {
     std::set<std::string> down_hosts;
-    
+
     std::unique_lock<std::mutex> lock(topology_cache_mutex);
     auto topology_info = get_from_cache();
     if (topology_info) {
@@ -193,14 +201,14 @@ void TOPOLOGY_SERVICE::mark_host_down(std::shared_ptr<HOST_INFO> down_host) {
     if (!down_host) {
         return;
     }
-    
+
     std::unique_lock<std::mutex> lock(topology_cache_mutex);
-    
+
     auto topology_info = get_from_cache();
     if (topology_info) {
         topology_info->mark_host_down(down_host);
     }
-    
+
     lock.unlock();
 }
 
@@ -208,14 +216,14 @@ void TOPOLOGY_SERVICE::unmark_host_down(std::shared_ptr<HOST_INFO> host) {
     if (!host) {
         return;
     }
-    
+
     std::unique_lock<std::mutex> lock(topology_cache_mutex);
-    
+
     auto topology_info = get_from_cache();
     if (topology_info) {
         topology_info->unmark_host_down(host);
     }
-    
+
     lock.unlock();
 }
 
@@ -246,7 +254,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
 }
 
 //TODO consider the return value
-//Note to determine whether or not force_update succeeded one would compare 
+//Note to determine whether or not force_update succeeded one would compare
 // CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
 std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(std::shared_ptr<MYSQL> connection, bool force_update)
 {
@@ -299,7 +307,7 @@ bool TOPOLOGY_SERVICE::refresh_needed(std::time_t last_updated) {
 
 std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 
-    //TEMP and TODO figure out how to fetch values from row by name, not by ordinal for now this enum is matching 
+    //TEMP and TODO figure out how to fetch values from row by name, not by ordinal for now this enum is matching
     // order of columns in the query
     enum COLUMNS {
         SERVER_ID,
@@ -377,7 +385,7 @@ std::string TOPOLOGY_SERVICE::get_host_endpoint(const char* node_name) {
 
 // **************** HOST_INFO ******************************************************************
 
-//TDOO 
+// TODO
 // the entire HOST_INFO needs to be reviewed based on needed interfaces and other objects like CLUSTER_TOPOLOGY_INFO
 // most/all of the HOST_INFO potentially could be internal to CLUSTER_TOPOLOGY_INFO and specfic information may be accessed
 // through CLUSTER_TOPOLOGY_INFO
@@ -437,6 +445,14 @@ HOST_STATE HOST_INFO::get_host_state() {
 
 void HOST_INFO::set_host_state(HOST_STATE state) {
     host_state = state;
+}
+
+bool HOST_INFO::is_host_up() {
+    return host_state == UP;
+}
+
+bool HOST_INFO::is_host_down() {
+    return host_state == DOWN;
 }
 
 bool HOST_INFO::is_host_writer() {

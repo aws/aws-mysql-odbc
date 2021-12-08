@@ -15,7 +15,7 @@
 #include <map>
 #include <set>
 #include <ctime>
-#include <functional> 
+#include <functional>
 #include <condition_variable>
 
 #include <mysql.h>
@@ -24,8 +24,8 @@ struct DBC;
 
 enum HOST_STATE { UP, DOWN };
 
-//TODO Think about char types. Using strings for now, but should SQLCHAR *, or CHAR * be employed? 
-//Most of the strings are for internal failover things
+// TODO Think about char types. Using strings for now, but should SQLCHAR *, or CHAR * be employed?
+// Most of the strings are for internal failover things
 struct HOST_INFO {
     HOST_INFO();
     //TODO - probably choose one of the following constructors, or more precisely choose which data type they should take
@@ -39,6 +39,8 @@ struct HOST_INFO {
     bool equal_host_port_pair(HOST_INFO& hi);
     HOST_STATE get_host_state();
     void set_host_state(HOST_STATE state);
+    bool is_host_up();
+    bool is_host_down();
     bool is_host_writer();
     void mark_as_writer(bool writer);
     static bool is_host_same(const std::shared_ptr<HOST_INFO>& h1, const std::shared_ptr<HOST_INFO>& h2);
@@ -62,7 +64,6 @@ private:
 // Cluster topology consists of an instance endpoint, a set of nodes in the cluster,
 // the type of each node in the cluster, and the status of each node in the cluster.
 class CLUSTER_TOPOLOGY_INFO {
-
 public:
     CLUSTER_TOPOLOGY_INFO();
     CLUSTER_TOPOLOGY_INFO(const CLUSTER_TOPOLOGY_INFO& src_info); //copy constructor
@@ -76,20 +77,22 @@ public:
 
     std::shared_ptr<HOST_INFO> get_writer();
     std::shared_ptr<HOST_INFO> get_next_reader();
-    // TODO - Ponder if the get_reader below is needed. In general user of this should not need to deal with indexes. 
+    // TODO - Ponder if the get_reader below is needed. In general user of this should not need to deal with indexes.
     // One case that comes to mind, if we were to try to do a random shuffle of readers or hosts in general like JDBC driver
     // we could do random shuffle of host indices and call the get_reader for specific index in order we wanted.
     std::shared_ptr<HOST_INFO> get_reader(int i);
-   
+    std::vector<std::shared_ptr<HOST_INFO>> get_writers();
+    std::vector<std::shared_ptr<HOST_INFO>> get_readers();
+
 private:
-    int current_reader = -1; 
-    std::time_t last_updated; 
+    int current_reader = -1;
+    std::time_t last_updated;
     std::set<std::string> down_hosts; // maybe not needed, HOST_INFO has is_host_down() method
     //std::vector<HOST_INFO*> hosts;
     std::shared_ptr<HOST_INFO> last_used_reader;  // TODO perhaps this overlaps with current_reader and is not needed
 
-    // TODO - can we do without pointers - 
-    // perhaps ok for now, we are using copies CLUSTER_TOPOLOGY_INFO returned by get_topology and get_cached_topology from TOPOLOGY_SERVICE. 
+    // TODO - can we do without pointers -
+    // perhaps ok for now, we are using copies CLUSTER_TOPOLOGY_INFO returned by get_topology and get_cached_topology from TOPOLOGY_SERVICE.
     // However, perhaps smart shared pointers could be used.
     std::vector<std::shared_ptr<HOST_INFO>> writers;
     std::vector<std::shared_ptr<HOST_INFO>> readers;
@@ -105,8 +108,7 @@ private:
 };
 
 
-class TOPOLOGY_SERVICE
-{
+class TOPOLOGY_SERVICE {
 public:
     TOPOLOGY_SERVICE();
     virtual ~TOPOLOGY_SERVICE();
@@ -133,8 +135,7 @@ public:
     const std::string INSTANCE_NAME = "TOPOLOGY_SERVICE_SERVER_ID";
 
 private:
-
-    //TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.
+    // TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.
     const int DEFAULT_REFRESH_RATE_IN_MILLISECONDS = 30000;
     const int DEFAULT_CACHE_EXPIRE_MS = 5 * 60 * 1000; // 5 min
 
@@ -156,12 +157,12 @@ private:
 protected:
     const int NO_CONNECTION_INDEX = -1;
     int refresh_rate_in_milliseconds;
-    
+
     std::string cluster_id;
     std::shared_ptr<HOST_INFO> cluster_instance_host;
 
-    //TODO performance metrics
-    //bool gather_perf_Metrics = false;
+    // TODO performance metrics
+    // bool gather_perf_Metrics = false;
 
     std::map<std::string, std::shared_ptr<CLUSTER_TOPOLOGY_INFO>> topology_cache;
     std::mutex topology_cache_mutex;
@@ -192,21 +193,34 @@ class FAILOVER_CONNECTION_HANDLER {
 };
 
 struct READER_FAILOVER_RESULT {
-    bool is_connected;
-    std::vector<HOST_INFO*>* new_hosts;
+    bool connected;
     std::shared_ptr<HOST_INFO> new_host;
-    std::shared_ptr<MYSQL> new_host_connection;
+    std::shared_ptr<MYSQL> new_connection;
 };
 
 class FAILOVER_READER_HANDLER {
-public:
-    FAILOVER_READER_HANDLER(TOPOLOGY_SERVICE* topology_service);
-    READER_FAILOVER_RESULT failover(std::vector<HOST_INFO*>* hosts, HOST_INFO* current_host);
-    READER_FAILOVER_RESULT getReaderConnection(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology);
-
-    MYSQL* get_reader_connection(CLUSTER_TOPOLOGY_INFO& topology_info, FAILOVER_CONNECTION_HANDLER* conn_handler, const std::function <bool()> is_canceled);
-
+   public:
+    FAILOVER_READER_HANDLER(
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler);
     ~FAILOVER_READER_HANDLER();
+    READER_FAILOVER_RESULT failover(
+        std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
+        const std::function<bool()> is_canceled);
+    READER_FAILOVER_RESULT get_reader_connection(
+        std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
+        const std::function<bool()> is_canceled);
+
+   private:
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
+    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
+
+    std::vector<std::shared_ptr<HOST_INFO>> build_hosts_list(
+        const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& topology_info,
+        bool contain_writers);
+    READER_FAILOVER_RESULT get_connection_from_hosts(
+        std::vector<std::shared_ptr<HOST_INFO>> hosts_list,
+        const std::function<bool()> is_canceled);
 };
 
 // This struct holds results of Writer Failover Process.
@@ -226,9 +240,9 @@ class FAILOVER_WRITER_HANDLER {
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         int writer_failover_timeout_ms, int read_topology_interval_ms,
         int reconnect_writer_interval_ms);
+    ~FAILOVER_WRITER_HANDLER();
     WRITER_FAILOVER_RESULT failover(
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology);
-    ~FAILOVER_WRITER_HANDLER();
 
    protected:
     int read_topology_interval_ms = 5000;     // 5 sec
