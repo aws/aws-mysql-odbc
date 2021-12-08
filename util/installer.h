@@ -236,6 +236,7 @@ char *ds_get_utf8attr(SQLWCHAR *attrw, SQLCHAR **attr8);
 int ds_setattr_from_utf8(SQLWCHAR **attr, SQLCHAR *val8);
 void ds_set_options(DataSource *ds, ulong options);
 ulong ds_get_options(DataSource *ds);
+void ds_copy(DataSource *ds, DataSource *ds_source);
 
 extern const SQLWCHAR W_DRIVER_PARAM[];
 extern const SQLWCHAR W_DRIVER_NAME[];
