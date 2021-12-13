@@ -40,7 +40,6 @@
 #include "util/installer.h"
 #include "failover.h"
 #include "connect.h"
-class FAILOVER_HANDLER;
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
