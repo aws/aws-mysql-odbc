@@ -3,6 +3,7 @@
   @brief Failover connection functions.
 */
 
+#include "driver.h"
 #include "failover.h"
 
 #include <codecvt>
