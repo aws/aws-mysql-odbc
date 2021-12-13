@@ -1,140 +1,37 @@
+// Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License, version 2.0, as
+// published by the Free Software Foundation.
+//
+// This program is also distributed with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms,
+// as designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an
+// additional permission to link the program and your derivative works
+// with the separately licensed software that they have included with
+// MySQL.
+//
+// Without limiting anything contained in the foregoing, this file,
+// which is part of <MySQL Product>, is also subject to the
+// Universal FOSS Exception, version 1.0, a copy of which can be found at
+// http://oss.oracle.com/licenses/universal-foss-exception.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License, version 2.0, for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
 /**
-  @file  failover_topology.c
-  @brief Failover functions.
+  @file  topology_service.cc
+  @brief TOPOLOGY_SERVICE functions.
 */
 
-#include <stdio.h>  // temporary for quick printfs
-#include "failover.h"
-
-/**
-  Initialize and return random number.
-
-  Returns random number.
- */
-int get_random_number() {
-    std::srand(time(nullptr));
-    return rand();
-}
-
-CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO() {
-    update_time();
-}
-
-// copy constructor
-CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO(const CLUSTER_TOPOLOGY_INFO& src_info)
-    : current_reader{ src_info.current_reader }, last_updated{ src_info.last_updated }, last_used_reader{ src_info.last_used_reader }
-{
-    for (auto host_info_source : src_info.writers) {
-        writers.push_back(std::make_shared<HOST_INFO>(*host_info_source)); //default copy
-    }
-    for (auto host_info_source : src_info.readers) {
-        readers.push_back(std::make_shared<HOST_INFO>(*host_info_source)); //default copy
-    }
-}
-
-CLUSTER_TOPOLOGY_INFO::~CLUSTER_TOPOLOGY_INFO() {
-    for (auto p : writers) {
-        p.reset();
-    }
-    writers.clear();
-
-    for (auto p : readers) {
-        p.reset();
-    }
-    readers.clear();
-}
-
-void CLUSTER_TOPOLOGY_INFO::add_host(std::shared_ptr<HOST_INFO> host_info) {
-    host_info->is_host_writer() ? writers.push_back(host_info) : readers.push_back(host_info);
-    update_time();
-}
-
-bool CLUSTER_TOPOLOGY_INFO::is_multi_writer_cluster() {
-    return writers.size() > 1;
-}
-
-int CLUSTER_TOPOLOGY_INFO::total_hosts() {
-    return writers.size() + readers.size();
-}
-
-int CLUSTER_TOPOLOGY_INFO::num_readers() {
-    return readers.size();
-}
-
-std::time_t CLUSTER_TOPOLOGY_INFO::time_last_updated() {
-    return last_updated;
-}
-
-// TODO harmonize time function across objects so the times are comparable
-void CLUSTER_TOPOLOGY_INFO::update_time() {
-    last_updated = time(0);
-}
-
-std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_writer() {
-    if (writers.size() <= 0) {
-        throw "No writer available";
-    }
-
-    return writers[0];
-}
-
-std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_next_reader() {
-    int num_readers = readers.size();
-    if (num_readers <= 0) {
-        throw "No reader available";
-    }
-
-    if (current_reader == -1) { // initialize for the first time
-        current_reader = get_random_number() % num_readers;
-    }
-    else if (current_reader >= num_readers) {
-        // adjust current reader in case topology was refreshed.
-        current_reader = (current_reader) % num_readers;
-    }
-    else {
-        current_reader = (current_reader + 1) % num_readers;
-    }
-
-    return readers[current_reader];
-}
-
-std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_reader(int i) {
-    if (i < 0 || i >= readers.size()) {
-        throw "No reader available at index " + i;
-    }
-
-    return readers[i];
-}
-
-std::vector<std::shared_ptr<HOST_INFO>> CLUSTER_TOPOLOGY_INFO::get_readers() {
-    return readers;
-}
-
-std::vector<std::shared_ptr<HOST_INFO>> CLUSTER_TOPOLOGY_INFO::get_writers() {
-    return writers;
-}
-
-std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_last_used_reader() {
-    return last_used_reader;
-}
-
-void CLUSTER_TOPOLOGY_INFO::set_last_used_reader(std::shared_ptr<HOST_INFO> reader) {
-    last_used_reader = reader;
-}
-
-void CLUSTER_TOPOLOGY_INFO::mark_host_down(std::shared_ptr<HOST_INFO> down_host) {
-    down_host->set_host_state(DOWN);
-    down_hosts.insert(down_host->get_host_port_pair());
-}
-
-void CLUSTER_TOPOLOGY_INFO::unmark_host_down(std::shared_ptr<HOST_INFO> host) {
-    host->set_host_state(UP);
-    down_hosts.erase(host->get_host_port_pair());
-}
-
-std::set<std::string> CLUSTER_TOPOLOGY_INFO::get_down_hosts() {
-    return down_hosts;
-}
+#include "topology_service.h"
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE()
     : cluster_instance_host{ nullptr }, refresh_rate_in_milliseconds{ DEFAULT_REFRESH_RATE_IN_MILLISECONDS }
@@ -380,89 +277,4 @@ std::string TOPOLOGY_SERVICE::get_host_endpoint(const char* node_name) {
     }
 
     return host;
-}
-
-
-// **************** HOST_INFO ******************************************************************
-
-// TODO
-// the entire HOST_INFO needs to be reviewed based on needed interfaces and other objects like CLUSTER_TOPOLOGY_INFO
-// most/all of the HOST_INFO potentially could be internal to CLUSTER_TOPOLOGY_INFO and specfic information may be accessed
-// through CLUSTER_TOPOLOGY_INFO
-// Move the implementation to it's own file
-
-HOST_INFO::HOST_INFO()
-    : HOST_INFO("", -1)
-{
-}
-
-HOST_INFO::HOST_INFO(std::string host, int port)
-    : host{ host }, port{ port }, host_state{ UP }, is_writer{ false }
-{
-}
-
-// would need some checks for nulls
-HOST_INFO::HOST_INFO(const char* host, int port)
-    : host{ host }, port{ port }, host_state{ UP }, is_writer{ false }
-{
-}
-
-/**
- * Returns the host.
- *
- * @return the host
- */
-std::string HOST_INFO::get_host() {
-    return host;
-}
-
-/**
- * Returns the port.
- *
- * @return the port
- */
-int  HOST_INFO::get_port() {
-    return port;
-}
-
-/**
- * Returns a host:port representation of this host.
- *
- * @return the host:port representation of this host
- */
-std::string HOST_INFO::get_host_port_pair() {
-    return get_host() + HOST_PORT_SEPARATOR + std::to_string(get_port());
-}
-
-
-bool  HOST_INFO::equal_host_port_pair(HOST_INFO& hi) {
-    return get_host_port_pair() == hi.get_host_port_pair();
-}
-
-HOST_STATE HOST_INFO::get_host_state() {
-    return host_state;
-}
-
-void HOST_INFO::set_host_state(HOST_STATE state) {
-    host_state = state;
-}
-
-bool HOST_INFO::is_host_up() {
-    return host_state == UP;
-}
-
-bool HOST_INFO::is_host_down() {
-    return host_state == DOWN;
-}
-
-bool HOST_INFO::is_host_writer() {
-    return is_writer;
-}
-void HOST_INFO::mark_as_writer(bool writer) {
-    is_writer = writer;
-}
-
-// Check if two host info have same instance name
-bool HOST_INFO::is_host_same(const std::shared_ptr<HOST_INFO>& h1, const std::shared_ptr<HOST_INFO>& h2) {
-    return h1->instance_name == h2->instance_name;
 }
