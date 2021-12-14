@@ -153,7 +153,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
 //TODO consider the return value
 //Note to determine whether or not force_update succeeded one would compare
 // CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(std::shared_ptr<MYSQL> connection, bool force_update)
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(std::shared_ptr<CONNECTION_INTERFACE> connection, bool force_update)
 {
     //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
@@ -242,27 +242,25 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 }
 
 // If no host information retrieved return NULL
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(std::shared_ptr<MYSQL> connection) {
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(std::shared_ptr<CONNECTION_INTERFACE> connection) {
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info = nullptr;
 
-    MYSQL* conn = connection.get();
-    MYSQL_RES* query_result = NULL;
-    if ((conn != NULL) && (mysql_query(conn, RETRIEVE_TOPOLOGY_SQL) == 0) && (query_result = mysql_store_result(conn)) != NULL) {
+    if (connection->try_execute_query(RETRIEVE_TOPOLOGY_SQL)) {
         topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(CLUSTER_TOPOLOGY_INFO());
         MYSQL_ROW row;
-        while ((row = mysql_fetch_row(query_result))) {
+        while (row = connection->fetch_next_row()) {
             std::shared_ptr<HOST_INFO> host_info = create_host(row);
-            if (!host_info) {
+            if (host_info) {
                 topology_info->add_host(host_info);
             }
         }
-        mysql_free_result(query_result);
 
         if (topology_info->total_hosts() == 0) {
             topology_info.reset();
         }
     }
+
     return topology_info;
 }
 
