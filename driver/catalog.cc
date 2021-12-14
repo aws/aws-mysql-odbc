@@ -117,7 +117,7 @@ my_bool server_has_i_s(DBC *dbc)
     According to the server ChangeLog INFORMATION_SCHEMA was introduced
     in the 5.0.2
   */
-  return is_minimum_version(dbc->mysql->server_version, "5.0.2");
+  return is_minimum_version(dbc->mysql->get_server_version(), "5.0.2");
 }
 /*
   @type    : internal
@@ -237,7 +237,6 @@ create_empty_fake_resultset(STMT *stmt, MYSQL_ROW rowval, size_t rowsize,
 */
 MYSQL_RES *db_status(STMT *stmt, std::string &db)
 {
-  MYSQL *mysql= stmt->dbc->mysql;
   /** the buffer size should count possible escapes */
   my_bool clause_added= FALSE;
   std::string query;
@@ -273,7 +272,7 @@ MYSQL_RES *db_status(STMT *stmt, std::string &db)
     return NULL;
   }
 
-  return mysql_store_result(mysql);
+  return stmt->dbc->mysql->store_result();
 }
 
 
@@ -301,7 +300,7 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
                                    my_bool      show_tables,
                                    my_bool      show_views)
 {
-  MYSQL *mysql= stmt->dbc->mysql;
+  CONNECTION *mysql= stmt->dbc->mysql;
   /** the buffer size should count possible escapes */
   my_bool clause_added= FALSE;
   std::string query;
@@ -360,7 +359,7 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
     query.append("AND TABLE_NAME LIKE '");
     if (wildcard)
     {
-      cnt = mysql_real_escape_string(mysql, tmpbuff, (char *)table_name, table_len);
+      cnt = mysql->real_escape_string(tmpbuff, (char *)table_name, table_len);
       query.append(tmpbuff, cnt);
     }
     else
@@ -381,7 +380,7 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
     return NULL;
   }
 
-  return mysql_store_result(mysql);
+  return mysql->store_result();
 }
 
 
@@ -397,7 +396,6 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
   @param[in] wildcard       Whether the table name is a wildcard
 
   @return Result of SHOW TABLE STATUS, or NULL if there is an error
-          or empty result (check mysql_errno(stmt->dbc->mysql) != 0)
 */
 static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
                                          SQLCHAR     *catalog_name,
@@ -408,7 +406,7 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
                                          my_bool      show_tables,
                                          my_bool      show_views)
 {
-  MYSQL *mysql= stmt->dbc->mysql;
+  CONNECTION *mysql= stmt->dbc->mysql;
   /** the buffer size should count possible escapes */
   my_bool clause_added= FALSE;
   std::string query;
@@ -466,7 +464,7 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
     query.append("WHERE TABLE_NAME LIKE '");
     if (wildcard)
     {
-      cnt = mysql_real_escape_string(mysql, tmpbuff, (char *)table_name, table_len);
+      cnt = mysql->real_escape_string(tmpbuff, (char *)table_name, table_len);
       query.append(tmpbuff, cnt);
     }
     else
@@ -485,7 +483,7 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
     return NULL;
   }
 
-  return mysql_store_result(mysql);
+  return mysql->store_result();
 }
 
 
@@ -500,7 +498,6 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
   @param[in] wildcard       Whether the table name is a wildcard
 
   @return Result of SHOW TABLE STATUS, or NULL if there is an error
-          or empty result (check mysql_errno(stmt->dbc->mysql) != 0)
 */
 MYSQL_RES *table_status(STMT        *stmt,
                         SQLCHAR     *db_name,
@@ -551,7 +548,7 @@ int add_name_condition_oa_id(HSTMT hstmt, std::string &query, SQLCHAR * name,
 
     query.append("'");
     char tmpbuff[1024];
-    size_t cnt = mysql_real_escape_string(stmt->dbc->mysql, tmpbuff, (char *)name, name_len);
+    size_t cnt = stmt->dbc->mysql->real_escape_string(tmpbuff, (char *)name, name_len);
     query.append(tmpbuff, cnt);
     query.append("' ");
   }
@@ -597,8 +594,7 @@ int add_name_condition_pv_id(HSTMT hstmt, std::string &query, SQLCHAR * name,
 
     query.append("'");
     char tmpbuff[1024];
-    size_t cnt = mysql_real_escape_string(stmt->dbc->mysql, tmpbuff,
-                                          (char *)name, name_len);
+    size_t cnt = stmt->dbc->mysql->real_escape_string(tmpbuff, (char *)name, name_len);
     query.append(tmpbuff, cnt);
     query.append("' ");
   }
@@ -1135,8 +1131,6 @@ SQLRETURN list_table_priv_i_s(SQLHSTMT    hstmt,
                               SQLSMALLINT table_len)
 {
   STMT *stmt=(STMT *) hstmt;
-  MYSQL *mysql= stmt->dbc->mysql;
-  char   tmpbuff[1024];
   SQLRETURN rc;
   std::string query;
   query.reserve(1024);
@@ -1222,7 +1216,6 @@ static SQLRETURN list_column_priv_i_s(HSTMT       hstmt,
                                       SQLSMALLINT column_len)
 {
   STMT *stmt=(STMT *) hstmt;
-  MYSQL *mysql= stmt->dbc->mysql;
   /* 3 names theorethically can have all their characters escaped - thus 6*NAME_LEN  */
   char   tmpbuff[1024];
   SQLRETURN rc;
@@ -1438,7 +1431,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
                            SQLSMALLINT fk_table_len)
 {
   STMT *stmt=(STMT *) hstmt;
-  MYSQL *mysql= stmt->dbc->mysql;
+  CONNECTION *mysql= stmt->dbc->mysql;
   char tmpbuff[1024]; /* This should be big enough. */
   char *update_rule, *delete_rule, *ref_constraints_join;
   SQLRETURN rc;
@@ -1454,7 +1447,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
   /*
      With 5.1, we can use REFERENTIAL_CONSTRAINTS to get even more info.
   */
-  if (is_minimum_version(stmt->dbc->mysql->server_version, "5.1"))
+  if (is_minimum_version(stmt->dbc->mysql->get_server_version(), "5.1"))
   {
     update_rule= "CASE"
                  " WHEN R.UPDATE_RULE = 'CASCADE' THEN 0"
@@ -1524,8 +1517,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
     if (!pk_db.empty())
     {
       query.append("'");
-      cnt = mysql_real_escape_string(mysql, tmpbuff, pk_db.c_str(),
-                                      pk_db.length());
+      cnt = mysql->real_escape_string(tmpbuff, pk_db.c_str(), pk_db.length());
       query.append(tmpbuff, cnt);
       query.append("' ");
     }
@@ -1536,8 +1528,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
 
     query.append("AND A.REFERENCED_TABLE_NAME = '");
 
-    cnt = mysql_real_escape_string(mysql, tmpbuff, (char *)pk_table,
-                                    pk_table_len);
+    cnt =mysql->real_escape_string(tmpbuff, (char *)pk_table, pk_table_len);
     query.append(tmpbuff, cnt);
     query.append("' ");
 
@@ -1551,8 +1542,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
     if (!fk_db.empty())
     {
       query.append("'");
-      cnt = mysql_real_escape_string(mysql, tmpbuff, fk_db.c_str(),
-                                      fk_db.length());
+      cnt = mysql->real_escape_string(tmpbuff, fk_db.c_str(), fk_db.length());
       query.append(tmpbuff, cnt);
       query.append("' ");
     }
@@ -1563,8 +1553,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
 
     query.append("AND A.TABLE_NAME = '");
 
-    cnt = mysql_real_escape_string(mysql, tmpbuff, (char *)fk_table,
-                                    fk_table_len);
+    cnt = mysql->real_escape_string(tmpbuff, (char *)fk_table, fk_table_len);
     query.append(tmpbuff, cnt);
     query.append("' ");
 

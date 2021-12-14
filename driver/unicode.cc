@@ -1028,7 +1028,7 @@ SQLSetConnectAttrWImpl(SQLHDBC hdbc, SQLINTEGER attribute,
                   "than 0 but was not SQL_NTS " , 0);
     }
 
-    if (is_connected(dbc))
+    if (dbc->mysql->is_connected())
       value= sqlwchar_as_sqlchar(dbc->cxn_charset_info,
                                  (SQLWCHAR*)value, &len, &errors);
     else

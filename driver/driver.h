@@ -40,6 +40,7 @@
 #include "util/installer.h"
 #include "failover.h"
 #include "connect.h"
+#include "connection.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -596,23 +597,24 @@ struct	ENV
 
 struct DBC
 {
-  ENV           *env;
-  MYSQL         *mysql;
+  ENV              *env;
+  CONNECTION       *mysql;
   std::list<STMT*> stmt_list;
   std::list<DESC*> desc_list; // Explicit descriptors
-  STMT_OPTIONS  stmt_options;
-  MYERROR       error;
-  FILE          *query_log = nullptr;
-  char          st_error_prefix[255] = { 0 };
-  std::string   database;
-  SQLUINTEGER   login_timeout = 0;
-  time_t        last_query_time = 0;
-  int           txn_isolation = 0;
-  uint          port = 0;
-  uint          cursor_count = 0;
-  ulong         net_buffer_len = 0;
-  uint          commit_flag = 0;
-  bool          has_query_attrs = false;
+  STMT_OPTIONS     stmt_options;
+  MYERROR          error;
+  FILE             *query_log = nullptr;
+  char             st_error_prefix[255] = { 0 };
+  std::string      database;
+  SQLUINTEGER      login_timeout = 0;
+  time_t           last_query_time = 0;
+  int              txn_isolation = 0;
+  uint             port = 0;
+  uint             cursor_count = 0;
+  ulong            net_buffer_len = 0;
+  uint             commit_flag = 0;
+  bool             has_query_attrs = false;
+
   std::recursive_mutex lock;
 
   // Whether SQL*ConnectW was used
@@ -645,10 +647,10 @@ struct DBC
     MYSQL_BIND *param_bind, MYSQL_BIND *result_bind);
 
   inline bool transactions_supported()
-  { return mysql->server_capabilities & CLIENT_TRANSACTIONS; }
+  { return mysql->get_server_capabilities() & CLIENT_TRANSACTIONS; }
 
   inline bool autocommit_is_on()
-  { return mysql->server_status & SERVER_STATUS_AUTOCOMMIT; }
+  { return mysql->get_server_status() & SERVER_STATUS_AUTOCOMMIT; }
 
   void close();
   ~DBC();
@@ -953,7 +955,7 @@ struct ODBC_STMT
 {
   MYSQL_STMT *m_stmt;
 
-  ODBC_STMT(MYSQL *mysql) { m_stmt = mysql_stmt_init(mysql); }
+  ODBC_STMT(CONNECTION *mysql) { m_stmt = mysql->stmt_init(); }
   operator MYSQL_STMT*() { return m_stmt; }
   ~ODBC_STMT() { mysql_stmt_close(m_stmt); }
 };
