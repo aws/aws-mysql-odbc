@@ -35,7 +35,6 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <thread>
 
 using ::testing::Return;
 
