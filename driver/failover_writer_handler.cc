@@ -45,16 +45,16 @@ void FAILOVER::cancel() { canceled = true; }
 
 bool FAILOVER::is_canceled() { return canceled; }
 
-bool FAILOVER::is_writer_connected() { return new_connection != nullptr; }
+bool FAILOVER::is_writer_connected() { return !new_connection->is_null(); }
 
 bool FAILOVER::connect(std::shared_ptr<HOST_INFO> host_info) {
     new_connection = connection_handler->connect(host_info);
-    return new_connection != nullptr;
+    return !new_connection->is_null();
 }
 
-std::shared_ptr<MYSQL> FAILOVER::get_connection() { return new_connection; }
+std::shared_ptr<CONNECTION_INTERFACE> FAILOVER::get_connection() { return new_connection; }
 
-void FAILOVER::close_connection() { mysql_close(new_connection.get()); }
+void FAILOVER::close_connection() { new_connection->close_connection(); }
 
 void FAILOVER::sleep(int miliseconds) {
     std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
@@ -82,8 +82,7 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
                     is_current_host_writer(original_writer, latest_topology)) {
                     topology_service->unmark_host_down(original_writer);
                     f_sync.mark_as_done();
-                    return WRITER_FAILOVER_RESULT{true, false, latest_topology,
-                                                  conn};
+                    return WRITER_FAILOVER_RESULT{true, false, latest_topology, conn};
                 }
             }
             sleep(reconnect_interval_ms);
@@ -144,7 +143,8 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader() {
     while (!is_canceled()) {
         auto connection_result = reader_handler->get_reader_connection(
             current_topology, [this] { return is_canceled(); });
-        if (connection_result.connected && connection_result.new_connection) {
+        if (connection_result.connected &&
+            !connection_result.new_connection->is_null()) {
             reader_connection = connection_result.new_connection;
             current_reader_host = connection_result.new_host;
             break;
@@ -189,7 +189,7 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
 // Close reader connection if not needed(open and not the same as current
 // connection)
 void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
-    if (reader_connection && current_connection != reader_connection) {
+    if (!reader_connection->is_null() && current_connection != reader_connection) {
         connection_handler->release_connection(reader_connection);
     }
 }
