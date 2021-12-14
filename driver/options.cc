@@ -270,7 +270,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_ATTR_AUTOCOMMIT:
       if (ValuePtr != (SQLPOINTER) SQL_AUTOCOMMIT_ON)
       {
-        if (!is_connected(dbc))
+        if (!dbc->mysql->is_connected())
         {
           dbc->commit_flag= CHECK_AUTOCOMMIT_OFF;
           return SQL_SUCCESS;
@@ -282,7 +282,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
         if (autocommit_on(dbc))
           return dbc->execute_query("SET AUTOCOMMIT=0", SQL_NTS, TRUE);
       }
-      else if (!is_connected(dbc))
+      else if (!dbc->mysql->is_connected())
       {
         dbc->commit_flag= CHECK_AUTOCOMMIT_ON;
         return SQL_SUCCESS;
@@ -294,7 +294,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_ATTR_LOGIN_TIMEOUT:
       {
         /* we can't change timeout values in post connect state */
-        if (is_connected(dbc))
+        if (dbc->mysql->is_connected())
         {
           return dbc->set_error(MYERR_S1011, NULL, 0);
         }
@@ -338,12 +338,12 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
         if (!(db= fix_str((char *)ldb, (char *)ValuePtr, StringLengthPtr)))
           return dbc->set_error(MYERR_S1009,NULL, 0);
 
-        if (is_connected(dbc))
+        if (dbc->mysql->is_connected())
         {
-          if (mysql_select_db(dbc->mysql,(char*) db))
+          if (dbc->mysql->select_db((char*) db))
           {
-            dbc->set_error(MYERR_S1000, mysql_error(dbc->mysql),
-              mysql_errno(dbc->mysql));
+            dbc->set_error(MYERR_S1000, dbc->mysql->error(),
+              dbc->mysql->error_code());
             return SQL_ERROR;
           }
         }
@@ -374,7 +374,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
       break;
 
     case SQL_ATTR_TXN_ISOLATION:
-      if (!is_connected(dbc))  /* no connection yet */
+      if (!dbc->mysql->is_connected())  /* no connection yet */
       {
         dbc->txn_isolation= (SQLINTEGER)(SQLLEN)ValuePtr;
         return SQL_SUCCESS;
@@ -495,8 +495,8 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
   case SQL_ATTR_CONNECTION_DEAD:
     /* If waking up fails - we return "connection is dead", no matter what really the reason is */
     if (dbc->need_to_wakeup != 0 && wakeup_connection(dbc)
-      || dbc->need_to_wakeup == 0 && mysql_ping(dbc->mysql) &&
-        is_connection_lost(mysql_errno(dbc->mysql)))
+      || dbc->need_to_wakeup == 0 && dbc->mysql->ping() &&
+        is_connection_lost(dbc->mysql->error_code()))
       *((SQLUINTEGER *)num_attr)= SQL_CD_TRUE;
     else
       *((SQLUINTEGER *)num_attr)= SQL_CD_FALSE;
@@ -508,14 +508,16 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
     break;
 
   case SQL_ATTR_CURRENT_CATALOG:
-    if (is_connected(dbc) && reget_current_catalog(dbc))
-    {
-      return set_handle_error(SQL_HANDLE_DBC, hdbc, MYERR_S1000,
-                              "Unable to get current catalog", 0);
-    }
-    else if (is_connected(dbc))
-    {
-      *char_attr= (SQLCHAR *)(!dbc->database.empty() ? dbc->database.c_str() : "null");
+    if (dbc->mysql->is_connected()) {
+        if (reget_current_catalog(dbc))
+        {
+            return set_handle_error(SQL_HANDLE_DBC, hdbc, MYERR_S1000,
+                "Unable to get current catalog", 0);
+        }
+        else
+        {
+            *char_attr = (SQLCHAR*)(!dbc->database.empty() ? dbc->database.c_str() : "null");
+        }
     }
     else
     {
@@ -537,7 +539,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
     break;
 
   case SQL_ATTR_PACKET_SIZE:
-    *((SQLUINTEGER *)num_attr)= dbc->mysql->net.max_packet;
+    *((SQLUINTEGER*)num_attr) = dbc->mysql->get_max_packet();
     break;
 
   case SQL_ATTR_TXN_ISOLATION:
@@ -551,13 +553,13 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
         Unless we're not connected yet, then we just assume it will
         be REPEATABLE READ, which is the server default.
       */
-      if (!is_connected(dbc))
+      if (!dbc->mysql->is_connected())
       {
         *((SQLINTEGER *)num_attr)= SQL_TRANSACTION_REPEATABLE_READ;
         break;
       }
 
-      if (is_minimum_version(dbc->mysql->server_version, "8.0"))
+      if (is_minimum_version(dbc->mysql->get_server_version(), "8.0"))
         result = dbc->execute_query("SELECT @@transaction_isolation", SQL_NTS, true);
       else
         result = dbc->execute_query("SELECT @@tx_isolation", SQL_NTS, true);
@@ -573,7 +575,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
         MYSQL_RES *res;
         MYSQL_ROW  row;
 
-        if ((res= mysql_store_result(dbc->mysql)) &&
+        if ((res= dbc->mysql->store_result()) &&
             (row= mysql_fetch_row(res)))
         {
           if (strncmp(row[0], "READ-UNCOMMITTED", 16) == 0) {

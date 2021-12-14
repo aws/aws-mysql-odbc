@@ -45,10 +45,9 @@
 
 #define if_forward_cache(st) ((st)->stmt_options.cursor_type == SQL_CURSOR_FORWARD_ONLY && \
            (st)->dbc->ds->dont_cache_result)
-#define is_connected(dbc)    ((dbc)->mysql && (dbc)->mysql->net.vio)
-#define trans_supported(db) ((db)->mysql->server_capabilities & CLIENT_TRANSACTIONS)
-#define autocommit_on(db) ((db)->mysql->server_status & SERVER_STATUS_AUTOCOMMIT)
-#define is_no_backslashes_escape_mode(db) ((db)->mysql->server_status & SERVER_STATUS_NO_BACKSLASH_ESCAPES)
+#define trans_supported(db) ((db)->mysql->get_server_capabilities() & CLIENT_TRANSACTIONS)
+#define autocommit_on(db) ((db)->mysql->get_server_status() & SERVER_STATUS_AUTOCOMMIT)
+#define is_no_backslashes_escape_mode(db) ((db)->mysql->get_server_status() & SERVER_STATUS_NO_BACKSLASH_ESCAPES)
 #define reset_ptr(x) {if (x) x= 0;}
 #define digit(A) ((int) (A - '0'))
 
@@ -187,7 +186,7 @@ SQLRETURN set_desc_error  (DESC *desc, char *state,
                           const char *message, uint errcode);
 SQLRETURN handle_connection_error (STMT *stmt);
 my_bool   is_connection_lost      (uint errcode);
-void      set_mem_error           (MYSQL *mysql);
+void      set_mem_error           (CONNECTION *mysql);
 void      translate_error         (char *save_state, myodbc_errid errid, uint mysql_err);
 
 SQLSMALLINT get_sql_data_type_from_str(const char *mysql_type_name);
@@ -378,7 +377,7 @@ unsigned long long binary2ull(char* src, uint64 srcLen);
 void fill_ird_data_lengths (DESC *ird, ulong *lengths, uint fields);
 
 /* Functions to work with prepared and regular statements  */
-#define IS_PS_OUT_PARAMS(_stmt) ((_stmt)->dbc->mysql->server_status & SERVER_PS_OUT_PARAMS)
+#define IS_PS_OUT_PARAMS(_stmt) ((_stmt)->dbc->mysql->get_server_status() & SERVER_PS_OUT_PARAMS)
 /* my_stmt.c */
 BOOL              ssps_used           (STMT *stmt);
 BOOL              returned_result     (STMT *stmt);

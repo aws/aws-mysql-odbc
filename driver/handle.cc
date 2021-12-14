@@ -103,8 +103,9 @@ void DBC::free_explicit_descriptors()
 
 void DBC::close()
 {
-  if (mysql)
-    mysql_close(mysql);
+  if (!mysql->is_null())
+    mysql->close_connection();
+  delete mysql;
   mysql = nullptr;
 }
 
@@ -134,7 +135,7 @@ SQLRETURN DBC::set_error(char * state, const char * message, uint errcode)
 
 SQLRETURN DBC::set_error(char * state)
 {
-  return set_error(state, mysql_error(mysql), mysql_errno(mysql));
+  return set_error(state, mysql->error(), mysql->error_code());
 }
 
 
@@ -313,33 +314,33 @@ int wakeup_connection(DBC *dbc)
   {
     ds_get_utf8attr(ds->pwd1, &ds->pwd18);
     int fator = 2;
-    mysql_options4(dbc->mysql, MYSQL_OPT_USER_PASSWORD,
-                   &fator,
-                   ds->pwd18);
+    dbc->mysql->options4(MYSQL_OPT_USER_PASSWORD,
+                         &fator,
+                         ds->pwd18);
   }
 
   if(ds->pwd2 && ds->pwd2[0])
   {
     ds_get_utf8attr(ds->pwd2, &ds->pwd28);
     int fator = 2;
-    mysql_options4(dbc->mysql, MYSQL_OPT_USER_PASSWORD,
-                   &fator,
-                   ds->pwd28);
+    dbc->mysql->options4(MYSQL_OPT_USER_PASSWORD,
+                         &fator,
+                         ds->pwd28);
   }
 
   if(ds->pwd3 && ds->pwd3[0])
   {
     ds_get_utf8attr(ds->pwd3, &ds->pwd38);
     int fator = 3;
-    mysql_options4(dbc->mysql, MYSQL_OPT_USER_PASSWORD,
-                   &fator,
-                   ds->pwd38);
+    dbc->mysql->options4(MYSQL_OPT_USER_PASSWORD,
+                         &fator,
+                         ds->pwd38);
   }
 #endif
 
-  if (mysql_change_user(dbc->mysql, ds_get_utf8attr(ds->uid, &ds->uid8),
-                                     ds_get_utf8attr(ds->pwd, &ds->pwd8),
-                                     ds_get_utf8attr(ds->database, &ds->database8)))
+  if (dbc->mysql->change_user(ds_get_utf8attr(ds->uid, &ds->uid8),
+                              ds_get_utf8attr(ds->pwd, &ds->pwd8),
+                              ds_get_utf8attr(ds->database, &ds->database8)))
   {
     return 1;
   }

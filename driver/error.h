@@ -40,6 +40,8 @@
 #ifndef __ERROR_H__
 #define __ERROR_H__
 
+#include "connection.h"
+
 /* Including driver version definitions */
 #include "../MYODBC_CONF.h"
 /*
@@ -191,9 +193,9 @@ struct MYERROR
     sqlstate.clear();
   }
 
-  MYERROR(const char* state, MYSQL* mysql) :
-    MYERROR(state, mysql_error(mysql),
-      mysql_errno(mysql), MYODBC_ERROR_PREFIX)
+  MYERROR(const char* state, CONNECTION* mysql) :
+    MYERROR(state, mysql->error(),
+      mysql->error_code(), MYODBC_ERROR_PREFIX)
   {}
 
   MYERROR(const char* state, std::string errmsg) :
