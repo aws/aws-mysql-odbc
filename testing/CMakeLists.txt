@@ -50,7 +50,6 @@ enable_testing()
 add_executable(
   testing
   mock_objects.h
-  hello_world_test.cc
   topology_service_test.cc
 )
 
