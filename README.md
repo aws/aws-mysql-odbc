@@ -37,6 +37,38 @@ The most popular of them are:
 * Office applications through linked tables and Visual Basic integration
 * Multitude of other applications supporting ODBC
 
+## Testing
+
+Use Visual Studio to build the `testing` project. Navigate to the build directory and run `testing.exe`. To specify a particular test or test suite, use `--gtest_filter` in the command.
+
+The following is an example running all the tests in the `TopologyServiceTest` suite:
+```
+PS C:\Other\dev\Bit-Quill\mysql-connector-odbc\testing\bin\RelWithDebInfo> .\testing.exe --gtest_filter=TopologyServiceTest.*
+Running main() from C:\Other\dev\Bit-Quill\mysql-connector-odbc\_deps\googletest-src\googletest\src\gtest_main.cc
+Note: Google Test filter = TopologyServiceTest.*
+[==========] Running 7 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 7 tests from TopologyServiceTest
+[ RUN      ] TopologyServiceTest.TopologyQuery
+[       OK ] TopologyServiceTest.TopologyQuery (0 ms)
+[ RUN      ] TopologyServiceTest.MultiWriter
+[       OK ] TopologyServiceTest.MultiWriter (0 ms)
+[ RUN      ] TopologyServiceTest.CachedTopology
+[       OK ] TopologyServiceTest.CachedTopology (0 ms)
+[ RUN      ] TopologyServiceTest.QueryFailure
+[       OK ] TopologyServiceTest.QueryFailure (0 ms)
+[ RUN      ] TopologyServiceTest.StaleTopology
+[       OK ] TopologyServiceTest.StaleTopology (1007 ms)
+[ RUN      ] TopologyServiceTest.RefreshTopology
+[       OK ] TopologyServiceTest.RefreshTopology (1013 ms)
+[ RUN      ] TopologyServiceTest.ClearCache
+[       OK ] TopologyServiceTest.ClearCache (0 ms)
+[----------] 7 tests from TopologyServiceTest (2026 ms total)
+
+[----------] Global test environment tear-down
+[==========] 7 tests from 1 test suite ran. (2030 ms total)
+[  PASSED  ] 7 tests.
+```
 
 ## Documentation
 
