@@ -61,7 +61,7 @@ BOOL returned_result(STMT *stmt)
   }
   else
   {
-    return mysql_field_count(stmt->dbc->mysql) > 0 ;
+    return stmt->dbc->mysql->field_count() > 0;
   }
 }
 
@@ -88,17 +88,16 @@ my_bool free_current_result(STMT *stmt)
 /* Name may be misleading, the idea is stmt - for directly executed statements,
    i.e using mysql_* part of api, ssps - prepared on server, using mysql_stmt
  */
-static
-MYSQL_RES * stmt_get_result(STMT *stmt, BOOL force_use)
+static MYSQL_RES* stmt_get_result(STMT *stmt, BOOL force_use)
 {
   /* We can't use USE_RESULT because SQLRowCount will fail in this case! */
   if (if_forward_cache(stmt) || force_use)
   {
-    return mysql_use_result(stmt->dbc->mysql);
+    return stmt->dbc->mysql->use_result();
   }
   else
   {
-    return mysql_store_result(stmt->dbc->mysql);
+    return stmt->dbc->mysql->store_result();
   }
 }
 
@@ -156,7 +155,7 @@ size_t STMT::field_count()
   {
     return result && result->field_count > 0 ?
       result->field_count :
-      mysql_field_count(dbc->mysql);
+      dbc->mysql->field_count();
   }
 }
 
@@ -170,7 +169,7 @@ my_ulonglong affected_rows(STMT *stmt)
   else
   {
     /* In some cases in c/odbc it cannot be used instead of mysql_num_rows */
-    return mysql_affected_rows(stmt->dbc->mysql);
+    return stmt->dbc->mysql->call_affected_rows();
   }
 }
 
@@ -307,7 +306,7 @@ int next_result(STMT *stmt)
   }
   else
   {
-    return mysql_next_result(stmt->dbc->mysql);
+    return stmt->dbc->mysql->next_result();
   }
 }
 
@@ -434,7 +433,7 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
      actually parameter markers in it */
   if (!stmt->dbc->ds->no_ssps && (PARAM_COUNT(stmt->query) || force_prepare)
     && !IS_BATCH(&stmt->query)
-    && preparable_on_server(&stmt->query, stmt->dbc->mysql->server_version))
+    && preparable_on_server(&stmt->query, stmt->dbc->mysql->get_server_version()))
   {
     MYLOG_QUERY(stmt, "Using prepared statement");
     ssps_init(stmt);
@@ -452,11 +451,11 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
 
      if (prep_res)
       {
-        MYLOG_QUERY(stmt, mysql_error(stmt->dbc->mysql));
+        MYLOG_QUERY(stmt, stmt->dbc->mysql->error());
 
         stmt->set_error("HY000");
         translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                        mysql_errno(stmt->dbc->mysql));
+                        stmt->dbc->mysql->error_code());
 
         return SQL_ERROR;
       }

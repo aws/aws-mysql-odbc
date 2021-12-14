@@ -275,11 +275,11 @@ SQLRETURN set_env_error(ENV *env, myodbc_errid errid, const char *errtext,
   @type    : myodbc3 internal
   @purpose : sets a myodbc_malloc() failure on a MYSQL* connection
 */
-void set_mem_error(MYSQL *mysql)
+void set_mem_error(CONNECTION* mysql)
 {
-  mysql->net.last_errno= CR_OUT_OF_MEMORY;
-  myodbc_stpmov(mysql->net.last_error, "Memory allocation failed");
-  myodbc_stpmov(mysql->net.sqlstate, "HY001");
+  mysql->set_last_error_code(CR_OUT_OF_MEMORY);
+  myodbc_stpmov(mysql->get_last_error(), "Memory allocation failed");
+  myodbc_stpmov(mysql->get_sqlstate(), "HY001");
 }
 
 
@@ -290,7 +290,7 @@ void set_mem_error(MYSQL *mysql)
 */
 SQLRETURN handle_connection_error(STMT *stmt)
 {
-  unsigned int err= mysql_errno(stmt->dbc->mysql);
+  unsigned int err= stmt->dbc->mysql->error_code();
   switch (err) {
   case 0:  /* no error */
     return SQL_SUCCESS;
@@ -302,15 +302,15 @@ SQLRETURN handle_connection_error(STMT *stmt)
     /* TODO: failover */
     const char* errorCode;
     if (stmt->dbc->fh->trigger_failover_if_needed("08S01", errorCode)) {
-        return stmt->set_error(errorCode, mysql_error(stmt->dbc->mysql), err);
+        return stmt->set_error(errorCode, stmt->dbc->mysql->error(), err);
     }
-    return stmt->set_error("08S01", mysql_error(stmt->dbc->mysql), err);
+    return stmt->set_error("08S01", stmt->dbc->mysql->error(), err);
   case CR_OUT_OF_MEMORY:
-    return stmt->set_error("HY001", mysql_error(stmt->dbc->mysql), err);
+    return stmt->set_error("HY001", stmt->dbc->mysql->error(), err);
   case CR_COMMANDS_OUT_OF_SYNC:
   case CR_UNKNOWN_ERROR:
   default:
-    return stmt->set_error("HY000", mysql_error(stmt->dbc->mysql), err);
+    return stmt->set_error("HY000", stmt->dbc->mysql->error(), err);
   }
 }
 

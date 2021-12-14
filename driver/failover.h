@@ -11,8 +11,6 @@
 #include <functional>
 #include <condition_variable>
 
-#include <mysql.h>
-
 struct DBC;
 
 class FAILOVER_CONNECTION_HANDLER {
@@ -20,9 +18,9 @@ class FAILOVER_CONNECTION_HANDLER {
     FAILOVER_CONNECTION_HANDLER(std::shared_ptr<DBC> dbc);
     virtual ~FAILOVER_CONNECTION_HANDLER();
 
-    std::shared_ptr<MYSQL> connect(std::shared_ptr<HOST_INFO> host_info);
-    void update_connection(std::shared_ptr<MYSQL> new_connection);
-    void release_connection(std::shared_ptr<MYSQL> mysql);
+    std::shared_ptr<CONNECTION_INTERFACE> connect(std::shared_ptr<HOST_INFO> host_info);
+    void update_connection(std::shared_ptr<CONNECTION_INTERFACE> new_connection);
+    void release_connection(std::shared_ptr<CONNECTION_INTERFACE> connection);
 
    private:
     std::shared_ptr<DBC> dbc;
@@ -34,7 +32,7 @@ class FAILOVER_CONNECTION_HANDLER {
 struct READER_FAILOVER_RESULT {
     bool connected;
     std::shared_ptr<HOST_INFO> new_host;
-    std::shared_ptr<MYSQL> new_connection;
+    std::shared_ptr<CONNECTION_INTERFACE> new_connection;
 };
 
 class FAILOVER_READER_HANDLER {
@@ -68,7 +66,7 @@ struct WRITER_FAILOVER_RESULT {
     bool is_new_host;  // True if process connected to a new host. False if
                        // process re-connected to the same host
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology;
-    std::shared_ptr<MYSQL> new_connection;
+    std::shared_ptr<CONNECTION_INTERFACE> new_connection;
 };
 
 class FAILOVER_WRITER_HANDLER {
@@ -159,7 +157,7 @@ class FAILOVER {
     void cancel();
     bool is_canceled();
     bool is_writer_connected();
-    std::shared_ptr<MYSQL> get_connection();
+    std::shared_ptr<CONNECTION_INTERFACE> get_connection();
 
    protected:
     bool connect(std::shared_ptr<HOST_INFO> host_info);
@@ -169,9 +167,7 @@ class FAILOVER {
 
    private:
     std::atomic_bool canceled;
-    // TODO probably wrap this shared MYSQL pointer in some result class so all
-    // the methods and interfaces never show it directly
-    std::shared_ptr<MYSQL> new_connection;
+    std::shared_ptr<CONNECTION_INTERFACE> new_connection;
 
     void close_connection();
 };
@@ -215,8 +211,8 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
     int read_topology_interval_ms = 5000;
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
-    std::shared_ptr<MYSQL> reader_connection;  // To retrieve latest topology
-    std::shared_ptr<MYSQL> current_connection;
+    std::shared_ptr<CONNECTION_INTERFACE> reader_connection;  // To retrieve latest topology
+    std::shared_ptr<CONNECTION_INTERFACE> current_connection;
     std::shared_ptr<HOST_INFO> current_reader_host;
 
     void refresh_topology_and_connect_to_new_writer(

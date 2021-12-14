@@ -35,11 +35,20 @@
 #define __TOPOLOGYSERVICE_H__
 
 #include "cluster_topology_info.h"
+#include "connection.h"
 
 #include <map>
 #include <mutex>
 
-#include <mysql.h>
+// TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.000;
+// TODO: is there a way to make these private but still accessible to topology_service_test?
+static const int DEFAULT_REFRESH_RATE_IN_MILLISECONDS = 30000;
+static const std::string WRITER_SESSION_ID = "MASTER_SESSION_ID";
+static const char* RETRIEVE_TOPOLOGY_SQL =
+    "SELECT SERVER_ID, SESSION_ID, LAST_UPDATE_TIMESTAMP, REPLICA_LAG_IN_MILLISECONDS \
+    FROM information_schema.replica_host_status \
+    WHERE time_to_sec(timediff(now(), LAST_UPDATE_TIMESTAMP)) <= 300 \
+    ORDER BY LAST_UPDATE_TIMESTAMP DESC";
 
 class TOPOLOGY_SERVICE {
 public:
@@ -49,7 +58,7 @@ public:
     void set_cluster_id(const char* cluster_id);
     void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<MYSQL> connection, bool force_update = false);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<CONNECTION_INTERFACE> connection, bool force_update = false);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();
@@ -68,24 +77,15 @@ public:
     const std::string INSTANCE_NAME = "TOPOLOGY_SERVICE_SERVER_ID";
 
 private:
-    // TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.
-    const int DEFAULT_REFRESH_RATE_IN_MILLISECONDS = 30000;
     const int DEFAULT_CACHE_EXPIRE_MS = 5 * 60 * 1000; // 5 min
 
     const std::string GET_INSTANCE_NAME_SQL = "SELECT @@aurora_server_id";
     const std::string GET_INSTANCE_NAME_COL = "@@aurora_server_id";
-    const std::string WRITER_SESSION_ID = "MASTER_SESSION_ID";
 
     const std::string FIELD_SERVER_ID = "SERVER_ID";
     const std::string FIELD_SESSION_ID = "SESSION_ID";
     const std::string FIELD_LAST_UPDATED = "LAST_UPDATE_TIMESTAMP";
     const std::string FIELD_REPLICA_LAG = "REPLICA_LAG_IN_MILLISECONDS";
-
-    const char* RETRIEVE_TOPOLOGY_SQL =
-        "SELECT SERVER_ID, SESSION_ID, LAST_UPDATE_TIMESTAMP, REPLICA_LAG_IN_MILLISECONDS \
-		FROM information_schema.replica_host_status \
-		WHERE time_to_sec(timediff(now(), LAST_UPDATE_TIMESTAMP)) <= 300 \
-		ORDER BY LAST_UPDATE_TIMESTAMP DESC";
 
 protected:
     const int NO_CONNECTION_INDEX = -1;
@@ -101,7 +101,7 @@ protected:
     std::mutex topology_cache_mutex;
 
     bool refresh_needed(std::time_t last_updated);
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(std::shared_ptr<MYSQL> connection);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(std::shared_ptr<CONNECTION_INTERFACE> connection);
     std::shared_ptr<HOST_INFO> create_host(MYSQL_ROW& row);
     std::string get_host_endpoint(const char* node_name);
 

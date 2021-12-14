@@ -1602,10 +1602,10 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hstmt )
   /* try to get next resultset */
   nRetVal = next_result(stmt);
 
-  /* call to mysql_next_result() failed */
+  /* call to next_result() failed */
   if (nRetVal > 0)
   {
-    nRetVal= mysql_errno(stmt->dbc->mysql);
+    nRetVal= stmt->dbc->mysql->error_code();
 
     switch ( nRetVal )
     {
@@ -1615,14 +1615,14 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hstmt )
       case ER_CLIENT_INTERACTION_TIMEOUT:
 #endif
         /* TODO: failover */
-        nReturn = stmt->set_error("08S01", mysql_error( stmt->dbc->mysql ), nRetVal );
+        nReturn = stmt->set_error("08S01", stmt->dbc->mysql->error(), nRetVal );
         goto exitSQLMoreResults;
       case CR_COMMANDS_OUT_OF_SYNC:
       case CR_UNKNOWN_ERROR:
         nReturn = stmt->set_error("HY000");
         goto exitSQLMoreResults;
       default:
-        nReturn = stmt->set_error("HY000", "unhandled error from mysql_next_result()", nRetVal );
+        nReturn = stmt->set_error("HY000", "unhandled error from next_result()", nRetVal );
         goto exitSQLMoreResults;
     }
   }
@@ -2035,7 +2035,7 @@ SQLRETURN SQL_API myodbc_single_fetch( SQLHSTMT             hstmt,
             stmt->set_error("01S07", "One or more row has error.", 0);
             return SQL_SUCCESS_WITH_INFO; //SQL_NO_DATA_FOUND
           case SQL_ERROR:   return stmt->set_error(MYERR_S1000,
-                                            mysql_error(stmt->dbc->mysql), 0);
+                                            stmt->dbc->mysql->error(), 0);
         }
       }
       else
@@ -2179,7 +2179,7 @@ exitSQLSingleFetch:
     stmt->rows_found_in_set= 1;
     *pcrow= cur_row;
 
-    disconnected= is_connection_lost(mysql_errno(stmt->dbc->mysql))
+    disconnected= is_connection_lost(stmt->dbc->mysql->error_code())
       && handle_connection_error(stmt);
 
     if ( upd_status && stmt->ird->rows_processed_ptr )
@@ -2464,7 +2464,7 @@ SQLRETURN SQL_API my_SQLExtendedFetch( SQLHSTMT             hstmt,
     stmt->rows_found_in_set= i;
     *pcrow= i;
 
-    disconnected= is_connection_lost(mysql_errno(stmt->dbc->mysql))
+    disconnected= is_connection_lost(stmt->dbc->mysql->error_code())
       && handle_connection_error(stmt);
 
     if ( upd_status && stmt->ird->rows_processed_ptr )

@@ -74,11 +74,11 @@ SQLRETURN do_query(STMT *stmt,char *query, SQLULEN query_length)
     if ( check_if_server_is_alive( stmt->dbc ) )
     {
       stmt->set_error("08S01" /* "HYT00" */,
-                      mysql_error(stmt->dbc->mysql),
-                      mysql_errno(stmt->dbc->mysql));
+                      stmt->dbc->mysql->error(),
+                      stmt->dbc->mysql->error_code());
 
       translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_08S01 /* S1000 */,
-                      mysql_errno(stmt->dbc->mysql));
+                      stmt->dbc->mysql->error_code());
       goto exit;
     }
 
@@ -107,8 +107,9 @@ SQLRETURN do_query(STMT *stmt,char *query, SQLULEN query_length)
       scroller_move(stmt);
       MYLOG_QUERY(stmt, stmt->scroller.query);
 
-      native_error = mysql_real_query(stmt->dbc->mysql, stmt->scroller.query,
-                                  (unsigned long)stmt->scroller.query_len);
+      native_error = stmt->dbc->mysql->real_query(
+          stmt->scroller.query,
+          (unsigned long)stmt->scroller.query_len);
     }
       /* Not using ssps for scroller so far. Relaxing a bit condition
        if allow_multiple_statements option selected by primitive check if
@@ -150,19 +151,19 @@ SQLRETURN do_query(STMT *stmt,char *query, SQLULEN query_length)
         goto exit;
       }
 
-      native_error= mysql_real_query(stmt->dbc->mysql,query,query_length);
+      native_error = stmt->dbc->mysql->real_query(query, query_length);
     }
 
     MYLOG_QUERY(stmt, "query has been executed");
 
     if (native_error)
     {
-      MYLOG_QUERY(stmt, mysql_error(stmt->dbc->mysql));
+      MYLOG_QUERY(stmt, stmt->dbc->mysql->error());
       stmt->set_error("HY000");
 
       /* For some errors - translating to more appropriate status */
       translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                      mysql_errno(stmt->dbc->mysql));
+                      stmt->dbc->mysql->error_code());
       goto exit;
     }
 
@@ -214,8 +215,8 @@ exit:
     /* TODO: failover */
     if (error == SQL_ERROR) {
        const char* newErrorCode;
-       const char* err = mysql_error(stmt->dbc->mysql);
-       SQLINTEGER errcode = mysql_errno(stmt->dbc->mysql);
+       const char* err = stmt->dbc->mysql->error();
+       SQLINTEGER errcode = stmt->dbc->mysql->error_code();
        if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), newErrorCode)) {
           stmt->set_error(newErrorCode, err, errcode);
        }
@@ -530,7 +531,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
 
 
         if (has_utf8_maxlen4 &&
-            !is_minimum_version(stmt->dbc->mysql->server_version, "5.5.3"))
+            !is_minimum_version(stmt->dbc->mysql->get_server_version(), "5.5.3"))
         {
           return stmt->set_error("HY000",
                                 "Server does not support 4-byte encoded "
@@ -1241,7 +1242,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
           goto memerror;
         }
 
-        size_t added = mysql_real_escape_string(dbc->mysql, stmt->endbuf(), data, length);
+        size_t added = dbc->mysql->real_escape_string(stmt->endbuf(), data, length);
         stmt->buf_add_pos(added);
         stmt->add_to_buffer("'", 1);
       }
@@ -1932,7 +1933,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
   {
     char buff[40];
     /* buff is always big enough because max length of %lu is 15 */
-    sprintf(buff, "KILL /*!50000 QUERY */ %lu", mysql_thread_id(dbc->mysql));
+    sprintf(buff, "KILL /*!50000 QUERY */ %lu", dbc->mysql->thread_id());
     if (mysql_real_query(second, buff, strlen(buff)))
     {
       mysql_close(second);

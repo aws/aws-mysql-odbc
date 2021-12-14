@@ -15,7 +15,7 @@ FAILOVER_CONNECTION_HANDLER::FAILOVER_CONNECTION_HANDLER(
 
 FAILOVER_CONNECTION_HANDLER::~FAILOVER_CONNECTION_HANDLER() {}
 
-std::shared_ptr<MYSQL> FAILOVER_CONNECTION_HANDLER::connect(
+std::shared_ptr<CONNECTION_INTERFACE> FAILOVER_CONNECTION_HANDLER::connect(
     std::shared_ptr<HOST_INFO> host_info) {
 
     if (dbc == nullptr || dbc->ds == nullptr || host_info == nullptr) {
@@ -29,7 +29,7 @@ std::shared_ptr<MYSQL> FAILOVER_CONNECTION_HANDLER::connect(
     auto dbc_clone = clone_dbc(dbc);
     ds_set_strnattr(&dbc_clone->ds->server, new_host.c_str(), new_host.size());
 
-    std::shared_ptr<MYSQL> new_connection;
+    std::shared_ptr<CONNECTION_INTERFACE> new_connection;
     CLEAR_DBC_ERROR(dbc_clone.get());
     SQLRETURN rc = dbc_clone->connect(dbc_clone->ds);
 
@@ -52,11 +52,16 @@ std::shared_ptr<MYSQL> FAILOVER_CONNECTION_HANDLER::connect(
 }
 
 void FAILOVER_CONNECTION_HANDLER::update_connection(
-    std::shared_ptr<MYSQL> new_connection) {
+    std::shared_ptr<CONNECTION_INTERFACE> new_connection) {
 
-    if (new_connection) {
+    if (!new_connection->is_null()) {
         dbc->close();
-        dbc->mysql = new_connection.get();
+        
+        // CONNECTION is the only implementation of CONNECTION_INTERFACE
+        // so dynamic_cast should be safe here.
+        // TODO: Is there an alternative to dynamic_cast here?
+        dbc->mysql = dynamic_cast<CONNECTION*>(new_connection.get());
+        
         CLEAR_DBC_ERROR(dbc.get());
 
         // TODO: should we also update dbc->ds when updating connection? How
@@ -67,9 +72,9 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
 }
 
 void FAILOVER_CONNECTION_HANDLER::release_connection(
-    std::shared_ptr<MYSQL> mysql) {
+    std::shared_ptr<CONNECTION_INTERFACE> connection) {
 
-    mysql_close(mysql.get());
+    connection->close_connection();
 }
 
 std::shared_ptr<DBC> FAILOVER_CONNECTION_HANDLER::clone_dbc(

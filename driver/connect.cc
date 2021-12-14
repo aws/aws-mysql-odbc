@@ -33,7 +33,6 @@
 
 #include "driver.h"
 #include "installer.h"
-#include "stringutil.h"
 
 #include <map>
 #include <vector>
@@ -139,7 +138,7 @@ try
 
   {
     MY_CHARSET_INFO my_charset;
-    mysql_get_character_set_info(mysql, &my_charset);
+    mysql->get_character_set_info(&my_charset);
     cxn_charset_info = get_charset(my_charset.number, MYF(0));
   }
 
@@ -327,7 +326,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 
 #endif
 
-  mysql = mysql_init(nullptr);
+  mysql = new CONNECTION(mysql_init(nullptr));
 
   flags = get_client_flags(dsrc);
 
@@ -335,28 +334,26 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 
   if (dsrc->allow_big_results || dsrc->safe)
 #if MYSQL_VERSION_ID >= 50709
-    mysql_options(mysql, MYSQL_OPT_MAX_ALLOWED_PACKET, &max_long);
+    mysql->options(MYSQL_OPT_MAX_ALLOWED_PACKET, &max_long);
 #else
     /* max_allowed_packet is a magical mysql macro. */
     max_allowed_packet = ~0L;
 #endif
 
   if (dsrc->force_use_of_named_pipes)
-    mysql_options(mysql, MYSQL_OPT_NAMED_PIPE, NullS);
+    mysql->options(MYSQL_OPT_NAMED_PIPE, NullS);
 
   if (dsrc->read_options_from_mycnf)
-    mysql_options(mysql, MYSQL_READ_DEFAULT_GROUP, "odbc");
+    mysql->options(MYSQL_READ_DEFAULT_GROUP, "odbc");
 
   if (login_timeout)
-    mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, (char *)&login_timeout);
+    mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char *)&login_timeout);
 
   if (dsrc->readtimeout)
-    mysql_options(mysql, MYSQL_OPT_READ_TIMEOUT,
-                  (const char *) &dsrc->readtimeout);
+    mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char *) &dsrc->readtimeout);
 
   if (dsrc->writetimeout)
-    mysql_options(mysql, MYSQL_OPT_WRITE_TIMEOUT,
-                  (const char *) &dsrc->writetimeout);
+    mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char *) &dsrc->writetimeout);
 
 /*
   Pluggable authentication was introduced in mysql 5.5.7
@@ -364,8 +361,8 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 #if MYSQL_VERSION_ID >= 50507
   if (dsrc->plugin_dir)
   {
-    mysql_options(mysql, MYSQL_PLUGIN_DIR,
-                  ds_get_utf8attr(dsrc->plugin_dir, &dsrc->plugin_dir8));
+    mysql->options(MYSQL_PLUGIN_DIR,
+                   ds_get_utf8attr(dsrc->plugin_dir, &dsrc->plugin_dir8));
   }
 
 #ifdef WIN32
@@ -375,14 +372,14 @@ SQLRETURN DBC::connect(DataSource *dsrc)
       If plugin directory is not set we can use the dll location
       for a better chance of finding plugins.
     */
-    mysql_options(mysql, MYSQL_PLUGIN_DIR, default_plugin_location.c_str());
+    mysql->options(MYSQL_PLUGIN_DIR, default_plugin_location.c_str());
   }
 #endif
 
   if (dsrc->default_auth)
   {
-    mysql_options(mysql, MYSQL_DEFAULT_AUTH,
-                  ds_get_utf8attr(dsrc->default_auth, &dsrc->default_auth8));
+    mysql->options(MYSQL_DEFAULT_AUTH,
+                   ds_get_utf8attr(dsrc->default_auth, &dsrc->default_auth8));
   }
 
   /*
@@ -402,7 +399,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
   if (fido_func || fido_callback_is_set)
   {
     struct st_mysql_client_plugin* plugin =
-      mysql_client_find_plugin(mysql,
+      mysql->client_find_plugin(
         "authentication_fido_client",
         MYSQL_CLIENT_AUTHENTICATION_PLUGIN);
 
@@ -430,9 +427,8 @@ SQLRETURN DBC::connect(DataSource *dsrc)
   {
     /* load client authentication plugin if required */
     struct st_mysql_client_plugin *plugin =
-        mysql_client_find_plugin(mysql,
-                                 "authentication_oci_client",
-                                 MYSQL_CLIENT_AUTHENTICATION_PLUGIN);
+        mysql->client_find_plugin("authentication_oci_client",
+                                  MYSQL_CLIENT_AUTHENTICATION_PLUGIN);
 
     if(!plugin)
     {
@@ -474,13 +470,13 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 #ifdef WIN32
     /* load client authentication plugin if required */
     struct st_mysql_client_plugin* plugin =
-      mysql_client_find_plugin(mysql,
+      mysql->client_find_plugin(
         "authentication_kerberos_client",
         MYSQL_CLIENT_AUTHENTICATION_PLUGIN);
 
     if (!plugin)
     {
-      return set_error("HY000", mysql_error(mysql), 0);
+      return set_error("HY000", mysql->error(), 0);
     }
 
     if (mysql_plugin_options(plugin, "plugin_authentication_kerberos_client_mode",
@@ -505,25 +501,24 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 #endif
 
   /* set SSL parameters */
-  mysql_ssl_set(mysql,
-                ds_get_utf8attr(dsrc->sslkey,    &dsrc->sslkey8),
-                ds_get_utf8attr(dsrc->sslcert,   &dsrc->sslcert8),
-                ds_get_utf8attr(dsrc->sslca,     &dsrc->sslca8),
-                ds_get_utf8attr(dsrc->sslcapath, &dsrc->sslcapath8),
-                ds_get_utf8attr(dsrc->sslcipher, &dsrc->sslcipher8));
+  mysql->ssl_set(ds_get_utf8attr(dsrc->sslkey,    &dsrc->sslkey8),
+                 ds_get_utf8attr(dsrc->sslcert,   &dsrc->sslcert8),
+                 ds_get_utf8attr(dsrc->sslca,     &dsrc->sslca8),
+                 ds_get_utf8attr(dsrc->sslcapath, &dsrc->sslcapath8),
+                 ds_get_utf8attr(dsrc->sslcipher, &dsrc->sslcipher8));
 
 #if MYSQL_VERSION_ID < 80003
   if (dsrc->sslverify)
-    mysql_options(mysql, MYSQL_OPT_SSL_VERIFY_SERVER_CERT,
-                  (const char *)&opt_ssl_verify_server_cert);
+    mysql->options(MYSQL_OPT_SSL_VERIFY_SERVER_CERT,
+                   (const char *)&opt_ssl_verify_server_cert);
 #endif
 
 #if MYSQL_VERSION_ID >= 50660
   if (dsrc->rsakey)
   {
     /* Read the public key on the client side */
-    mysql_options(mysql, MYSQL_SERVER_PUBLIC_KEY,
-                  ds_get_utf8attr(dsrc->rsakey, &dsrc->rsakey8));
+    mysql->options(MYSQL_SERVER_PUBLIC_KEY,
+                   ds_get_utf8attr(dsrc->rsakey, &dsrc->rsakey8));
   }
 #endif
 #if MYSQL_VERSION_ID >= 50710
@@ -554,7 +549,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
     }
 
     if (!tls_options.length() ||
-        mysql_options(mysql, MYSQL_OPT_TLS_VERSION, tls_options.c_str()))
+        mysql->options(MYSQL_OPT_TLS_VERSION, tls_options.c_str()))
     {
       return set_error("HY000",
         "SSL connection error: No valid TLS version available", 0);
@@ -564,7 +559,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 
   if (dsrc->ssl_crl)
   {
-    if (mysql_options(mysql, MYSQL_OPT_SSL_CRL,
+    if (mysql->options(MYSQL_OPT_SSL_CRL,
       ds_get_utf8attr(dsrc->ssl_crl, &dsrc->ssl_crl8)))
     {
       return set_error("HY000", "Failed to set the certificate revocation list file", 0);
@@ -573,7 +568,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 
   if (dsrc->ssl_crlpath)
   {
-    if (mysql_options(mysql, MYSQL_OPT_SSL_CRLPATH,
+    if (mysql->options(MYSQL_OPT_SSL_CRLPATH,
       ds_get_utf8attr(dsrc->ssl_crlpath, &dsrc->ssl_crlpath8)))
     {
       return set_error("HY000", "Failed to set the certificate revocation list path", 0);
@@ -584,7 +579,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
   if (dsrc->get_server_public_key)
   {
     /* Get the server public key */
-    mysql_options(mysql, MYSQL_OPT_GET_SERVER_PUBLIC_KEY, (const void*)&on);
+    mysql->options(MYSQL_OPT_GET_SERVER_PUBLIC_KEY, (const void*)&on);
   }
 #endif
 
@@ -594,12 +589,12 @@ SQLRETURN DBC::connect(DataSource *dsrc)
       Get the ANSI charset info before we change connection to UTF-8.
     */
     MY_CHARSET_INFO my_charset;
-    mysql_get_character_set_info(mysql, &my_charset);
+    mysql->get_character_set_info(&my_charset);
     ansi_charset_info= get_charset(my_charset.number, MYF(0));
     /*
       We always use utf8 for the connection, and change it afterwards if needed.
     */
-    mysql_options(mysql, MYSQL_SET_CHARSET_NAME, transport_charset);
+    mysql->options(MYSQL_SET_CHARSET_NAME, transport_charset);
     cxn_charset_info= utf8_charset_info;
   }
   else
@@ -613,12 +608,12 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 
     if (client_cs_name)
     {
-      mysql_options(mysql, MYSQL_SET_CHARSET_NAME, client_cs_name);
+      mysql->options(MYSQL_SET_CHARSET_NAME, client_cs_name);
       ansi_charset_info= cxn_charset_info= get_charset_by_csname(client_cs_name, MYF(MY_CS_PRIMARY), MYF(0));
     }
 #else
     MY_CHARSET_INFO my_charset;
-    mysql_get_character_set_info(mysql, &my_charset);
+    mysql->get_character_set_info(&my_charset);
     ansi_charset_info= get_charset(my_charset.number, MYF(0));
 #endif
 }
@@ -626,27 +621,27 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 #if MYSQL_VERSION_ID >= 50610
   if (dsrc->can_handle_exp_pwd)
   {
-    mysql_options(mysql, MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, (char *)&on);
+    mysql->options(MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, (char *)&on);
   }
 #endif
 
 #if (MYSQL_VERSION_ID >= 50527 && MYSQL_VERSION_ID < 50600) || MYSQL_VERSION_ID >= 50607
   if (dsrc->enable_cleartext_plugin)
   {
-    mysql_options(mysql, MYSQL_ENABLE_CLEARTEXT_PLUGIN, (char *)&on);
+    mysql->options(MYSQL_ENABLE_CLEARTEXT_PLUGIN, (char *)&on);
   }
 #endif
 
   if (dsrc->enable_local_infile)
   {
-    mysql_options(mysql, MYSQL_OPT_LOCAL_INFILE, &on_int);
+    mysql->options(MYSQL_OPT_LOCAL_INFILE, &on_int);
   }
 
   if (dsrc->load_data_local_dir && dsrc->load_data_local_dir[0])
   {
     ds_get_utf8attr(dsrc->load_data_local_dir, &dsrc->load_data_local_dir8);
-    mysql_options(mysql, MYSQL_OPT_LOAD_DATA_LOCAL_DIR,
-                  dsrc->load_data_local_dir8);
+    mysql->options(MYSQL_OPT_LOAD_DATA_LOCAL_DIR,
+                   dsrc->load_data_local_dir8);
   }
 
   // Set the connector identification attributes.
@@ -659,7 +654,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 
   for (auto &val : attr_list)
   {
-    mysql_options4(mysql, MYSQL_OPT_CONNECT_ATTR_ADD,
+    mysql->options4(MYSQL_OPT_CONNECT_ATTR_ADD,
       val[0].c_str(), val[1].c_str());
   }
 
@@ -668,27 +663,27 @@ SQLRETURN DBC::connect(DataSource *dsrc)
   {
     ds_get_utf8attr(dsrc->pwd1, &dsrc->pwd18);
     int fator = 1;
-    mysql_options4(mysql, MYSQL_OPT_USER_PASSWORD,
-                   &fator,
-                   dsrc->pwd18);
+    mysql->options4(mysql, MYSQL_OPT_USER_PASSWORD,
+                    &fator,
+                    dsrc->pwd18);
   }
 
   if(dsrc->pwd2 && dsrc->pwd2[0])
   {
     ds_get_utf8attr(dsrc->pwd2, &dsrc->pwd28);
     int fator = 2;
-    mysql_options4(mysql, MYSQL_OPT_USER_PASSWORD,
-                   &fator,
-                   dsrc->pwd28);
+    mysql->options4(MYSQL_OPT_USER_PASSWORD,
+                    &fator,
+                    dsrc->pwd28);
   }
 
   if(dsrc->pwd3 && dsrc->pwd3[0])
   {
     ds_get_utf8attr(dsrc->pwd3, &dsrc->pwd38);
     int fator = 3;
-    mysql_options4(mysql, MYSQL_OPT_USER_PASSWORD,
-                   &fator,
-                   dsrc->pwd38);
+    mysql->options4(MYSQL_OPT_USER_PASSWORD,
+                    &fator,
+                    dsrc->pwd38);
   }
 #endif
 #if MYSQL_VERSION_ID >= 50711
@@ -709,7 +704,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 
     // Don't do anything if there is no match with any of the available modes
     if (mode)
-      mysql_options(mysql, MYSQL_OPT_SSL_MODE, &mode);
+      mysql->options(MYSQL_OPT_SSL_MODE, &mode);
   }
 #endif
 
@@ -778,7 +773,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
     {
       protocol = MYSQL_PROTOCOL_TCP;
     }
-    mysql_options(mysql, MYSQL_OPT_PROTOCOL, &protocol);
+    mysql->options(MYSQL_OPT_PROTOCOL, &protocol);
 
     //Setting server and port to the dsrc->server8 and dsrc->port
     //TODO: IS THERE A FUNCTION TO DO THIS USING myodbc_malloc?
@@ -790,15 +785,13 @@ SQLRETURN DBC::connect(DataSource *dsrc)
     dsrc->port = port;
 
     MYSQL *connect_result = dsrc->enable_dns_srv ?
-                            mysql_real_connect_dns_srv(mysql,
-                              host,
+                            mysql->real_connect_dns_srv(host,
                               ds_get_utf8attr(dsrc->uid,      &dsrc->uid8),
                               ds_get_utf8attr(dsrc->pwd,      &dsrc->pwd8),
                               ds_get_utf8attr(dsrc->database, &dsrc->database8),
                               flags)
                             :
-                            mysql_real_connect(mysql,
-                              host,
+                            mysql->real_connect(host,
                               ds_get_utf8attr(dsrc->uid,      &dsrc->uid8),
                               ds_get_utf8attr(dsrc->pwd,      &dsrc->pwd8),
                               ds_get_utf8attr(dsrc->database, &dsrc->database8),
@@ -807,7 +800,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
                               flags);
     if (!connect_result)
     {
-      unsigned int native_error= mysql_errno(mysql);
+      unsigned int native_error= mysql->error_code();
 
       /* Before 5.6.11 error returned by server was ER_MUST_CHANGE_PASSWORD(1820).
        In 5.6.11 it changed to ER_MUST_CHANGE_PASSWORD_LOGIN(1862)
@@ -831,7 +824,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
                               "this functionlaity", 0);
       }
 #endif
-      set_error("HY000", mysql_error(mysql), native_error);
+      set_error("HY000", mysql->error(), native_error);
 
       translate_error((char*)error.sqlstate.c_str(), MYERR_S1000, native_error);
 
@@ -865,7 +858,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
       }
       else
       {
-        switch (mysql_errno(mysql))
+        switch (mysql->error_code())
         {
         case ER_CON_COUNT_ERROR:
         case CR_SOCKET_CREATE_ERROR:
@@ -877,7 +870,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
           break;
         default:
           //If SQLSTATE not 08xxx, which is used for network errors
-          if(strncmp(mysql_sqlstate(mysql), "08", 2) != 0)
+          if(strncmp(mysql->sqlstate(), "08", 2) != 0)
           {
             //Return error and do not try another host
             return SQL_ERROR;
@@ -904,9 +897,9 @@ SQLRETURN DBC::connect(DataSource *dsrc)
     }
   }
 
-  has_query_attrs = mysql->server_capabilities & CLIENT_QUERY_ATTRIBUTES;
+  has_query_attrs = mysql->get_server_capabilities() & CLIENT_QUERY_ATTRIBUTES;
 
-  if (!is_minimum_version(mysql->server_version, "4.1.1"))
+  if (!is_minimum_version(mysql->get_server_version(), "4.1.1"))
   {
     close();
     return set_error("08001", "Driver does not support server versions under 4.1.1", 0);
@@ -964,12 +957,12 @@ SQLRETURN DBC::connect(DataSource *dsrc)
 
   /* Set the statement error prefix based on the server version. */
   strxmov(st_error_prefix, MYODBC_ERROR_PREFIX, "[mysqld-",
-          mysql->server_version, "]", NullS);
+          mysql->get_server_version(), "]", NullS);
 
   /* This needs to be set after connection, or it doesn't stick.  */
   if (ds->auto_reconnect)
   {
-    mysql_options(mysql, MYSQL_OPT_RECONNECT, (char *)&on);
+    mysql->options(MYSQL_OPT_RECONNECT, (char *)&on);
   }
 
   /* Make sure autocommit is set as configured. */
@@ -983,7 +976,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
              "SQL_AUTOCOMMIT_OFF changed to SQL_AUTOCOMMIT_ON",
              SQL_SUCCESS_WITH_INFO);
     }
-    else if (autocommit_is_on() && mysql_autocommit(mysql, FALSE))
+    else if (autocommit_is_on() && mysql->autocommit(FALSE))
     {
       /** @todo set error */
       goto error;
@@ -992,7 +985,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
   else if ((commit_flag == CHECK_AUTOCOMMIT_ON) &&
            transactions_supported() && !autocommit_is_on())
   {
-    if (mysql_autocommit(mysql, TRUE))
+    if (mysql->autocommit(TRUE))
     {
       /** @todo set error */
       goto error;
@@ -1031,7 +1024,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
     }
   }
 
-  mysql_get_option(mysql, MYSQL_OPT_NET_BUFFER_LENGTH, &net_buffer_len);
+  mysql->get_option(MYSQL_OPT_NET_BUFFER_LENGTH, &net_buffer_len);
 
   guard.set_success(rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO);
   return rc;
@@ -1072,7 +1065,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
 #else
 
   /* Can't connect if we're already connected. */
-  if (is_connected(dbc))
+  if (dbc->mysql->is_connected())
     return ((DBC*)hdbc)->set_error(MYERR_08002, NULL, 0);
 
   /* Reset error state */
@@ -1546,12 +1539,12 @@ SQLRETURN DBC::execute_query(const char* query,
   }
 
   if (check_if_server_is_alive(this) ||
-    mysql_real_query(mysql, query, query_length))
+    this->mysql->real_query(query, query_length))
   {
     /* TODO: failover */
     
-    result = set_error(MYERR_S1000, mysql_error(mysql),
-      mysql_errno(mysql));
+    result = set_error(MYERR_S1000, this->mysql->error(),
+      this->mysql->error_code());
   }
 
   return result;

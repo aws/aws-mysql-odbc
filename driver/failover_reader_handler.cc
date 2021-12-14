@@ -88,7 +88,6 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
     std::vector<std::shared_ptr<HOST_INFO>> hosts_list,
     const std::function<bool()> is_canceled) {
 
-    auto new_connection = std::make_shared<MYSQL>();
     int total_hosts = hosts_list.size();
 
     // TODO try to connect to two readers in separete threads and select the
@@ -97,8 +96,8 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
     int i = 0;
     std::shared_ptr<HOST_INFO> new_host;
     while (i < total_hosts && !is_canceled()) {
-        new_connection = connection_handler->connect(hosts_list.at(i));
-        if (new_connection) {
+        auto new_connection = connection_handler->connect(hosts_list.at(i));
+        if (!new_connection->is_null()) {
             new_host = hosts_list.at(i);
             return READER_FAILOVER_RESULT{true, new_host, new_connection};
         }
