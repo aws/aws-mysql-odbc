@@ -143,8 +143,7 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader() {
     while (!is_canceled()) {
         auto connection_result = reader_handler->get_reader_connection(
             current_topology, [this] { return is_canceled(); });
-        if (connection_result.connected &&
-            !connection_result.new_connection->is_null()) {
+        if (connection_result.connected && !connection_result.new_connection->is_null()) {
             reader_connection = connection_result.new_connection;
             current_reader_host = connection_result.new_host;
             break;
@@ -152,13 +151,11 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader() {
     }
 }
 
-// Use just connected reader to refresh topology and try to connect to a new
-// writer
+// Use just connected reader to refresh topology and try to connect to a new writer
 void WAIT_NEW_WRITER_HANDLER::refresh_topology_and_connect_to_new_writer(
     const std::shared_ptr<HOST_INFO>& original_writer) {
     while (!is_canceled()) {
-        auto latest_topology =
-            topology_service->get_topology(reader_connection, true);
+        auto latest_topology = topology_service->get_topology(reader_connection, true);
         if (latest_topology->total_hosts() > 0) {
             current_topology = latest_topology;
             auto writer_candidate = current_topology->get_writer();
@@ -186,15 +183,15 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
     return true;
 }
 
-// Close reader connection if not needed(open and not the same as current
-// connection)
+// Close reader connection if not needed (open and not the same as current connection)
 void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
     if (!reader_connection->is_null() && current_connection != reader_connection) {
         connection_handler->release_connection(reader_connection);
     }
 }
 
-// ****************FAILOVER_WRITER_HANDLER  ************************************
+// ************************** FAILOVER_WRITER_HANDLER  **************************
+
 FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
