@@ -28,10 +28,7 @@
 
 #include "mock_objects.h"
 
-// TODO: Why must we include .cc rather than .h?
-#include "driver/host_info.cc"
-#include "driver/cluster_topology_info.cc"
-#include "driver/topology_service.cc"
+#include "driver/topology_service.h"
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
