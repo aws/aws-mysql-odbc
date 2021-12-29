@@ -57,7 +57,7 @@ target_link_libraries(
   testing
   gtest_main
   gmock_main
-  ${DRIVER_NAME}
+  myodbc8a
 )
 
 include(GoogleTest)
