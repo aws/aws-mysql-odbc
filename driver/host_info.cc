@@ -55,6 +55,17 @@ HOST_INFO::HOST_INFO(const char* host, int port)
 {
 }
 
+HOST_INFO::HOST_INFO(std::string host, int port, HOST_STATE state, bool is_writer)
+    : host{ host }, port{ port }, host_state{ state }, is_writer{ is_writer }
+{
+}
+
+// would need some checks for nulls
+HOST_INFO::HOST_INFO(const char* host, int port, HOST_STATE state, bool is_writer)
+    : host{ host }, port{ port }, host_state{ state }, is_writer{ is_writer }
+{
+}
+
 /**
  * Returns the host.
  *
@@ -69,7 +80,7 @@ std::string HOST_INFO::get_host() {
  *
  * @return the port
  */
-int  HOST_INFO::get_port() {
+int HOST_INFO::get_port() {
     return port;
 }
 

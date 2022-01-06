@@ -61,20 +61,21 @@ class FAILOVER_READER_HANDLER {
             std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
             const std::function<bool()> is_canceled);
 
-    protected:
-        int connect_reader_interval_ms = 5000;  // 5 sec
-        int reader_failover_timeout_ms = 60000;   // 60 sec
-
-    private:
-        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
-        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
-
         std::vector<std::shared_ptr<HOST_INFO>> build_hosts_list(
             const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& topology_info,
             bool contain_writers);
+
         READER_FAILOVER_RESULT get_connection_from_hosts(
             std::vector<std::shared_ptr<HOST_INFO>> hosts_list,
             const std::function<bool()> is_canceled);
+
+    protected:
+        int connect_reader_interval_ms = 5000;   // 5 sec
+        int reader_failover_timeout_ms = 60000;  // 60 sec
+
+    private:
+        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;   
 };
 
 // This struct holds results of Writer Failover Process.

@@ -56,12 +56,12 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
 
     if (!new_connection->is_null()) {
         dbc->close();
-        
+
         // CONNECTION is the only implementation of CONNECTION_INTERFACE
         // so dynamic_cast should be safe here.
         // TODO: Is there an alternative to dynamic_cast here?
         dbc->mysql = dynamic_cast<CONNECTION*>(new_connection.get());
-        
+
         CLEAR_DBC_ERROR(dbc.get());
 
         // TODO: should we also update dbc->ds when updating connection? How

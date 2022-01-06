@@ -46,6 +46,8 @@ struct HOST_INFO {
     //TODO - probably choose one of the following constructors, or more precisely choose which data type they should take
     HOST_INFO(std::string host, int port);
     HOST_INFO(const char* host, int port);
+    HOST_INFO(std::string host, int port, HOST_STATE state, bool is_writer);
+    HOST_INFO(const char* host, int port, HOST_STATE state, bool is_writer);
     const int NO_PORT = -1;
 
     int get_port();
@@ -60,7 +62,7 @@ struct HOST_INFO {
     void mark_as_writer(bool writer);
     static bool is_host_same(const std::shared_ptr<HOST_INFO>& h1, const std::shared_ptr<HOST_INFO>& h2);
 
-    // used to be properties - TODO - remove the not needed one's
+    // used to be properties - TODO - remove the ones that are not necessary
     std::string session_id;
     std::string last_updated;
     std::string replica_lag;
