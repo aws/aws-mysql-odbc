@@ -70,7 +70,7 @@ protected:
         cluster_instance.reset();
         delete ts;
     }
-	
+
     void SetUp() override {
         ts->set_refresh_rate(DEFAULT_REFRESH_RATE_IN_MILLISECONDS);
     }
@@ -177,7 +177,7 @@ TEST_F(TopologyServiceTest, StaleTopology) {
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> hosts = ts->get_topology(conn);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> stale_hosts = ts->get_topology(conn);
-	
+
     EXPECT_EQ(3, stale_hosts->total_hosts());
     EXPECT_EQ(hosts, stale_hosts);
 }
@@ -244,7 +244,7 @@ TEST_F(TopologyServiceTest, ClearCache) {
 
     auto topology = ts->get_topology(conn);
     EXPECT_NE(nullptr, topology);
-	
+
     ts->clear_all();
 
     // topology should now be null after above clear_all()

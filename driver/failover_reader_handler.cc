@@ -112,25 +112,24 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
     const std::function<bool()> is_canceled) {
 
     int total_hosts = hosts_list.size();
-
-    FAILOVER_SYNC failover_sync;
-    // Constructing the function objects
-    CONNECT_TO_READER_HANDLER first_connection_handler(connection_handler, topology_service, connect_reader_interval_ms);
-    CONNECT_TO_READER_HANDLER second_connection_handler(connection_handler, topology_service, connect_reader_interval_ms);
-    
     int i = 0;
 
     // This loop should end once it reaches the end of the list without a successful connection.
     // The function calling it already has a neverending loop looking for a connection.
     // Ending this loop will allow the calling function to update the list or change strategy if this failed.
     while (i < total_hosts && !is_canceled()) {
-        // This boolean verifies if the next host in the list is also the last.
+        // This boolean verifies if the next host in the list is also the last, meaning there's no host for the second thread.
         bool odd_hosts_number = (i + 1 == total_hosts);
 
+        FAILOVER_SYNC failover_sync;
+
         std::shared_ptr<HOST_INFO> first_reader_host;
+        CONNECT_TO_READER_HANDLER first_connection_handler(connection_handler, topology_service, connect_reader_interval_ms);
         std::future<READER_FAILOVER_RESULT> first_connection_future;
         READER_FAILOVER_RESULT first_connection_result;
+
         std::shared_ptr<HOST_INFO> second_reader_host;
+        CONNECT_TO_READER_HANDLER second_connection_handler(connection_handler, topology_service, connect_reader_interval_ms);
         std::future<READER_FAILOVER_RESULT> second_connection_future;
         READER_FAILOVER_RESULT second_connection_result;
 
@@ -145,8 +144,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
         failover_sync.wait_for_done(reader_failover_timeout_ms);
 
         // NOTE: Calling cancel() on the handlers below indicates to the executing handlers stop what they are doing and return.
-        // If the handlers were at the point that they had a valid connection,
-        // cancel does not release this connection so it can be retrieved after
+        // If the handlers were at the point that they had a valid connection, cancel does not release this connection so it can be retrieved after
         // calls to future.get(). cancel has no effect if the thread function has already completed.
         first_connection_handler.cancel();
         if (!odd_hosts_number) {
@@ -163,8 +161,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
         if (first_connection_result.connected) {
             topology_service->unmark_host_down(first_reader_host);
             return first_connection_result;
-        }
-        else if (!odd_hosts_number && second_connection_result.connected) {
+        } else if (!odd_hosts_number && second_connection_result.connected) {
             topology_service->unmark_host_down(second_reader_host);
             return second_connection_result;
         }
@@ -193,13 +190,15 @@ READER_FAILOVER_RESULT CONNECT_TO_READER_HANDLER::operator()(
                 auto new_connection = get_connection();
                 f_sync.mark_as_done();
                 topology_service->unmark_host_down(reader);
-                return READER_FAILOVER_RESULT( true, reader, new_connection );
+                return READER_FAILOVER_RESULT(true, reader, new_connection);
             }
+            f_sync.mark_as_done();
             topology_service->mark_host_down(reader);
-            sleep(reconnect_interval_ms);
+            return READER_FAILOVER_RESULT(false, nullptr, nullptr);
         }
     }
     // If another thread finishes first, or both timeout, this thread is canceled.
     f_sync.mark_as_done();
-    return READER_FAILOVER_RESULT( false, nullptr, nullptr );
+    topology_service->mark_host_down(reader);
+    return READER_FAILOVER_RESULT(false, nullptr, nullptr);
 }
