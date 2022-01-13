@@ -149,14 +149,22 @@ void CLUSTER_TOPOLOGY_INFO::set_last_used_reader(std::shared_ptr<HOST_INFO> read
     last_used_reader = reader;
 }
 
-void CLUSTER_TOPOLOGY_INFO::mark_host_down(std::shared_ptr<HOST_INFO> down_host) {
-    down_host->set_host_state(DOWN);
-    down_hosts.insert(down_host->get_host_port_pair());
+void CLUSTER_TOPOLOGY_INFO::mark_host_down(std::shared_ptr<HOST_INFO> host) {
+    host->set_host_state(DOWN);
+    down_hosts.insert(host->get_host_port_pair());
 }
 
 void CLUSTER_TOPOLOGY_INFO::unmark_host_down(std::shared_ptr<HOST_INFO> host) {
     host->set_host_state(UP);
     down_hosts.erase(host->get_host_port_pair());
+}
+
+void CLUSTER_TOPOLOGY_INFO::mark_host_up(std::shared_ptr<HOST_INFO> host) {
+    unmark_host_down(host);
+}
+
+void CLUSTER_TOPOLOGY_INFO::unmark_host_up(std::shared_ptr<HOST_INFO> host) {
+    mark_host_down(host);
 }
 
 std::set<std::string> CLUSTER_TOPOLOGY_INFO::get_down_hosts() {
