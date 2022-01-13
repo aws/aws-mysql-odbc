@@ -1,6 +1,6 @@
 /**
   @file failover.h
-  @brief Definitions needed for failover
+  @brief Failover related classes and definitions.
 */
 
 #ifndef __FAILOVER_H__
@@ -14,19 +14,19 @@
 struct DBC;
 
 class FAILOVER_CONNECTION_HANDLER {
-   public:
-    FAILOVER_CONNECTION_HANDLER(std::shared_ptr<DBC> dbc);
-    virtual ~FAILOVER_CONNECTION_HANDLER();
+    public:
+        FAILOVER_CONNECTION_HANDLER(std::shared_ptr<DBC> dbc);
+        virtual ~FAILOVER_CONNECTION_HANDLER();
 
-    std::shared_ptr<CONNECTION_INTERFACE> connect(std::shared_ptr<HOST_INFO> host_info);
-    void update_connection(std::shared_ptr<CONNECTION_INTERFACE> new_connection);
-    void release_connection(std::shared_ptr<CONNECTION_INTERFACE> connection);
+        std::shared_ptr<CONNECTION_INTERFACE> connect(std::shared_ptr<HOST_INFO> host_info);
+        void update_connection(std::shared_ptr<CONNECTION_INTERFACE> new_connection);
+        void release_connection(std::shared_ptr<CONNECTION_INTERFACE> connection);
 
-   private:
-    std::shared_ptr<DBC> dbc;
+    private:
+        std::shared_ptr<DBC> dbc;
 
-    std::shared_ptr<DBC> clone_dbc(std::shared_ptr<DBC> source_dbc);
-    void release_dbc(std::shared_ptr<DBC> dbc_clone);
+        std::shared_ptr<DBC> clone_dbc(std::shared_ptr<DBC> source_dbc);
+        void release_dbc(std::shared_ptr<DBC> dbc_clone);
 };
 
 struct READER_FAILOVER_RESULT {
@@ -36,28 +36,35 @@ struct READER_FAILOVER_RESULT {
 };
 
 class FAILOVER_READER_HANDLER {
-   public:
-    FAILOVER_READER_HANDLER(
+    public:
+        FAILOVER_READER_HANDLER(
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler);
-    ~FAILOVER_READER_HANDLER();
-    READER_FAILOVER_RESULT failover(
-        std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
-        const std::function<bool()> is_canceled);
-    READER_FAILOVER_RESULT get_reader_connection(
-        std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
-        const std::function<bool()> is_canceled);
+    
+        ~FAILOVER_READER_HANDLER();
+    
+        READER_FAILOVER_RESULT failover(
+            std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
+            const std::function<bool()> is_canceled);
+    
+        READER_FAILOVER_RESULT get_reader_connection(
+            std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
+            const std::function<bool()> is_canceled);
 
-   private:
-    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
-    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
+    protected:
+        int connect_reader_interval_ms = 5000;  // 5 sec
+        int reader_failover_timeout_ms = 60000;   // 60 sec
 
-    std::vector<std::shared_ptr<HOST_INFO>> build_hosts_list(
-        const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& topology_info,
-        bool contain_writers);
-    READER_FAILOVER_RESULT get_connection_from_hosts(
-        std::vector<std::shared_ptr<HOST_INFO>> hosts_list,
-        const std::function<bool()> is_canceled);
+    private:
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
+
+        std::vector<std::shared_ptr<HOST_INFO>> build_hosts_list(
+            const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& topology_info,
+            bool contain_writers);
+        READER_FAILOVER_RESULT get_connection_from_hosts(
+            std::vector<std::shared_ptr<HOST_INFO>> hosts_list,
+            const std::function<bool()> is_canceled);
 };
 
 // This struct holds results of Writer Failover Process.
@@ -170,6 +177,22 @@ class FAILOVER {
     std::shared_ptr<CONNECTION_INTERFACE> new_connection;
 
     void close_connection();
+};
+
+class CONNECT_TO_READER_HANDLER : public FAILOVER {
+public:
+    CONNECT_TO_READER_HANDLER(
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+        int connection_interval);
+    ~CONNECT_TO_READER_HANDLER();
+
+    READER_FAILOVER_RESULT operator()(
+        const std::shared_ptr<HOST_INFO>& reader,
+        FAILOVER_SYNC& f_sync);
+
+private:
+    int reconnect_interval_ms;
 };
 
 class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {

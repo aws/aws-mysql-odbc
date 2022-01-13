@@ -6,7 +6,10 @@
 #include "failover.h"
 
 #include <algorithm>
+#include <chrono>
+#include <future>
 #include <random>
+#include <thread>
 #include <vector>
 
 FAILOVER_READER_HANDLER::FAILOVER_READER_HANDLER(
@@ -17,29 +20,34 @@ FAILOVER_READER_HANDLER::FAILOVER_READER_HANDLER(
 
 FAILOVER_READER_HANDLER::~FAILOVER_READER_HANDLER() {}
 
-// Called to start Reader Failover Process. This process tries to connect to any reader.
-// If no reader is available then driver may also try to connect to a
-// writer host, down hosts, and the current reader host.
+// Function called to start the Reader Failover process.
+// This process will generate a list of available hosts: First readers that are up, then readers marked as down, then writers.
+// If it goes through the list and does not succeed to connect, it tries again, endlessly.
 READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::failover(
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
     const std::function<bool()> is_canceled) {
+    if (!current_topology || current_topology->total_hosts() == 0) {
+        return READER_FAILOVER_RESULT{ false, nullptr, nullptr };
+    }
 
-    auto hosts = build_hosts_list(topology_info, true);
+    std::vector<std::shared_ptr<HOST_INFO>> hosts_list;
 
     while (!is_canceled()) {
-        auto reader_result = get_connection_from_hosts(hosts, is_canceled);
-        // TODO What if not connected
+        hosts_list = build_hosts_list(current_topology, true);
+        auto reader_result = get_connection_from_hosts(hosts_list, is_canceled);
         if (reader_result.connected) {
+            topology_service->unmark_host_down(reader_result.new_host);
             return reader_result;
         }
+        // TODO Think of changes to the strategy if it went through all the hosts and did not connect.
     }
     // Return a false result if the failover has been cancelled.
     return READER_FAILOVER_RESULT{false, nullptr, nullptr};
 }
 
-// Called to get any available reader connection. If no reader is available then
-// result of process is unsuccessful.
-// This function does not attempt to connect to a writer.
+// Function to connect to a reader host. Often used to query/update the topology.
+// If it goes through the list of readers and fails to connect, it tries again, endlessly.
+// This function only tries to connect to reader hosts.
 READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_reader_connection(
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
     const std::function<bool()> is_canceled) {
@@ -49,8 +57,9 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_reader_connection(
 
     while (!is_canceled()) {
         auto reader_result = get_connection_from_hosts(hosts, is_canceled);
-        // TODO What if not connected
+        // TODO Think of changes to the strategy if it went through all the readers and did not connect.
         if (reader_result.connected) {
+            topology_service->unmark_host_down(reader_result.new_host);
             return reader_result;
         }
     }
@@ -58,7 +67,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_reader_connection(
     return READER_FAILOVER_RESULT{false, nullptr, nullptr};
 }
 
-// Function that reads the topology and builds a list of hosts to connect to.
+// Function that reads the topology and builds a list of hosts to connect to, in order of priority.
 // boolean include_writers indicate whether one wants to append the writers to the end of the list or not.
 std::vector<std::shared_ptr<HOST_INFO>> FAILOVER_READER_HANDLER::build_hosts_list(
     const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& topology_info,
@@ -66,8 +75,7 @@ std::vector<std::shared_ptr<HOST_INFO>> FAILOVER_READER_HANDLER::build_hosts_lis
 
     std::vector<std::shared_ptr<HOST_INFO>> hosts_list;
 
-    // We create two separate lists for hosts that are up and down.
-    // We will try to connect first that hosts that are marked up, then hosts marked down.
+    // We split reader hosts that are marked up from those marked down.
     std::vector<std::shared_ptr<HOST_INFO>> readers_up;
     std::vector<std::shared_ptr<HOST_INFO>> readers_down;
 
@@ -81,10 +89,12 @@ std::vector<std::shared_ptr<HOST_INFO>> FAILOVER_READER_HANDLER::build_hosts_lis
         }
     }
 
+    // Both lists of readers up and down are shuffled.
     auto rng = std::default_random_engine{};
     std::shuffle(std::begin(readers_up), std::end(readers_up), rng);
     std::shuffle(std::begin(readers_down), std::end(readers_down), rng);
 
+    // Readers that are marked up go first, readers marked down go after.
     hosts_list.insert(hosts_list.end(), readers_up.begin(), readers_up.end());
     hosts_list.insert(hosts_list.end(), readers_down.begin(), readers_down.end());
 
@@ -103,24 +113,93 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
 
     int total_hosts = hosts_list.size();
 
-    // TODO connect simultaneously to two readers in separete threads and select the fastest
-
+    FAILOVER_SYNC failover_sync;
+    // Constructing the function objects
+    CONNECT_TO_READER_HANDLER first_connection_handler(connection_handler, topology_service, connect_reader_interval_ms);
+    CONNECT_TO_READER_HANDLER second_connection_handler(connection_handler, topology_service, connect_reader_interval_ms);
+    
     int i = 0;
-    std::shared_ptr<HOST_INFO> new_host;
 
-    // This loop should end once it reaches the end of the list.
+    // This loop should end once it reaches the end of the list without a successful connection.
     // The function calling it already has a neverending loop looking for a connection.
-    // Ending this loop will allow the calling function to change or refresh the list if the loop here
-    // ends without obtaining a successful connection.
+    // Ending this loop will allow the calling function to update the list or change strategy if this failed.
     while (i < total_hosts && !is_canceled()) {
-        auto host = hosts_list.at(i);
-        auto new_connection = connection_handler->connect(host);
-        if (!new_connection->is_null()) {
-            new_host = host;
-            return READER_FAILOVER_RESULT{true, new_host, new_connection};
+        // This boolean verifies if the next host in the list is also the last.
+        bool odd_hosts_number = (i + 1 == total_hosts);
+
+        std::shared_ptr<HOST_INFO> first_reader_host;
+        std::future<READER_FAILOVER_RESULT> first_connection_future;
+        READER_FAILOVER_RESULT first_connection_result;
+        std::shared_ptr<HOST_INFO> second_reader_host;
+        std::future<READER_FAILOVER_RESULT> second_connection_future;
+        READER_FAILOVER_RESULT second_connection_result;
+
+        first_reader_host = hosts_list.at(i);
+        first_connection_future = std::async(std::launch::async, std::ref(first_connection_handler), std::cref(first_reader_host), std::ref(failover_sync));
+
+        if (!odd_hosts_number) {
+            second_reader_host = hosts_list.at(i+1);
+            second_connection_future = std::async(std::launch::async, std::ref(second_connection_handler), std::cref(second_reader_host), std::ref(failover_sync));
         }
-        i++;
+
+        failover_sync.wait_for_done(reader_failover_timeout_ms);
+
+        // NOTE: Calling cancel() on the handlers below indicates to the executing handlers stop what they are doing and return.
+        // If the handlers were at the point that they had a valid connection,
+        // cancel does not release this connection so it can be retrieved after
+        // calls to future.get(). cancel has no effect if the thread function has already completed.
+        first_connection_handler.cancel();
+        if (!odd_hosts_number) {
+            second_connection_handler.cancel();
+        }
+
+        if (first_connection_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            first_connection_result = first_connection_future.get();
+        }
+        if (!odd_hosts_number && second_connection_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            second_connection_result = second_connection_future.get();
+        }
+
+        if (first_connection_result.connected) {
+            topology_service->unmark_host_down(first_reader_host);
+            return first_connection_result;
+        }
+        else if (!odd_hosts_number && second_connection_result.connected) {
+            topology_service->unmark_host_down(second_reader_host);
+            return second_connection_result;
+        }
+        // None has connected. We move on and try new hosts.
+        i += 2;
     }
+
     // The operation was either cancelled either reached the end of the list without connecting.
     return READER_FAILOVER_RESULT{false, nullptr, nullptr};
+}
+
+// *** CONNECT_TO_READER_HANDLER
+// Handler to connect to a reader host.
+CONNECT_TO_READER_HANDLER::CONNECT_TO_READER_HANDLER(
+    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+    int connection_interval) : FAILOVER{ connection_handler, topology_service }, reconnect_interval_ms{ connection_interval } {}
+
+CONNECT_TO_READER_HANDLER::~CONNECT_TO_READER_HANDLER() {}
+
+READER_FAILOVER_RESULT CONNECT_TO_READER_HANDLER::operator()(
+    const std::shared_ptr<HOST_INFO>& reader, FAILOVER_SYNC& f_sync) {
+    if (reader) {
+        while (!is_canceled()) {
+            if (connect(reader)) {
+                auto new_connection = get_connection();
+                f_sync.mark_as_done();
+                topology_service->unmark_host_down(reader);
+                return READER_FAILOVER_RESULT{ true, reader, new_connection };
+            }
+            topology_service->mark_host_down(reader);
+            sleep(reconnect_interval_ms);
+        }
+    }
+    // If another thread finishes first, or both timeout, this thread is canceled.
+    f_sync.mark_as_done();
+    return READER_FAILOVER_RESULT{ false, nullptr, nullptr };
 }
