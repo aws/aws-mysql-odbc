@@ -94,8 +94,8 @@ std::set<std::string> TOPOLOGY_SERVICE::get_down_hosts() {
     return down_hosts;
 }
 
-void TOPOLOGY_SERVICE::mark_host_down(std::shared_ptr<HOST_INFO> down_host) {
-    if (!down_host) {
+void TOPOLOGY_SERVICE::mark_host_down(std::shared_ptr<HOST_INFO> host) {
+    if (!host) {
         return;
     }
 
@@ -103,7 +103,7 @@ void TOPOLOGY_SERVICE::mark_host_down(std::shared_ptr<HOST_INFO> down_host) {
 
     auto topology_info = get_from_cache();
     if (topology_info) {
-        topology_info->mark_host_down(down_host);
+        topology_info->mark_host_down(host);
     }
 
     lock.unlock();
@@ -122,6 +122,14 @@ void TOPOLOGY_SERVICE::unmark_host_down(std::shared_ptr<HOST_INFO> host) {
     }
 
     lock.unlock();
+}
+
+void TOPOLOGY_SERVICE::unmark_host_up(std::shared_ptr<HOST_INFO> host) {
+    mark_host_down(host);
+}
+
+void TOPOLOGY_SERVICE::mark_host_up(std::shared_ptr<HOST_INFO> host) {
+    unmark_host_down(host);
 }
 
 void TOPOLOGY_SERVICE::clear_all() {
