@@ -64,8 +64,10 @@ public:
     std::shared_ptr<HOST_INFO> get_last_used_reader();
     void set_last_used_reader(std::shared_ptr<HOST_INFO> reader);
     std::set<std::string> get_down_hosts();
-    void mark_host_down(std::shared_ptr<HOST_INFO> down_host);
+    void mark_host_down(std::shared_ptr<HOST_INFO> host);
+    void mark_host_up(std::shared_ptr<HOST_INFO> host);
     void unmark_host_down(std::shared_ptr<HOST_INFO> host);
+    void unmark_host_up(std::shared_ptr<HOST_INFO> host);
     void set_refresh_rate(int refresh_rate);
     void clear_all();
     void clear();
