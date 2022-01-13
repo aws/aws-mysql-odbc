@@ -88,7 +88,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   # consequence of this is that on Windows import libraries will not
   # be generated nor installed.
   IF(APPLE)
-    ADD_LIBRARY(${DRIVER_NAME} MODULE ${DRIVER_SRCS})
+    ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS})
   ELSE(APPLE)
     ADD_LIBRARY(${DRIVER_NAME} ${DRIVER_SRCS})
   ENDIF(APPLE)
