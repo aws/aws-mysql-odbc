@@ -48,6 +48,9 @@
     WHERE time_to_sec(timediff(now(), LAST_UPDATE_TIMESTAMP)) <= 300 \
     ORDER BY LAST_UPDATE_TIMESTAMP DESC"
 
+static std::map<std::string, std::shared_ptr<CLUSTER_TOPOLOGY_INFO>> topology_cache;
+static std::mutex topology_cache_mutex;
+
 class TOPOLOGY_SERVICE_INTERFACE {
 public:
     virtual ~TOPOLOGY_SERVICE_INTERFACE() {};
@@ -108,9 +111,6 @@ protected:
 
     // TODO performance metrics
     // bool gather_perf_Metrics = false;
-
-    std::map<std::string, std::shared_ptr<CLUSTER_TOPOLOGY_INFO>> topology_cache;
-    std::mutex topology_cache_mutex;
 
     bool refresh_needed(std::time_t last_updated);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(std::shared_ptr<CONNECTION_INTERFACE> connection);
