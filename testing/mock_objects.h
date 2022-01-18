@@ -1,43 +1,70 @@
-// Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License, version 2.0, as
-// published by the Free Software Foundation.
-//
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
-//
-// Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
-// Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the GNU General Public License, version 2.0, for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software Foundation, Inc.,
-// 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+/*
+ * AWS ODBC Driver for MySQL
+ * Copyright Amazon.com Inc. or affiliates.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
 
 #ifndef __MOCKOBJECTS_H__
 #define __MOCKOBJECTS_H__
 
 #include <gmock/gmock.h>
+
 #include "driver/connection.h"
+#include "driver/failover.h"
+#include "driver/topology_service.h"
 
 class MOCK_CONNECTION : public CONNECTION_INTERFACE {
-public:
-    MOCK_METHOD0(is_null, bool());
-    MOCK_METHOD1(try_execute_query, bool(const char* query));
-    MOCK_METHOD0(fetch_next_row, char**());
-    MOCK_METHOD0(close_connection, void());
+ public:
+    MOCK_METHOD(bool, is_null, ());
+    MOCK_METHOD(bool, is_connected, ());
+    MOCK_METHOD(bool, try_execute_query, (const char*));
+    MOCK_METHOD(char**, fetch_next_row, ());
+    MOCK_METHOD(void, close_connection, ());
+};
+
+class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
+ public:
+    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology,
+                (std::shared_ptr<CONNECTION_INTERFACE>, bool));
+    MOCK_METHOD(void, mark_host_down, (std::shared_ptr<HOST_INFO>));
+    MOCK_METHOD(void, unmark_host_down, (std::shared_ptr<HOST_INFO>));
+};
+
+class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
+ public:
+    MOCK_READER_HANDLER() : FAILOVER_READER_HANDLER(nullptr, nullptr) {}
+    MOCK_METHOD(READER_FAILOVER_RESULT, get_reader_connection,
+                (std::shared_ptr<CLUSTER_TOPOLOGY_INFO>,
+                const std::function<bool()>));
+};
+
+class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
+ public:
+    MOCK_CONNECTION_HANDLER() : FAILOVER_CONNECTION_HANDLER(nullptr) {}
+    MOCK_METHOD(std::shared_ptr<CONNECTION_INTERFACE>, connect,
+                (std::shared_ptr<HOST_INFO>));
 };
 
 #endif /* __MOCKOBJECTS_H__ */

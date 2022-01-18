@@ -50,24 +50,36 @@ static const char* RETRIEVE_TOPOLOGY_SQL =
     WHERE time_to_sec(timediff(now(), LAST_UPDATE_TIMESTAMP)) <= 300 \
     ORDER BY LAST_UPDATE_TIMESTAMP DESC";
 
-class TOPOLOGY_SERVICE {
+class TOPOLOGY_SERVICE_INTERFACE {
+public:
+    virtual ~TOPOLOGY_SERVICE_INTERFACE() {};
+
+    virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<CONNECTION_INTERFACE> connection, bool force_update = false) = 0;
+    virtual void mark_host_down(std::shared_ptr<HOST_INFO> host) = 0;
+    virtual void unmark_host_down(std::shared_ptr<HOST_INFO> host) = 0;
+    virtual void mark_host_up(std::shared_ptr<HOST_INFO> host) = 0;
+    virtual void unmark_host_up(std::shared_ptr<HOST_INFO> host) = 0;
+};
+
+class TOPOLOGY_SERVICE : virtual public TOPOLOGY_SERVICE_INTERFACE {
 public:
     TOPOLOGY_SERVICE();
-    virtual ~TOPOLOGY_SERVICE();
+    TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
+    ~TOPOLOGY_SERVICE() override;
 
     void set_cluster_id(const char* cluster_id);
     void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<CONNECTION_INTERFACE> connection, bool force_update = false);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<CONNECTION_INTERFACE> connection, bool force_update = false) override;
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();
     void set_last_used_reader(std::shared_ptr<HOST_INFO> reader);
     std::set<std::string> get_down_hosts();
-    void mark_host_down(std::shared_ptr<HOST_INFO> host);
-    void mark_host_up(std::shared_ptr<HOST_INFO> host);
-    void unmark_host_down(std::shared_ptr<HOST_INFO> host);
-    void unmark_host_up(std::shared_ptr<HOST_INFO> host);
+    void mark_host_down(std::shared_ptr<HOST_INFO> host) override;
+    void mark_host_up(std::shared_ptr<HOST_INFO> host) override;
+    void unmark_host_down(std::shared_ptr<HOST_INFO> host) override;
+    void unmark_host_up(std::shared_ptr<HOST_INFO> host) override;
     void set_refresh_rate(int refresh_rate);
     void clear_all();
     void clear();

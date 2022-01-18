@@ -13,7 +13,7 @@
 #include <vector>
 
 FAILOVER_READER_HANDLER::FAILOVER_READER_HANDLER(
-    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler)
     : topology_service{topology_service},
       connection_handler{connection_handler} {}
@@ -180,7 +180,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
 // Handler to connect to a reader host.
 CONNECT_TO_READER_HANDLER::CONNECT_TO_READER_HANDLER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
     int connection_interval) : FAILOVER{ connection_handler, topology_service }, reconnect_interval_ms{ connection_interval } {}
 
 CONNECT_TO_READER_HANDLER::~CONNECT_TO_READER_HANDLER() {}
