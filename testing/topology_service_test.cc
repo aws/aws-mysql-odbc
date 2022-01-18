@@ -54,8 +54,8 @@ namespace {
 class TopologyServiceTest : public testing::Test {
 protected:
     static void SetUpTestSuite() {
-        conn = std::shared_ptr<CONNECTION_INTERFACE>(new MOCK_CONNECTION);
-        mc = static_cast<MOCK_CONNECTION*>(conn.get());
+        mc = new MOCK_CONNECTION();
+        conn = std::shared_ptr<CONNECTION_INTERFACE>(mc);
 		
         ts = new TOPOLOGY_SERVICE();
         cluster_instance = std::make_shared<HOST_INFO>(HOST_INFO("?.XYZ.us-east-2.rds.amazonaws.com", 1234));
