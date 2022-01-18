@@ -27,7 +27,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::failover(
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
     const std::function<bool()> is_canceled) {
     if (!current_topology || current_topology->total_hosts() == 0) {
-        return READER_FAILOVER_RESULT{ false, nullptr, nullptr };
+        return READER_FAILOVER_RESULT( false, nullptr, nullptr );
     }
 
     std::vector<std::shared_ptr<HOST_INFO>> hosts_list;
@@ -42,7 +42,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::failover(
         // TODO Think of changes to the strategy if it went through all the hosts and did not connect.
     }
     // Return a false result if the failover has been cancelled.
-    return READER_FAILOVER_RESULT{false, nullptr, nullptr};
+    return READER_FAILOVER_RESULT(false, nullptr, nullptr);
 }
 
 // Function to connect to a reader host. Often used to query/update the topology.
@@ -64,7 +64,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_reader_connection(
         }
     }
     // Return a false result if the connection request has been cancelled.
-    return READER_FAILOVER_RESULT{false, nullptr, nullptr};
+    return READER_FAILOVER_RESULT(false, nullptr, nullptr);
 }
 
 // Function that reads the topology and builds a list of hosts to connect to, in order of priority.
@@ -173,7 +173,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
     }
 
     // The operation was either cancelled either reached the end of the list without connecting.
-    return READER_FAILOVER_RESULT{false, nullptr, nullptr};
+    return READER_FAILOVER_RESULT(false, nullptr, nullptr);
 }
 
 // *** CONNECT_TO_READER_HANDLER
@@ -193,7 +193,7 @@ READER_FAILOVER_RESULT CONNECT_TO_READER_HANDLER::operator()(
                 auto new_connection = get_connection();
                 f_sync.mark_as_done();
                 topology_service->unmark_host_down(reader);
-                return READER_FAILOVER_RESULT{ true, reader, new_connection };
+                return READER_FAILOVER_RESULT( true, reader, new_connection );
             }
             topology_service->mark_host_down(reader);
             sleep(reconnect_interval_ms);
@@ -201,5 +201,5 @@ READER_FAILOVER_RESULT CONNECT_TO_READER_HANDLER::operator()(
     }
     // If another thread finishes first, or both timeout, this thread is canceled.
     f_sync.mark_as_done();
-    return READER_FAILOVER_RESULT{ false, nullptr, nullptr };
+    return READER_FAILOVER_RESULT( false, nullptr, nullptr );
 }
