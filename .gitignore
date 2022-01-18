@@ -49,6 +49,7 @@ Uninstall.bat
 
 # Visual Studio files
 /.vs
+/.vscode
 *.vcxproj*
 *.sln
 **/*.aps
