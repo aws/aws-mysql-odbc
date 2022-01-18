@@ -34,6 +34,15 @@ struct READER_FAILOVER_RESULT {
     bool connected = false;
     std::shared_ptr<HOST_INFO> new_host;
     std::shared_ptr<CONNECTION_INTERFACE> new_connection;
+
+    READER_FAILOVER_RESULT()
+        : connected{false}, new_host{nullptr}, new_connection{nullptr} {}
+        
+    READER_FAILOVER_RESULT(bool connected, std::shared_ptr<HOST_INFO> new_host,
+                           std::shared_ptr<CONNECTION_INTERFACE> new_connection)
+        : connected{connected},
+          new_host{new_host},
+          new_connection{new_connection} {}
 };
 
 class FAILOVER_READER_HANDLER {
@@ -75,6 +84,20 @@ struct WRITER_FAILOVER_RESULT {
                                // process re-connected to the same host
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology;
     std::shared_ptr<CONNECTION_INTERFACE> new_connection;
+
+    WRITER_FAILOVER_RESULT()
+        : connected{false},
+          is_new_host{false},
+          new_topology{nullptr},
+          new_connection{nullptr} {}
+
+    WRITER_FAILOVER_RESULT(bool connected, bool is_new_host,
+                           std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology,
+                           std::shared_ptr<CONNECTION_INTERFACE> new_connection)
+        : connected{connected},
+          is_new_host{is_new_host},
+          new_topology{new_topology},
+          new_connection{new_connection} {}
 };
 
 class FAILOVER_WRITER_HANDLER {

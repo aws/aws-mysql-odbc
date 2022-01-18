@@ -121,7 +121,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
     EXPECT_CALL(*mock_ts, unmark_host_down(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT{false, nullptr, nullptr}));
+        .WillRepeatedly(Return(READER_FAILOVER_RESULT(false, nullptr, nullptr)));
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
         .WillRepeatedly(Return(mock_connection));
@@ -189,8 +189,8 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
             }),
-            Return(READER_FAILOVER_RESULT{true, reader_a_host,
-                                          mock_reader_a_connection})));
+            Return(READER_FAILOVER_RESULT(true, reader_a_host,
+                                          mock_reader_a_connection))));
 
     FAILOVER_WRITER_HANDLER writer_handler(
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000);
@@ -240,8 +240,8 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
     EXPECT_CALL(*mock_ts, unmark_host_down(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT{true, reader_a_host,
-                                                    mock_reader_a_connection}));
+        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+                                                    mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 2000, 2000);
@@ -313,8 +313,8 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     EXPECT_CALL(*mock_ts, unmark_host_down(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT{true, reader_a_host,
-                                                    mock_reader_a_connection}));
+        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+                                                    mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000);
@@ -390,8 +390,8 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
     EXPECT_CALL(*mock_ts, unmark_host_down(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT{true, reader_a_host,
-                                                    mock_reader_a_connection}));
+        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+                                                    mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000);
@@ -474,8 +474,8 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
     EXPECT_CALL(*mock_ts, unmark_host_down(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT{true, reader_a_host,
-                                                    mock_reader_a_connection}));
+        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+                                                    mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
         mock_ts, mock_reader_handler, mock_connection_handler, 1000, 2000, 2000);
@@ -528,8 +528,8 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed)
     EXPECT_CALL(*mock_ts, mark_host_down(new_writer_host)).Times(AtLeast(1));
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT{true, reader_a_host,
-                                                    mock_reader_a_connection}));
+        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+                                                    mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
         mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000);

@@ -93,8 +93,8 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
                     if (is_canceled()) {
                         break;
                     }
-                    return WRITER_FAILOVER_RESULT{true, false, latest_topology,
-                                                  new_connection};
+                    return WRITER_FAILOVER_RESULT(true, false, latest_topology,
+                                                  new_connection);
                 }
                 clean_up_new_connection();
             }
@@ -104,7 +104,7 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
     // Another thread finishes or both timeout, this thread is canceled
     clean_up_new_connection();
     f_sync.mark_as_done();
-    return WRITER_FAILOVER_RESULT{false, false, nullptr, nullptr};
+    return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
 
 bool RECONNECT_TO_WRITER_HANDLER::is_current_host_writer(
@@ -142,8 +142,8 @@ WRITER_FAILOVER_RESULT WAIT_NEW_WRITER_HANDLER::operator()(
             clean_up_reader_connection();
         } else {
             f_sync.mark_as_done();
-            return WRITER_FAILOVER_RESULT{true, true, current_topology,
-                                        new_connection};
+            return WRITER_FAILOVER_RESULT(true, true, current_topology,
+                                        new_connection);
         }
     }
 
@@ -151,7 +151,7 @@ WRITER_FAILOVER_RESULT WAIT_NEW_WRITER_HANDLER::operator()(
     clean_up_reader_connection();
     clean_up_new_connection();
     f_sync.mark_as_done();
-    return WRITER_FAILOVER_RESULT{false, false, nullptr, nullptr};
+    return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
 
 // Connect to a reader to later retrieve the latest topology
@@ -226,7 +226,7 @@ FAILOVER_WRITER_HANDLER::~FAILOVER_WRITER_HANDLER() {}
 WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology) {
     if (!current_topology || current_topology->total_hosts() == 0) {
-        return WRITER_FAILOVER_RESULT{false, false, nullptr, nullptr};
+        return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
     }
 
     FAILOVER_SYNC failover_sync;
@@ -281,6 +281,6 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
         return new_writer_result;
     } else {
         // timeout
-        return WRITER_FAILOVER_RESULT{false, false, nullptr, nullptr};
+        return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
     }
 }
