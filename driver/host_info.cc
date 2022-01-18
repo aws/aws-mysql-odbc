@@ -83,7 +83,7 @@ std::string HOST_INFO::get_host_port_pair() {
 }
 
 
-bool  HOST_INFO::equal_host_port_pair(HOST_INFO& hi) {
+bool HOST_INFO::equal_host_port_pair(HOST_INFO& hi) {
     return get_host_port_pair() == hi.get_host_port_pair();
 }
 
