@@ -45,7 +45,6 @@ TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE& ts) {
     refresh_rate_in_milliseconds = ts.refresh_rate_in_milliseconds;
     cluster_id = ts.cluster_id;
     cluster_instance_host = ts.cluster_instance_host;
-    topology_cache = ts.topology_cache;
 }
 
 void TOPOLOGY_SERVICE::set_cluster_id(const char* cluster_id) {
