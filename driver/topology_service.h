@@ -41,14 +41,12 @@
 #include <mutex>
 
 // TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.000;
-// TODO: is there a way to make these private but still accessible to topology_service_test?
-static const int DEFAULT_REFRESH_RATE_IN_MILLISECONDS = 30000;
-static const std::string WRITER_SESSION_ID = "MASTER_SESSION_ID";
-static const char* RETRIEVE_TOPOLOGY_SQL =
-    "SELECT SERVER_ID, SESSION_ID, LAST_UPDATE_TIMESTAMP, REPLICA_LAG_IN_MILLISECONDS \
+#define DEFAULT_REFRESH_RATE_IN_MILLISECONDS 30000
+#define WRITER_SESSION_ID "MASTER_SESSION_ID"
+#define RETRIEVE_TOPOLOGY_SQL "SELECT SERVER_ID, SESSION_ID, LAST_UPDATE_TIMESTAMP, REPLICA_LAG_IN_MILLISECONDS \
     FROM information_schema.replica_host_status \
     WHERE time_to_sec(timediff(now(), LAST_UPDATE_TIMESTAMP)) <= 300 \
-    ORDER BY LAST_UPDATE_TIMESTAMP DESC";
+    ORDER BY LAST_UPDATE_TIMESTAMP DESC"
 
 class TOPOLOGY_SERVICE_INTERFACE {
 public:
