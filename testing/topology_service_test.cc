@@ -42,13 +42,12 @@ namespace {
     TOPOLOGY_SERVICE* ts;
     std::shared_ptr<HOST_INFO> cluster_instance;
 
-    char* writer_id = const_cast<char*>(WRITER_SESSION_ID.c_str());
     char* reader1[4] = { "replica-instance-1", "Replica", "2020-09-15 17:51:53.0", "13.5" };
     char* reader2[4] = { "replica-instance-2", "Replica", "2020-09-15 17:51:53.0", "13.5" };
-    char* writer[4] = { "writer-instance", writer_id, "2020-09-15 17:51:53.0", "13.5" };
-    char* writer1[4] = { "writer-instance-1", writer_id, "2020-09-15 17:51:53.0", "13.5" };
-    char* writer2[4] = { "writer-instance-2", writer_id, "2020-09-15 17:51:53.0", "13.5" };
-    char* writer3[4] = { "writer-instance-3", writer_id, "2020-09-15 17:51:53.0", "13.5" };
+    char* writer[4] = { "writer-instance", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
+    char* writer1[4] = { "writer-instance-1", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
+    char* writer2[4] = { "writer-instance-2", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
+    char* writer3[4] = { "writer-instance-3", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
 }  // namespace
 
 class TopologyServiceTest : public testing::Test {
