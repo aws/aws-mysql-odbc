@@ -14,6 +14,7 @@ public:
     virtual ~CONNECTION_INTERFACE() {};
 
     virtual bool is_null() = 0;
+    virtual bool is_connected() = 0;
     virtual bool try_execute_query(const char* query) = 0;
     virtual char** fetch_next_row() = 0;
     virtual void close_connection() = 0;
@@ -24,7 +25,7 @@ public:
     CONNECTION(MYSQL* conn);
     CONNECTION(std::shared_ptr<MYSQL> conn);
 
-    bool is_connected();
+    bool is_connected() override;
 
     bool is_null() override;
     bool try_execute_query(const char* query) override;
