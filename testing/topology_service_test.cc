@@ -42,6 +42,8 @@ namespace {
     TOPOLOGY_SERVICE* ts;
     std::shared_ptr<HOST_INFO> cluster_instance;
 
+    const char* cluster_id = "eac7829c-bb6d-4d1a-82fa-a8c2470910f2";
+
     char* reader1[4] = { "replica-instance-1", "Replica", "2020-09-15 17:51:53.0", "13.5" };
     char* reader2[4] = { "replica-instance-2", "Replica", "2020-09-15 17:51:53.0", "13.5" };
     char* writer[4] = { "writer-instance", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
@@ -59,6 +61,7 @@ protected:
         ts = new TOPOLOGY_SERVICE();
         cluster_instance = std::make_shared<HOST_INFO>(HOST_INFO("?.XYZ.us-east-2.rds.amazonaws.com", 1234));
         ts->set_cluster_instance_template(cluster_instance);
+        ts->set_cluster_id(cluster_id);
     }
 
     static void TearDownTestSuite() {
@@ -189,6 +192,39 @@ TEST_F(TopologyServiceTest, RefreshTopology) {
     ts->get_topology(conn);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ts->get_topology(conn);
+}
+
+TEST_F(TopologyServiceTest, SharedTopology) {
+    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+        .WillOnce(Return(true))
+        .WillRepeatedly(Return(false));
+    EXPECT_CALL(*mc, fetch_next_row())
+        .WillOnce(Return(reader1))
+        .WillOnce(Return(writer))
+        .WillOnce(Return(reader2))
+        .WillRepeatedly(Return(MYSQL_ROW{}));
+
+    TOPOLOGY_SERVICE* ts2 = new TOPOLOGY_SERVICE();
+    ts2->set_cluster_id(cluster_id);
+
+    auto topology1 = ts->get_topology(conn);
+    auto topology2 = ts2->get_cached_topology();
+    
+    // Both topologies should come from 
+    // the same underlying shared topology.
+    EXPECT_NE(nullptr, topology1);
+    EXPECT_NE(nullptr, topology2);
+    EXPECT_EQ(topology1, topology2);
+
+    ts->clear();
+
+    topology1 = ts->get_cached_topology();
+    topology2 = ts2->get_cached_topology();
+
+    // Both topologies should be null because
+    // the underlying shared topology got cleared.
+    EXPECT_EQ(nullptr, topology1);
+    EXPECT_EQ(nullptr, topology2);
 }
 
 TEST_F(TopologyServiceTest, ClearCache) {
