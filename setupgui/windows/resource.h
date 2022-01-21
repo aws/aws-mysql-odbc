@@ -163,6 +163,7 @@
 #define IDC_EDIT_failover_reader_connect_timeout 10084
 #define IDC_EDIT_connect_timeout		10085
 #define IDC_EDIT_network_timeout        10086
+#define IDC_CHECK_allow_reader_connections 10087
 #define IDC_BUTTON_TEST                 11014
 #define IDC_BUTTON_HELP                 11015
 #define IDC_STATIC                      -1
