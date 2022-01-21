@@ -419,7 +419,7 @@ void btnDetails_Click (HWND hwnd)
     syncTabs(hwnd, pParams);
 	}
   
-  int h = (mod == -1) ? 420 : 770; /* rect.bottom - rect.top + 310*mod */
+  int h = (mod == -1) ? 420 : 790; /* rect.bottom - rect.top + 310*mod */
 	MoveWindow( hwnd, rect.left, rect.top, rect.right - rect.left, h, TRUE );
 }
 
