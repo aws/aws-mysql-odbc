@@ -222,6 +222,7 @@ static SQLWCHAR W_OCI_CONFIG_FILE[] =
 
 /* Failover */
 static SQLWCHAR W_DISABLE_CLUSTER_FAILOVER[] = { 'D', 'I', 'S', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
+static SQLWCHAR W_ALLOW_READER_CONNECTIONS[] = { 'A', 'L', 'L', 'O', 'W', '_', 'R', 'E', 'A', 'D', 'E', 'R', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', 'I', 'O', 'N', 'S', 0 };
 static SQLWCHAR W_GATHER_PERF_METRICS[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', 0 };
 static SQLWCHAR W_HOST_PATTERN[] = { 'H', 'O', 'S', 'T', '_', 'P', 'A', 'T', 'T', 'E', 'R', 'N', 0 };
 static SQLWCHAR W_CLUSTER_ID[] = { 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'I', 'D', 0 };
@@ -274,7 +275,7 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         W_SSLMODE, W_NO_DATE_OVERFLOW, W_LOAD_DATA_LOCAL_DIR,
                         W_OCI_CONFIG_FILE,
                         /* Failover */
-                        W_DISABLE_CLUSTER_FAILOVER, W_GATHER_PERF_METRICS, 
+                        W_DISABLE_CLUSTER_FAILOVER, W_ALLOW_READER_CONNECTIONS, W_GATHER_PERF_METRICS, 
                         W_HOST_PATTERN, W_CLUSTER_ID, W_TOPOLOGY_REFRESH_RATE,
                         W_FAILOVER_TIMEOUT, W_FAILOVER_TOPOLOGY_REFRESH_RATE,
                         W_FAILOVER_WRITER_RECONNECT_INTERVAL, 
@@ -1006,6 +1007,8 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
   /* Failover*/
   else if (!sqlwcharcasecmp(W_DISABLE_CLUSTER_FAILOVER, param))
     *booldest = &ds->disable_cluster_failover;
+  else if (!sqlwcharcasecmp(W_ALLOW_READER_CONNECTIONS, param))
+    *booldest = &ds->allow_reader_connections;  
   else if (!sqlwcharcasecmp(W_GATHER_PERF_METRICS, param))
     *booldest = &ds->gather_perf_metrics;
   else if (!sqlwcharcasecmp(W_HOST_PATTERN, param))
@@ -1538,6 +1541,7 @@ int ds_add(DataSource *ds)
 
   /* Failover */
   if (ds_add_intprop(ds->name, W_DISABLE_CLUSTER_FAILOVER, ds->disable_cluster_failover)) goto error;
+  if (ds_add_intprop(ds->name, W_ALLOW_READER_CONNECTIONS, ds->allow_reader_connections)) goto error;
   if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS, ds->gather_perf_metrics)) goto error;
   if (ds_add_strprop(ds->name, W_HOST_PATTERN, ds->host_pattern)) goto error;
   if (ds_add_strprop(ds->name, W_CLUSTER_ID, ds->cluster_id)) goto error;
@@ -1879,6 +1883,7 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
     }
 
     ds->disable_cluster_failover = ds_source->disable_cluster_failover;
+    ds->allow_reader_connections = ds_source->allow_reader_connections;
     ds->gather_perf_metrics = ds_source->gather_perf_metrics;
     ds->topology_refresh_rate = ds_source->topology_refresh_rate;
     ds->failover_timeout = ds_source->failover_timeout;
