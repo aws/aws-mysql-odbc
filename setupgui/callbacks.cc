@@ -304,6 +304,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
 
   /* 3 - Failover */
   GET_BOOL_TAB(FAILOVER_TAB, disable_cluster_failover);
+  GET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
   GET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
   GET_STRING_TAB(FAILOVER_TAB, host_pattern);
   GET_STRING_TAB(FAILOVER_TAB, cluster_id);
@@ -416,6 +417,7 @@ void syncTabs(HWND hwnd, DataSource *params)
 
   /* 3 - Failover */
   SET_BOOL_TAB(FAILOVER_TAB, disable_cluster_failover);
+  SET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
   SET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
   SET_STRING_TAB(FAILOVER_TAB, host_pattern);
   SET_STRING_TAB(FAILOVER_TAB, cluster_id);

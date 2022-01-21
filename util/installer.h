@@ -195,6 +195,7 @@ typedef struct DataSource {
 
   /* Failover */
   BOOL disable_cluster_failover;
+  BOOL allow_reader_connections;
   BOOL gather_perf_metrics;
   SQLCHAR *host_pattern8;
   SQLCHAR *cluster_id8;
