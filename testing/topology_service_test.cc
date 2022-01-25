@@ -35,6 +35,7 @@
 #include <thread>
 
 using ::testing::Return;
+using ::testing::StrEq;
 
 namespace {
     MOCK_CONNECTION* mc;
@@ -80,7 +81,7 @@ protected:
 };
 
 TEST_F(TopologyServiceTest, TopologyQuery) {
-    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillRepeatedly(Return(true));
     EXPECT_CALL(*mc, fetch_next_row())
         .WillOnce(Return(reader1))
@@ -89,12 +90,14 @@ TEST_F(TopologyServiceTest, TopologyQuery) {
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(conn);
+    ASSERT_NE(nullptr, topology);
 	
     EXPECT_FALSE(topology->is_multi_writer_cluster());
     EXPECT_EQ(3, topology->total_hosts());
     EXPECT_EQ(2, topology->num_readers());
 
     std::shared_ptr<HOST_INFO> writer_host = topology->get_writer();
+    ASSERT_NE(nullptr, writer_host);
 	
     EXPECT_EQ("writer-instance.XYZ.us-east-2.rds.amazonaws.com", writer_host->get_host());
     EXPECT_EQ(1234, writer_host->get_port());
@@ -105,7 +108,7 @@ TEST_F(TopologyServiceTest, TopologyQuery) {
 }
 
 TEST_F(TopologyServiceTest, MultiWriter) {
-    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillRepeatedly(Return(true));
     EXPECT_CALL(*mc, fetch_next_row())
         .WillOnce(Return(writer1))
@@ -114,12 +117,14 @@ TEST_F(TopologyServiceTest, MultiWriter) {
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(conn);
+    ASSERT_NE(nullptr, topology);
 
     EXPECT_TRUE(topology->is_multi_writer_cluster());
     EXPECT_EQ(3, topology->total_hosts());
     EXPECT_EQ(0, topology->num_readers());
 
     std::shared_ptr<HOST_INFO> writer_host = topology->get_writer();
+    ASSERT_NE(nullptr, writer_host);
 
     EXPECT_EQ("writer-instance-1.XYZ.us-east-2.rds.amazonaws.com", writer_host->get_host());
     EXPECT_EQ(1234, writer_host->get_port());
@@ -130,7 +135,7 @@ TEST_F(TopologyServiceTest, MultiWriter) {
 }
 
 TEST_F(TopologyServiceTest, CachedTopology) {
-    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(1)
         .WillOnce(Return(true));
     EXPECT_CALL(*mc, fetch_next_row())
@@ -148,7 +153,7 @@ TEST_F(TopologyServiceTest, CachedTopology) {
 }
 
 TEST_F(TopologyServiceTest, QueryFailure) {
-    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillOnce(Return(false));
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(conn);
@@ -157,7 +162,7 @@ TEST_F(TopologyServiceTest, QueryFailure) {
 }
 
 TEST_F(TopologyServiceTest, StaleTopology) {
-    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(2)
         .WillOnce(Return(true))
         .WillOnce(Return(false));
@@ -178,7 +183,7 @@ TEST_F(TopologyServiceTest, StaleTopology) {
 }
 
 TEST_F(TopologyServiceTest, RefreshTopology) {
-    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(2)
         .WillRepeatedly(Return(true));
     EXPECT_CALL(*mc, fetch_next_row())
@@ -195,7 +200,7 @@ TEST_F(TopologyServiceTest, RefreshTopology) {
 }
 
 TEST_F(TopologyServiceTest, SharedTopology) {
-    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillOnce(Return(true))
         .WillRepeatedly(Return(false));
     EXPECT_CALL(*mc, fetch_next_row())
@@ -228,7 +233,7 @@ TEST_F(TopologyServiceTest, SharedTopology) {
 }
 
 TEST_F(TopologyServiceTest, ClearCache) {
-    EXPECT_CALL(*mc, try_execute_query(RETRIEVE_TOPOLOGY_SQL))
+    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillOnce(Return(true))
         .WillRepeatedly(Return(false));
     EXPECT_CALL(*mc, fetch_next_row())
