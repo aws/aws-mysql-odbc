@@ -1,0 +1,122 @@
+name: Build and test driver
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths-ignore:
+      - '**/*.md'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build-windows:
+    name: Windows Build & Test
+    runs-on: windows-2019
+    env:
+      CMAKE_GENERATOR: Visual Studio 16 2019
+      MYSQL_DIR: C:/mysql-8.0.26-winx64
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Configure build environment/dependencies
+      - name: Install MySQL client libs
+        run: |
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.26-winx64.zip -o mysql.zip
+          unzip -d C:/ mysql.zip
+            
+      - name: Create build environment
+        shell: bash
+        run: cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B build -A x64
+                -G "$CMAKE_GENERATOR"
+                -DMYSQL_SQL="C:/mysql-8.0.26-winx64"
+                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DMYSQLCLIENT_STATIC_LINKING=TRUE
+
+      # Configure test environment
+      - name: Build Driver and Copy files
+        shell: bash
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          cmake --build . --config $BUILD_TYPE
+
+      - name: Add DSN to registry
+        shell: bash
+        working-directory: ${{ github.workspace }}/build/bin/Release
+        run: |
+          ./myodbc-installer -d -a -n "MySQL ODBC 8.0 Driver" -t "DRIVER=${{ github.workspace }}\build\lib\Release\myodbc8a.dll;SETUP=${{ github.workspace }}\build\lib\Release\myodbc8S.dll"
+          ./myodbc-installer -s -a -c2 -n "test" -t "DRIVER=MySQL ODBC 8.0 Driver;SERVER=localhost;DATABASE=test;UID=root;PWD="
+          
+      - name: Start MySQL server for tests
+        if: success()
+        shell: bash
+        run: |
+            $MYSQL_DIR/bin/mysqld --initialize-insecure --console
+            $MYSQL_DIR/bin/mysqld --console &
+            sleep 20
+            $MYSQL_DIR/bin/mysql -u root -e "create database test"
+
+      # # Test driver
+      # - name: Run community tests
+      #   if: success()
+      #   working-directory: ${{ github.workspace }}/build/test
+      #   shell: bash
+      #   run: ctest -C $BUILD_TYPE --output-on-failure
+      #   env:
+      #     TEST_DSN: test
+      #     TEST_UID: root
+      #     TEST_PASSWORD:
+
+      - name: Run failover tests
+        if: always()
+        working-directory: ${{ github.workspace }}/build/testing
+        shell: bash
+        run: ctest -C $BUILD_TYPE --output-on-failure
+        env:
+          TEST_DSN: test
+          TEST_UID: root
+          TEST_PASSWORD:
+          TEST_DRIVER: MySQL ODBC 8.0 Driver
+
+      # Upload artifacts
+      - name: Upload build artifacts - Binaries
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-sln
+          path: ${{ github.workspace }}/build/MySQL_Connector_ODBC.sln
+      - name: Upload build artifacts - Binaries
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-binaries
+          path: ${{ github.workspace }}/build/bin/
+      - name: Upload build artifacts - Libraries
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-libraries
+          path: ${{ github.workspace }}/build/lib/
+      - name: Upload failover test artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-ctest_results
+          path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
+      - name: Upload community test artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-ctest_failover_results
+          path: ${{ github.workspace }}/build/test/Testing/Temporary/LastTest.log
