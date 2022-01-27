@@ -108,7 +108,7 @@ class FailoverWriterHandlerTest : public testing::Test {
 // taskA: successfully re-connect to writer; return new connection
 // taskB: fail to connect to any reader due to exception
 // expected test result: new connection by taskA
-TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
+TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderResult) {
     auto mock_connection = std::make_shared<MOCK_CONNECTION>();
 
     EXPECT_CALL(*mock_connection, is_connected()).WillRepeatedly(Return(true));
@@ -146,7 +146,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
 // taskB: successfully connect to reader-a and then new writer but it takes more
 // time than taskA
 // expected test result: new connection by taskA
-TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
+TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
     std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
         std::make_shared<MOCK_CONNECTION>();
     std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection =
@@ -259,7 +259,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
 // but it takes more time than taskB
 // taskB: successfully connect to readerA and then to new-writer
 // expected test result: new connection to writer by taskB
-TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
+TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
     std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
         std::make_shared<MOCK_CONNECTION>();
     std::shared_ptr<CONNECTION_INTERFACE> mock_new_writer_connection =
@@ -333,7 +333,7 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
 // taskA: successfully reconnect, but initial-writer is now a reader (defer to taskB) 
 // taskB: successfully connect to readerA and then to new-writer 
 // expected test result: new connection to writer by taskB
-TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
+TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
     std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
         std::make_shared<MOCK_CONNECTION>();
     std::shared_ptr<CONNECTION_INTERFACE> mock_new_writer_connection =
