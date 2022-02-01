@@ -518,7 +518,10 @@ ENDIF(NOT DISABLE_GUI)
 ADD_SUBDIRECTORY(dltest)
 ADD_SUBDIRECTORY(installer)
 ADD_SUBDIRECTORY(test)
-ADD_SUBDIRECTORY(testing)
+
+IF(ENABLE_GTESTS)
+  ADD_SUBDIRECTORY(testing)
+ENDIF()
 
 # For dynamic linking use the built-in sys and strings
 IF(NOT MYSQLCLIENT_STATIC_LINKING)
