@@ -990,7 +990,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
 #else
 
   /* Can't connect if we're already connected. */
-  if (dbc->mysql->is_connected())
+  if (dbc->mysql != nullptr && dbc->mysql->is_connected())
     return set_conn_error((DBC*)hdbc, MYERR_08002, NULL, 0);
 
   /* Reset error state */
