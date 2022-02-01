@@ -34,7 +34,7 @@
 #include "connection.h"
 
 CONNECTION::CONNECTION(MYSQL* conn) {
-    this->connection = std::shared_ptr<MYSQL>(conn);
+    this->connection = std::shared_ptr<MYSQL>(conn, [](MYSQL* ptr) {ptr = nullptr;});
     this->query_result = nullptr;
 }
 
