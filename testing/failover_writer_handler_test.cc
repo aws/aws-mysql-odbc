@@ -207,7 +207,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
 // taskB: successfully connect to readerA and retrieve topology, but latest
 // writer is not new (defer to taskA)
 // expected test result: new connection by taskA
-TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
+TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBDefers) {
     std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
         std::make_shared<MOCK_CONNECTION>();
     std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection =
