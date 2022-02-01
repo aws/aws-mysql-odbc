@@ -270,7 +270,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_ATTR_AUTOCOMMIT:
       if (ValuePtr != (SQLPOINTER) SQL_AUTOCOMMIT_ON)
       {
-        if (!dbc->mysql->is_connected())
+        if (dbc->mysql == nullptr || !dbc->mysql->is_connected())
         {
           dbc->commit_flag= CHECK_AUTOCOMMIT_OFF;
           return SQL_SUCCESS;
@@ -282,7 +282,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
         if (autocommit_on(dbc))
           return dbc->execute_query("SET AUTOCOMMIT=0", SQL_NTS, TRUE);
       }
-      else if (!dbc->mysql->is_connected())
+      else if (dbc->mysql == nullptr || !dbc->mysql->is_connected())
       {
         dbc->commit_flag= CHECK_AUTOCOMMIT_ON;
         return SQL_SUCCESS;
@@ -294,7 +294,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_ATTR_LOGIN_TIMEOUT:
       {
         /* we can't change timeout values in post connect state */
-        if (dbc->mysql->is_connected())
+        if (dbc->mysql != nullptr && dbc->mysql->is_connected())
         {
           return dbc->set_error(MYERR_S1011, NULL, 0);
         }
@@ -338,7 +338,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
         if (!(db= fix_str((char *)ldb, (char *)ValuePtr, StringLengthPtr)))
           return dbc->set_error(MYERR_S1009,NULL, 0);
 
-        if (dbc->mysql->is_connected())
+        if (dbc->mysql != nullptr && dbc->mysql->is_connected())
         {
           if (dbc->mysql->select_db((char*) db))
           {
@@ -374,7 +374,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
       break;
 
     case SQL_ATTR_TXN_ISOLATION:
-      if (!dbc->mysql->is_connected())  /* no connection yet */
+      if (dbc->mysql == nullptr || !dbc->mysql->is_connected())  /* no connection yet */
       {
         dbc->txn_isolation= (SQLINTEGER)(SQLLEN)ValuePtr;
         return SQL_SUCCESS;
@@ -508,7 +508,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
     break;
 
   case SQL_ATTR_CURRENT_CATALOG:
-    if (dbc->mysql->is_connected()) {
+    if (dbc->mysql != nullptr && dbc->mysql->is_connected()) {
         if (reget_current_catalog(dbc))
         {
             return set_handle_error(SQL_HANDLE_DBC, hdbc, MYERR_S1000,
@@ -553,7 +553,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
         Unless we're not connected yet, then we just assume it will
         be REPEATABLE READ, which is the server default.
       */
-      if (!dbc->mysql->is_connected())
+      if (dbc->mysql == nullptr || !dbc->mysql->is_connected())
       {
         *((SQLINTEGER *)num_attr)= SQL_TRANSACTION_REPEATABLE_READ;
         break;
