@@ -33,7 +33,6 @@
 
 #include "driver/connection.h"
 #include "driver/failover.h"
-#include "driver/topology_service.h"
 
 class MOCK_CONNECTION : public CONNECTION_INTERFACE {
  public:
@@ -44,12 +43,13 @@ class MOCK_CONNECTION : public CONNECTION_INTERFACE {
     MOCK_METHOD(void, close_connection, ());
 };
 
-class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
+class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE_INTERFACE {
  public:
-    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology,
-                (std::shared_ptr<CONNECTION_INTERFACE>, bool));
+    MOCK_METHOD(void, set_cluster_id, (std::string));
+    MOCK_METHOD(void, set_cluster_instance_template, (std::shared_ptr<HOST_INFO>));
+    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (CONNECTION_INTERFACE*, bool));
     MOCK_METHOD(void, mark_host_down, (std::shared_ptr<HOST_INFO>));
-    MOCK_METHOD(void, unmark_host_down, (std::shared_ptr<HOST_INFO>));
+    MOCK_METHOD(void, mark_host_up, (std::shared_ptr<HOST_INFO>));
 };
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
@@ -65,6 +65,7 @@ class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
     MOCK_CONNECTION_HANDLER() : FAILOVER_CONNECTION_HANDLER(nullptr) {}
     MOCK_METHOD(std::shared_ptr<CONNECTION_INTERFACE>, connect,
                 (std::shared_ptr<HOST_INFO>));
+    MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*));
 };
 
 #endif /* __MOCKOBJECTS_H__ */
