@@ -39,11 +39,10 @@ using ::testing::StrEq;
 
 namespace {
     MOCK_CONNECTION* mc;
-    std::shared_ptr<CONNECTION_INTERFACE> conn;
     TOPOLOGY_SERVICE* ts;
     std::shared_ptr<HOST_INFO> cluster_instance;
 
-    const char* cluster_id = "eac7829c-bb6d-4d1a-82fa-a8c2470910f2";
+    std::string cluster_id("eac7829c-bb6d-4d1a-82fa-a8c2470910f2");
 
     char* reader1[4] = { "replica-instance-1", "Replica", "2020-09-15 17:51:53.0", "13.5" };
     char* reader2[4] = { "replica-instance-2", "Replica", "2020-09-15 17:51:53.0", "13.5" };
@@ -57,7 +56,6 @@ class TopologyServiceTest : public testing::Test {
 protected:
     static void SetUpTestSuite() {
         mc = new MOCK_CONNECTION();
-        conn = std::shared_ptr<CONNECTION_INTERFACE>(mc);
 		
         ts = new TOPOLOGY_SERVICE();
         cluster_instance = std::make_shared<HOST_INFO>(HOST_INFO("?.XYZ.us-east-2.rds.amazonaws.com", 1234));
@@ -66,8 +64,8 @@ protected:
     }
 
     static void TearDownTestSuite() {
-        conn.reset();
         cluster_instance.reset();
+        delete mc;
         delete ts;
     }
 
@@ -89,7 +87,7 @@ TEST_F(TopologyServiceTest, TopologyQuery) {
         .WillOnce(Return(reader2))
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(conn);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
     ASSERT_NE(nullptr, topology);
 	
     EXPECT_FALSE(topology->is_multi_writer_cluster());
@@ -116,7 +114,7 @@ TEST_F(TopologyServiceTest, MultiWriter) {
         .WillOnce(Return(writer3))
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(conn);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
     ASSERT_NE(nullptr, topology);
 
     EXPECT_TRUE(topology->is_multi_writer_cluster());
@@ -145,18 +143,18 @@ TEST_F(TopologyServiceTest, CachedTopology) {
         .WillOnce(Return(reader2))
         .WillOnce(Return(MYSQL_ROW{}));
 
-    ts->get_topology(conn);
+    ts->get_topology(mc);
 
     // 2nd call to get_topology() should retrieve from cache instead of executing another query
     // which is why we expect try_execute_query to be called only once
-    ts->get_topology(conn);
+    ts->get_topology(mc);
 }
 
 TEST_F(TopologyServiceTest, QueryFailure) {
     EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillOnce(Return(false));
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(conn);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
 
     EXPECT_EQ(nullptr, topology);
 }
@@ -174,9 +172,9 @@ TEST_F(TopologyServiceTest, StaleTopology) {
 
     ts->set_refresh_rate(1);
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> hosts = ts->get_topology(conn);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> hosts = ts->get_topology(mc);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> stale_hosts = ts->get_topology(conn);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> stale_hosts = ts->get_topology(mc);
 
     EXPECT_EQ(3, stale_hosts->total_hosts());
     EXPECT_EQ(hosts, stale_hosts);
@@ -194,9 +192,9 @@ TEST_F(TopologyServiceTest, RefreshTopology) {
 
     ts->set_refresh_rate(1);
 
-    ts->get_topology(conn);
+    ts->get_topology(mc);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    ts->get_topology(conn);
+    ts->get_topology(mc);
 }
 
 TEST_F(TopologyServiceTest, SharedTopology) {
@@ -212,7 +210,7 @@ TEST_F(TopologyServiceTest, SharedTopology) {
     TOPOLOGY_SERVICE* ts2 = new TOPOLOGY_SERVICE();
     ts2->set_cluster_id(cluster_id);
 
-    auto topology1 = ts->get_topology(conn);
+    auto topology1 = ts->get_topology(mc);
     auto topology2 = ts2->get_cached_topology();
     
     // Both topologies should come from 
@@ -242,12 +240,12 @@ TEST_F(TopologyServiceTest, ClearCache) {
         .WillOnce(Return(reader2))
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
-    auto topology = ts->get_topology(conn);
+    auto topology = ts->get_topology(mc);
     EXPECT_NE(nullptr, topology);
 
     ts->clear_all();
 
     // topology should now be null after above clear_all()
-    topology = ts->get_topology(conn);
+    topology = ts->get_topology(mc);
     EXPECT_EQ(nullptr, topology);
 }

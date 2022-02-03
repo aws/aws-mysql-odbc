@@ -41,13 +41,15 @@ enum HOST_STATE { UP, DOWN };
 
 // TODO Think about char types. Using strings for now, but should SQLCHAR *, or CHAR * be employed?
 // Most of the strings are for internal failover things
-struct HOST_INFO {
+class HOST_INFO {
+public:
     HOST_INFO();
     //TODO - probably choose one of the following constructors, or more precisely choose which data type they should take
     HOST_INFO(std::string host, int port);
     HOST_INFO(const char* host, int port);
     HOST_INFO(std::string host, int port, HOST_STATE state, bool is_writer);
     HOST_INFO(const char* host, int port, HOST_STATE state, bool is_writer);
+    ~HOST_INFO();
     const int NO_PORT = -1;
 
     int get_port();

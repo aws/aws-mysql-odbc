@@ -47,7 +47,12 @@ TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE& ts) {
     cluster_instance_host = ts.cluster_instance_host;
 }
 
-void TOPOLOGY_SERVICE::set_cluster_id(const char* cluster_id) {
+TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
+    if (cluster_instance_host) 
+        cluster_instance_host.reset();
+}
+
+void TOPOLOGY_SERVICE::set_cluster_id(std::string cluster_id) {
     this->cluster_id = cluster_id;
 }
 
@@ -115,7 +120,7 @@ void TOPOLOGY_SERVICE::mark_host_down(std::shared_ptr<HOST_INFO> host) {
     lock.unlock();
 }
 
-void TOPOLOGY_SERVICE::unmark_host_down(std::shared_ptr<HOST_INFO> host) {
+void TOPOLOGY_SERVICE::mark_host_up(std::shared_ptr<HOST_INFO> host) {
     if (!host) {
         return;
     }
@@ -124,18 +129,10 @@ void TOPOLOGY_SERVICE::unmark_host_down(std::shared_ptr<HOST_INFO> host) {
 
     auto topology_info = get_from_cache();
     if (topology_info) {
-        topology_info->unmark_host_down(host);
+        topology_info->mark_host_up(host);
     }
 
     lock.unlock();
-}
-
-void TOPOLOGY_SERVICE::unmark_host_up(std::shared_ptr<HOST_INFO> host) {
-    mark_host_down(host);
-}
-
-void TOPOLOGY_SERVICE::mark_host_up(std::shared_ptr<HOST_INFO> host) {
-    unmark_host_down(host);
 }
 
 void TOPOLOGY_SERVICE::clear_all() {
@@ -150,16 +147,6 @@ void TOPOLOGY_SERVICE::clear() {
     lock.unlock();
 }
 
-TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
-    if (cluster_instance_host)
-        cluster_instance_host.reset();
-
-    for (auto p : topology_cache) {
-        p.second.reset();
-    }
-    topology_cache.clear();
-}
-
 std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
     return get_from_cache();
 }
@@ -167,7 +154,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
 //TODO consider the return value
 //Note to determine whether or not force_update succeeded one would compare
 // CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(std::shared_ptr<CONNECTION_INTERFACE> connection, bool force_update)
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION_INTERFACE* connection, bool force_update)
 {
     //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
@@ -256,12 +243,12 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 }
 
 // If no host information retrieved return NULL
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(std::shared_ptr<CONNECTION_INTERFACE> connection) {
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONNECTION_INTERFACE* connection) {
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info = nullptr;
 
     if (connection->try_execute_query(RETRIEVE_TOPOLOGY_SQL)) {
-        topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(CLUSTER_TOPOLOGY_INFO());
+        topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
         MYSQL_ROW row;
         while (row = connection->fetch_next_row()) {
             std::shared_ptr<HOST_INFO> host_info = create_host(row);
