@@ -12,22 +12,25 @@
 #include <condition_variable>
 
 struct DBC;
+struct DataSource;
+typedef short SQLRETURN;
 
 class FAILOVER_CONNECTION_HANDLER {
     public:
-        FAILOVER_CONNECTION_HANDLER(std::shared_ptr<DBC> dbc);
+        FAILOVER_CONNECTION_HANDLER(DBC* dbc);
         virtual ~FAILOVER_CONNECTION_HANDLER();
 
+        virtual SQLRETURN do_connect(DBC* dbc, DataSource* ds);
         virtual std::shared_ptr<CONNECTION_INTERFACE> connect(
             std::shared_ptr<HOST_INFO> host_info);
         void update_connection(std::shared_ptr<CONNECTION_INTERFACE> new_connection);
         void release_connection(std::shared_ptr<CONNECTION_INTERFACE> connection);
 
     private:
-        std::shared_ptr<DBC> dbc;
+        DBC* dbc;
 
-        std::shared_ptr<DBC> clone_dbc(std::shared_ptr<DBC> source_dbc);
-        void release_dbc(std::shared_ptr<DBC> dbc_clone);
+        DBC* clone_dbc(DBC* source_dbc);
+        void release_dbc(DBC* dbc_clone);
 };
 
 struct READER_FAILOVER_RESULT {
@@ -125,23 +128,37 @@ class FAILOVER_WRITER_HANDLER {
 };
 
 class FAILOVER_HANDLER {
+   public:
+    FAILOVER_HANDLER(DBC* dbc, DataSource* ds);
+    FAILOVER_HANDLER(
+        DBC* dbc, DataSource* ds,
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
+    ~FAILOVER_HANDLER();
+    bool trigger_failover_if_needed(const char* error_code, const char*& new_error_code);
+    bool is_failover_enabled();
+    bool is_rds();
+    bool is_rds_proxy();
+    bool is_cluster_topology_available();
+    SQLRETURN get_return_code();
+
    private:
     DBC* dbc = nullptr;
-    TOPOLOGY_SERVICE* topology_service;
-    FAILOVER_READER_HANDLER* failover_reader_handler;
-    FAILOVER_WRITER_HANDLER* failover_writer_handler;
-    std::vector<HOST_INFO*>* hosts = nullptr;  // topology  - TODO not needed?
-    HOST_INFO* current_host = nullptr;
-    FAILOVER_CONNECTION_HANDLER* connection_handler = nullptr;
-
-    bool is_cluster_topology_available = false;
-    bool is_multi_writer_cluster = false;
-    bool is_rds_proxy = false;
-    bool is_rds = false;
-    bool is_rds_custom_cluster = false;
+    DataSource* ds = nullptr;
+    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
+    std::shared_ptr<FAILOVER_READER_HANDLER> failover_reader_handler;
+    std::shared_ptr<FAILOVER_WRITER_HANDLER> failover_writer_handler;
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
+    std::shared_ptr<HOST_INFO> current_host = nullptr;
+    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler = nullptr;
+    SQLRETURN rc;  // return code of myodbc_do_connect()
+    bool m_is_cluster_topology_available = false;
+    bool m_is_multi_writer_cluster = false;
+    bool m_is_rds_proxy = false;
+    bool m_is_rds = false;
+    bool m_is_rds_custom_cluster = false;
 
     void init_cluster_info();
-    bool is_failover_enabled();
     bool is_dns_pattern_valid(std::string host);
     bool is_rds_dns(std::string host);
     bool is_rds_proxy_dns(std::string host);
@@ -153,13 +170,6 @@ class FAILOVER_HANDLER {
     bool is_ipv6(std::string host);
     bool failover_to_reader(const char*& new_error_code);
     bool failover_to_writer(const char*& new_error_code);
-    void refresh_topology();
-
-   public:
-    FAILOVER_HANDLER(DBC* dbc, TOPOLOGY_SERVICE* topology_service);
-    bool trigger_failover_if_needed(const char* error_code,
-                                    const char*& new_error_code);
-    ~FAILOVER_HANDLER();
 };
 
 // ************************************************************************************************

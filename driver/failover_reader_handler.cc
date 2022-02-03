@@ -36,7 +36,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::failover(
         hosts_list = build_hosts_list(current_topology, true);
         auto reader_result = get_connection_from_hosts(hosts_list, is_canceled);
         if (reader_result.connected) {
-            topology_service->unmark_host_down(reader_result.new_host);
+            topology_service->mark_host_up(reader_result.new_host);
             return reader_result;
         }
         // TODO Think of changes to the strategy if it went through all the hosts and did not connect.
@@ -59,7 +59,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_reader_connection(
         auto reader_result = get_connection_from_hosts(hosts, is_canceled);
         // TODO Think of changes to the strategy if it went through all the readers and did not connect.
         if (reader_result.connected) {
-            topology_service->unmark_host_down(reader_result.new_host);
+            topology_service->mark_host_up(reader_result.new_host);
             return reader_result;
         }
     }
@@ -159,10 +159,10 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
         }
 
         if (first_connection_result.connected) {
-            topology_service->unmark_host_down(first_reader_host);
+            topology_service->mark_host_up(first_reader_host);
             return first_connection_result;
         } else if (!odd_hosts_number && second_connection_result.connected) {
-            topology_service->unmark_host_down(second_reader_host);
+            topology_service->mark_host_up(second_reader_host);
             return second_connection_result;
         }
         // None has connected. We move on and try new hosts.
@@ -189,7 +189,7 @@ READER_FAILOVER_RESULT CONNECT_TO_READER_HANDLER::operator()(
             if (connect(reader)) {
                 auto new_connection = get_connection();
                 f_sync.mark_as_done();
-                topology_service->unmark_host_down(reader);
+                topology_service->mark_host_up(reader);
                 return READER_FAILOVER_RESULT(true, reader, new_connection);
             }
             f_sync.mark_as_done();

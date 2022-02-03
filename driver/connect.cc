@@ -973,8 +973,8 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
 
   ds_lookup(ds);
 
-  rc= dbc->connect(ds);
-
+  dbc->fh = new FAILOVER_HANDLER(dbc, ds);
+  rc = dbc->fh->get_return_code();
   if (!dbc->ds)
     ds_delete(ds);
   return rc;
@@ -1086,7 +1086,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   case SQL_DRIVER_COMPLETE:
   case SQL_DRIVER_COMPLETE_REQUIRED:
-    rc = dbc->connect(ds);
+    dbc->fh = new FAILOVER_HANDLER(dbc, ds);
+    rc = dbc->fh->get_return_code();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
       goto connected;
     bPrompt= TRUE;
@@ -1259,7 +1260,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   }
 
-  rc = dbc->connect(ds);
+  dbc->fh = new FAILOVER_HANDLER(dbc, ds);
+  rc = dbc->fh->get_return_code();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
   {
     goto error;
