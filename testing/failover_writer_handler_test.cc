@@ -32,7 +32,6 @@
 #include <chrono>
 #include <thread>
 
-#include "driver/failover.h"
 #include "mock_objects.h"
 
 using ::testing::_;
@@ -40,7 +39,6 @@ using ::testing::AnyNumber;
 using ::testing::AtLeast;
 using ::testing::DoAll;
 using ::testing::Invoke;
-using ::testing::Pointee;
 using ::testing::Return;
 using ::testing::Sequence;
 using ::testing::Unused;
@@ -118,7 +116,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderRes
 
     Sequence s;
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).InSequence(s);
-    EXPECT_CALL(*mock_ts, unmark_host_down(writer_host)).InSequence(s);
+    EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(Return(READER_FAILOVER_RESULT(false, nullptr, nullptr)));
@@ -173,14 +171,14 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
     EXPECT_CALL(*mock_connection_handler, connect(reader_b_host))
         .WillRepeatedly(Return(nullptr));
 
-    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection, true))
+    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection.get(), true))
         .WillRepeatedly(Return(current_topology));
-    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection, true))
+    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection.get(), true))
         .WillRepeatedly(Return(new_topology));
 
     Sequence s;
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).InSequence(s);
-    EXPECT_CALL(*mock_ts, unmark_host_down(writer_host)).InSequence(s);
+    EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(DoAll(
@@ -237,7 +235,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBDefers) {
 
     Sequence s;
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).InSequence(s);
-    EXPECT_CALL(*mock_ts, unmark_host_down(writer_host)).InSequence(s);
+    EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
@@ -304,13 +302,13 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
     EXPECT_CALL(*mock_connection_handler, connect(new_writer_host))
         .WillRepeatedly(Return(mock_new_writer_connection));
 
-    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection, true))
+    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection.get(), true))
         .WillRepeatedly(Return(current_topology));
-    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection, true))
+    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection.get(), true))
         .WillRepeatedly(Return(new_topology));
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
-    EXPECT_CALL(*mock_ts, unmark_host_down(_)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, unmark_host_down(new_writer_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_up(_)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
@@ -386,8 +384,8 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
     EXPECT_CALL(*mock_ts, get_topology(_, true))
         .WillRepeatedly(Return(new_topology));
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
-    EXPECT_CALL(*mock_ts, unmark_host_down(_)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, unmark_host_down(new_writer_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_up(_)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
@@ -465,13 +463,13 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
             return mock_new_writer_connection;
         }));
 
-    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection, _))
+    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection.get(), _))
         .WillRepeatedly(Return(current_topology));
-    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection, _))
+    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection.get(), _))
         .WillRepeatedly(Return(new_topology));
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
-    EXPECT_CALL(*mock_ts, unmark_host_down(writer_host)).Times(1);
-    EXPECT_CALL(*mock_ts, unmark_host_down(new_writer_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,

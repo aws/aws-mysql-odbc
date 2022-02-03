@@ -50,6 +50,7 @@ enable_testing()
 add_executable(
   testing
   mock_objects.h
+  failover_handler_test.cc
   failover_reader_handler_test.cc
   failover_writer_handler_test.cc
   topology_service_test.cc
