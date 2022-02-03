@@ -55,11 +55,11 @@ class TOPOLOGY_SERVICE_INTERFACE {
 public:
     virtual ~TOPOLOGY_SERVICE_INTERFACE() {};
 
-    virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<CONNECTION_INTERFACE> connection, bool force_update = false) = 0;
+    virtual void set_cluster_id(std::string cluster_id) = 0;
+    virtual void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template) = 0;
+    virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(CONNECTION_INTERFACE* connection, bool force_update = false) = 0;
     virtual void mark_host_down(std::shared_ptr<HOST_INFO> host) = 0;
-    virtual void unmark_host_down(std::shared_ptr<HOST_INFO> host) = 0;
     virtual void mark_host_up(std::shared_ptr<HOST_INFO> host) = 0;
-    virtual void unmark_host_up(std::shared_ptr<HOST_INFO> host) = 0;
 };
 
 class TOPOLOGY_SERVICE : virtual public TOPOLOGY_SERVICE_INTERFACE {
@@ -68,10 +68,10 @@ public:
     TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
     ~TOPOLOGY_SERVICE() override;
 
-    void set_cluster_id(const char* cluster_id);
-    void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
+    void set_cluster_id(std::string cluster_id) override;
+    void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template) override;  //is this equivalent to setcluster_instance_host
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(std::shared_ptr<CONNECTION_INTERFACE> connection, bool force_update = false) override;
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(CONNECTION_INTERFACE* connection, bool force_update = false) override;
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();
@@ -79,8 +79,6 @@ public:
     std::set<std::string> get_down_hosts();
     void mark_host_down(std::shared_ptr<HOST_INFO> host) override;
     void mark_host_up(std::shared_ptr<HOST_INFO> host) override;
-    void unmark_host_down(std::shared_ptr<HOST_INFO> host) override;
-    void unmark_host_up(std::shared_ptr<HOST_INFO> host) override;
     void set_refresh_rate(int refresh_rate);
     void clear_all();
     void clear();
@@ -113,7 +111,7 @@ protected:
     // bool gather_perf_Metrics = false;
 
     bool refresh_needed(std::time_t last_updated);
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(std::shared_ptr<CONNECTION_INTERFACE> connection);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(CONNECTION_INTERFACE* connection);
     std::shared_ptr<HOST_INFO> create_host(MYSQL_ROW& row);
     std::string get_host_endpoint(const char* node_name);
 

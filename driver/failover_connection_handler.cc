@@ -9,11 +9,13 @@
 #include <codecvt>
 #include <locale>
 
-FAILOVER_CONNECTION_HANDLER::FAILOVER_CONNECTION_HANDLER(
-    std::shared_ptr<DBC> dbc)
-    : dbc{dbc} {}
+FAILOVER_CONNECTION_HANDLER::FAILOVER_CONNECTION_HANDLER(DBC* dbc) : dbc{dbc} {}
 
 FAILOVER_CONNECTION_HANDLER::~FAILOVER_CONNECTION_HANDLER() {}
+
+SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc, DataSource* ds) {
+    return dbc->connect(ds);
+}
 
 std::shared_ptr<CONNECTION_INTERFACE> FAILOVER_CONNECTION_HANDLER::connect(
     std::shared_ptr<HOST_INFO> host_info) {
@@ -26,12 +28,12 @@ std::shared_ptr<CONNECTION_INTERFACE> FAILOVER_CONNECTION_HANDLER::connect(
     auto new_host =
         std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.from_bytes(host);
 
-    auto dbc_clone = clone_dbc(dbc);
+    DBC* dbc_clone = clone_dbc(dbc);
     ds_set_strnattr(&dbc_clone->ds->server, new_host.c_str(), new_host.size());
 
     std::shared_ptr<CONNECTION_INTERFACE> new_connection;
-    CLEAR_DBC_ERROR(dbc_clone.get());
-    SQLRETURN rc = dbc_clone->connect(dbc_clone->ds);
+    CLEAR_DBC_ERROR(dbc_clone);
+    SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
         new_connection.reset(dbc_clone->mysql);
@@ -61,8 +63,8 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
         // so dynamic_cast should be safe here.
         // TODO: Is there an alternative to dynamic_cast here?
         dbc->mysql = dynamic_cast<CONNECTION*>(new_connection.get());
-
-        CLEAR_DBC_ERROR(dbc.get());
+        
+        CLEAR_DBC_ERROR(dbc);
 
         // TODO: should we also update dbc->ds when updating connection? How
         // this would affect the user?  Same mentioned in TODO above
@@ -77,10 +79,9 @@ void FAILOVER_CONNECTION_HANDLER::release_connection(
     connection->close_connection();
 }
 
-std::shared_ptr<DBC> FAILOVER_CONNECTION_HANDLER::clone_dbc(
-    std::shared_ptr<DBC> source_dbc) {
+DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
 
-    std::shared_ptr<DBC> dbc_clone;
+    DBC* dbc_clone;
 
     SQLRETURN status = SQL_ERROR;
     if (source_dbc && source_dbc->env) {
@@ -88,7 +89,7 @@ std::shared_ptr<DBC> FAILOVER_CONNECTION_HANDLER::clone_dbc(
         status = SQLAllocHandle(SQL_HANDLE_DBC,
                                 static_cast<SQLHANDLE>(source_dbc->env), &hdbc);
         if (status == SQL_SUCCESS || status == SQL_SUCCESS_WITH_INFO) {
-            dbc_clone.reset(static_cast<DBC*>(hdbc));
+            dbc_clone = static_cast<DBC*>(hdbc);
             dbc_clone->ds = ds_new();
             ds_copy(dbc_clone->ds, source_dbc->ds);
         } else {
@@ -100,8 +101,8 @@ std::shared_ptr<DBC> FAILOVER_CONNECTION_HANDLER::clone_dbc(
     return dbc_clone;
 }
 
-void FAILOVER_CONNECTION_HANDLER::release_dbc(std::shared_ptr<DBC> dbc_clone) {
+void FAILOVER_CONNECTION_HANDLER::release_dbc(DBC* dbc_clone) {
     // dbc->ds is deleted(if not null) in DBC destructor
     // no need to separately clean it.
-    SQLFreeHandle(SQL_HANDLE_DBC, static_cast<SQLHANDLE>(dbc_clone.get()));
+    SQLFreeHandle(SQL_HANDLE_DBC, static_cast<SQLHANDLE>(dbc_clone));
 }

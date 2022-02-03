@@ -84,11 +84,11 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
             if (connect(original_writer)) {
                 new_connection = get_connection();
                 auto latest_topology =
-                    topology_service->get_topology(new_connection, true);
+                    topology_service->get_topology(new_connection.get(), true);
                 if (latest_topology->total_hosts() > 0 &&
                     is_current_host_writer(original_writer, latest_topology)) {
 
-                    topology_service->unmark_host_down(original_writer);
+                    topology_service->mark_host_up(original_writer);
                     f_sync.mark_as_done();
                     if (is_canceled()) {
                         break;
@@ -171,7 +171,7 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader() {
 void WAIT_NEW_WRITER_HANDLER::refresh_topology_and_connect_to_new_writer(
     const std::shared_ptr<HOST_INFO>& original_writer) {
     while (!is_canceled()) {
-        auto latest_topology = topology_service->get_topology(reader_connection, true);
+        auto latest_topology = topology_service->get_topology(reader_connection.get(), true);
         if (latest_topology->total_hosts() > 0) {
             current_topology = latest_topology;
             auto writer_candidate = current_topology->get_writer();
@@ -195,7 +195,7 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
         topology_service->mark_host_down(writer_candidate);
         return false;
     }
-    topology_service->unmark_host_down(writer_candidate);
+    topology_service->mark_host_up(writer_candidate);
     return true;
 }
 

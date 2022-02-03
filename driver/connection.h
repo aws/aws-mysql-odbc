@@ -23,7 +23,6 @@ public:
 class CONNECTION : virtual public CONNECTION_INTERFACE {
 public:
     CONNECTION(MYSQL* conn);
-    CONNECTION(std::shared_ptr<MYSQL> conn);
 
     bool is_connected() override;
 
@@ -104,8 +103,8 @@ public:
     bool operator!=(const CONNECTION c1);
 
 private:
-    std::shared_ptr<MYSQL> connection;
-    std::shared_ptr<MYSQL_RES> query_result;
+    MYSQL* connection;
+    MYSQL_RES* query_result;
 };
 
 #endif /* __CONNECTION_H__ */

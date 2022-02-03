@@ -34,17 +34,12 @@
 #include "connection.h"
 
 CONNECTION::CONNECTION(MYSQL* conn) {
-    this->connection = std::shared_ptr<MYSQL>(conn, [](MYSQL* ptr) {ptr = nullptr;});
-    this->query_result = nullptr;
-}
-
-CONNECTION::CONNECTION(std::shared_ptr<MYSQL> conn) {
     this->connection = conn;
     this->query_result = nullptr;
 }
 
 bool CONNECTION::is_connected() {
-    return this->connection != nullptr && this->connection.get()->net.vio;
+    return this->connection != nullptr && this->connection->net.vio;
 }
 
 bool CONNECTION::is_null() {
@@ -53,14 +48,12 @@ bool CONNECTION::is_null() {
 
 bool CONNECTION::try_execute_query(const char* query) {
     if (this->query_result != nullptr) {
-        mysql_free_result(this->query_result.get());
+        mysql_free_result(this->query_result);
         this->query_result = nullptr;
     }
     
-    MYSQL* conn = this->connection.get();
-    if (conn != NULL && mysql_query(conn, query) == 0) {
-        MYSQL_RES* result = mysql_store_result(conn);
-        this->query_result = std::make_shared<MYSQL_RES>(*result);
+    if (this->connection != nullptr && mysql_query(this->connection, query) == 0) {
+        this->query_result = mysql_store_result(this->connection);
     }
 
     return this->query_result != nullptr;
@@ -68,12 +61,12 @@ bool CONNECTION::try_execute_query(const char* query) {
 
 MYSQL_ROW CONNECTION::fetch_next_row() {
     if (this->query_result != nullptr) {
-        MYSQL_ROW row = mysql_fetch_row(this->query_result.get());
+        MYSQL_ROW row = mysql_fetch_row(this->query_result);
         if (row) {
             return row;
         }
 
-        mysql_free_result(this->query_result.get());
+        mysql_free_result(this->query_result);
         this->query_result = nullptr;
     }
     
@@ -81,7 +74,7 @@ MYSQL_ROW CONNECTION::fetch_next_row() {
 }
 
 void CONNECTION::close_connection() {
-    mysql_close(this->connection.get());
+    mysql_close(this->connection);
 }
 
 MYSQL* CONNECTION::real_connect(const char* host, const char* user,
@@ -90,7 +83,7 @@ MYSQL* CONNECTION::real_connect(const char* host, const char* user,
     unsigned long client_flag) {
 
     return mysql_real_connect(
-        this->connection.get(), host, user, passwd, db, port, unix_socket, client_flag);
+        this->connection, host, user, passwd, db, port, unix_socket, client_flag);
 }
 
 MYSQL* CONNECTION::real_connect_dns_srv(const char* dns_srv_name, const char* user,
@@ -98,103 +91,103 @@ MYSQL* CONNECTION::real_connect_dns_srv(const char* dns_srv_name, const char* us
     unsigned long client_flag) {
 
     return mysql_real_connect_dns_srv(
-        this->connection.get(), dns_srv_name, user, passwd, db, client_flag);
+        this->connection, dns_srv_name, user, passwd, db, client_flag);
 }
 
 int CONNECTION::query(const char* query) {
-    return mysql_query(this->connection.get(), query);
+    return mysql_query(this->connection, query);
 }
 
 int CONNECTION::real_query(const char* query, unsigned long length) {
-    return mysql_real_query(this->connection.get(), query, length);
+    return mysql_real_query(this->connection, query, length);
 }
 
 uint64_t CONNECTION::call_affected_rows() {
-    return mysql_affected_rows(this->connection.get());
+    return mysql_affected_rows(this->connection);
 }
 
 uint64_t CONNECTION::get_affected_rows() {
-    return this->connection.get()->affected_rows;
+    return this->connection->affected_rows;
 }
 
 void CONNECTION::set_affected_rows(uint64_t num_rows) {
-    this->connection.get()->affected_rows = num_rows;
+    this->connection->affected_rows = num_rows;
 }
 
 unsigned int CONNECTION::field_count() {
-    return mysql_field_count(this->connection.get());
+    return mysql_field_count(this->connection);
 }
 
 MYSQL_RES* CONNECTION::list_fields(const char* table, const char* wild) {
-    return mysql_list_fields(this->connection.get(), table, wild);
+    return mysql_list_fields(this->connection, table, wild);
 }
 
 int CONNECTION::options(enum mysql_option option, const void* arg) {
-    return mysql_options(this->connection.get(), option, arg);
+    return mysql_options(this->connection, option, arg);
 }
 
 int CONNECTION::options4(enum mysql_option option, const void* arg1, const void* arg2) {
-    return mysql_options4(this->connection.get(), option, arg1, arg2);
+    return mysql_options4(this->connection, option, arg1, arg2);
 }
 
 int CONNECTION::get_option(enum mysql_option option, const void* arg) {
-    return mysql_get_option(this->connection.get(), option, arg);
+    return mysql_get_option(this->connection, option, arg);
 }
 
 char* CONNECTION::get_host_info() {
-    return this->connection.get()->host_info;
+    return this->connection->host_info;
 }
 
 unsigned long CONNECTION::get_max_packet() {
-    return this->connection.get()->net.max_packet;
+    return this->connection->net.max_packet;
 }
 
 unsigned long CONNECTION::get_server_capabilities() {
-    return this->connection.get()->server_capabilities;
+    return this->connection->server_capabilities;
 }
 
 unsigned int CONNECTION::get_server_status() {
-    return this->connection.get()->server_status;
+    return this->connection->server_status;
 }
 
 char* CONNECTION::get_server_version() {
-    return this->connection.get()->server_version;
+    return this->connection->server_version;
 }
 
 bool CONNECTION::bind_param(unsigned n_params, MYSQL_BIND* binds, const char** names) {
-    return mysql_bind_param(this->connection.get(), n_params, binds, names);
+    return mysql_bind_param(this->connection, n_params, binds, names);
 }
 
 int CONNECTION::next_result() {
-    return mysql_next_result(this->connection.get());
+    return mysql_next_result(this->connection);
 }
 
 MYSQL_RES* CONNECTION::store_result() {
-    return mysql_store_result(this->connection.get());
+    return mysql_store_result(this->connection);
 }
 
 MYSQL_RES* CONNECTION::use_result() {
-    return mysql_use_result(this->connection.get());
+    return mysql_use_result(this->connection);
 }
 
 bool CONNECTION::change_user(const char* user, const char* passwd, const char* db) {
-    return mysql_change_user(this->connection.get(), user, passwd, db);
+    return mysql_change_user(this->connection, user, passwd, db);
 }
 
 int CONNECTION::select_db(const char* db) {
-    return mysql_select_db(this->connection.get(), db);
+    return mysql_select_db(this->connection, db);
 }
 
 struct CHARSET_INFO* CONNECTION::get_character_set() {
-    return this->connection.get()->charset;
+    return this->connection->charset;
 }
 
 void CONNECTION::get_character_set_info(MY_CHARSET_INFO* charset) {
-    mysql_get_character_set_info(this->connection.get(), charset);
+    mysql_get_character_set_info(this->connection, charset);
 }
 
 int CONNECTION::set_character_set(const char* csname) {
-    return mysql_set_character_set(this->connection.get(), csname);
+    return mysql_set_character_set(this->connection, csname);
 }
 
 unsigned long CONNECTION::real_escape_string(
@@ -202,51 +195,51 @@ unsigned long CONNECTION::real_escape_string(
     const char* from,
     unsigned long length) {
 
-    return mysql_real_escape_string(this->connection.get(), to, from, length);
+    return mysql_real_escape_string(this->connection, to, from, length);
 }
 
 int CONNECTION::ping() {
-    return mysql_ping(this->connection.get());
+    return mysql_ping(this->connection);
 }
 
 MYSQL_STMT* CONNECTION::stmt_init() {
-    return mysql_stmt_init(this->connection.get());
+    return mysql_stmt_init(this->connection);
 }
 
 unsigned long CONNECTION::thread_id() {
-    return mysql_thread_id(this->connection.get());
+    return mysql_thread_id(this->connection);
 }
 
 bool CONNECTION::autocommit(bool auto_mode) {
-    return mysql_autocommit(this->connection.get(), auto_mode);
+    return mysql_autocommit(this->connection, auto_mode);
 }
 
 char* CONNECTION::get_sqlstate() {
-    return this->connection.get()->net.sqlstate;
+    return this->connection->net.sqlstate;
 }
 
 const char* CONNECTION::sqlstate() {
-    return mysql_sqlstate(this->connection.get());
+    return mysql_sqlstate(this->connection);
 }
 
 const char* CONNECTION::error() {
-    return mysql_error(this->connection.get());
+    return mysql_error(this->connection);
 }
 
 unsigned int CONNECTION::error_code() {
-    return mysql_errno(this->connection.get());
+    return mysql_errno(this->connection);
 }
 
 char* CONNECTION::get_last_error() {
-    return this->connection.get()->net.last_error;
+    return this->connection->net.last_error;
 }
 
 unsigned int CONNECTION::get_last_error_code() {
-    return this->connection.get()->net.last_errno;
+    return this->connection->net.last_errno;
 }
 
 void CONNECTION::set_last_error_code(unsigned int error_code) {
-    auto net = this->connection.get()->net;
+    auto net = this->connection->net;
     net.last_errno = error_code;
 }
 
@@ -254,17 +247,17 @@ bool CONNECTION::ssl_set(const char* key, const char* cert,
                          const char* ca, const char* capath,
                          const char* cipher) {
 
-    return mysql_ssl_set(this->connection.get(), key, cert, ca, capath, cipher);
+    return mysql_ssl_set(this->connection, key, cert, ca, capath, cipher);
 }
 
 st_mysql_client_plugin* CONNECTION::client_find_plugin(const char* name, int type) {
-    return mysql_client_find_plugin(this->connection.get(), name, type);
+    return mysql_client_find_plugin(this->connection, name, type);
 }
 
 bool CONNECTION::operator==(const CONNECTION c1) {
-    return this->connection.get() == c1.connection.get();
+    return this->connection == c1.connection;
 }
 
 bool CONNECTION::operator!=(const CONNECTION c1) {
-    return this->connection.get() != c1.connection.get();
+    return this->connection != c1.connection;
 }

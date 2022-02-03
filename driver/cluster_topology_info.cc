@@ -154,17 +154,9 @@ void CLUSTER_TOPOLOGY_INFO::mark_host_down(std::shared_ptr<HOST_INFO> host) {
     down_hosts.insert(host->get_host_port_pair());
 }
 
-void CLUSTER_TOPOLOGY_INFO::unmark_host_down(std::shared_ptr<HOST_INFO> host) {
+void CLUSTER_TOPOLOGY_INFO::mark_host_up(std::shared_ptr<HOST_INFO> host) {
     host->set_host_state(UP);
     down_hosts.erase(host->get_host_port_pair());
-}
-
-void CLUSTER_TOPOLOGY_INFO::mark_host_up(std::shared_ptr<HOST_INFO> host) {
-    unmark_host_down(host);
-}
-
-void CLUSTER_TOPOLOGY_INFO::unmark_host_up(std::shared_ptr<HOST_INFO> host) {
-    mark_host_down(host);
 }
 
 std::set<std::string> CLUSTER_TOPOLOGY_INFO::get_down_hosts() {

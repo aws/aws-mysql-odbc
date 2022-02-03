@@ -70,7 +70,7 @@ int driver_lookup(Driver *driver);
 int driver_from_kvpair_semicolon(Driver *driver, const SQLWCHAR *attrs);
 int driver_to_kvpair_null(Driver *driver, SQLWCHAR *attrs, size_t attrslen);
 
-typedef struct {
+typedef struct DataSource {
   SQLWCHAR *name;
   SQLWCHAR *driver; /* driver filename */
   SQLWCHAR *description;
