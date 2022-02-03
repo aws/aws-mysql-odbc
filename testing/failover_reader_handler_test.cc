@@ -32,8 +32,6 @@
 #include <chrono>
 #include <thread>
 
-#include "driver/failover.h"
-#include "driver/host_info.h"
 #include "mock_objects.h"
 
 using ::testing::_;
@@ -300,7 +298,7 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Success_Reader
     EXPECT_CALL(*mock_connection_handler, connect(reader_c_host)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(mock_writer_connection));
 
-    EXPECT_CALL(*mock_ts, unmark_host_down(reader_a_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(AnyNumber());
     EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(AnyNumber());
 
     FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
@@ -332,7 +330,7 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Success_Writer
     EXPECT_CALL(*mock_ts, mark_host_down(reader_a_host)).Times(AnyNumber());
     EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(AnyNumber());
     EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, unmark_host_down(writer_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).Times(AnyNumber());
 
     FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
@@ -363,8 +361,8 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_FastestHost) {
     EXPECT_CALL(*mock_connection_handler, connect(reader_c_host)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(nullptr));
 
-    EXPECT_CALL(*mock_ts, unmark_host_down(reader_a_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, unmark_host_down(reader_b_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_up(reader_b_host)).Times(AnyNumber());
 
     FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
