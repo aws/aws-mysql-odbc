@@ -81,8 +81,6 @@ private:
     void set_last_used_reader(std::shared_ptr<HOST_INFO> reader);
     void mark_host_down(std::shared_ptr<HOST_INFO> host);
     void mark_host_up(std::shared_ptr<HOST_INFO> host);
-    void unmark_host_down(std::shared_ptr<HOST_INFO> host);
-    void unmark_host_up(std::shared_ptr<HOST_INFO> host);
     std::set<std::string> get_down_hosts();
     void update_time();
 

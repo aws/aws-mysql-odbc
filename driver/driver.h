@@ -39,7 +39,6 @@
 #include "../MYODBC_ODBC.h"
 #include "util/installer.h"
 #include "failover.h"
-#include "connect.h"
 #include "connection.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
@@ -275,6 +274,13 @@ typedef enum { DESC_HDR, DESC_REC } fld_loc;
     DONT_USE_LOCALE_CHECK(STMT) \
     __LOCALE_RESTORE()
 
+struct Srv_host_detail {
+  std::string name;
+  unsigned int port = MYSQL_PORT;
+};
+
+std::vector<Srv_host_detail> parse_host_list(const char *hosts_str,
+                                             unsigned int default_port);
 
 typedef struct {
   int perms;
