@@ -375,9 +375,8 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
         current_host = nullptr;
         // close transaction if needed
 
-        if (current_topology &&
-            current_topology->total_hosts() >
-                1 /* && isExplicitlyReadOnly() */) {  // there're readers in topology
+        if (current_topology && current_topology->total_hosts() > 1 &&
+            ds->allow_reader_connections) {  // there're readers in topology
             return failover_to_reader(new_error_code);
         } else {
             return failover_to_writer(new_error_code);
