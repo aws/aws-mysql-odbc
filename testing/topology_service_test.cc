@@ -58,7 +58,7 @@ protected:
         mc = new MOCK_CONNECTION();
 		
         ts = new TOPOLOGY_SERVICE();
-        cluster_instance = std::make_shared<HOST_INFO>(HOST_INFO("?.XYZ.us-east-2.rds.amazonaws.com", 1234));
+        cluster_instance = std::make_shared<HOST_INFO>("?.XYZ.us-east-2.rds.amazonaws.com", 1234);
         ts->set_cluster_instance_template(cluster_instance);
         ts->set_cluster_id(cluster_id);
     }
