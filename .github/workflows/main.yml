@@ -1,4 +1,4 @@
-name: Windows Build and Run Community Tests
+name: Build and Run Community Tests
 
 on:
   push:
@@ -105,4 +105,84 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: windows-ctest_failover_results
+          path: ${{ github.workspace }}/build/test/Testing/Temporary/LastTest.log
+
+  build-linux:
+    name: Linux Build & Run Community Tests
+    runs-on: ubuntu-latest
+    env:
+      CMAKE_GENERATOR: Unix Makefiles
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Configure build environment/dependencies
+      - name: Install MySQL client libs & other dependencies
+        run: sudo apt-get update && sudo apt-get install 
+                build-essential 
+                libgtk-3-dev 
+                libmysqlclient-dev 
+                unixodbc
+                unixodbc-dev
+
+      - name: Create build environment
+        shell: bash
+        run: cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B build
+                -G "$CMAKE_GENERATOR"
+                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DMYSQLCLIENT_STATIC_LINKING=true
+                -DWITH_UNIXODBC=1
+
+      # Build driver
+      - name: Build driver
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE
+
+      # Configure test environment
+      - name: Start MySQL server for tests
+        if: success()
+        working-directory: ${{ github.workspace }}/test/docker
+        shell: bash
+        # Give time for the container to start/initialize, then output container logs
+        run: docker-compose up -d &&
+          sleep 20 &&     
+          docker logs myodbc-test
+
+      # Test driver
+      - name: Run driver tests
+        if: success()
+        working-directory: ${{ github.workspace }}/build/test
+        shell: bash
+        run: ctest --output-on-failure
+        env:
+          TEST_DSN: myodbc8a
+          TEST_UID: root
+          TEST_PASSWORD: root
+          TEST_DRIVER: libmyodbc8a.so
+          ODBCINI: ${{ github.workspace }}/build/test/odbc.ini
+          ODBCINSTINI: ${{ github.workspace }}/build/test/odbcinst.ini
+
+      # Upload artifacts
+      - name: Upload build artifacts - Binaries
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux-community-binaries
+          path: ${{ github.workspace }}/build/bin/
+      - name: Upload build artifacts - Libraries
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux-community-libraries
+          path: ${{ github.workspace }}/build/lib/
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux-community_results
           path: ${{ github.workspace }}/build/test/Testing/Temporary/LastTest.log

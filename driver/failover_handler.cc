@@ -283,10 +283,10 @@ bool FAILOVER_HANDLER::is_rds_custom_cluster_dns(std::string host) {
     return std::regex_match(host, AURORA_CUSTOM_CLUSTER_PATTERN);
 }
 
-#ifdef __APPLE__
-#define strcmp_case_insensitive(str1, str2) strcasecmp(str1, str2)
+#if defined(__APPLE__) || defined(__linux__)
+    #define strcmp_case_insensitive(str1, str2) strcasecmp(str1, str2)
 #else
-#define strcmp_case_insensitive(str1, str2) strcmpi(str1, str2)
+    #define strcmp_case_insensitive(str1, str2) strcmpi(str1, str2)
 #endif
 
 std::string FAILOVER_HANDLER::get_rds_cluster_host_url(std::string host) {

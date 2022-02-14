@@ -39,6 +39,7 @@
 
 #include <map>
 #include <mutex>
+#include <cstring>
 
 // TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.000;
 #define DEFAULT_REFRESH_RATE_IN_MILLISECONDS 30000

@@ -10,6 +10,16 @@
 
 #include <functional>
 #include <condition_variable>
+#include <atomic>
+
+#ifdef __linux__
+typedef std::u16string sqlwchar_string;
+#else
+typedef std::wstring sqlwchar_string;
+#endif
+
+sqlwchar_string to_sqlwchar_string(const std::string& src);
+
 
 struct DBC;
 struct DataSource;
