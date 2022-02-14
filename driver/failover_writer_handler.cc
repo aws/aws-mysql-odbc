@@ -11,22 +11,36 @@
 
 // **** FAILOVER_SYNC ***************************************
 // used for thread synchronization
-FAILOVER_SYNC::FAILOVER_SYNC() : done_{false} {}
+FAILOVER_SYNC::FAILOVER_SYNC(int num_tasks) : num_tasks{num_tasks} {}
 
-void FAILOVER_SYNC::mark_as_done() {
+void FAILOVER_SYNC::increment_task() {
     std::lock_guard<std::mutex> lock(mutex_);
-    done_ = true;
+    num_tasks++;
+}
+
+void FAILOVER_SYNC::mark_as_complete(bool cancel_other_tasks) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (cancel_other_tasks) {
+        num_tasks = 0;
+    } else {
+        if (num_tasks <= 0) {
+            throw "Trying to cancel a failover process that is already done.";
+        }
+        num_tasks--;
+    }
+
     cv.notify_one();
 }
 
-void FAILOVER_SYNC::wait_for_done() {
+void FAILOVER_SYNC::wait_and_complete(int milliseconds) {
     std::unique_lock<std::mutex> lock(mutex_);
-    cv.wait(lock, [this] { return done_; });
+    cv.wait_for(lock, std::chrono::milliseconds(milliseconds), [this] { return num_tasks <= 0; });
+    num_tasks = 0;
 }
 
-void FAILOVER_SYNC::wait_for_done(int milliseconds) {
+bool FAILOVER_SYNC::is_completed() {
     std::unique_lock<std::mutex> lock(mutex_);
-    cv.wait_for(lock, std::chrono::milliseconds(milliseconds), [this] { return done_; });
+    return num_tasks <= 0; 
 }
 
 // ************* FAILOVER ***********************************
@@ -36,14 +50,9 @@ FAILOVER::FAILOVER(
     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service)
     : connection_handler{connection_handler},
       topology_service{topology_service},
-      new_connection{nullptr},
-      canceled{false} {}
+      new_connection{nullptr} {}
 
 FAILOVER::~FAILOVER() {}
-
-void FAILOVER::cancel() { canceled = true; }
-
-bool FAILOVER::is_canceled() { return canceled; }
 
 bool FAILOVER::is_writer_connected() {
     return new_connection && new_connection->is_connected();
@@ -61,7 +70,7 @@ void FAILOVER::sleep(int miliseconds) {
 }
 
 // Close new connection if not needed (other task finishes and returns first)
-void FAILOVER::clean_up_new_connection() {
+void FAILOVER::release_new_connection() {
     if (new_connection && new_connection->is_connected()) {
         connection_handler->release_connection(new_connection);
     }
@@ -80,7 +89,7 @@ RECONNECT_TO_WRITER_HANDLER::~RECONNECT_TO_WRITER_HANDLER() {}
 WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
     const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync) {
     if (original_writer) {
-        while (!is_canceled()) {
+        while (!f_sync.is_completed()) {
             if (connect(original_writer)) {
                 new_connection = get_connection();
                 auto latest_topology =
@@ -89,21 +98,20 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
                     is_current_host_writer(original_writer, latest_topology)) {
 
                     topology_service->mark_host_up(original_writer);
-                    f_sync.mark_as_done();
-                    if (is_canceled()) {
+                    if (f_sync.is_completed()) {
                         break;
                     }
+                    f_sync.mark_as_complete(true);
                     return WRITER_FAILOVER_RESULT(true, false, latest_topology,
                                                   new_connection);
                 }
-                clean_up_new_connection();
+                release_new_connection();
             }
             sleep(reconnect_interval_ms);
         }
     }
     // Another thread finishes or both timeout, this thread is canceled
-    clean_up_new_connection();
-    f_sync.mark_as_done();
+    release_new_connection();
     return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
 
@@ -135,13 +143,13 @@ WAIT_NEW_WRITER_HANDLER::~WAIT_NEW_WRITER_HANDLER() {}
 
 WRITER_FAILOVER_RESULT WAIT_NEW_WRITER_HANDLER::operator()(
     const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync) {
-    while (!is_canceled()) {
+    while (!f_sync.is_completed()) {
         if (!is_writer_connected()) {
-            connect_to_reader();
-            refresh_topology_and_connect_to_new_writer(original_writer);
+            connect_to_reader(f_sync);
+            refresh_topology_and_connect_to_new_writer(original_writer, f_sync);
             clean_up_reader_connection();
         } else {
-            f_sync.mark_as_done();
+            f_sync.mark_as_complete(true);
             return WRITER_FAILOVER_RESULT(true, true, current_topology,
                                         new_connection);
         }
@@ -149,16 +157,14 @@ WRITER_FAILOVER_RESULT WAIT_NEW_WRITER_HANDLER::operator()(
 
     // Another thread finishes or both timeout, this thread is canceled
     clean_up_reader_connection();
-    clean_up_new_connection();
-    f_sync.mark_as_done();
+    release_new_connection();
     return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
 
 // Connect to a reader to later retrieve the latest topology
-void WAIT_NEW_WRITER_HANDLER::connect_to_reader() {
-    while (!is_canceled()) {
-        auto connection_result = reader_handler->get_reader_connection(
-            current_topology, [this] { return is_canceled(); });
+void WAIT_NEW_WRITER_HANDLER::connect_to_reader(FAILOVER_SYNC& f_sync) {
+    while (!f_sync.is_completed()) {
+        auto connection_result = reader_handler->get_reader_connection(current_topology, f_sync);
         if (connection_result.connected && connection_result.new_connection->is_connected()) {
             reader_connection = connection_result.new_connection;
             current_reader_host = connection_result.new_host;
@@ -169,8 +175,8 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader() {
 
 // Use just connected reader to refresh topology and try to connect to a new writer
 void WAIT_NEW_WRITER_HANDLER::refresh_topology_and_connect_to_new_writer(
-    const std::shared_ptr<HOST_INFO>& original_writer) {
-    while (!is_canceled()) {
+    const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync) {
+    while (!f_sync.is_completed()) {
         auto latest_topology = topology_service->get_topology(reader_connection.get(), true);
         if (latest_topology->total_hosts() > 0) {
             current_topology = latest_topology;
@@ -229,7 +235,7 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
         return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
     }
 
-    FAILOVER_SYNC failover_sync;
+    FAILOVER_SYNC failover_sync(2);
     // Constructing the function objects
     RECONNECT_TO_WRITER_HANDLER reconnect_handler(
         connection_handler, topology_service, reconnect_writer_interval_ms);
@@ -249,16 +255,7 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
         std::async(std::launch::async, std::ref(new_writer_handler),
                    std::cref(original_writer), std::ref(failover_sync));
 
-    failover_sync.wait_for_done(writer_failover_timeout_ms);
-
-    // NOTE: Calling cancel on the handlers below indicates to the executing
-    // handlers stop what they're doing and return.
-    // If the handlers were at the point that they had a valid connection,
-    // cancel does not release this connection so it can be retrieved after
-    // calls to future.get(). cancel has no effect if the thread function has
-    // already completed.
-    reconnect_handler.cancel();
-    new_writer_handler.cancel();
+    failover_sync.wait_and_complete(writer_failover_timeout_ms);
 
     WRITER_FAILOVER_RESULT reconnect_result;
     WRITER_FAILOVER_RESULT new_writer_result;
