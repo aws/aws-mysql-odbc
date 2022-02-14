@@ -54,10 +54,9 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE_INTERFACE {
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
  public:
-    MOCK_READER_HANDLER() : FAILOVER_READER_HANDLER(nullptr, nullptr) {}
+    MOCK_READER_HANDLER() : FAILOVER_READER_HANDLER(nullptr, nullptr, 0, 0) {}
     MOCK_METHOD(READER_FAILOVER_RESULT, get_reader_connection,
-                (std::shared_ptr<CLUSTER_TOPOLOGY_INFO>,
-                const std::function<bool()>));
+                (std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, FAILOVER_SYNC&));
 };
 
 class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
@@ -66,6 +65,12 @@ class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
     MOCK_METHOD(std::shared_ptr<CONNECTION_INTERFACE>, connect,
                 (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*));
+};
+
+class MOCK_FAILOVER_SYNC : public FAILOVER_SYNC {
+public:
+    MOCK_FAILOVER_SYNC() : FAILOVER_SYNC(1) {}
+    MOCK_METHOD(bool, is_completed, ());
 };
 
 #endif /* __MOCKOBJECTS_H__ */

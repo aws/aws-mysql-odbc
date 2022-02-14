@@ -73,7 +73,8 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
     init_cluster_info();
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
-        this->topology_service, this->connection_handler);
+        this->topology_service, this->connection_handler, ds->failover_timeout,
+        ds->failover_reader_connect_timeout);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
         this->connection_handler, ds->failover_timeout,
@@ -388,8 +389,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
 
 bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
     new_error_code = nullptr;
-    auto result = failover_reader_handler->failover(
-        current_topology, [] { return false; });
+    auto result = failover_reader_handler->failover(current_topology);
 
     if (result.connected) {
         current_host = result.new_host;
