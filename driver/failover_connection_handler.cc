@@ -9,6 +9,19 @@
 #include <codecvt>
 #include <locale>
 
+#ifdef __linux__
+    sqlwchar_string to_sqlwchar_string(const std::string& src) {
+        return std::wstring_convert< std::codecvt_utf8_utf16< char16_t >,
+                                     char16_t >{}
+            .from_bytes(src);
+    }
+#else
+    sqlwchar_string to_sqlwchar_string(const std::string& src) {
+        return std::wstring_convert< std::codecvt_utf8< wchar_t >, wchar_t >{}
+            .from_bytes(src);
+    }
+#endif
+
 FAILOVER_CONNECTION_HANDLER::FAILOVER_CONNECTION_HANDLER(DBC* dbc) : dbc{dbc} {}
 
 FAILOVER_CONNECTION_HANDLER::~FAILOVER_CONNECTION_HANDLER() {}
@@ -25,11 +38,10 @@ std::shared_ptr<CONNECTION_INTERFACE> FAILOVER_CONNECTION_HANDLER::connect(
     }
     // TODO Convert string to wstring. Note: need to revist if support Linux
     auto host = host_info->get_host();
-    auto new_host =
-        std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.from_bytes(host);
+    auto new_host = to_sqlwchar_string(host);
 
     DBC* dbc_clone = clone_dbc(dbc);
-    ds_set_strnattr(&dbc_clone->ds->server, new_host.c_str(), new_host.size());
+    ds_set_strnattr(&dbc_clone->ds->server, (SQLWCHAR *) new_host.c_str(), new_host.size());
 
     std::shared_ptr<CONNECTION_INTERFACE> new_connection;
     CLEAR_DBC_ERROR(dbc_clone);
