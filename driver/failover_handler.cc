@@ -68,6 +68,7 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
     this->dbc = dbc;
     this->ds = ds;
     this->topology_service = topology_service;
+    this->topology_service->set_refresh_rate(ds->topology_refresh_rate);
     this->connection_handler = connection_handler;
 
     init_cluster_info();

@@ -50,6 +50,7 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE_INTERFACE {
     MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (CONNECTION_INTERFACE*, bool));
     MOCK_METHOD(void, mark_host_down, (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(void, mark_host_up, (std::shared_ptr<HOST_INFO>));
+    MOCK_METHOD(void, set_refresh_rate, (int));
 };
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {

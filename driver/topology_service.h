@@ -61,6 +61,7 @@ public:
     virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(CONNECTION_INTERFACE* connection, bool force_update = false) = 0;
     virtual void mark_host_down(std::shared_ptr<HOST_INFO> host) = 0;
     virtual void mark_host_up(std::shared_ptr<HOST_INFO> host) = 0;
+    virtual void set_refresh_rate(int refresh_rate) = 0;
 };
 
 class TOPOLOGY_SERVICE : virtual public TOPOLOGY_SERVICE_INTERFACE {
@@ -80,7 +81,7 @@ public:
     std::set<std::string> get_down_hosts();
     void mark_host_down(std::shared_ptr<HOST_INFO> host) override;
     void mark_host_up(std::shared_ptr<HOST_INFO> host) override;
-    void set_refresh_rate(int refresh_rate);
+    void set_refresh_rate(int refresh_rate) override;
     void clear_all();
     void clear();
 

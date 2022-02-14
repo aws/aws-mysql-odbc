@@ -717,6 +717,15 @@ DataSource *ds_new()
   ds->port = 3306;
   ds->has_port = false;
   ds->no_schema = 1;
+  ds->disable_cluster_failover = false;
+  ds->allow_reader_connections = false;
+  ds->gather_perf_metrics = false;
+  ds->topology_refresh_rate = 30000;              // 30 sec
+  ds->failover_timeout = 60000;                   // 60 sec
+  ds->failover_reader_connect_timeout = 30000;    // 30 sec
+  ds->failover_topology_refresh_rate = 5000;      // 5 sec
+  ds->failover_writer_reconnect_interval = 5000;  // 5 sec
+
   /* DS_PARAM */
 
   return ds;
