@@ -58,21 +58,36 @@ struct READER_FAILOVER_RESULT {
           new_connection{new_connection} {}
 };
 
+// FAILOVER_SYNC enables synchronization between threads
+class FAILOVER_SYNC {
+   public:
+    FAILOVER_SYNC(int num_tasks);
+    void increment_task();
+    void mark_as_complete(bool cancel_other_tasks);
+    void wait_and_complete(int milliseconds);
+    virtual bool is_completed();
+
+   private:
+    int num_tasks;
+    std::mutex mutex_;
+    std::condition_variable cv;
+};
+
 class FAILOVER_READER_HANDLER {
    public:
     FAILOVER_READER_HANDLER(
         std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
-        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler);
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+        int failover_timeout_ms, int failover_reader_connect_timeout);
     
         ~FAILOVER_READER_HANDLER();
     
         READER_FAILOVER_RESULT failover(
-            std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
-            const std::function<bool()> is_canceled);
+            std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info);
     
         virtual READER_FAILOVER_RESULT get_reader_connection(
             std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
-            const std::function<bool()> is_canceled);
+            FAILOVER_SYNC& f_sync);
 
         std::vector<std::shared_ptr<HOST_INFO>> build_hosts_list(
             const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& topology_info,
@@ -80,15 +95,16 @@ class FAILOVER_READER_HANDLER {
 
         READER_FAILOVER_RESULT get_connection_from_hosts(
             std::vector<std::shared_ptr<HOST_INFO>> hosts_list,
-            const std::function<bool()> is_canceled);
+            FAILOVER_SYNC& global_sync);
 
     protected:
-        int connect_reader_interval_ms = 5000;   // 5 sec
-        int reader_failover_timeout_ms = 60000;  // 60 sec
+        int reader_connect_timeout_ms = 30000;   // 30 sec
+        int max_failover_timeout_ms = 60000;  // 60 sec
 
     private:
         std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
-        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;   
+        std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler; 
+        const int READER_CONNECT_INTERVAL_SEC = 1;  // 1 sec  
 };
 
 // This struct holds results of Writer Failover Process.
@@ -187,56 +203,33 @@ class FAILOVER_HANDLER {
 // file, but here for now
 //
 
-// FAILOVER_SYNC enables synchronization between threads
-class FAILOVER_SYNC {
-   public:
-    FAILOVER_SYNC();
-    void mark_as_done();
-    void wait_for_done();
-    void wait_for_done(int milliseconds);
-
-   private:
-    bool done_;
-    std::mutex mutex_;
-    std::condition_variable cv;
-};
-
 class FAILOVER {
    public:
     FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
              std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
     virtual ~FAILOVER();
-    void cancel();
-    bool is_canceled();
     bool is_writer_connected();
     std::shared_ptr<CONNECTION_INTERFACE> get_connection();
 
    protected:
     bool connect(std::shared_ptr<HOST_INFO> host_info);
     void sleep(int miliseconds);
-    void clean_up_new_connection();
+    void release_new_connection();
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
     std::shared_ptr<CONNECTION_INTERFACE> new_connection;
-
-   private:
-    std::atomic_bool canceled;
 };
 
 class CONNECT_TO_READER_HANDLER : public FAILOVER {
 public:
     CONNECT_TO_READER_HANDLER(
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
-        int connection_interval);
+     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
     ~CONNECT_TO_READER_HANDLER();
 
     READER_FAILOVER_RESULT operator()(
         const std::shared_ptr<HOST_INFO>& reader,
         FAILOVER_SYNC& f_sync);
-
-private:
-    int reconnect_interval_ms;
 };
 
 class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
@@ -282,8 +275,8 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
     std::shared_ptr<HOST_INFO> current_reader_host;
 
     void refresh_topology_and_connect_to_new_writer(
-        const std::shared_ptr<HOST_INFO>& original_writer);
-    void connect_to_reader();
+        const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync);
+    void connect_to_reader(FAILOVER_SYNC& f_sync);
     bool connect_to_writer(const std::shared_ptr<HOST_INFO>& writer_candidate);
     void clean_up_reader_connection();
 };

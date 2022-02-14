@@ -36,12 +36,12 @@
 
 using ::testing::_;
 using ::testing::AnyNumber;
+using ::testing::AtLeast;
 using ::testing::Invoke;
 using ::testing::Return;
 
 namespace {
     const std::string HOST_SUFFIX = ".xyz.us-east-2.rds.amazonaws.com";
-    const long sleep_between_failover_and_expect = 8000;
 }  // namespace
 
 class FailoverReaderHandlerTest : public testing::Test {
@@ -66,34 +66,27 @@ protected:
     
     std::shared_ptr<MOCK_TOPOLOGY_SERVICE> mock_ts;
     std::shared_ptr<MOCK_CONNECTION_HANDLER> mock_connection_handler;
+    MOCK_FAILOVER_SYNC mock_sync;
 
     static void SetUpTestSuite() { 
         mc_reader_a = new MOCK_CONNECTION();
         mock_reader_a_connection = std::shared_ptr<CONNECTION_INTERFACE>(mc_reader_a);
-        reader_a_host = std::make_shared<HOST_INFO>(HOST_INFO("reader-a-host" + HOST_SUFFIX, 1234));
-        reader_a_host->mark_as_writer(false);
-        reader_a_host->set_host_state(UP);
+        reader_a_host = std::make_shared<HOST_INFO>("reader-a-host" + HOST_SUFFIX, 1234, UP, false);
         reader_a_host->instance_name = "reader-a-host";
 
         mc_reader_b = new MOCK_CONNECTION();
         mock_reader_b_connection = std::shared_ptr<CONNECTION_INTERFACE>(mc_reader_b);
-        reader_b_host = std::make_shared<HOST_INFO>(HOST_INFO("reader-b-host" + HOST_SUFFIX, 1234));
-        reader_b_host->mark_as_writer(false);
-        reader_b_host->set_host_state(UP);
+        reader_b_host = std::make_shared<HOST_INFO>("reader-b-host" + HOST_SUFFIX, 1234, UP, false);
         reader_b_host->instance_name = "reader-b-host";
 
         mc_reader_c = new MOCK_CONNECTION();
         mock_reader_c_connection = std::shared_ptr<CONNECTION_INTERFACE>(mc_reader_c);
-        reader_c_host = std::make_shared<HOST_INFO>(HOST_INFO("reader-c-host" + HOST_SUFFIX, 1234));
-        reader_c_host->mark_as_writer(true);
-        reader_c_host->set_host_state(DOWN);
+        reader_c_host = std::make_shared<HOST_INFO>("reader-c-host" + HOST_SUFFIX, 1234, UP, false);
         reader_c_host->instance_name = "reader-c-host";
 
         mc_writer = new MOCK_CONNECTION();
         mock_writer_connection = std::shared_ptr<CONNECTION_INTERFACE>(mc_writer);
-        writer_host = std::make_shared<HOST_INFO>(HOST_INFO("writer-host" + HOST_SUFFIX, 1234));
-        writer_host->mark_as_writer(true);
-        writer_host->set_host_state(UP);
+        writer_host = std::make_shared<HOST_INFO>("writer-host" + HOST_SUFFIX, 1234, UP, true);
         writer_host->instance_name = "writer-host";
 
         topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
@@ -121,6 +114,7 @@ protected:
     void SetUp() override {
         mock_ts = std::make_shared<MOCK_TOPOLOGY_SERVICE>();
         mock_connection_handler = std::make_shared<MOCK_CONNECTION_HANDLER>();
+        EXPECT_CALL(mock_sync, is_completed()).WillRepeatedly(Return(FALSE));
     }
 
     void TearDown() override {
@@ -146,29 +140,23 @@ std::shared_ptr<CONNECTION_INTERFACE> FailoverReaderHandlerTest::mock_writer_con
 
 std::shared_ptr<CLUSTER_TOPOLOGY_INFO> FailoverReaderHandlerTest::topology = nullptr;
 
-bool always_false() {
-    return false;
-}
-
-std::function<bool()> never_canceled{ always_false };
-
 // Helper function that generates a list of hosts.
 // Parameters: Number of reader hosts UP, number of reader hosts DOWN, number of writer hosts.
 CLUSTER_TOPOLOGY_INFO generate_topology(int readers_up, int readers_down, int writers) {
   CLUSTER_TOPOLOGY_INFO topology = CLUSTER_TOPOLOGY_INFO();
   int number = 0;
   for (int i = 0; i < readers_up; i++) {
-    std::shared_ptr<HOST_INFO> reader_up = std::make_shared<HOST_INFO>(HOST_INFO("host" + number, 0123, UP, false));
+    std::shared_ptr<HOST_INFO> reader_up = std::make_shared<HOST_INFO>("host" + number, 0123, UP, false);
     topology.add_host(reader_up);
     number++;
   }
   for (int i = 0; i < readers_down; i++) {
-    std::shared_ptr<HOST_INFO> reader_down = std::make_shared<HOST_INFO>(HOST_INFO("host" + number, 0123, DOWN, false));
+    std::shared_ptr<HOST_INFO> reader_down = std::make_shared<HOST_INFO>("host" + number, 0123, DOWN, false);
     topology.add_host(reader_down);
     number++;
   }
   for (int i = 0; i < writers; i++) {
-    std::shared_ptr<HOST_INFO> writer = std::make_shared<HOST_INFO>(HOST_INFO("host" + number, 0123, UP, true));
+    std::shared_ptr<HOST_INFO> writer = std::make_shared<HOST_INFO>("host" + number, 0123, UP, true);
     topology.add_host(writer);
     number++;
   }
@@ -193,7 +181,7 @@ TEST_F(FailoverReaderHandlerTest, GenerateTopology) {
 }
 
 TEST_F(FailoverReaderHandlerTest, BuildHostsList) {
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology;
     std::vector<std::shared_ptr<HOST_INFO>> hosts_list;
 
@@ -263,21 +251,16 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Failure) {
     EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
     EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
     
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_c_host)).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
 
-    EXPECT_CALL(*mock_ts, mark_host_down(reader_a_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_a_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
-    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, never_canceled);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_between_failover_and_expect));
+    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, std::ref(mock_sync));
 
     EXPECT_FALSE(result.connected);
     EXPECT_THAT(result.new_connection, nullptr);
@@ -298,14 +281,12 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Success_Reader
     EXPECT_CALL(*mock_connection_handler, connect(reader_c_host)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(mock_writer_connection));
 
-    EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
-    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, never_canceled);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_between_failover_and_expect));
+    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, std::ref(mock_sync));
 
     EXPECT_TRUE(result.connected);
     EXPECT_THAT(result.new_connection, mock_reader_a_connection);
@@ -327,16 +308,14 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Success_Writer
     EXPECT_CALL(*mock_connection_handler, connect(reader_c_host)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(mock_writer_connection));
 
-    EXPECT_CALL(*mock_ts, mark_host_down(reader_a_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_a_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
-    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, never_canceled);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_between_failover_and_expect));
+    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, std::ref(mock_sync));
 
     EXPECT_TRUE(result.connected);
     EXPECT_THAT(result.new_connection, mock_writer_connection);
@@ -361,14 +340,12 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_FastestHost) {
     EXPECT_CALL(*mock_connection_handler, connect(reader_c_host)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(nullptr));
 
-    EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_up(reader_b_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_up(reader_b_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
-    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, never_canceled);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_between_failover_and_expect));
+    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, std::ref(mock_sync));
 
     EXPECT_TRUE(result.connected);
     EXPECT_THAT(result.new_connection, mock_reader_a_connection);
@@ -381,30 +358,90 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Timeout) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
     EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mc_reader_a, close_connection()).Times(1);
     EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mc_reader_b, close_connection()).Times(1);
     EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
     EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
     
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Invoke([&]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(15000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_reader_a_connection;
         }));
     EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Invoke([&]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(15000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_reader_b_connection;
         }));
     EXPECT_CALL(*mock_connection_handler, connect(reader_c_host)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(nullptr));
 
-    EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(AnyNumber());
-    EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_down(_)).Times(AnyNumber());
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 1000);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
-    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, never_canceled);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_between_failover_and_expect));
+    READER_FAILOVER_RESULT result = reader_handler.get_connection_from_hosts(hosts_list, std::ref(mock_sync));
 
     EXPECT_FALSE(result.connected);
     EXPECT_THAT(result.new_connection, nullptr);
+}
+
+// Verify that reader failover handler fails to connect to any reader node or
+// writer node. Expected result: no new connection
+TEST_F(FailoverReaderHandlerTest, Failover_Failure) {
+    EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
+
+    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
+
+    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
+
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_a_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
+
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 3000, 1000);
+    READER_FAILOVER_RESULT result = reader_handler.failover(topology);
+
+    EXPECT_FALSE(result.connected);
+    EXPECT_THAT(result.new_connection, nullptr);
+}
+
+// Verify that reader failover handler connects to a faster reader node.
+// Expected result: new connection to reader A
+TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
+    auto current_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
+    current_topology->add_host(writer_host);
+    current_topology->add_host(reader_a_host);
+    current_topology->add_host(reader_b_host);
+    EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(current_topology));
+
+    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(true));
+
+    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mc_reader_b, close_connection()).Times(AtLeast(1));
+
+    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
+    
+    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Return(mock_reader_a_connection));
+    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Invoke([&]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        return mock_reader_b_connection;
+    }));
+    EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(nullptr));
+
+    EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(1);
+    EXPECT_CALL(*mock_ts, mark_host_up(reader_b_host)).Times(1);
+
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000);
+    READER_FAILOVER_RESULT result = reader_handler.failover(current_topology);
+
+    EXPECT_TRUE(result.connected);
+    EXPECT_THAT(result.new_connection, mock_reader_a_connection);
+    EXPECT_FALSE(result.new_host->is_host_writer());
+    EXPECT_EQ("reader-a-host", result.new_host->instance_name);
 }
