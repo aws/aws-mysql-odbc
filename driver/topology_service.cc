@@ -222,10 +222,7 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 
     //TODO check cluster_instance_host for NULL, or decide what is needed out of it
     std::shared_ptr<HOST_INFO> host_info = std::make_shared<HOST_INFO>(
-        HOST_INFO(
-            host_endpoint,
-            cluster_instance_host->get_port()
-        ));
+        host_endpoint, cluster_instance_host->get_port());
 
     //TODO do case-insensitive comparison
     // side note: how stable this is on the server side? If it changes there we will not detect a writter.
