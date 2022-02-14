@@ -68,24 +68,16 @@ class FailoverWriterHandlerTest : public testing::Test {
         writer_instance_name = "writer-host";
         new_writer_instance_name = "new-writer-host";
 
-        writer_host = std::make_shared<HOST_INFO>(
-            HOST_INFO(writer_instance_name + HOST_SUFFIX, 1234));
-        writer_host->mark_as_writer(true);
-        writer_host->set_host_state(DOWN);
+        writer_host = std::make_shared<HOST_INFO>(writer_instance_name + HOST_SUFFIX, 1234, DOWN, true);
         writer_host->instance_name = writer_instance_name;
 
-        new_writer_host = std::make_shared<HOST_INFO>(
-            HOST_INFO(new_writer_instance_name + HOST_SUFFIX, 1234));
-        new_writer_host->mark_as_writer(true);
-        new_writer_host->set_host_state(UP);
+        new_writer_host = std::make_shared<HOST_INFO>(new_writer_instance_name + HOST_SUFFIX, 1234, UP, true);
         new_writer_host->instance_name = new_writer_instance_name;
 
-        reader_a_host = std::make_shared<HOST_INFO>(
-            HOST_INFO("reader-a-host" + HOST_SUFFIX, 1234));
+        reader_a_host = std::make_shared<HOST_INFO>("reader-a-host" + HOST_SUFFIX, 1234);
         reader_a_host->instance_name = "reader-a-host";
 
-        reader_b_host = std::make_shared<HOST_INFO>(
-            HOST_INFO("reader-b-host" + HOST_SUFFIX, 1234));
+        reader_b_host = std::make_shared<HOST_INFO>("reader-b-host" + HOST_SUFFIX, 1234);
         reader_b_host->instance_name = "reader-b-host";
 
         current_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
@@ -182,8 +174,8 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(DoAll(
-            Invoke([](Unused, const std::function<bool()> is_canceled) {
-                for (int i = 0; i <= 50 && !is_canceled(); i++) {
+            Invoke([](Unused, FAILOVER_SYNC& f_sync) {
+                for (int i = 0; i <= 50 && !f_sync.is_completed(); i++) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
             }),
