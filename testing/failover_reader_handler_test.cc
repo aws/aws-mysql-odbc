@@ -377,7 +377,7 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_FastestHost) {
 
 // Verify that reader failover handler fails to connect when a host fails to connect before timeout.
 // Expected result: no connection
-TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Timeout) {
+TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Timeout) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
     EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(true));
