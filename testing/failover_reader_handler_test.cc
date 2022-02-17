@@ -114,7 +114,7 @@ protected:
     void SetUp() override {
         mock_ts = std::make_shared<MOCK_TOPOLOGY_SERVICE>();
         mock_connection_handler = std::make_shared<MOCK_CONNECTION_HANDLER>();
-        EXPECT_CALL(mock_sync, is_completed()).WillRepeatedly(Return(FALSE));
+        EXPECT_CALL(mock_sync, is_completed()).WillRepeatedly(Return(false));
     }
 
     void TearDown() override {
