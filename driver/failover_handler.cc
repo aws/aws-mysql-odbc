@@ -81,7 +81,6 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
         this->connection_handler, ds->failover_timeout,
         ds->failover_topology_refresh_rate,
         ds->failover_writer_reconnect_interval);
-    this->current_host = nullptr;
 }
 
 FAILOVER_HANDLER::~FAILOVER_HANDLER() {}
@@ -371,7 +370,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
         return false;
     }
 
-    if (ec.rfind("08", 0)) {  // start with "08"
+    if (ec.rfind("08", 0) == 0) {  // start with "08"
 
         // invalidate current connection
         current_host = nullptr;
@@ -389,28 +388,27 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
 }
 
 bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
-    new_error_code = nullptr;
     auto result = failover_reader_handler->failover(current_topology);
 
     if (result.connected) {
         current_host = result.new_host;
         connection_handler->update_connection(result.new_connection);
+        new_error_code = "08S02";
         return true;
     } else {
         // "Unable to establish SQL connection to reader node"
-        new_error_code = "08001";
+        new_error_code = "08S01";
         return false;
     }
     return false;
 }
 
 bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code) {
-    new_error_code = nullptr;
     auto result = failover_writer_handler->failover(current_topology);
 
     if (!result.connected) {
         // "Unable to establish SQL connection to writer node"
-        new_error_code = "08001";
+        new_error_code = "08S01";
         return false;
     }
     if (result.is_new_host) {
@@ -419,5 +417,6 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code) {
         current_host = current_topology->get_writer();
     }
     connection_handler->update_connection(result.new_connection);
+    new_error_code = "08S02";
     return true;
 }
