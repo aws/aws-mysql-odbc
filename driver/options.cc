@@ -565,7 +565,6 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
 
       if (result != SQL_SUCCESS)
       {
-        /* TODO: failover */
         return set_handle_error(SQL_HANDLE_DBC, hdbc, MYERR_S1000,
                                 "Failed to get isolation level", 0);
       }
