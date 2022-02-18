@@ -58,18 +58,10 @@
 # endif
 #else
 # include <windows.h>
-# ifndef RC_INVOKED
-#  pragma pack(push, 1)
-# endif
 
 # include <sql.h>
 # include <sqlext.h>
 # include <odbcinst.h>
-
-# ifndef RC_INVOKED
-#  pragma pack(pop)
-# endif
-
 #endif
 
 #endif /* !MYODBC_ODBC_H */
