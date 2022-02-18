@@ -1409,11 +1409,14 @@ SQLRETURN ssps_send_long_data(STMT *stmt, unsigned int param_number, const char 
       /* We can fall back to assembling parameter's value on client */
         return SQL_SUCCESS_WITH_INFO;
       case CR_SERVER_GONE_ERROR:
-        /* TODO: failover */
-        return stmt->set_error("08S01", mysql_stmt_error(stmt->ssps), err);
+        const char* error_code;
+        if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code))
+          return stmt->set_error(error_code, "The active SQL connection has changed.", err);
+        else
+          return stmt->set_error("08S01", mysql_stmt_error(stmt->ssps), err);
       case CR_COMMANDS_OUT_OF_SYNC:
       case CR_UNKNOWN_ERROR:
-        return stmt->set_error("HY000", mysql_stmt_error( stmt->ssps), err);
+        return stmt->set_error("HY000", mysql_stmt_error(stmt->ssps), err);
       case CR_OUT_OF_MEMORY:
         return stmt->set_error("HY001", mysql_stmt_error(stmt->ssps), err);
       default:

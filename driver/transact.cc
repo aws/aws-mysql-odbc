@@ -74,12 +74,24 @@ static SQLRETURN my_transact(SQLHDBC hdbc, SQLSMALLINT CompletionType)
     MYLOG_DBC_QUERY(dbc, query);
 
     LOCK_DBC(dbc);
-    if (check_if_server_is_alive(dbc) ||
-	      dbc->mysql->real_query(query, length))
+    int return_code_server_alive, return_code_real_query;
+    if ((return_code_server_alive = check_if_server_is_alive(dbc)) ||
+        (return_code_real_query = dbc->mysql->real_query(query, length)))
     {
       result = ((DBC*)hdbc)->set_error(MYERR_S1000,
 			     dbc->mysql->error(),
 			     dbc->mysql->error_code());
+      
+      if (return_code_server_alive ||
+          return_code_real_query == CR_SERVER_GONE_ERROR ||
+          return_code_real_query == CR_SERVER_LOST) 
+      {
+        const char *error_code;
+        if (dbc->fh->trigger_failover_if_needed("08S01", error_code)) 
+        {
+            result = dbc->set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
+        }
+      }
     }
   }
   return(result);

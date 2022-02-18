@@ -1614,8 +1614,11 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hstmt )
 #if MYSQL_VERSION_ID > 80023
       case ER_CLIENT_INTERACTION_TIMEOUT:
 #endif
-        /* TODO: failover */
-        nReturn = stmt->set_error("08S01", stmt->dbc->mysql->error(), nRetVal );
+        const char *error_code;
+        if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code))
+          nReturn = stmt->set_error(error_code, "The active SQL connection has changed.", nRetVal);
+        else
+          nReturn = stmt->set_error("08S01", stmt->dbc->mysql->error(), nRetVal);
         goto exitSQLMoreResults;
       case CR_COMMANDS_OUT_OF_SYNC:
       case CR_UNKNOWN_ERROR:
