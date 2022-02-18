@@ -1540,11 +1540,22 @@ SQLRETURN DBC::execute_query(const char* query,
     query_length = strlen(query);
   }
 
-  if (check_if_server_is_alive(this) ||
-    dbc->mysql->real_query(query, query_length))
+  int return_code_server_alive, return_code_real_query;
+  if ((return_code_server_alive = check_if_server_is_alive(dbc)) ||
+      (return_code_real_query = dbc->mysql->real_query(query, query_length)))
   {
-    result = set_error(MYERR_S1000, dbc->mysql->error(),
-      dbc->mysql->error_code());
+    result = set_error(MYERR_S1000, dbc->mysql->error(), dbc->mysql->error_code());
+
+    if (return_code_server_alive ||
+        return_code_real_query == CR_SERVER_GONE_ERROR ||
+        return_code_real_query == CR_SERVER_LOST) 
+    {
+      const char *error_code;
+      if (dbc->fh->trigger_failover_if_needed("08S01", error_code)) 
+      {
+        result = set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
+      }
+    }
   }
 
   return result;

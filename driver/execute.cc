@@ -212,14 +212,10 @@ SQLRETURN do_query(STMT *stmt,char *query, SQLULEN query_length)
     error= SQL_SUCCESS;
 
 exit:
-    /* TODO: failover */
     if (error == SQL_ERROR) {
-       const char* newErrorCode;
-       const char* err = stmt->dbc->mysql->error();
-       SQLINTEGER errcode = stmt->dbc->mysql->error_code();
-       if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), newErrorCode)) {
-          stmt->set_error(newErrorCode, err, errcode);
-       }
+      const char *error_code;
+      if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), error_code))
+        stmt->set_error(error_code, "The active SQL connection has changed.", 0);
     }
 
     if (query != GET_QUERY(&stmt->query))
