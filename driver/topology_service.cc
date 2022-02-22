@@ -247,7 +247,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
     if (connection->try_execute_query(RETRIEVE_TOPOLOGY_SQL)) {
         topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
         MYSQL_ROW row;
-        while (row = connection->fetch_next_row()) {
+        while ((row = connection->fetch_next_row())) {
             std::shared_ptr<HOST_INFO> host_info = create_host(row);
             if (host_info) {
                 topology_info->add_host(host_info);
@@ -268,9 +268,5 @@ std::string TOPOLOGY_SERVICE::get_host_endpoint(const char* node_name) {
     if (position != std::string::npos) {
         host.replace(position, 1, node_name);
     }
-    else {
-        throw "Invalid host template for TOPOLOGY_SERVICE";
-    }
-
     return host;
 }
