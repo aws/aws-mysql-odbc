@@ -54,3 +54,26 @@ Uninstall.bat
 *.sln
 **/*.aps
 
+# Java build files
+testframework/bin/
+testframework/build/
+testframework/buildtest/
+testframework/dist/
+testframework/nbproject/
+testframework/patches/
+*~
+*.lock
+*.swp
+*.DS_Store
+*.diff
+*.dot
+*.dot.png
+*.class
+*.iml
+*.project.elrade
+*.attach_pid*
+*.gradle
+*.idea
+testframework/hs_err_pid*.log
+*.sh
+
