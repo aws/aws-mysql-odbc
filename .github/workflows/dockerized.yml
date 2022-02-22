@@ -1,0 +1,74 @@
+name: Build and Run Dockerized Tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths-ignore:
+      - '**/*.md'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build-dockerized-tests:
+    name: Build and Run Tests in Docker
+    runs-on: ubuntu-latest
+    env:
+      CMAKE_GENERATOR: Unix Makefiles
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Configure build environment/dependencies
+      - name: Install MySQL client libs & other dependencies
+        run: sudo apt-get update && sudo apt-get install 
+                build-essential 
+                libgtk-3-dev 
+                libmysqlclient-dev 
+                unixodbc
+                unixodbc-dev
+
+      - name: Create build environment
+        shell: bash
+        run: cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B build
+                -G "$CMAKE_GENERATOR"
+                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DMYSQLCLIENT_STATIC_LINKING=true
+                -DWITH_UNIXODBC=1
+
+      # Build driver
+      - name: Build driver
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE
+
+      - name: 'Set up JDK 8'
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+      
+      - name: 'Run Integration Tests'
+        working-directory: ${{ github.workspace }}/testframework
+        run: |
+          ./gradlew --no-parallel --no-daemon test-docker --info
+        env:
+          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          TEST_DB_CLUSTER_IDENTIFIER: ${{ secrets.TEST_DB_CLUSTER_IDENTIFIER }}-${{ github.run_id }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DRIVER_PATH: ${{ github.workspace }}/build
+
+      - name: 'Archive junit results'
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: 'junit-report'
+          path: build/reports/tests/
+          retention-days: 5    
