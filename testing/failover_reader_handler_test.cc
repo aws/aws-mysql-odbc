@@ -413,7 +413,7 @@ TEST_F(FailoverReaderHandlerTest, Failover_Failure) {
 
 // Verify that reader failover handler connects to a faster reader node.
 // Expected result: new connection to reader A
-TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
+TEST_F(FailoverReaderHandlerTest, DISABLED_Failover_Success_Reader) {
     auto current_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     current_topology->add_host(writer_host);
     current_topology->add_host(reader_a_host);
