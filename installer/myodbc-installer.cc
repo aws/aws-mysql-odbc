@@ -574,12 +574,12 @@ int list_datasource_details(DataSource *ds)
   if (ds->allow_reader_connections) printf("\tALLOW_READER_CONNECTIONS\n");
   if (ds->gather_perf_metrics) printf("\tGATHER_PERF_METRICS\n");
   if (ds->topology_refresh_rate) printf("\tTOPOLOGY_REFRESH_RATE=%d\n", ds->topology_refresh_rate);
-  if (ds->failover_timeout) printf("\FAILOVER_TIMEOUT=%d\n", ds->failover_timeout);
-  if (ds->failover_topology_refresh_rate) printf("\FAILOVER_TOPOLOGY_REFRESH_RATE=%d\n", ds->failover_topology_refresh_rate);
-  if (ds->failover_writer_reconnect_interval) printf("\FAILOVER_WRITER_RECONNECT_INTERVAL=%d\n", ds->failover_writer_reconnect_interval);
-  if (ds->failover_reader_connect_timeout) printf("\FAILOVER_READER_CONNECT_TIMEOUT=%d\n", ds->failover_reader_connect_timeout);
-  if (ds->connect_timeout) printf("\CONNECT_TIMEOUT=%d\n", ds->connect_timeout);
-  if (ds->network_timeout) printf("\NETWORK_TIMEOUT=%d\n", ds->network_timeout);
+  if (ds->failover_timeout) printf("\tFAILOVER_TIMEOUT=%d\n", ds->failover_timeout);
+  if (ds->failover_topology_refresh_rate) printf("\tFAILOVER_TOPOLOGY_REFRESH_RATE=%d\n", ds->failover_topology_refresh_rate);
+  if (ds->failover_writer_reconnect_interval) printf("\tFAILOVER_WRITER_RECONNECT_INTERVAL=%d\n", ds->failover_writer_reconnect_interval);
+  if (ds->failover_reader_connect_timeout) printf("\tFAILOVER_READER_CONNECT_TIMEOUT=%d\n", ds->failover_reader_connect_timeout);
+  if (ds->connect_timeout) printf("\tCONNECT_TIMEOUT=%d\n", ds->connect_timeout);
+  if (ds->network_timeout) printf("\tNETWORK_TIMEOUT=%d\n", ds->network_timeout);
 
   return 0;
 }
