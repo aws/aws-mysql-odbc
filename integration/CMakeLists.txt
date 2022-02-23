@@ -50,11 +50,33 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/refs/tags/release-1.11.0.zip
 )
+FetchContent_Declare(
+  awssdk
+  GIT_REPOSITORY https://github.com/aws/aws-sdk-cpp
+)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(googletest)
+# Only builds the RDS SDK
+SET(BUILD_ONLY "rds" CACHE INTERNAL "")
+SET(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+
+SET(CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
+    ""
+    CACHE STRING "Flags used for linking binaries during coverage builds."
+    FORCE )
+SET(CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT
+    ""
+    CACHE STRING "Flags used by the shared libraries linker during coverage builds."
+    FORCE )
+MARK_AS_ADVANCED(
+    CMAKE_CXX_FLAGS_DEBUGOPT
+    CMAKE_C_FLAGS_DEBUGOPT
+    CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
+    CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT )
+
+FetchContent_MakeAvailable(googletest awssdk)
 
 enable_testing()
 
