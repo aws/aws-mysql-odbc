@@ -124,6 +124,9 @@ jobs:
                 libmysqlclient-dev 
                 unixodbc
                 unixodbc-dev
+                curl
+                libcurl4-openssl-dev
+
 
       - name: Create build environment
         shell: bash
