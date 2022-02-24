@@ -106,9 +106,9 @@ typedef struct DataSource {
 
   bool has_port;
   unsigned int port;
-  unsigned int readtimeout;
-  unsigned int writetimeout;
-  unsigned int clientinteractive;
+  unsigned int read_timeout;
+  unsigned int write_timeout;
+  unsigned int client_interactive;
 
   SQLCHAR *name8;
   SQLCHAR *driver8;

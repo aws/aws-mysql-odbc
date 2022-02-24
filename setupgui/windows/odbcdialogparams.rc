@@ -153,7 +153,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,175,42,113,10
     CONTROL         "Multi Host",IDC_CHECK_multi_host
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,175,57,113,10
-    CONTROL         "&Interactive Client",IDC_CHECK_clientinteractive,
+    CONTROL         "&Interactive Client",IDC_CHECK_client_interactive,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,175,72,113,10
     RTEXT           "I&nitial Statement:",IDC_STATIC,12,118,67,8
     EDITTEXT        IDC_EDIT_initstmt,90,118,197,12,ES_AUTOHSCROLL

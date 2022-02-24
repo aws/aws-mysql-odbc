@@ -84,7 +84,7 @@ unsigned long get_client_flags(DataSource *ds)
     flags|= CLIENT_IGNORE_SPACE;
   if (ds->allow_multiple_statements)
     flags|= CLIENT_MULTI_STATEMENTS;
-  if (ds->clientinteractive)
+  if (ds->client_interactive)
     flags|= CLIENT_INTERACTIVE;
 
   return flags;
@@ -362,11 +362,11 @@ SQLRETURN DBC::connect(DataSource *dsrc)
       if (login_timeout)
           mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&login_timeout);
 
-      if (dsrc->readtimeout)
-          mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char*)&dsrc->readtimeout);
+      if (dsrc->read_timeout)
+          mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char*)&dsrc->read_timeout);
 
-      if (dsrc->writetimeout)
-          mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char*)&dsrc->writetimeout);
+      if (dsrc->write_timeout)
+          mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char*)&dsrc->write_timeout);
   }
 
 /*

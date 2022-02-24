@@ -276,7 +276,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_BOOL_TAB(CONNECTION_TAB, dont_prompt_upon_connect);
   GET_BOOL_TAB(CONNECTION_TAB, auto_reconnect);
   GET_BOOL_TAB(CONNECTION_TAB, allow_multiple_statements);
-  GET_BOOL_TAB(CONNECTION_TAB, clientinteractive);
+  GET_BOOL_TAB(CONNECTION_TAB, client_interactive);
   GET_BOOL_TAB(CONNECTION_TAB, can_handle_exp_pwd);
   GET_BOOL_TAB(CONNECTION_TAB, get_server_public_key);
   GET_BOOL_TAB(CONNECTION_TAB, enable_dns_srv);
@@ -387,7 +387,7 @@ void syncTabs(HWND hwnd, DataSource *params)
   SET_BOOL_TAB(CONNECTION_TAB, auto_reconnect);
   SET_BOOL_TAB(CONNECTION_TAB, enable_dns_srv);
   SET_BOOL_TAB(CONNECTION_TAB, allow_multiple_statements);
-  SET_BOOL_TAB(CONNECTION_TAB, clientinteractive);
+  SET_BOOL_TAB(CONNECTION_TAB, client_interactive);
   SET_BOOL_TAB(CONNECTION_TAB, can_handle_exp_pwd);
   SET_BOOL_TAB(CONNECTION_TAB, get_server_public_key);
   SET_BOOL_TAB(CONNECTION_TAB, enable_dns_srv);
