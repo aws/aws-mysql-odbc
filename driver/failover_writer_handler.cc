@@ -63,16 +63,15 @@ bool FAILOVER::connect(std::shared_ptr<HOST_INFO> host_info) {
     return is_writer_connected();
 }
 
-std::shared_ptr<CONNECTION_INTERFACE> FAILOVER::get_connection() { return new_connection; }
-
 void FAILOVER::sleep(int miliseconds) {
     std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
 }
 
 // Close new connection if not needed (other task finishes and returns first)
 void FAILOVER::release_new_connection() {
-    if (new_connection && new_connection->is_connected()) {
-        connection_handler->release_connection(new_connection);
+    if (new_connection) {
+        delete new_connection;
+        new_connection = nullptr;
     }
 }
 
@@ -91,9 +90,8 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
     if (original_writer) {
         while (!f_sync.is_completed()) {
             if (connect(original_writer)) {
-                new_connection = get_connection();
                 auto latest_topology =
-                    topology_service->get_topology(new_connection.get(), true);
+                    topology_service->get_topology(new_connection, true);
                 if (latest_topology->total_hosts() > 0 &&
                     is_current_host_writer(original_writer, latest_topology)) {
 
@@ -177,7 +175,7 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader(FAILOVER_SYNC& f_sync) {
 void WAIT_NEW_WRITER_HANDLER::refresh_topology_and_connect_to_new_writer(
     const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync) {
     while (!f_sync.is_completed()) {
-        auto latest_topology = topology_service->get_topology(reader_connection.get(), true);
+        auto latest_topology = topology_service->get_topology(reader_connection, true);
         if (latest_topology->total_hosts() > 0) {
             current_topology = latest_topology;
             auto writer_candidate = current_topology->get_writer();
@@ -195,9 +193,7 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
     const std::shared_ptr<HOST_INFO>& writer_candidate) {
     if (HOST_INFO::is_host_same(writer_candidate, current_reader_host)) {
         new_connection = reader_connection;
-    } else if (connect(writer_candidate)) {
-        new_connection = get_connection();
-    } else {
+    } else if (!connect(writer_candidate)) {
         topology_service->mark_host_down(writer_candidate);
         return false;
     }
@@ -207,8 +203,9 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
 
 // Close reader connection if not needed (open and not the same as current connection)
 void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
-    if (reader_connection && reader_connection->is_connected() && new_connection != reader_connection) {
-        connection_handler->release_connection(reader_connection);
+    if (reader_connection && new_connection != reader_connection) {
+        delete reader_connection;
+        reader_connection = nullptr;
     }
 }
 

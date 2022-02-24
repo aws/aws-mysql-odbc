@@ -40,7 +40,8 @@ class MOCK_CONNECTION : public CONNECTION_INTERFACE {
     MOCK_METHOD(bool, is_connected, ());
     MOCK_METHOD(bool, try_execute_query, (const char*));
     MOCK_METHOD(char**, fetch_next_row, ());
-    MOCK_METHOD(void, close_connection, ());
+    MOCK_METHOD(void, mock_connection_destructor, ());
+    ~MOCK_CONNECTION() override { mock_connection_destructor(); }
 };
 
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE_INTERFACE {
@@ -63,7 +64,7 @@ class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
 class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
  public:
     MOCK_CONNECTION_HANDLER() : FAILOVER_CONNECTION_HANDLER(nullptr) {}
-    MOCK_METHOD(std::shared_ptr<CONNECTION_INTERFACE>, connect,
+    MOCK_METHOD(CONNECTION_INTERFACE*, connect,
                 (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*));
 };

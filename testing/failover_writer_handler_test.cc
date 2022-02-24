@@ -39,6 +39,7 @@ using ::testing::AnyNumber;
 using ::testing::AtLeast;
 using ::testing::DoAll;
 using ::testing::Invoke;
+using ::testing::Mock;
 using ::testing::Return;
 using ::testing::Sequence;
 using ::testing::Unused;
@@ -59,6 +60,10 @@ class FailoverWriterHandlerTest : public testing::Test {
     std::shared_ptr<MOCK_TOPOLOGY_SERVICE> mock_ts;
     std::shared_ptr<MOCK_READER_HANDLER> mock_reader_handler;
     std::shared_ptr<MOCK_CONNECTION_HANDLER> mock_connection_handler;
+    MOCK_CONNECTION* mock_reader_a_connection;
+    MOCK_CONNECTION* mock_reader_b_connection;
+    MOCK_CONNECTION* mock_writer_connection;
+    MOCK_CONNECTION* mock_new_writer_connection;
 
     static void SetUpTestSuite() {}
 
@@ -99,9 +104,8 @@ class FailoverWriterHandlerTest : public testing::Test {
 // taskB: fail to connect to any reader due to exception
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderResult) {
-    auto mock_connection = std::make_shared<MOCK_CONNECTION>();
-
-    EXPECT_CALL(*mock_connection, is_connected()).WillRepeatedly(Return(true));
+    mock_writer_connection = new MOCK_CONNECTION();
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_ts, get_topology(_, true))
         .WillRepeatedly(Return(current_topology));
@@ -114,7 +118,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderRes
         .WillRepeatedly(Return(READER_FAILOVER_RESULT(false, nullptr, nullptr)));
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
-        .WillRepeatedly(Return(mock_connection));
+        .WillRepeatedly(Return(mock_writer_connection));
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host))
         .WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(reader_b_host))
@@ -126,7 +130,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderRes
 
     EXPECT_TRUE(result.connected);
     EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_connection);
+    EXPECT_THAT(result.new_connection, mock_writer_connection);
 }
 
 // Verify that writer failover handler can re-connect to a current writer node.
@@ -137,35 +141,27 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderRes
 // time than taskA
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
-    std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection =
-        std::make_shared<MOCK_CONNECTION>();
+    mock_writer_connection = new MOCK_CONNECTION();
+    mock_reader_a_connection = new MOCK_CONNECTION();
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
     new_topology->add_host(reader_a_host);
     new_topology->add_host(reader_b_host);
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_writer_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                close_connection())
-        .Times(AtLeast(1));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
         .WillRepeatedly(Return(mock_writer_connection));
     EXPECT_CALL(*mock_connection_handler, connect(reader_b_host))
         .WillRepeatedly(Return(nullptr));
 
-    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection.get(), true))
+    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection, true))
         .WillRepeatedly(Return(current_topology));
-    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection.get(), true))
+    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection, true))
         .WillRepeatedly(Return(new_topology));
 
     Sequence s;
@@ -198,21 +194,12 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
 // writer is not new (defer to taskA)
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBDefers) {
-    std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection =
-        std::make_shared<MOCK_CONNECTION>();
+    mock_writer_connection = new MOCK_CONNECTION();
+    mock_reader_a_connection = new MOCK_CONNECTION();
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_writer_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                close_connection())
-        .Times(AtLeast(1));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
         .WillRepeatedly(Invoke([&]() {
@@ -250,37 +237,23 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBDefers) {
 // taskB: successfully connect to readerA and then to new-writer
 // expected test result: new connection to writer by taskB
 TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
-    std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_new_writer_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_b_connection =
-        std::make_shared<MOCK_CONNECTION>();
+    mock_writer_connection = new MOCK_CONNECTION();
+    mock_new_writer_connection = new MOCK_CONNECTION();
+    mock_reader_a_connection = new MOCK_CONNECTION();
+    mock_reader_b_connection = new MOCK_CONNECTION();
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
     new_topology->add_host(reader_a_host);
     new_topology->add_host(reader_b_host);
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_writer_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_writer_connection.get()),
-                close_connection())
-        .Times(1);
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_writer_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_new_writer_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_new_writer_connection, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                close_connection())
-        .Times(1);
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
         .WillRepeatedly(Invoke([&]() {
@@ -294,9 +267,9 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
     EXPECT_CALL(*mock_connection_handler, connect(new_writer_host))
         .WillRepeatedly(Return(mock_new_writer_connection));
 
-    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection.get(), true))
+    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection, true))
         .WillRepeatedly(Return(current_topology));
-    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection.get(), true))
+    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection, true))
         .WillRepeatedly(Return(new_topology));
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
     EXPECT_CALL(*mock_ts, mark_host_up(_)).Times(AnyNumber());
@@ -324,14 +297,10 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
 // taskB: successfully connect to readerA and then to new-writer 
 // expected test result: new connection to writer by taskB
 TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
-    std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_new_writer_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_b_connection =
-        std::make_shared<MOCK_CONNECTION>();
+    mock_writer_connection = new MOCK_CONNECTION();
+    mock_new_writer_connection = new MOCK_CONNECTION();
+    mock_reader_a_connection = new MOCK_CONNECTION();
+    mock_reader_b_connection = new MOCK_CONNECTION();
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -339,27 +308,15 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
     new_topology->add_host(reader_a_host);
     new_topology->add_host(reader_b_host);
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_writer_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_writer_connection.get()),
-                close_connection())
-        .Times(AtLeast(1));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_writer_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_new_writer_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_new_writer_connection, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                close_connection())
-        .Times(1);
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_b_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
         .WillRepeatedly(Return(mock_writer_connection));
@@ -401,44 +358,26 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
 // taskB: successfully connect to readerA and then fail to connect to writer due to failover timeout
 // expected test result: no connection
 TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
-    std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_new_writer_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_b_connection =
-        std::make_shared<MOCK_CONNECTION>();
+    mock_writer_connection = new MOCK_CONNECTION();
+    mock_new_writer_connection = new MOCK_CONNECTION();
+    mock_reader_a_connection = new MOCK_CONNECTION();
+    mock_reader_b_connection = new MOCK_CONNECTION();
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
     new_topology->add_host(reader_a_host);
     new_topology->add_host(reader_b_host);
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_writer_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_writer_connection.get()),
-                close_connection())
-        .Times(1);
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_writer_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_new_writer_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_new_writer_connection.get()),
-                close_connection())
-        .Times(1);
+    EXPECT_CALL(*mock_new_writer_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_new_writer_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                close_connection())
-        .Times(AtLeast(1));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_b_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
         .WillRepeatedly(Invoke([&]() {
@@ -455,9 +394,9 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
             return mock_new_writer_connection;
         }));
 
-    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection.get(), _))
+    EXPECT_CALL(*mock_ts, get_topology(mock_writer_connection, _))
         .WillRepeatedly(Return(current_topology));
-    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection.get(), _))
+    EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection, _))
         .WillRepeatedly(Return(new_topology));
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
     EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).Times(1);
@@ -474,6 +413,9 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
     EXPECT_FALSE(result.connected);
     EXPECT_FALSE(result.is_new_host);
     EXPECT_THAT(result.new_connection, nullptr);
+
+    // delete reader b explicitly, since get_reader_connection() is mocked
+    delete mock_reader_b_connection;
 }
 
 // Verify that writer failover handler fails to re-connect to any writer node.
@@ -482,26 +424,18 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
 // taskB: successfully connect to readerA and then fail to connect to writer
 // expected test result: no connection
 TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed) {
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection =
-        std::make_shared<MOCK_CONNECTION>();
-    std::shared_ptr<CONNECTION_INTERFACE> mock_reader_b_connection =
-        std::make_shared<MOCK_CONNECTION>();
+    mock_reader_a_connection = new MOCK_CONNECTION();
+    mock_reader_b_connection = new MOCK_CONNECTION();
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
     new_topology->add_host(reader_a_host);
     new_topology->add_host(reader_b_host);
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_a_connection.get()),
-                close_connection())
-        .Times(AtLeast(1));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*static_cast<MOCK_CONNECTION*>(mock_reader_b_connection.get()),
-                is_connected())
-        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
         .WillRepeatedly(Return(nullptr));
@@ -528,4 +462,7 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed)
     EXPECT_FALSE(result.connected);
     EXPECT_FALSE(result.is_new_host);
     EXPECT_THAT(result.new_connection, nullptr);
+
+    // delete reader b explicitly, since get_reader_connection() is mocked
+    delete mock_reader_b_connection;
 }

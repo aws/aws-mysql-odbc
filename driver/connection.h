@@ -17,19 +17,17 @@ public:
     virtual bool is_connected() = 0;
     virtual bool try_execute_query(const char* query) = 0;
     virtual char** fetch_next_row() = 0;
-    virtual void close_connection() = 0;
 };
 
 class CONNECTION : virtual public CONNECTION_INTERFACE {
 public:
     CONNECTION(MYSQL* conn);
-
+    virtual ~CONNECTION();
     bool is_connected() override;
 
     bool is_null() override;
     bool try_execute_query(const char* query) override;
     MYSQL_ROW fetch_next_row() override;
-    void close_connection() override;
 
     MYSQL* real_connect(const char* host, const char* user,
                         const char* passwd, const char* db,

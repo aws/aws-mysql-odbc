@@ -31,10 +31,8 @@ class FAILOVER_CONNECTION_HANDLER {
         virtual ~FAILOVER_CONNECTION_HANDLER();
 
         virtual SQLRETURN do_connect(DBC* dbc, DataSource* ds);
-        virtual std::shared_ptr<CONNECTION_INTERFACE> connect(
-            std::shared_ptr<HOST_INFO> host_info);
-        void update_connection(std::shared_ptr<CONNECTION_INTERFACE> new_connection);
-        void release_connection(std::shared_ptr<CONNECTION_INTERFACE> connection);
+        virtual CONNECTION_INTERFACE* connect(std::shared_ptr<HOST_INFO> host_info);
+        void update_connection(CONNECTION_INTERFACE* new_connection);
 
     private:
         DBC* dbc;
@@ -46,13 +44,13 @@ class FAILOVER_CONNECTION_HANDLER {
 struct READER_FAILOVER_RESULT {
     bool connected = false;
     std::shared_ptr<HOST_INFO> new_host;
-    std::shared_ptr<CONNECTION_INTERFACE> new_connection;
+    CONNECTION_INTERFACE* new_connection;
 
     READER_FAILOVER_RESULT()
         : connected{false}, new_host{nullptr}, new_connection{nullptr} {}
         
     READER_FAILOVER_RESULT(bool connected, std::shared_ptr<HOST_INFO> new_host,
-                           std::shared_ptr<CONNECTION_INTERFACE> new_connection)
+                           CONNECTION_INTERFACE* new_connection)
         : connected{connected},
           new_host{new_host},
           new_connection{new_connection} {}
@@ -113,7 +111,7 @@ struct WRITER_FAILOVER_RESULT {
     bool is_new_host = false;  // True if process connected to a new host. False if
                                // process re-connected to the same host
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology;
-    std::shared_ptr<CONNECTION_INTERFACE> new_connection;
+    CONNECTION_INTERFACE* new_connection;
 
     WRITER_FAILOVER_RESULT()
         : connected{false},
@@ -123,7 +121,7 @@ struct WRITER_FAILOVER_RESULT {
 
     WRITER_FAILOVER_RESULT(bool connected, bool is_new_host,
                            std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology,
-                           std::shared_ptr<CONNECTION_INTERFACE> new_connection)
+                           CONNECTION_INTERFACE* new_connection)
         : connected{connected},
           is_new_host{is_new_host},
           new_topology{new_topology},
@@ -208,7 +206,6 @@ class FAILOVER {
              std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
     virtual ~FAILOVER();
     bool is_writer_connected();
-    std::shared_ptr<CONNECTION_INTERFACE> get_connection();
 
    protected:
     bool connect(std::shared_ptr<HOST_INFO> host_info);
@@ -216,7 +213,7 @@ class FAILOVER {
     void release_new_connection();
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
-    std::shared_ptr<CONNECTION_INTERFACE> new_connection;
+    CONNECTION_INTERFACE* new_connection;
 };
 
 class CONNECT_TO_READER_HANDLER : public FAILOVER {
@@ -270,7 +267,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
     int read_topology_interval_ms = 5000;
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
-    std::shared_ptr<CONNECTION_INTERFACE> reader_connection = nullptr;  // To retrieve latest topology
+    CONNECTION_INTERFACE* reader_connection = nullptr;  // To retrieve latest topology
     std::shared_ptr<HOST_INFO> current_reader_host;
 
     void refresh_topology_and_connect_to_new_writer(

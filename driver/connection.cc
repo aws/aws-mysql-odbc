@@ -38,6 +38,19 @@ CONNECTION::CONNECTION(MYSQL* conn) {
     this->query_result = nullptr;
 }
 
+CONNECTION::~CONNECTION() {
+    if (this->connection) {
+        // this->connection is deallocated in mysql_close()
+        mysql_close(this->connection);
+        this->connection = nullptr;
+    }
+    if (this->query_result) {
+        // this->query_result is deallocated in mysql_free_result()
+        mysql_free_result(this->query_result);
+        this->query_result = nullptr;
+    }
+}
+
 bool CONNECTION::is_connected() {
     return this->connection != nullptr && this->connection->net.vio;
 }
@@ -71,10 +84,6 @@ MYSQL_ROW CONNECTION::fetch_next_row() {
     }
     
     return nullptr;
-}
-
-void CONNECTION::close_connection() {
-    mysql_close(this->connection);
 }
 
 MYSQL* CONNECTION::real_connect(const char* host, const char* user,

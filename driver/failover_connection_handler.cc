@@ -30,7 +30,7 @@ SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc, DataSource* ds) {
     return dbc->connect(ds);
 }
 
-std::shared_ptr<CONNECTION_INTERFACE> FAILOVER_CONNECTION_HANDLER::connect(
+CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(
     std::shared_ptr<HOST_INFO> host_info) {
 
     if (dbc == nullptr || dbc->ds == nullptr || host_info == nullptr) {
@@ -43,12 +43,12 @@ std::shared_ptr<CONNECTION_INTERFACE> FAILOVER_CONNECTION_HANDLER::connect(
     DBC* dbc_clone = clone_dbc(dbc);
     ds_set_strnattr(&dbc_clone->ds->server, (SQLWCHAR *) new_host.c_str(), new_host.size());
 
-    std::shared_ptr<CONNECTION_INTERFACE> new_connection;
+    CONNECTION_INTERFACE* new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
     SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
-        new_connection.reset(dbc_clone->mysql);
+        new_connection = dbc_clone->mysql;
         dbc_clone->mysql = nullptr;
 
         // TODO ponder whether or not we should update ds - the data source in
@@ -65,16 +65,14 @@ std::shared_ptr<CONNECTION_INTERFACE> FAILOVER_CONNECTION_HANDLER::connect(
     return new_connection;
 }
 
-void FAILOVER_CONNECTION_HANDLER::update_connection(
-    std::shared_ptr<CONNECTION_INTERFACE> new_connection) {
-
-    if (!new_connection->is_null()) {
+void FAILOVER_CONNECTION_HANDLER::update_connection(CONNECTION_INTERFACE* new_connection) {
+    if (new_connection->is_connected()) {
         dbc->close();
 
         // CONNECTION is the only implementation of CONNECTION_INTERFACE
         // so dynamic_cast should be safe here.
         // TODO: Is there an alternative to dynamic_cast here?
-        dbc->mysql = dynamic_cast<CONNECTION*>(new_connection.get());
+        dbc->mysql = dynamic_cast<CONNECTION*>(new_connection);
         
         CLEAR_DBC_ERROR(dbc);
 
@@ -85,15 +83,9 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
     }
 }
 
-void FAILOVER_CONNECTION_HANDLER::release_connection(
-    std::shared_ptr<CONNECTION_INTERFACE> connection) {
-
-    connection->close_connection();
-}
-
 DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
 
-    DBC* dbc_clone;
+    DBC* dbc_clone = nullptr;
 
     SQLRETURN status = SQL_ERROR;
     if (source_dbc && source_dbc->env) {
