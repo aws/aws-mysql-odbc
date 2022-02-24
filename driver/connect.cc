@@ -346,14 +346,28 @@ SQLRETURN DBC::connect(DataSource *dsrc)
   if (dsrc->read_options_from_mycnf)
     mysql->options(MYSQL_READ_DEFAULT_GROUP, "odbc");
 
-  if (login_timeout)
-    mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char *)&login_timeout);
+  if (fh->is_failover_enabled())
+  {
+      if (dsrc->connect_timeout)
+          mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&dsrc->connect_timeout);
 
-  if (dsrc->readtimeout)
-    mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char *) &dsrc->readtimeout);
+      if (dsrc->network_timeout)
+      {
+          mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char*)&dsrc->network_timeout);
+          mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char*)&dsrc->network_timeout);
+      }
+  }
+  else
+  {
+      if (login_timeout)
+          mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&login_timeout);
 
-  if (dsrc->writetimeout)
-    mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char *) &dsrc->writetimeout);
+      if (dsrc->readtimeout)
+          mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char*)&dsrc->readtimeout);
+
+      if (dsrc->writetimeout)
+          mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char*)&dsrc->writetimeout);
+  }
 
 /*
   Pluggable authentication was introduced in mysql 5.5.7
@@ -1086,7 +1100,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   ds_lookup(ds);
 
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
-  rc = dbc->fh->get_return_code();
+  rc = dbc->fh->init_cluster_info();
   if (!dbc->ds)
     ds_delete(ds);
   return rc;
@@ -1199,7 +1213,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   case SQL_DRIVER_COMPLETE:
   case SQL_DRIVER_COMPLETE_REQUIRED:
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
-    rc = dbc->fh->get_return_code();
+    rc = dbc->fh->init_cluster_info();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
       goto connected;
     bPrompt= TRUE;
@@ -1373,7 +1387,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   }
 
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
-  rc = dbc->fh->get_return_code();
+  rc = dbc->fh->init_cluster_info();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
   {
     goto error;
