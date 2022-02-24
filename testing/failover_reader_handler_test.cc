@@ -36,7 +36,6 @@
 
 using ::testing::_;
 using ::testing::AnyNumber;
-using ::testing::AtLeast;
 using ::testing::Invoke;
 using ::testing::Return;
 
@@ -47,20 +46,16 @@ namespace {
 class FailoverReaderHandlerTest : public testing::Test {
 protected:
     static std::shared_ptr<HOST_INFO> reader_a_host;
-    static MOCK_CONNECTION* mc_reader_a;
-    static std::shared_ptr<CONNECTION_INTERFACE> mock_reader_a_connection;
+    static MOCK_CONNECTION* mock_reader_a_connection;
 
     static std::shared_ptr<HOST_INFO> reader_b_host;
-    static MOCK_CONNECTION* mc_reader_b;
-    static std::shared_ptr<CONNECTION_INTERFACE> mock_reader_b_connection;
+    static MOCK_CONNECTION* mock_reader_b_connection;
 
     static std::shared_ptr<HOST_INFO> reader_c_host;
-    static MOCK_CONNECTION* mc_reader_c;
-    static std::shared_ptr<CONNECTION_INTERFACE> mock_reader_c_connection;
+    static MOCK_CONNECTION* mock_reader_c_connection;
 
     static std::shared_ptr<HOST_INFO> writer_host;
-    static MOCK_CONNECTION* mc_writer;
-    static std::shared_ptr<CONNECTION_INTERFACE> mock_writer_connection;
+    static MOCK_CONNECTION* mock_writer_connection;
 
     static std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology;
     
@@ -69,23 +64,19 @@ protected:
     MOCK_FAILOVER_SYNC mock_sync;
 
     static void SetUpTestSuite() { 
-        mc_reader_a = new MOCK_CONNECTION();
-        mock_reader_a_connection = std::shared_ptr<CONNECTION_INTERFACE>(mc_reader_a);
+        mock_reader_a_connection = new MOCK_CONNECTION();
         reader_a_host = std::make_shared<HOST_INFO>("reader-a-host" + HOST_SUFFIX, 1234, UP, false);
         reader_a_host->instance_name = "reader-a-host";
 
-        mc_reader_b = new MOCK_CONNECTION();
-        mock_reader_b_connection = std::shared_ptr<CONNECTION_INTERFACE>(mc_reader_b);
+        mock_reader_b_connection = new MOCK_CONNECTION();
         reader_b_host = std::make_shared<HOST_INFO>("reader-b-host" + HOST_SUFFIX, 1234, UP, false);
         reader_b_host->instance_name = "reader-b-host";
 
-        mc_reader_c = new MOCK_CONNECTION();
-        mock_reader_c_connection = std::shared_ptr<CONNECTION_INTERFACE>(mc_reader_c);
+        mock_reader_c_connection = new MOCK_CONNECTION();
         reader_c_host = std::make_shared<HOST_INFO>("reader-c-host" + HOST_SUFFIX, 1234, UP, false);
         reader_c_host->instance_name = "reader-c-host";
 
-        mc_writer = new MOCK_CONNECTION();
-        mock_writer_connection = std::shared_ptr<CONNECTION_INTERFACE>(mc_writer);
+        mock_writer_connection = new MOCK_CONNECTION();
         writer_host = std::make_shared<HOST_INFO>("writer-host" + HOST_SUFFIX, 1234, UP, true);
         writer_host->instance_name = "writer-host";
 
@@ -103,10 +94,10 @@ protected:
         reader_c_host.reset();
         writer_host.reset();
 
-        mock_reader_a_connection.reset();
-        mock_reader_b_connection.reset();
-        mock_reader_c_connection.reset();
-        mock_writer_connection.reset();
+        delete mock_reader_a_connection;
+        delete mock_reader_b_connection;
+        delete mock_reader_c_connection;
+        delete mock_writer_connection;
 
         topology.reset();
     }
@@ -128,15 +119,10 @@ std::shared_ptr<HOST_INFO> FailoverReaderHandlerTest::reader_b_host = nullptr;
 std::shared_ptr<HOST_INFO> FailoverReaderHandlerTest::reader_c_host = nullptr;
 std::shared_ptr<HOST_INFO> FailoverReaderHandlerTest::writer_host = nullptr;
 
-MOCK_CONNECTION* FailoverReaderHandlerTest::mc_reader_a = nullptr;
-MOCK_CONNECTION* FailoverReaderHandlerTest::mc_reader_b = nullptr;
-MOCK_CONNECTION* FailoverReaderHandlerTest::mc_reader_c = nullptr;
-MOCK_CONNECTION* FailoverReaderHandlerTest::mc_writer = nullptr;
-
-std::shared_ptr<CONNECTION_INTERFACE> FailoverReaderHandlerTest::mock_reader_a_connection = nullptr;
-std::shared_ptr<CONNECTION_INTERFACE> FailoverReaderHandlerTest::mock_reader_b_connection = nullptr;
-std::shared_ptr<CONNECTION_INTERFACE> FailoverReaderHandlerTest::mock_reader_c_connection = nullptr;
-std::shared_ptr<CONNECTION_INTERFACE> FailoverReaderHandlerTest::mock_writer_connection = nullptr;
+MOCK_CONNECTION* FailoverReaderHandlerTest::mock_reader_a_connection = nullptr;
+MOCK_CONNECTION* FailoverReaderHandlerTest::mock_reader_b_connection = nullptr;
+MOCK_CONNECTION* FailoverReaderHandlerTest::mock_reader_c_connection = nullptr;
+MOCK_CONNECTION* FailoverReaderHandlerTest::mock_writer_connection = nullptr;
 
 std::shared_ptr<CLUSTER_TOPOLOGY_INFO> FailoverReaderHandlerTest::topology = nullptr;
 
@@ -246,10 +232,10 @@ TEST_F(FailoverReaderHandlerTest, BuildHostsList) {
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Failure) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
-    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_c_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(false));
     
     EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
 
@@ -271,10 +257,10 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Failure) {
 TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Success_Reader) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
-    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_c_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
     
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Return(mock_reader_a_connection));
     EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Return(nullptr));
@@ -298,10 +284,10 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Success_Reader
 TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Success_Writer) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
-    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_c_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
     
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Return(nullptr));
@@ -327,10 +313,10 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Success_Writer
 TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_FastestHost) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
-    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_c_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(false));
     
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Return(mock_reader_a_connection));
     EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Invoke([&]() {
@@ -357,12 +343,12 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_FastestHost) {
 TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Timeout) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
-    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc_reader_a, close_connection()).Times(1);
-    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc_reader_b, close_connection()).Times(1);
-    EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_b_connection, mock_connection_destructor());
+    EXPECT_CALL(*mock_reader_c_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(false));
     
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
@@ -392,10 +378,10 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_GetConnectionFromHosts_Timeout) {
 TEST_F(FailoverReaderHandlerTest, Failover_Failure) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
-    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_reader_c, is_connected()).WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_reader_c_connection, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(false));
 
     EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
 
@@ -420,12 +406,12 @@ TEST_F(FailoverReaderHandlerTest, DISABLED_Failover_Success_Reader) {
     current_topology->add_host(reader_b_host);
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(current_topology));
 
-    EXPECT_CALL(*mc_reader_a, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mc_reader_b, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc_reader_b, close_connection()).Times(AtLeast(1));
+    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_reader_b_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*mc_writer, is_connected()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(false));
     
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Return(mock_reader_a_connection));
     EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Invoke([&]() {
