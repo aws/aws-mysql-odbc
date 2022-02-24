@@ -71,8 +71,6 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
     this->topology_service->set_refresh_rate(ds->topology_refresh_rate);
     this->connection_handler = connection_handler;
 
-    init_cluster_info();
-
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
         this->topology_service, this->connection_handler, ds->failover_timeout,
         ds->failover_reader_connect_timeout);
@@ -85,11 +83,17 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
 
 FAILOVER_HANDLER::~FAILOVER_HANDLER() {}
 
-void FAILOVER_HANDLER::init_cluster_info() {
+SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
+    SQLRETURN rc = SQL_ERROR;
+    if (initialized) {
+        return rc;
+    }
+    
     if (ds->disable_cluster_failover) {
         // Use a standard default connection - no further initialization required
         rc = connection_handler->do_connect(dbc, ds);
-        return;
+        initialized = true;
+        return rc;
     }
     std::stringstream err;
     // Cluster-aware failover is enabled
@@ -179,7 +183,7 @@ void FAILOVER_HANDLER::init_cluster_info() {
             }
         }
 
-        create_connection_and_initialize_topology();
+        rc = create_connection_and_initialize_topology();
     } else if (is_ipv4(main_host) || is_ipv6(main_host)) {
         // TODO: do we need to setup host template in this case?
         // HOST_INFO* host_template = new HOST_INFO();
@@ -191,7 +195,7 @@ void FAILOVER_HANDLER::init_cluster_info() {
             topology_service->set_cluster_id(clid_str);
         }
 
-        create_connection_and_initialize_topology();
+        rc = create_connection_and_initialize_topology();
 
         if (m_is_cluster_topology_available) {
             err << "Host Pattern configuration setting is required when IP "
@@ -216,7 +220,7 @@ void FAILOVER_HANDLER::init_cluster_info() {
                 topology_service->set_cluster_id(clid_str);
             }
 
-            create_connection_and_initialize_topology();
+            rc = create_connection_and_initialize_topology();
 
             if (m_is_cluster_topology_available) {
                 err << "The provided host appears to be a custom domain. The "
@@ -263,9 +267,12 @@ void FAILOVER_HANDLER::init_cluster_info() {
                 }
             }
 
-            create_connection_and_initialize_topology();
+            rc = create_connection_and_initialize_topology();
         }
     }
+
+    initialized = true;
+    return rc;
 }
 
 bool FAILOVER_HANDLER::is_dns_pattern_valid(std::string host) {
@@ -338,12 +345,10 @@ bool FAILOVER_HANDLER::is_cluster_topology_available() {
     return m_is_cluster_topology_available;
 }
 
-SQLRETURN FAILOVER_HANDLER::get_return_code() { return rc; }
-
-void FAILOVER_HANDLER::create_connection_and_initialize_topology() {
-    rc = connection_handler->do_connect(dbc, ds);
+SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
+    SQLRETURN rc = connection_handler->do_connect(dbc, ds);
     if (!SQL_SUCCEEDED(rc)) {
-        return;
+        return rc;
     }
 
     current_topology = topology_service->get_topology(dbc->mysql, false);
@@ -351,6 +356,8 @@ void FAILOVER_HANDLER::create_connection_and_initialize_topology() {
         m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster();
         m_is_cluster_topology_available = current_topology->total_hosts() > 0;
     }
+
+    return rc;
 }
 
 bool FAILOVER_HANDLER::is_ipv4(std::string host) {
