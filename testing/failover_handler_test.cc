@@ -112,6 +112,7 @@ TEST_F(FailoverHandlerTest, CustomDomain) {
         .WillOnce(Return(SQL_SUCCESS));
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds, mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_FALSE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -126,6 +127,7 @@ TEST_F(FailoverHandlerTest, FailoverDisabled) {
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_FALSE(failover_handler.is_failover_enabled());
 }
@@ -140,9 +142,10 @@ TEST_F(FailoverHandlerTest, IP_TopologyAvailable_PatternRequired) {
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
 
-    EXPECT_THROW(FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
-                                                   mock_connection_handler, mock_ts),
-                 std::string);
+    FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
+                                      mock_connection_handler, mock_ts);
+
+    EXPECT_THROW(failover_handler.init_cluster_info(), std::string);
 }
 
 TEST_F(FailoverHandlerTest, IP_TopologyNotAvailable) {
@@ -158,6 +161,7 @@ TEST_F(FailoverHandlerTest, IP_TopologyNotAvailable) {
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_FALSE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -181,6 +185,7 @@ TEST_F(FailoverHandlerTest, IP_Cluster) {
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_FALSE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -205,6 +210,7 @@ TEST_F(FailoverHandlerTest, IP_Cluster_ClusterID) {
     EXPECT_CALL(*mock_ts, set_cluster_id(StrEq(reinterpret_cast<const char*>(cluster_id)))).Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds, mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_FALSE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -227,6 +233,7 @@ TEST_F(FailoverHandlerTest, RDS_Cluster) {
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -248,6 +255,7 @@ TEST_F(FailoverHandlerTest, RDS_CustomCluster) {
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -269,6 +277,7 @@ TEST_F(FailoverHandlerTest, RDS_Instance) {
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -291,6 +300,7 @@ TEST_F(FailoverHandlerTest, RDS_Proxy) {
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_TRUE(failover_handler.is_rds_proxy());
@@ -316,6 +326,7 @@ TEST_F(FailoverHandlerTest, RDS_ReaderCluster) {
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
