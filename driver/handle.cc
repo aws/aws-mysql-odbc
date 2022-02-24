@@ -103,10 +103,11 @@ void DBC::free_explicit_descriptors()
 
 void DBC::close()
 {
-  if (!mysql->is_null())
-    mysql->close_connection();
-  delete mysql;
-  mysql = nullptr;
+  if (mysql) 
+  {
+    delete mysql;
+    mysql = nullptr;
+  }
 }
 
 DBC::~DBC()
