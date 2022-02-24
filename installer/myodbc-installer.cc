@@ -562,8 +562,8 @@ int list_datasource_details(DataSource *ds)
   if (ds->no_tls_1_3) printf("\tNO_TLS_1_3\n");
   if (ds->no_ssps) printf("\tNO_SSPS\n");
   if (ds->cursor_prefetch_number) printf("\tPREFETCH=%d\n", ds->cursor_prefetch_number);
-  if (ds->read_timeout) printf("\tREADTIMEOUT=%d\n", ds->read_timeout);
-  if (ds->write_timeout) printf("\tWRITETIMEOUT=%d\n", ds->write_timeout);
+  if (ds->read_timeout) printf("\tREAD_TIMEOUT=%d\n", ds->read_timeout);
+  if (ds->write_timeout) printf("\tWRITE_TIMEOUT=%d\n", ds->write_timeout);
   if (ds->can_handle_exp_pwd) printf("\tCAN_HANDLE_EXP_PWD\n");
   if (ds->enable_cleartext_plugin) printf("\tENABLE_CLEARTEXT_PLUGIN\n");
   if (ds->get_server_public_key) printf("\tGET_SERVER_PUBLIC_KEY\n");
