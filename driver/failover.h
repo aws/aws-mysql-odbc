@@ -161,12 +161,12 @@ class FAILOVER_HANDLER {
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
     ~FAILOVER_HANDLER();
+    SQLRETURN init_cluster_info();
     bool trigger_failover_if_needed(const char* error_code, const char*& new_error_code);
     bool is_failover_enabled();
     bool is_rds();
     bool is_rds_proxy();
     bool is_cluster_topology_available();
-    SQLRETURN get_return_code();
 
    private:
     DBC* dbc = nullptr;
@@ -177,19 +177,18 @@ class FAILOVER_HANDLER {
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
     std::shared_ptr<HOST_INFO> current_host = nullptr;
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler = nullptr;
-    SQLRETURN rc;  // return code of myodbc_do_connect()
     bool m_is_cluster_topology_available = false;
     bool m_is_multi_writer_cluster = false;
     bool m_is_rds_proxy = false;
     bool m_is_rds = false;
     bool m_is_rds_custom_cluster = false;
+    bool initialized = false;
 
-    void init_cluster_info();
     bool is_dns_pattern_valid(std::string host);
     bool is_rds_dns(std::string host);
     bool is_rds_proxy_dns(std::string host);
     bool is_rds_custom_cluster_dns(std::string host);
-    void create_connection_and_initialize_topology();
+    SQLRETURN create_connection_and_initialize_topology();
     std::string get_rds_cluster_host_url(std::string host);
     std::string get_rds_instance_host_pattern(std::string host);
     bool is_ipv4(std::string host);
