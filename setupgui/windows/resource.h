@@ -121,7 +121,7 @@
 #define IDC_CHECK_save_queries          10038
 #define IDC_EDIT_charset                10039
 #define IDC_EDIT_initstmt               10040
-#define IDC_CHECK_clientinteractive     10041
+#define IDC_CHECK_client_interactive    10041
 #define IDC_CHECK_no_information_schema 10042
 #define IDC_EDIT_socket                 10043
 #define IDC_RADIO_tcp                   10044

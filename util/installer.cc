@@ -959,11 +959,11 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
   else if (!sqlwcharcasecmp(W_SSLVERIFY, param))
     *intdest= &ds->sslverify;
   else if (!sqlwcharcasecmp(W_READTIMEOUT, param))
-    *intdest= &ds->readtimeout;
+    *intdest= &ds->read_timeout;
   else if (!sqlwcharcasecmp(W_WRITETIMEOUT, param))
-    *intdest= &ds->writetimeout;
+    *intdest= &ds->write_timeout;
   else if (!sqlwcharcasecmp(W_CLIENT_INTERACTIVE, param))
-    *intdest= &ds->clientinteractive;
+    *intdest= &ds->client_interactive;
   else if (!sqlwcharcasecmp(W_PREFETCH, param))
     *intdest= &ds->cursor_prefetch_number;
   else if (!sqlwcharcasecmp(W_FOUND_ROWS, param))
@@ -1574,9 +1574,9 @@ int ds_add(DataSource *ds)
   if (ds_add_intprop(ds->name, W_SSLVERIFY  , ds->sslverify  )) goto error;
   if(ds->has_port)
     if (ds_add_intprop(ds->name, W_PORT       , ds->port       )) goto error;
-  if (ds_add_intprop(ds->name, W_READTIMEOUT, ds->readtimeout)) goto error;
-  if (ds_add_intprop(ds->name, W_WRITETIMEOUT, ds->writetimeout)) goto error;
-  if (ds_add_intprop(ds->name, W_CLIENT_INTERACTIVE, ds->clientinteractive)) goto error;
+  if (ds_add_intprop(ds->name, W_READTIMEOUT, ds->read_timeout)) goto error;
+  if (ds_add_intprop(ds->name, W_WRITETIMEOUT, ds->write_timeout)) goto error;
+  if (ds_add_intprop(ds->name, W_CLIENT_INTERACTIVE, ds->client_interactive)) goto error;
   if (ds_add_intprop(ds->name, W_PREFETCH   , ds->cursor_prefetch_number)) goto error;
 
   if (ds_add_intprop(ds->name, W_FOUND_ROWS, ds->return_matching_rows)) goto error;
@@ -1899,9 +1899,9 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
 
     ds->has_port = ds_source->has_port;
     ds->port = ds_source->port;
-    ds->readtimeout = ds_source->readtimeout;
-    ds->writetimeout = ds_source->writetimeout;
-    ds->clientinteractive = ds_source->clientinteractive;
+    ds->read_timeout = ds_source->read_timeout;
+    ds->write_timeout = ds_source->write_timeout;
+    ds->client_interactive = ds_source->client_interactive;
 
     /*  */
     ds->return_matching_rows = ds_source->return_matching_rows;

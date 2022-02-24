@@ -141,6 +141,8 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,57,113,10
     CONTROL         "All&ow multiple statements",IDC_CHECK_allow_multiple_statements,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,72,97,10
+    CONTROL         "&Interactive Client",IDC_CHECK_client_interactive,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,87,79,10
     RTEXT           "&Character Set:",IDC_STATIC,12,102,67,8
     COMBOBOX        IDC_EDIT_charset,90,102,197,8,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
 
@@ -153,8 +155,6 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,175,42,113,10
     CONTROL         "Multi Host",IDC_CHECK_multi_host
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,175,57,113,10
-    CONTROL         "&Interactive Client",IDC_CHECK_clientinteractive,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,175,72,113,10
     RTEXT           "I&nitial Statement:",IDC_STATIC,12,118,67,8
     EDITTEXT        IDC_EDIT_initstmt,90,118,197,12,ES_AUTOHSCROLL
     RTEXT           "Plugin Directory:",IDC_STATIC,12,133,67,8

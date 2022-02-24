@@ -548,7 +548,7 @@ int list_datasource_details(DataSource *ds)
   if (ds->dont_cache_result) printf("\tNO_CACHE\n");
   if (ds->force_use_of_forward_only_cursors) printf("\tFORWARD_CURSOR\n");
   if (ds->auto_reconnect) printf("\tAUTO_RECONNECT\n");
-  if (ds->clientinteractive) printf("\tINTERACTIVE\n");
+  if (ds->client_interactive) printf("\tINTERACTIVE\n");
   if (ds->auto_increment_null_search) printf("\tAUTO_IS_NULL\n");
   if (ds->zero_date_to_min) printf("\tZERO_DATE_TO_MIN\n");
   if (ds->min_date_to_zero) printf("\tMIN_DATE_TO_ZERO\n");
@@ -562,8 +562,8 @@ int list_datasource_details(DataSource *ds)
   if (ds->no_tls_1_3) printf("\tNO_TLS_1_3\n");
   if (ds->no_ssps) printf("\tNO_SSPS\n");
   if (ds->cursor_prefetch_number) printf("\tPREFETCH=%d\n", ds->cursor_prefetch_number);
-  if (ds->readtimeout) printf("\tREADTIMEOUT=%d\n", ds->readtimeout);
-  if (ds->writetimeout) printf("\tWRITETIMEOUT=%d\n", ds->writetimeout);
+  if (ds->read_timeout) printf("\tREADTIMEOUT=%d\n", ds->read_timeout);
+  if (ds->write_timeout) printf("\tWRITETIMEOUT=%d\n", ds->write_timeout);
   if (ds->can_handle_exp_pwd) printf("\tCAN_HANDLE_EXP_PWD\n");
   if (ds->enable_cleartext_plugin) printf("\tENABLE_CLEARTEXT_PLUGIN\n");
   if (ds->get_server_public_key) printf("\tGET_SERVER_PUBLIC_KEY\n");
