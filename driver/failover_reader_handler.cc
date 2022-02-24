@@ -201,7 +201,6 @@ READER_FAILOVER_RESULT CONNECT_TO_READER_HANDLER::operator()(
     const std::shared_ptr<HOST_INFO>& reader, FAILOVER_SYNC& f_sync) {
     if (reader && !f_sync.is_completed()) {
         if (connect(reader)) {
-            auto new_connection = get_connection();
             topology_service->mark_host_up(reader);
             if (f_sync.is_completed()) {
                 // If another thread finishes first, or both timeout, this thread is canceled.
