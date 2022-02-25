@@ -24,12 +24,6 @@
  *
  */
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <stdio.h>
-#endif
-
 #include <cstdlib>
 #include <sql.h>
 #include <sqlext.h>
@@ -44,6 +38,7 @@ static SQLHDBC dbc;
 class FailoverIntegrationTest : public testing::Test
 {
 protected:
+
   char* dsn = std::getenv("TEST_DSN");
   char* db = std::getenv("TEST_DATABASE");
   char* user = std::getenv("TEST_UID");

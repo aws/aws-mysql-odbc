@@ -59,22 +59,25 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 # Only builds the RDS SDK
-SET(BUILD_ONLY "rds" CACHE INTERNAL "")
-SET(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BUILD_ONLY "rds" CACHE INTERNAL "")
+set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 
-SET(CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
+set(CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
     ""
     CACHE STRING "Flags used for linking binaries during coverage builds."
-    FORCE )
-SET(CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT
+    FORCE)
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT
     ""
     CACHE STRING "Flags used by the shared libraries linker during coverage builds."
-    FORCE )
-MARK_AS_ADVANCED(
+    FORCE)
+mark_as_advanced(
     CMAKE_CXX_FLAGS_DEBUGOPT
     CMAKE_C_FLAGS_DEBUGOPT
     CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
-    CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT )
+    CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT)
+set(AWS_SDK_DEPENDENCES aws-c-auth aws-c-cal aws-c-common aws-c-compression
+    aws-c-event-stream aws-checksums aws-c-http aws-c-io aws-c-mqtt
+    aws-crt-cpp aws-c-s3 aws-cpp-sdk-core aws-cpp-sdk-rds)
 
 FetchContent_MakeAvailable(googletest awssdk)
 
@@ -98,6 +101,7 @@ target_link_libraries(
   ${ODBCLIB}
   gtest_main
   toxiproxy
+  ${AWS_SDK_DEPENDENCES}
 )
 
 set_target_properties(integration PROPERTIES
