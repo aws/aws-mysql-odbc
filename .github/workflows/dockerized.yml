@@ -41,7 +41,8 @@ jobs:
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-                -DMYSQLCLIENT_STATIC_LINKING=true
+                -DMYSQLCLIENT_STATIC_LINKING=TRUE
+                -DENABLE_INTEGRATION_TESTS=TRUE
                 -DWITH_UNIXODBC=1
 
       # Build driver
