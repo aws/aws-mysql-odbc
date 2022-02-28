@@ -26,8 +26,8 @@ FAILOVER_CONNECTION_HANDLER::FAILOVER_CONNECTION_HANDLER(DBC* dbc) : dbc{dbc} {}
 
 FAILOVER_CONNECTION_HANDLER::~FAILOVER_CONNECTION_HANDLER() {}
 
-SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc, DataSource* ds) {
-    return dbc->connect(ds);
+SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc, DataSource* ds, bool failover_enabled) {
+    return dbc->connect(ds, failover_enabled);
 }
 
 CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(
@@ -45,7 +45,7 @@ CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(
 
     CONNECTION_INTERFACE* new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
-    SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds);
+    SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds, true);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
         new_connection = dbc_clone->mysql;
