@@ -91,7 +91,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
     
     if (ds->disable_cluster_failover) {
         // Use a standard default connection - no further initialization required
-        rc = connection_handler->do_connect(dbc, ds);
+        rc = connection_handler->do_connect(dbc, ds, false);
         initialized = true;
         return rc;
     }
@@ -346,7 +346,7 @@ bool FAILOVER_HANDLER::is_cluster_topology_available() {
 }
 
 SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
-    SQLRETURN rc = connection_handler->do_connect(dbc, ds);
+    SQLRETURN rc = connection_handler->do_connect(dbc, ds, false);
     if (!SQL_SUCCEEDED(rc)) {
         return rc;
     }
@@ -355,6 +355,20 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
     if (current_topology) {
         m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster();
         m_is_cluster_topology_available = current_topology->total_hosts() > 0;
+
+        // Correct some connection settings if failover is enabled.
+        // We do this after connection because we can't determine whether 
+        // failover is enabled until after we've already connected.
+        if (is_failover_enabled()) {
+            if (ds->connect_timeout != dbc->login_timeout)
+                dbc->mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&ds->connect_timeout);
+
+            if (ds->network_timeout != ds->read_timeout)
+                dbc->mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char*)&ds->network_timeout);
+
+            if (ds->network_timeout != ds->write_timeout)
+                dbc->mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char*)&ds->network_timeout);
+        }
     }
 
     return rc;
