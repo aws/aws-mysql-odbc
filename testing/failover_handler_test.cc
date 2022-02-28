@@ -108,7 +108,7 @@ TEST_F(FailoverHandlerTest, CustomDomain) {
         .Times(AtLeast(1));
     EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(0);
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds, mock_connection_handler, mock_ts);
@@ -123,7 +123,7 @@ TEST_F(FailoverHandlerTest, CustomDomain) {
 TEST_F(FailoverHandlerTest, FailoverDisabled) {
     ds->disable_cluster_failover = true;
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds)).Times(1);
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false)).Times(1);
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
@@ -137,14 +137,13 @@ TEST_F(FailoverHandlerTest, IP_TopologyAvailable_PatternRequired) {
 
     ds_setattr_from_utf8(&ds->server, server);
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
 
     FAILOVER_HANDLER failover_handler(static_cast<DBC*>(dbc), ds,
                                       mock_connection_handler, mock_ts);
-
     EXPECT_THROW(failover_handler.init_cluster_info(), std::string);
 }
 
@@ -153,7 +152,7 @@ TEST_F(FailoverHandlerTest, IP_TopologyNotAvailable) {
 
     ds_setattr_from_utf8(&ds->server, server);
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false))
@@ -176,7 +175,7 @@ TEST_F(FailoverHandlerTest, IP_Cluster) {
     ds_setattr_from_utf8(&ds->server, server);
     ds_setattr_from_utf8(&ds->host_pattern, host_pattern);
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
@@ -202,7 +201,7 @@ TEST_F(FailoverHandlerTest, IP_Cluster_ClusterID) {
     ds_setattr_from_utf8(&ds->host_pattern, host_pattern);
     ds_setattr_from_utf8(&ds->cluster_id, cluster_id);
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
@@ -224,7 +223,7 @@ TEST_F(FailoverHandlerTest, RDS_Cluster) {
     ds_setattr_from_utf8(&ds->server, server);
     ds->port = 1234;
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
@@ -246,7 +245,7 @@ TEST_F(FailoverHandlerTest, RDS_CustomCluster) {
 
     ds_setattr_from_utf8(&ds->server, server);
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
@@ -268,7 +267,7 @@ TEST_F(FailoverHandlerTest, RDS_Instance) {
 
     ds_setattr_from_utf8(&ds->server, server);
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
@@ -291,7 +290,7 @@ TEST_F(FailoverHandlerTest, RDS_Proxy) {
     ds_setattr_from_utf8(&ds->server, server);
     ds->port = 1234;
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
@@ -314,7 +313,7 @@ TEST_F(FailoverHandlerTest, RDS_ReaderCluster) {
     ds_setattr_from_utf8(&ds->server, server);
     ds->port = 1234;
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds))
+    EXPECT_CALL(*mock_connection_handler, do_connect(static_cast<DBC*>(dbc), ds, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
