@@ -290,12 +290,13 @@ class dbc_guard
   Try to establish a connection to a MySQL server based on the data source
   configuration.
 
-  @param[in]  ds   Data source information
+  @param[in]  dsrc              Data source information
+  @param[in]  failover_enabled  Flag for failover
 
   @return Standard SQLRETURN code. If it is @c SQL_SUCCESS or @c
   SQL_SUCCESS_WITH_INFO, a connection has been established.
 */
-SQLRETURN DBC::connect(DataSource *dsrc)
+SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 {
   SQLRETURN rc = SQL_SUCCESS;
   unsigned long flags;
@@ -346,7 +347,7 @@ SQLRETURN DBC::connect(DataSource *dsrc)
   if (dsrc->read_options_from_mycnf)
     mysql->options(MYSQL_READ_DEFAULT_GROUP, "odbc");
 
-  if (fh->is_failover_enabled())
+  if (failover_enabled)
   {
       if (dsrc->connect_timeout)
           mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&dsrc->connect_timeout);
