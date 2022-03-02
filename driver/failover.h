@@ -223,9 +223,10 @@ public:
      std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
     ~CONNECT_TO_READER_HANDLER();
 
-    READER_FAILOVER_RESULT operator()(
+    void operator()(
         const std::shared_ptr<HOST_INFO>& reader,
-        FAILOVER_SYNC& f_sync);
+        FAILOVER_SYNC& f_sync,
+        READER_FAILOVER_RESULT& result);
 };
 
 class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
@@ -236,9 +237,10 @@ class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
         int connection_interval);
     ~RECONNECT_TO_WRITER_HANDLER();
 
-    WRITER_FAILOVER_RESULT operator()(
+    void operator()(
         const std::shared_ptr<HOST_INFO>& original_writer,
-        FAILOVER_SYNC& f_sync);
+        FAILOVER_SYNC& f_sync,
+        WRITER_FAILOVER_RESULT& result);
 
    private:
     int reconnect_interval_ms;
@@ -258,9 +260,10 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
         int connection_interval);
     ~WAIT_NEW_WRITER_HANDLER();
 
-    WRITER_FAILOVER_RESULT operator()(
+    void operator()(
         const std::shared_ptr<HOST_INFO>& original_writer,
-        FAILOVER_SYNC& f_sync);
+        FAILOVER_SYNC& f_sync,
+        WRITER_FAILOVER_RESULT& result);
 
    private:
     // TODO - initialize in constructor and define constant for default value
