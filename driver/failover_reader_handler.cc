@@ -28,37 +28,33 @@ FAILOVER_READER_HANDLER::~FAILOVER_READER_HANDLER() {}
 // If it goes through the list and does not succeed to connect, it tries again, endlessly.
 READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::failover(
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology) {
+
+    READER_FAILOVER_RESULT reader_result(false, nullptr, nullptr);
     if (!current_topology || current_topology->total_hosts() == 0) {
-        return READER_FAILOVER_RESULT( false, nullptr, nullptr );
+        return reader_result;
     }
 
     FAILOVER_SYNC global_sync(1);
 
-    auto reader_result_future = std::async(std::launch::async, [=, &global_sync]() {
+    auto reader_result_future = std::async(std::launch::async, [=, &global_sync, &reader_result]() {
         std::vector<std::shared_ptr<HOST_INFO>> hosts_list;
         while (!global_sync.is_completed()) {
             hosts_list = build_hosts_list(current_topology, true);
-            auto reader_result = get_connection_from_hosts(hosts_list, global_sync);
+            reader_result = get_connection_from_hosts(hosts_list, global_sync);
             if (reader_result.connected) {
                 global_sync.mark_as_complete(true);
-                return reader_result;
+                return;
             }
             // TODO Think of changes to the strategy if it went
             // through all the hosts and did not connect.
             std::this_thread::sleep_for(std::chrono::seconds(READER_CONNECT_INTERVAL_SEC));
         }
-
-        // Return a false result if the failover has been cancelled.
-        global_sync.mark_as_complete(true);
-        return READER_FAILOVER_RESULT(false, nullptr, nullptr);
     });
 
     global_sync.wait_and_complete(max_failover_timeout_ms);
 
-    READER_FAILOVER_RESULT reader_result;
-    if (reader_result_future.wait_for(std::chrono::seconds(0)) ==
-        std::future_status::ready) {
-        reader_result = reader_result_future.get();
+    if (reader_result_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        reader_result_future.get();
     }
     
     return reader_result;
@@ -143,35 +139,35 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
             local_sync.increment_task();
         }
 
-        std::shared_ptr<HOST_INFO> first_reader_host;
         CONNECT_TO_READER_HANDLER first_connection_handler(connection_handler, topology_service);
-        std::future<READER_FAILOVER_RESULT> first_connection_future;
-        READER_FAILOVER_RESULT first_connection_result;
+        std::future<void> first_connection_future;
+        READER_FAILOVER_RESULT first_connection_result(false, nullptr, nullptr);
 
-        std::shared_ptr<HOST_INFO> second_reader_host;
         CONNECT_TO_READER_HANDLER second_connection_handler(connection_handler, topology_service);
-        std::future<READER_FAILOVER_RESULT> second_connection_future;
-        READER_FAILOVER_RESULT second_connection_result;
-
-        first_reader_host = hosts_list.at(i);
-        first_connection_future =
-            std::async(std::launch::async, std::ref(first_connection_handler),
-                       std::cref(first_reader_host), std::ref(local_sync));
+        std::future<void> second_connection_future;
+        READER_FAILOVER_RESULT second_connection_result(false, nullptr, nullptr);
+        
+        std::shared_ptr<HOST_INFO> first_reader_host = hosts_list.at(i);
+        first_connection_future = std::async(std::launch::async, std::ref(first_connection_handler),
+                                             std::cref(first_reader_host), std::ref(local_sync),
+                                             std::ref(first_connection_result));
 
         if (!odd_hosts_number) {
-            second_reader_host = hosts_list.at(i + 1);
-            second_connection_future = std::async(
-                std::launch::async, std::ref(second_connection_handler),
-                std::cref(second_reader_host), std::ref(local_sync));
+            std::shared_ptr<HOST_INFO> second_reader_host = hosts_list.at(i + 1);
+            second_connection_future = std::async(std::launch::async, std::ref(second_connection_handler),
+                                                  std::cref(second_reader_host), std::ref(local_sync),
+                                                  std::ref(second_connection_result));
         }
 
         local_sync.wait_and_complete(reader_connect_timeout_ms);
 
         if (first_connection_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-            first_connection_result = first_connection_future.get();
+            first_connection_future.get();
         }
-        if (!odd_hosts_number && second_connection_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-            second_connection_result = second_connection_future.get();
+        if (!odd_hosts_number && 
+            second_connection_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+
+            second_connection_future.get();
         }
 
         if (first_connection_result.connected) {
@@ -197,25 +193,25 @@ CONNECT_TO_READER_HANDLER::CONNECT_TO_READER_HANDLER(
 
 CONNECT_TO_READER_HANDLER::~CONNECT_TO_READER_HANDLER() {}
 
-READER_FAILOVER_RESULT CONNECT_TO_READER_HANDLER::operator()(
-    const std::shared_ptr<HOST_INFO>& reader, FAILOVER_SYNC& f_sync) {
+void CONNECT_TO_READER_HANDLER::operator()(
+    const std::shared_ptr<HOST_INFO>& reader,
+    FAILOVER_SYNC& f_sync,
+    READER_FAILOVER_RESULT& result) {
+    
     if (reader && !f_sync.is_completed()) {
         if (connect(reader)) {
             topology_service->mark_host_up(reader);
             if (f_sync.is_completed()) {
                 // If another thread finishes first, or both timeout, this thread is canceled.
                 release_new_connection();
-                f_sync.mark_as_complete(false);
-                return READER_FAILOVER_RESULT(false, nullptr, nullptr);
+            } else {
+                result = READER_FAILOVER_RESULT(true, reader, new_connection);
+                f_sync.mark_as_complete(true);
+                return;
             }
-            f_sync.mark_as_complete(true);
-            return READER_FAILOVER_RESULT(true, reader, new_connection);
         } else {
             topology_service->mark_host_down(reader);
-            f_sync.mark_as_complete(false);
-            return READER_FAILOVER_RESULT(false, nullptr, nullptr);
         }
     }
     f_sync.mark_as_complete(false);
-    return READER_FAILOVER_RESULT(false, nullptr, nullptr);
 }
