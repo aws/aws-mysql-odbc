@@ -353,7 +353,7 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
 
     current_topology = topology_service->get_topology(dbc->mysql, false);
     if (current_topology) {
-        m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster();
+        m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster;
         m_is_cluster_topology_available = current_topology->total_hosts() > 0;
 
         // Correct some connection settings if failover is enabled.
