@@ -116,6 +116,9 @@ protected:
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(CONNECTION_INTERFACE* connection);
     std::shared_ptr<HOST_INFO> create_host(MYSQL_ROW& row);
     std::string get_host_endpoint(const char* node_name);
+    static bool does_instance_exist(
+        std::map<std::string, std::shared_ptr<HOST_INFO>>& instances,
+        std::shared_ptr<HOST_INFO> host_info);
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_from_cache();
     void put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info);
