@@ -85,8 +85,11 @@ RECONNECT_TO_WRITER_HANDLER::RECONNECT_TO_WRITER_HANDLER(
 
 RECONNECT_TO_WRITER_HANDLER::~RECONNECT_TO_WRITER_HANDLER() {}
 
-WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
-    const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync) {
+void RECONNECT_TO_WRITER_HANDLER::operator()(
+    const std::shared_ptr<HOST_INFO>& original_writer,
+    FAILOVER_SYNC& f_sync,
+    WRITER_FAILOVER_RESULT& result) {
+    
     if (original_writer) {
         while (!f_sync.is_completed()) {
             if (connect(original_writer)) {
@@ -99,9 +102,10 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
                     if (f_sync.is_completed()) {
                         break;
                     }
+                    result = WRITER_FAILOVER_RESULT(true, false, latest_topology,
+                                                    new_connection);
                     f_sync.mark_as_complete(true);
-                    return WRITER_FAILOVER_RESULT(true, false, latest_topology,
-                                                  new_connection);
+                    return;
                 }
                 release_new_connection();
             }
@@ -110,7 +114,6 @@ WRITER_FAILOVER_RESULT RECONNECT_TO_WRITER_HANDLER::operator()(
     }
     // Another thread finishes or both timeout, this thread is canceled
     release_new_connection();
-    return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
 
 bool RECONNECT_TO_WRITER_HANDLER::is_current_host_writer(
@@ -139,24 +142,27 @@ WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(
 
 WAIT_NEW_WRITER_HANDLER::~WAIT_NEW_WRITER_HANDLER() {}
 
-WRITER_FAILOVER_RESULT WAIT_NEW_WRITER_HANDLER::operator()(
-    const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync) {
+void WAIT_NEW_WRITER_HANDLER::operator()(
+    const std::shared_ptr<HOST_INFO>& original_writer,
+    FAILOVER_SYNC& f_sync,
+    WRITER_FAILOVER_RESULT& result) {
+    
     while (!f_sync.is_completed()) {
         if (!is_writer_connected()) {
             connect_to_reader(f_sync);
             refresh_topology_and_connect_to_new_writer(original_writer, f_sync);
             clean_up_reader_connection();
         } else {
+            result = WRITER_FAILOVER_RESULT(true, true, current_topology,
+                                            new_connection);
             f_sync.mark_as_complete(true);
-            return WRITER_FAILOVER_RESULT(true, true, current_topology,
-                                        new_connection);
+            return;
         }
     }
 
     // Another thread finishes or both timeout, this thread is canceled
     clean_up_reader_connection();
     release_new_connection();
-    return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
 
 // Connect to a reader to later retrieve the latest topology
@@ -228,6 +234,7 @@ FAILOVER_WRITER_HANDLER::~FAILOVER_WRITER_HANDLER() {}
 
 WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology) {
+    
     if (!current_topology || current_topology->total_hosts() == 0) {
         return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
     }
@@ -243,38 +250,35 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
     auto original_writer = current_topology->get_writer();
     topology_service->mark_host_down(original_writer);
 
+    auto reconnect_result = WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
+    auto new_writer_result = WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
+
     // Try reconnecting to the original writer host
-    auto reconnect_future =
-        std::async(std::launch::async, std::ref(reconnect_handler),
-                   std::cref(original_writer), std::ref(failover_sync));
+    auto reconnect_future = std::async(std::launch::async, std::ref(reconnect_handler),
+                                       std::cref(original_writer), std::ref(failover_sync),
+                                       std::ref(reconnect_result));
+    
     // Concurrently see if topology has changed and try connecting to a new writer
-    auto new_writer_future =
-        std::async(std::launch::async, std::ref(new_writer_handler),
-                   std::cref(original_writer), std::ref(failover_sync));
+    auto new_writer_future = std::async(std::launch::async, std::ref(new_writer_handler),
+                                        std::cref(original_writer), std::ref(failover_sync),
+                                        std::ref(new_writer_result));
 
     failover_sync.wait_and_complete(writer_failover_timeout_ms);
 
-    WRITER_FAILOVER_RESULT reconnect_result;
-    WRITER_FAILOVER_RESULT new_writer_result;
-
-    if (reconnect_future.wait_for(std::chrono::seconds(0)) ==
-        std::future_status::ready) {
-
-        reconnect_result = reconnect_future.get();
+    if (reconnect_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        reconnect_future.get();
     }
 
-    if (new_writer_future.wait_for(std::chrono::seconds(0)) ==
-        std::future_status::ready) {
-
-        new_writer_result = new_writer_future.get();
+    if (new_writer_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        new_writer_future.get();
     }
 
     if (reconnect_result.connected) {
         return reconnect_result;
     } else if (new_writer_result.connected) {
         return new_writer_result;
-    } else {
-        // timeout
-        return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
     }
+
+    // timeout
+    return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
