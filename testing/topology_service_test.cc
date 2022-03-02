@@ -89,8 +89,8 @@ TEST_F(TopologyServiceTest, TopologyQuery) {
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
     ASSERT_NE(nullptr, topology);
-	
-    EXPECT_FALSE(topology->is_multi_writer_cluster());
+
+    EXPECT_FALSE(topology->is_multi_writer_cluster);
     EXPECT_EQ(3, topology->total_hosts());
     EXPECT_EQ(2, topology->num_readers());
 
@@ -117,9 +117,9 @@ TEST_F(TopologyServiceTest, MultiWriter) {
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
     ASSERT_NE(nullptr, topology);
 
-    EXPECT_TRUE(topology->is_multi_writer_cluster());
+    EXPECT_TRUE(topology->is_multi_writer_cluster);
     EXPECT_EQ(3, topology->total_hosts());
-    EXPECT_EQ(0, topology->num_readers());
+    EXPECT_EQ(2, topology->num_readers()); // 2 writers are marked as readers
 
     std::shared_ptr<HOST_INFO> writer_host = topology->get_writer();
     ASSERT_NE(nullptr, writer_host);
@@ -130,6 +130,34 @@ TEST_F(TopologyServiceTest, MultiWriter) {
     EXPECT_EQ(WRITER_SESSION_ID, writer_host->session_id);
     EXPECT_EQ("2020-09-15 17:51:53.0", writer_host->last_updated);
     EXPECT_EQ("13.5", writer_host->replica_lag);
+}
+
+TEST_F(TopologyServiceTest, DuplicateInstances) {
+  EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(*mc, fetch_next_row())
+      .WillOnce(Return(writer1))
+      .WillOnce(Return(writer1))
+      .WillOnce(Return(writer1))
+      .WillRepeatedly(Return(MYSQL_ROW{}));
+
+  std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
+  ASSERT_NE(nullptr, topology);
+
+  EXPECT_TRUE(topology->is_multi_writer_cluster);
+  EXPECT_EQ(1, topology->total_hosts());
+  EXPECT_EQ(0, topology->num_readers());
+
+  std::shared_ptr<HOST_INFO> writer_host = topology->get_writer();
+  ASSERT_NE(nullptr, writer_host);
+
+  EXPECT_EQ("writer-instance-1.XYZ.us-east-2.rds.amazonaws.com",
+            writer_host->get_host());
+  EXPECT_EQ(1234, writer_host->get_port());
+  EXPECT_EQ("writer-instance-1", writer_host->instance_name);
+  EXPECT_EQ(WRITER_SESSION_ID, writer_host->session_id);
+  EXPECT_EQ("2020-09-15 17:51:53.0", writer_host->last_updated);
+  EXPECT_EQ("13.5", writer_host->replica_lag);
 }
 
 TEST_F(TopologyServiceTest, CachedTopology) {

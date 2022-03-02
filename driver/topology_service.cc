@@ -246,20 +246,43 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
 
     if (connection->try_execute_query(RETRIEVE_TOPOLOGY_SQL)) {
         topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
+        std::map<std::string, std::shared_ptr<HOST_INFO>> instances;
         MYSQL_ROW row;
+        int writer_count = 0;
         while ((row = connection->fetch_next_row())) {
             std::shared_ptr<HOST_INFO> host_info = create_host(row);
             if (host_info) {
-                topology_info->add_host(host_info);
+                // Only mark the first/latest writer as true writer
+                if (host_info->is_host_writer()) {
+                    if (writer_count > 0) {
+                        host_info->mark_as_writer(false);
+                    }
+                    writer_count++;
+                }
+                // Add to topology if instance not seen before
+                if (!TOPOLOGY_SERVICE::does_instance_exist(instances, host_info)) {
+                    topology_info->add_host(host_info);
+                }
             }
         }
-
-        if (topology_info->total_hosts() == 0) {
-            topology_info.reset();
-        }
+        topology_info->is_multi_writer_cluster = writer_count > 1 ? true : false;
     }
 
     return topology_info;
+}
+
+bool TOPOLOGY_SERVICE::does_instance_exist(
+    std::map<std::string, std::shared_ptr<HOST_INFO>>& instances,
+    std::shared_ptr<HOST_INFO> host_info) {
+    
+    auto duplicate = instances.find(host_info->instance_name);
+    if (duplicate != instances.end()) {
+        return true;
+    } else {
+        instances.insert(std::pair<std::string, std::shared_ptr<HOST_INFO>>(
+            host_info->instance_name, host_info));
+        return false;
+    }
 }
 
 std::string TOPOLOGY_SERVICE::get_host_endpoint(const char* node_name) {

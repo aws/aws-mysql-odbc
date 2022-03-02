@@ -49,8 +49,10 @@ CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO() {
 
 // copy constructor
 CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO(const CLUSTER_TOPOLOGY_INFO& src_info)
-    : current_reader{ src_info.current_reader }, last_updated{ src_info.last_updated }, last_used_reader{ src_info.last_used_reader }
-{
+    : current_reader{src_info.current_reader},
+      last_updated{src_info.last_updated},
+      last_used_reader{src_info.last_used_reader},
+      is_multi_writer_cluster{src_info.is_multi_writer_cluster} {
     for (auto host_info_source : src_info.writers) {
         writers.push_back(std::make_shared<HOST_INFO>(*host_info_source)); //default copy
     }
@@ -74,10 +76,6 @@ CLUSTER_TOPOLOGY_INFO::~CLUSTER_TOPOLOGY_INFO() {
 void CLUSTER_TOPOLOGY_INFO::add_host(std::shared_ptr<HOST_INFO> host_info) {
     host_info->is_host_writer() ? writers.push_back(host_info) : readers.push_back(host_info);
     update_time();
-}
-
-bool CLUSTER_TOPOLOGY_INFO::is_multi_writer_cluster() {
-    return writers.size() > 1;
 }
 
 int CLUSTER_TOPOLOGY_INFO::total_hosts() {
