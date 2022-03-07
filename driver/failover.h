@@ -187,6 +187,7 @@ class FAILOVER_HANDLER {
     bool is_rds_proxy_dns(std::string host);
     bool is_rds_custom_cluster_dns(std::string host);
     SQLRETURN create_connection_and_initialize_topology();
+    SQLRETURN reconnect(bool failover_enabled);
     std::string get_rds_cluster_host_url(std::string host);
     std::string get_rds_instance_host_pattern(std::string host);
     bool is_ipv4(std::string host);
