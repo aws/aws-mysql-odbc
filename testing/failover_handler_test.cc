@@ -365,3 +365,28 @@ TEST_F(FailoverHandlerTest, RDS_MultiWriterCluster) {
     EXPECT_TRUE(failover_handler.is_cluster_topology_available());
     EXPECT_FALSE(failover_handler.is_failover_enabled());
 }
+
+TEST_F(FailoverHandlerTest, ReconnectWithFailoverSettings) {
+    SQLCHAR server[] = "10.10.10.10";
+    SQLCHAR host_pattern[] = "?.my-custom-domain.com";
+
+    ds_setattr_from_utf8(&ds->server, server);
+    ds_setattr_from_utf8(&ds->host_pattern, host_pattern);
+    ds->connect_timeout = 100;
+    ds->network_timeout = 100;
+
+    EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
+    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_))
+        .Times(AtLeast(1));
+
+    EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, false))
+        .WillOnce(Return(SQL_SUCCESS));
+
+    EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, true))
+        .WillOnce(Return(SQL_SUCCESS));
+
+    FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts);
+    failover_handler.init_cluster_info();
+
+    EXPECT_TRUE(failover_handler.is_failover_enabled());
+}
