@@ -356,22 +356,25 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
         m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster;
         m_is_cluster_topology_available = current_topology->total_hosts() > 0;
 
-        // Correct some connection settings if failover is enabled.
-        // We do this after connection because we can't determine whether 
-        // failover is enabled until after we've already connected.
-        if (is_failover_enabled()) {
-            if (ds->connect_timeout != dbc->login_timeout)
-                dbc->mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&ds->connect_timeout);
+        // Since we can't determine whether failover should be enabled
+        // before we connect, there is a possibility we need to reconnect
+        // again with the correct connection settings for failover.
+        if (is_failover_enabled() && (ds->connect_timeout != dbc->login_timeout ||
+                                      ds->network_timeout != ds->read_timeout ||
+                                      ds->network_timeout != ds->write_timeout)) {
 
-            if (ds->network_timeout != ds->read_timeout)
-                dbc->mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char*)&ds->network_timeout);
-
-            if (ds->network_timeout != ds->write_timeout)
-                dbc->mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char*)&ds->network_timeout);
+            rc = reconnect(true);
         }
     }
 
     return rc;
+}
+
+SQLRETURN FAILOVER_HANDLER::reconnect(bool failover_enabled) {
+    if (dbc->mysql != nullptr && dbc->mysql->is_connected()) {
+        dbc->close();
+    }
+    return connection_handler->do_connect(dbc, ds, failover_enabled);
 }
 
 bool FAILOVER_HANDLER::is_ipv4(std::string host) {
