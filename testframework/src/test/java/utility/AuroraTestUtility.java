@@ -42,6 +42,7 @@ import com.amazonaws.services.rds.model.DeleteDBInstanceRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
 import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
 import com.amazonaws.services.rds.model.Filter;
+import com.amazonaws.services.rds.model.Tag;
 import com.amazonaws.services.rds.waiters.AmazonRDSWaiters;
 import com.amazonaws.util.StringUtils;
 import com.amazonaws.waiters.NoOpWaiterHandler;
@@ -154,7 +155,10 @@ public class AuroraTestUtility {
    */
   public AuroraClusterInfo createCluster() throws InterruptedException {
     final List<String> instances = new ArrayList<>();
-
+    final Tag testRunnerTag = new Tag()
+    .withKey("env")
+    .withValue("test-runner");
+    
     // Create Cluster
     final CreateDBClusterRequest dbClusterRequest = new CreateDBClusterRequest()
         .withDBClusterIdentifier(dbIdentifier)
@@ -163,7 +167,8 @@ public class AuroraTestUtility {
         .withSourceRegion(dbRegion)
         .withEnableIAMDatabaseAuthentication(true)
         .withEngine(dbEngine)
-        .withStorageEncrypted(true);
+        .withStorageEncrypted(true)
+        .withTags(testRunnerTag);
 
     rdsClient.createDBCluster(dbClusterRequest);
 
@@ -172,7 +177,8 @@ public class AuroraTestUtility {
         .withDBClusterIdentifier(dbIdentifier)
         .withDBInstanceClass(dbInstanceClass)
         .withEngine(dbEngine)
-        .withPubliclyAccessible(true);
+        .withPubliclyAccessible(true)
+        .withTags(testRunnerTag);
 
     for (int i = 1; i <= numOfInstances; i++) {
       final String instanceId = dbIdentifier + "-" + i;
