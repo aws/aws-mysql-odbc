@@ -360,6 +360,61 @@ UWORD config_set(UWORD mode)
   return current;
 }
 
+unsigned int get_topology_refresh_rate(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return TOPOLOGY_REFRESH_RATE_MS;
+}
+
+unsigned int get_failover_timeout(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return FAILOVER_TIMEOUT_MS;
+}
+
+unsigned int get_failover_toplogy_refresh_rate(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return FAILOVER_TOPOLOGY_REFRESH_RATE_MS;
+}
+
+unsigned int get_failover_reader_connect_timeout(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return FAILOVER_READER_CONNECT_TIMEOUT_MS;
+}
+
+unsigned int get_failover_writer_reconnect_interval(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return FAILOVER_WRITER_RECONNECT_INTERVAL_MS;
+}
+
+unsigned int get_failover_connect_timeout(unsigned int seconds) {
+  if (seconds && seconds > 0) {
+    return seconds;
+  }
+
+  return FAILOVER_CONNECT_TIMEOUT_SECS;
+}
+
+unsigned int get_failover_network_timeout(unsigned int seconds) {
+  if (seconds && seconds > 0) {
+    return seconds;
+  }
+
+  return FAILOVER_NETWORK_TIMEOUT_SECS;
+}
 
 /* ODBC Installer Driver Wrapper */
 
@@ -720,11 +775,13 @@ DataSource *ds_new()
   ds->disable_cluster_failover = false;
   ds->allow_reader_connections = false;
   ds->gather_perf_metrics = false;
-  ds->topology_refresh_rate = 30000;              // 30 sec
-  ds->failover_timeout = 60000;                   // 60 sec
-  ds->failover_reader_connect_timeout = 30000;    // 30 sec
-  ds->failover_topology_refresh_rate = 5000;      // 5 sec
-  ds->failover_writer_reconnect_interval = 5000;  // 5 sec
+  ds->topology_refresh_rate = get_topology_refresh_rate(0);
+  ds->failover_timeout = get_failover_timeout(0);
+  ds->failover_reader_connect_timeout = get_failover_reader_connect_timeout(0);
+  ds->failover_topology_refresh_rate = get_failover_toplogy_refresh_rate(0);
+  ds->failover_writer_reconnect_interval = get_failover_writer_reconnect_interval(0);
+  ds->connect_timeout = get_failover_connect_timeout(0);
+  ds->network_timeout = get_failover_network_timeout(0);
 
   /* DS_PARAM */
 

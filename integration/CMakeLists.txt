@@ -86,7 +86,7 @@ enable_testing()
 add_executable(
   integration
   simple_connect_test.cc
-  simple_toxiproxy_test.cc
+  network_failover_integration_test.cc
 )
 
 include(GoogleTest)

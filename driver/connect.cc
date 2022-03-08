@@ -349,14 +349,12 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 
   if (failover_enabled)
   {
-      if (dsrc->connect_timeout)
-          mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&dsrc->connect_timeout);
+      const unsigned int connect_timeout = get_failover_connect_timeout(dsrc->connect_timeout);
+      const unsigned int network_timeout = get_failover_network_timeout(dsrc->network_timeout);
 
-      if (dsrc->network_timeout)
-      {
-          mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char*)&dsrc->network_timeout);
-          mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char*)&dsrc->network_timeout);
-      }
+      mysql->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&connect_timeout);
+      mysql->options(MYSQL_OPT_READ_TIMEOUT, (const char*)&network_timeout);
+      mysql->options(MYSQL_OPT_WRITE_TIMEOUT, (const char*)&network_timeout);
   }
   else
   {

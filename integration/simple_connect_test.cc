@@ -24,6 +24,10 @@
  *
  */
 
+#ifdef _WIN32
+  #include <Windows.h>
+#endif
+
 #include <cstdlib>
 #include <sql.h>
 #include <sqlext.h>
@@ -68,7 +72,6 @@ protected:
 TEST_F(FailoverIntegrationTest, SimpleTest)
 {
   sprintf(reinterpret_cast<char*>(connIn), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;", dsn, user, pwd, server);
-
   const SQLRETURN rc = SQLDriverConnect(dbc, nullptr, connIn, SQL_NTS, connOut, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
   SQLRETURN drc = SQLGetDiagRec(SQL_HANDLE_DBC, dbc, 1, sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &length);
 

@@ -101,8 +101,8 @@ public class ContainerHelper {
             "app/gradle.properties")
         .withCopyFileToContainer(MountableFile.forHostPath("./build.gradle.kts"),
             "app/build.gradle.kts")
-        .withCopyFileToContainer(MountableFile.forHostPath("./src/test/resources/odbc.ini"), "/app/odbc.ini")
-        .withCopyFileToContainer(MountableFile.forHostPath("./src/test/resources/odbcinst.ini"), "/app/odbcinst.ini");
+        .withCopyFileToContainer(MountableFile.forHostPath("./src/test/resources/odbc.ini"), "/etc/odbc.ini")
+        .withCopyFileToContainer(MountableFile.forHostPath("./src/test/resources/odbcinst.ini"), "/etc/odbcinst.ini");
   }
 
   protected Long execInContainer(GenericContainer<?> container, Consumer<OutputFrame> consumer,

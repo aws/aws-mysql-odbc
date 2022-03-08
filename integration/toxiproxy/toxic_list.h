@@ -37,7 +37,7 @@
 class TOXIC_LIST
 {
 public:
-  TOXIC_LIST(TOXIPROXY_HTTP_CLIENT* client, std::string path) : client(client), path(std::move(path)) {}
+  TOXIC_LIST(TOXIPROXY_HTTP_CLIENT* client, std::string path) : client{ client }, path(std::move(path)) {}
   TOXIC* get(const std::string& name);
 
   template <typename T, typename std::enable_if<std::is_base_of<TOXIC, T>::value>::type* = nullptr>

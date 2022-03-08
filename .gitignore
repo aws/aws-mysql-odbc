@@ -1,9 +1,9 @@
 ﻿# Build artifacts
-bin/**
-lib/**
-out/**
-x64/**
-x86/**
+bin/
+lib/
+out/
+x64/
+x86/
 **/*.dir
 
 # Test artifacts
@@ -23,6 +23,7 @@ integration/bin/**
 
 # Test dependencies
 _deps/**
+*/_deps/**
 
 # CMake generated files
 CPack*.cmake
