@@ -162,8 +162,8 @@ public class IntegrationContainerTest {
         .withEnv("PROXIED_DOMAIN_NAME_SUFFIX", PROXIED_DOMAIN_NAME_SUFFIX)
         .withEnv("PROXIED_CLUSTER_TEMPLATE", "?." + dbConnStrSuffix + PROXIED_DOMAIN_NAME_SUFFIX)
         .withEnv("DB_CONN_STR_SUFFIX", "." + dbConnStrSuffix)
-        .withEnv("ODBCINI", "/app/odbc.ini")
-        .withEnv("ODBCINSTINI", "/app/odbcinst.ini");
+        .withEnv("ODBCINI", "/etc/odbc.ini")
+        .withEnv("ODBCINSTINI", "/etc/odbcinst.ini");
 
     // Add mysql instances & proxies to container env
     for (int i = 0; i < mySqlInstances.size(); i++) {

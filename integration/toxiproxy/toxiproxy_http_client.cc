@@ -34,7 +34,7 @@ std::map<std::string, TOXIC_DIRECTION> TOXIPROXY_HTTP_CLIENT::str_to_toxic_direc
 std::map<TOXIC_DIRECTION, std::string> TOXIPROXY_HTTP_CLIENT::toxic_direction_to_str_map = { {TOXIC_DIRECTION::UPSTREAM, "upstream"}, {TOXIC_DIRECTION::DOWNSTREAM, "downstream"} };
 
 TOXIPROXY_HTTP_CLIENT::TOXIPROXY_HTTP_CLIENT(std::string protocol, std::string host, int port)
-  : protocol(std::move(protocol)), host(std::move(host)), port(port)
+  : protocol{ protocol }, host({ host }), port{ port }
 {
   // TODO: handle https protocol
 }
@@ -42,7 +42,7 @@ TOXIPROXY_HTTP_CLIENT::TOXIPROXY_HTTP_CLIENT(std::string protocol, std::string h
 nlohmann::json TOXIPROXY_HTTP_CLIENT::post(const std::string& path, std::string name, bool value) const
 {
   std::string str_value = value ? "true" : "false";
-  const httplib::Params param{
+  const nlohmann::json param = {
     {name, str_value}
   };
   return post(path, param);
@@ -50,16 +50,16 @@ nlohmann::json TOXIPROXY_HTTP_CLIENT::post(const std::string& path, std::string 
 
 nlohmann::json TOXIPROXY_HTTP_CLIENT::post(const std::string& path, std::string name, std::string value) const
 {
-  const httplib::Params param {
-  {name, value}
+  const nlohmann::json param = {
+    {name, value}
   };
   return post(path, param);
 }
 
 nlohmann::json TOXIPROXY_HTTP_CLIENT::post(const std::string& path, std::string name, double value) const
 {
-  const httplib::Params param {
-    {name, std::to_string(value)}
+  const nlohmann::json param = {
+    {name, value}
   };
   return post(path, param);
 }
