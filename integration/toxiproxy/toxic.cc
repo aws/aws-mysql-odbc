@@ -31,20 +31,16 @@
 #include "toxic_type.h"
 
 TOXIC::TOXIC(TOXIPROXY_HTTP_CLIENT* client, const std::string& toxic_list_path, const std::string& name, TOXIC_DIRECTION stream)
-  : client(client), name(name), stream(stream), toxicity(1)
+  : client{ client }, name{ name }, stream{ stream }, toxicity{ 1 }
 {
   this->path = toxic_list_path + "/" + name;
 }
 
 TOXIC::TOXIC(TOXIPROXY_HTTP_CLIENT* client, std::string path, nlohmann::json json_object)
-  : client(client), path(std::move(path))
-{
-  set_from_json(std::move(json_object));
-}
+  : client{ client }, path{ path } {}
 
 void TOXIC::remove() const
 {
-  std::cout << "remove delete_path" << std::endl;
   client->delete_path(path);
 }
 
