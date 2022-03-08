@@ -32,7 +32,7 @@
 #include <utility>
 
 PROXY::PROXY(TOXIPROXY_HTTP_CLIENT* client, const std::string& path, nlohmann::json json_object)
-  : client(client), path(path)
+  : client{ client }, path{ path }
 {
   set_from_json(std::move(json_object));
 }
