@@ -63,6 +63,23 @@ typedef struct {
 #define ODBCDRIVER_STRLEN SQL_MAX_OPTION_STRING_LENGTH
 #define ODBCDATASOURCE_STRLEN SQL_MAX_OPTION_STRING_LENGTH
 
+// Failover default settings
+#define TOPOLOGY_REFRESH_RATE_MS 30000
+#define FAILOVER_TOPOLOGY_REFRESH_RATE_MS 5000
+#define FAILOVER_TIMEOUT_MS 60000
+#define FAILOVER_READER_CONNECT_TIMEOUT_MS 30000
+#define FAILOVER_WRITER_RECONNECT_INTERVAL_MS 5000
+#define FAILOVER_CONNECT_TIMEOUT_SECS 30
+#define FAILOVER_NETWORK_TIMEOUT_SECS 30
+
+unsigned int get_topology_refresh_rate(unsigned int milliseconds);
+unsigned int get_failover_timeout(unsigned int milliseconds);
+unsigned int get_failover_toplogy_refresh_rate(unsigned int milliseconds);
+unsigned int get_failover_reader_connect_timeout(unsigned int milliseconds);
+unsigned int get_failover_writer_reconnect_interval(unsigned int milliseconds);
+unsigned int get_failover_connect_timeout(unsigned int seconds);
+unsigned int get_failover_network_timeout(unsigned int seconds);
+
 Driver *driver_new();
 void driver_delete(Driver *driver);
 int driver_lookup_name(Driver *driver);

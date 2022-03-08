@@ -41,13 +41,16 @@ class RESET_PEER : public TOXIC
 {
 public:
   RESET_PEER(TOXIPROXY_HTTP_CLIENT* client, const std::string& toxic_list_path, const std::string& name, TOXIC_DIRECTION stream, long timeout)
-    : TOXIC(client, toxic_list_path, name, stream), timeout(timeout)
+    : TOXIC{ client, toxic_list_path,  name, stream }, timeout(timeout)
   {
     create_toxic(toxic_list_path);
   }
 
   RESET_PEER(TOXIPROXY_HTTP_CLIENT* client, std::string path, nlohmann::json json_object)
-    : TOXIC(client, std::move(path), std::move(json_object)) {}
+    : TOXIC{ client, path, json_object }
+  {
+    set_from_json(json_object);
+  }
 
   void set_attributes(nlohmann::json attributes) override;
   nlohmann::json get_attributes() override;

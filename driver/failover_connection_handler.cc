@@ -89,9 +89,10 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
 
     SQLRETURN status = SQL_ERROR;
     if (source_dbc && source_dbc->env) {
-        SQLHANDLE hdbc = nullptr;
-        status = SQLAllocHandle(SQL_HANDLE_DBC,
-                                static_cast<SQLHANDLE>(source_dbc->env), &hdbc);
+        SQLHDBC hdbc;
+        SQLHENV henv = static_cast<SQLHANDLE>(source_dbc->env);
+
+        status = my_SQLAllocConnect(henv, &hdbc);
         if (status == SQL_SUCCESS || status == SQL_SUCCESS_WITH_INFO) {
             dbc_clone = static_cast<DBC*>(hdbc);
             dbc_clone->ds = ds_new();
@@ -108,5 +109,5 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
 void FAILOVER_CONNECTION_HANDLER::release_dbc(DBC* dbc_clone) {
     // dbc->ds is deleted(if not null) in DBC destructor
     // no need to separately clean it.
-    SQLFreeHandle(SQL_HANDLE_DBC, static_cast<SQLHANDLE>(dbc_clone));
+    my_SQLFreeConnect(static_cast<SQLHANDLE>(dbc_clone));
 }
