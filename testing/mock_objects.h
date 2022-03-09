@@ -56,7 +56,7 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE_INTERFACE {
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
  public:
-    MOCK_READER_HANDLER() : FAILOVER_READER_HANDLER(nullptr, nullptr, 0, 0) {}
+    MOCK_READER_HANDLER() : FAILOVER_READER_HANDLER(nullptr, nullptr, 0, 0, nullptr) {}
     MOCK_METHOD(READER_FAILOVER_RESULT, get_reader_connection,
                 (std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, FAILOVER_SYNC&));
 };

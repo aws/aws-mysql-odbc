@@ -7,6 +7,7 @@
 #define __FAILOVER_H__
 
 #include "topology_service.h"
+#include "mylog.h"
 
 #include <functional>
 #include <condition_variable>
@@ -76,7 +77,8 @@ class FAILOVER_READER_HANDLER {
     FAILOVER_READER_HANDLER(
         std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-        int failover_timeout_ms, int failover_reader_connect_timeout);
+        int failover_timeout_ms, int failover_reader_connect_timeout,
+        FILE* log_file);
     
         ~FAILOVER_READER_HANDLER();
     
@@ -102,7 +104,8 @@ class FAILOVER_READER_HANDLER {
     private:
         std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler; 
-        const int READER_CONNECT_INTERVAL_SEC = 1;  // 1 sec  
+        const int READER_CONNECT_INTERVAL_SEC = 1;  // 1 sec
+        FILE* log_file = nullptr;
 };
 
 // This struct holds results of Writer Failover Process.
@@ -135,7 +138,7 @@ class FAILOVER_WRITER_HANDLER {
         std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         int writer_failover_timeout_ms, int read_topology_interval_ms,
-        int reconnect_writer_interval_ms);
+        int reconnect_writer_interval_ms, FILE* log_file);
     ~FAILOVER_WRITER_HANDLER();
     WRITER_FAILOVER_RESULT failover(
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology);
@@ -149,6 +152,7 @@ class FAILOVER_WRITER_HANDLER {
     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
+    FILE* log_file = nullptr;
 };
 
 class FAILOVER_HANDLER {
@@ -204,7 +208,8 @@ class FAILOVER_HANDLER {
 class FAILOVER {
    public:
     FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-             std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
+             std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+             FILE* log_file);
     virtual ~FAILOVER();
     bool is_writer_connected();
 
@@ -215,13 +220,15 @@ class FAILOVER {
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
     CONNECTION_INTERFACE* new_connection;
+    FILE* log_file = nullptr;
 };
 
 class CONNECT_TO_READER_HANDLER : public FAILOVER {
 public:
     CONNECT_TO_READER_HANDLER(
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
+     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+     FILE* log_file);
     ~CONNECT_TO_READER_HANDLER();
 
     void operator()(
@@ -235,11 +242,11 @@ class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
     RECONNECT_TO_WRITER_HANDLER(
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_servicets,
-        int connection_interval);
+        int connection_interval, FILE* log_file);
     ~RECONNECT_TO_WRITER_HANDLER();
 
     void operator()(
-        const std::shared_ptr<HOST_INFO>& original_writer,
+        std::shared_ptr<HOST_INFO> original_writer,
         FAILOVER_SYNC& f_sync,
         WRITER_FAILOVER_RESULT& result);
 
@@ -258,7 +265,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
         std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
         std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
-        int connection_interval);
+        int connection_interval, FILE* log_file);
     ~WAIT_NEW_WRITER_HANDLER();
 
     void operator()(

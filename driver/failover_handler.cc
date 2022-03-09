@@ -54,8 +54,10 @@ const std::regex IPV6_COMPRESSED_PATTERN(
 }  // namespace
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
-    : FAILOVER_HANDLER(dbc, ds, std::make_shared<FAILOVER_CONNECTION_HANDLER>(dbc),
-                       std::make_shared<TOPOLOGY_SERVICE>()) {}
+    : FAILOVER_HANDLER(
+          dbc, ds, std::make_shared<FAILOVER_CONNECTION_HANDLER>(dbc),
+          std::make_shared<TOPOLOGY_SERVICE>(
+              (dbc && dbc->log_file) ? dbc->log_file : nullptr)) {}
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
                                    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
@@ -73,12 +75,12 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
         this->topology_service, this->connection_handler, ds->failover_timeout,
-        ds->failover_reader_connect_timeout);
+        ds->failover_reader_connect_timeout, dbc->log_file);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
         this->connection_handler, ds->failover_timeout,
         ds->failover_topology_refresh_rate,
-        ds->failover_writer_reconnect_interval);
+        ds->failover_writer_reconnect_interval, dbc->log_file);
 }
 
 FAILOVER_HANDLER::~FAILOVER_HANDLER() {}
@@ -104,11 +106,13 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             ds_get_utf8attr(ds->server, &ds->server8), ds->port);
     } catch (std::string& e) {
         err << "Invalid server '" << ds->server8 << "'.";
+        MYLOG_TRACE(dbc->log_file, err.str().c_str());
         throw err.str();
     }
 
     if (hosts.size() == 0) {
         err << "Empty server host.";
+        MYLOG_TRACE(dbc->log_file, err.str().c_str());
         throw err.str();
     }
 
@@ -132,12 +136,14 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         try {
             host_patterns = parse_host_list(hp_str.c_str(), port);
         } catch (std::string& e) {
-            err << "Invalid host pattern '" << hp_str << "'.";
+            err << "Invalid host pattern: '" << hp_str << "' - the value could not be parsed";
+            MYLOG_TRACE(dbc->log_file, err.str().c_str());
             throw err.str();
         }
 
         if (host_patterns.size() == 0) {
             err << "Empty host pattern.";
+            MYLOG_TRACE(dbc->log_file, err.str().c_str());
             throw err.str();
         }
 
@@ -145,7 +151,11 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         unsigned int host_pattern_port = host_patterns[0].port;
 
         if (!is_dns_pattern_valid(host_pattern)) {
-            err << "Invalid host pattern '" << hp_str << "'.";
+            err << "Invalid host pattern: '" << host_pattern
+                << "' - the host pattern must contain a '?' character as a "
+                    "placeholder for the DB instance identifiers  of the cluster "
+                    "instances";
+            MYLOG_TRACE(dbc->log_file, err.str().c_str());
             throw err.str();
         }
 
@@ -153,17 +163,20 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         topology_service->set_cluster_instance_template(host_template);
 
         m_is_rds = is_rds_dns(host_pattern);
+        MYLOG_TRACE(dbc->log_file, "[FAILOVER_HANDLER] m_is_rds=%s", m_is_rds ? "true" : "false");
         m_is_rds_proxy = is_rds_proxy_dns(host_pattern);
+        MYLOG_TRACE(dbc->log_file, "[FAILOVER_HANDLER] m_is_rds_proxy=%s", m_is_rds_proxy ? "true" : "false");
         m_is_rds_custom_cluster = is_rds_custom_cluster_dns(host_pattern);
 
         if (m_is_rds_proxy) {
             err << "RDS Proxy url can't be used as an instance pattern.";
+            MYLOG_TRACE(dbc->log_file, err.str().c_str());
             throw err.str();
         }
 
         if (m_is_rds_custom_cluster) {
-            err << "RDS Custom Cluster endpoint can't be used as an instance "
-                   "pattern.";
+            err << "RDS Custom Cluster endpoint can't be used as an instance pattern.";
+            MYLOG_TRACE(dbc->log_file, err.str().c_str());
             throw err.str();
         }
 
@@ -199,7 +212,11 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
 
         if (m_is_cluster_topology_available) {
             err << "Host Pattern configuration setting is required when IP "
-                   "address is used to connect to cluster.";
+                    "address is used to connect to a cluster that provides topology "
+                    "information. If you would instead like to connect without "
+                    "failover functionality, set the 'Disable Cluster Failover' "
+                    "configuration property to true.";
+            MYLOG_TRACE(dbc->log_file, err.str().c_str());
             throw err.str();
         }
 
@@ -208,7 +225,9 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
 
     } else {
         m_is_rds = is_rds_dns(main_host);
+        MYLOG_TRACE(dbc->log_file, "[FAILOVER_HANDLER] m_is_rds=%s", m_is_rds ? "true" : "false");
         m_is_rds_proxy = is_rds_proxy_dns(main_host);
+        MYLOG_TRACE(dbc->log_file, "[FAILOVER_HANDLER] m_is_rds_proxy=%s", m_is_rds_proxy ? "true" : "false");
 
         if (!m_is_rds) {
             // it's not RDS, maybe custom domain (CNAME)
@@ -223,16 +242,18 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             rc = create_connection_and_initialize_topology();
 
             if (m_is_cluster_topology_available) {
-                err << "The provided host appears to be a custom domain. The "
-                       "driver requires the Host Pattern configuration setting "
-                       "to be set for custom domains.";
+              err << "The provided host appears to be a custom domain. The "
+                     "driver requires the Host Pattern configuration setting "
+                     "to be set for custom domains. If you would instead like "
+                     "to connect without  failover functionality, set the "
+                     "'Disable Cluster Failover' configuration property to true.";
+                MYLOG_TRACE(dbc->log_file, err.str().c_str());
                 throw err.str();
             }
         } else {
             // It's RDS
 
-            std::string rds_instance_host =
-                get_rds_instance_host_pattern(main_host);
+            std::string rds_instance_host = get_rds_instance_host_pattern(main_host);
             if (!rds_instance_host.empty()) {
                 topology_service->set_cluster_instance_template(
                     std::make_shared<HOST_INFO>(rds_instance_host, main_port));
@@ -241,6 +262,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                        "Aurora DNS pattern. Please set the Host Pattern "
                        "configuration to specify the host pattern for the "
                        "cluster you are trying to connect to.";
+                MYLOG_TRACE(dbc->log_file, err.str().c_str());
                 throw err.str();
             }
 
@@ -355,6 +377,9 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
     if (current_topology) {
         m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster;
         m_is_cluster_topology_available = current_topology->total_hosts() > 0;
+        MYLOG_TRACE(dbc->log_file,
+                    "[FAILOVER_HANDLER] m_is_cluster_topology_available=%s",
+                    m_is_cluster_topology_available ? "true" : "false");
 
         // Since we can't determine whether failover should be enabled
         // before we connect, there is a possibility we need to reconnect
@@ -414,15 +439,20 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
 }
 
 bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
+    MYLOG_TRACE(dbc->log_file, "[FAILOVER_HANDLER] Starting reader failover procedure.");
     auto result = failover_reader_handler->failover(current_topology);
 
     if (result.connected) {
         current_host = result.new_host;
         connection_handler->update_connection(result.new_connection);
         new_error_code = "08S02";
+        MYLOG_TRACE(dbc->log_file,
+                    "[FAILOVER_HANDLER] The active SQL connection has changed "
+                    "due to a connection failure. Please re-configure session "
+                    "state if required.");
         return true;
     } else {
-        // "Unable to establish SQL connection to reader node"
+        MYLOG_TRACE(dbc->log_file, "[FAILOVER_HANDLER] Unable to establish SQL connection to reader node.");
         new_error_code = "08S01";
         return false;
     }
@@ -430,10 +460,11 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
 }
 
 bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code) {
+    MYLOG_TRACE(dbc->log_file, "[FAILOVER_HANDLER] Starting writer failover procedure.");
     auto result = failover_writer_handler->failover(current_topology);
 
     if (!result.connected) {
-        // "Unable to establish SQL connection to writer node"
+        MYLOG_TRACE(dbc->log_file, "[FAILOVER_HANDLER] Unable to establish SQL connection to writer node.");
         new_error_code = "08S01";
         return false;
     }
@@ -444,5 +475,9 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code) {
     }
     connection_handler->update_connection(result.new_connection);
     new_error_code = "08S02";
+    MYLOG_TRACE(
+        dbc->log_file,
+        "[FAILOVER_HANDLER] The active SQL connection has changed due to a "
+        "connection failure. Please re-configure session state if required.");
     return true;
 }

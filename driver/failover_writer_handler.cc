@@ -47,9 +47,11 @@ bool FAILOVER_SYNC::is_completed() {
 // Base class of two writer failover task handlers
 FAILOVER::FAILOVER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service)
+    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+    FILE* log_file)
     : connection_handler{connection_handler},
       topology_service{topology_service},
+      log_file{log_file},
       new_connection{nullptr} {}
 
 FAILOVER::~FAILOVER() {}
@@ -79,18 +81,24 @@ void FAILOVER::release_new_connection() {
 // handler reconnecting to a given host, e.g. reconnect to a current writer
 RECONNECT_TO_WRITER_HANDLER::RECONNECT_TO_WRITER_HANDLER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service, int connection_interval)
-    : FAILOVER{connection_handler, topology_service},
+    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+    int connection_interval, FILE* log_file)
+    : FAILOVER{connection_handler, topology_service, log_file},
       reconnect_interval_ms{connection_interval} {}
 
 RECONNECT_TO_WRITER_HANDLER::~RECONNECT_TO_WRITER_HANDLER() {}
 
 void RECONNECT_TO_WRITER_HANDLER::operator()(
-    const std::shared_ptr<HOST_INFO>& original_writer,
+    std::shared_ptr<HOST_INFO> original_writer,
     FAILOVER_SYNC& f_sync,
     WRITER_FAILOVER_RESULT& result) {
-    
+
     if (original_writer) {
+        MYLOG_TRACE(log_file,
+                  "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Attempting to "
+                  "re-connect to the current writer instance: %s",
+                  original_writer->get_host_port_pair().c_str());
+
         while (!f_sync.is_completed()) {
             if (connect(original_writer)) {
                 auto latest_topology =
@@ -105,15 +113,18 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
                     result = WRITER_FAILOVER_RESULT(true, false, latest_topology,
                                                     new_connection);
                     f_sync.mark_as_complete(true);
+                    MYLOG_TRACE(log_file, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
                     return;
                 }
                 release_new_connection();
             }
             sleep(reconnect_interval_ms);
         }
+        MYLOG_TRACE(log_file, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Cancelled");
     }
     // Another thread finishes or both timeout, this thread is canceled
     release_new_connection();
+    MYLOG_TRACE(log_file, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
 }
 
 bool RECONNECT_TO_WRITER_HANDLER::is_current_host_writer(
@@ -134,8 +145,8 @@ WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
-    int connection_interval)
-    : FAILOVER{connection_handler, topology_service},
+    int connection_interval, FILE* log_file)
+    : FAILOVER{connection_handler, topology_service, log_file},
       current_topology{current_topology},
       reader_handler{reader_handler},
       read_topology_interval_ms{connection_interval} {}
@@ -146,6 +157,8 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
     const std::shared_ptr<HOST_INFO>& original_writer,
     FAILOVER_SYNC& f_sync,
     WRITER_FAILOVER_RESULT& result) {
+
+    MYLOG_TRACE(log_file, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Attempting to connect to a new writer instance");
     
     while (!f_sync.is_completed()) {
         if (!is_writer_connected()) {
@@ -156,13 +169,16 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
             result = WRITER_FAILOVER_RESULT(true, true, current_topology,
                                             new_connection);
             f_sync.mark_as_complete(true);
+            MYLOG_TRACE(log_file, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
             return;
         }
     }
+    MYLOG_TRACE(log_file, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Cancelled");
 
     // Another thread finishes or both timeout, this thread is canceled
     clean_up_reader_connection();
     release_new_connection();
+    MYLOG_TRACE(log_file, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
 }
 
 // Connect to a reader to later retrieve the latest topology
@@ -172,8 +188,13 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader(FAILOVER_SYNC& f_sync) {
         if (connection_result.connected && connection_result.new_connection->is_connected()) {
             reader_connection = connection_result.new_connection;
             current_reader_host = connection_result.new_host;
+            MYLOG_TRACE(
+                log_file,
+                "[WAIT_NEW_WRITER_HANDLER] [TaskB] Connected to reader: %s",
+                connection_result.new_host->get_host_port_pair().c_str());
             break;
         }
+        MYLOG_TRACE(log_file, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Failed to connect to any reader.");
     }
 }
 
@@ -197,6 +218,11 @@ void WAIT_NEW_WRITER_HANDLER::refresh_topology_and_connect_to_new_writer(
 // Try to connect to the writer candidate
 bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
     const std::shared_ptr<HOST_INFO>& writer_candidate) {
+
+    MYLOG_TRACE(log_file,
+      "[WAIT_NEW_WRITER_HANDLER] [TaskB] Trying to connect to a new writer: %s",
+      writer_candidate->get_host_port_pair().c_str());
+
     if (HOST_INFO::is_host_same(writer_candidate, current_reader_host)) {
         new_connection = reader_connection;
     } else if (!connect(writer_candidate)) {
@@ -222,13 +248,14 @@ FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     int writer_failover_timeout_ms, int read_topology_interval_ms,
-    int reconnect_writer_interval_ms)
+    int reconnect_writer_interval_ms, FILE* log_file)
     : connection_handler{connection_handler},
       topology_service{topology_service},
       reader_handler{reader_handler},
       writer_failover_timeout_ms{writer_failover_timeout_ms},
       read_topology_interval_ms{read_topology_interval_ms},
-      reconnect_writer_interval_ms{reconnect_writer_interval_ms} {}
+      reconnect_writer_interval_ms{reconnect_writer_interval_ms},
+      log_file{log_file} {}
 
 FAILOVER_WRITER_HANDLER::~FAILOVER_WRITER_HANDLER() {}
 
@@ -236,16 +263,19 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology) {
     
     if (!current_topology || current_topology->total_hosts() == 0) {
+        MYLOG_TRACE(log_file,
+                    "[FAILOVER_WRITER_HANDLER] Failover was called with "
+                    "an invalid (null or empty) topology");
         return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
     }
 
     FAILOVER_SYNC failover_sync(2);
     // Constructing the function objects
     RECONNECT_TO_WRITER_HANDLER reconnect_handler(
-        connection_handler, topology_service, reconnect_writer_interval_ms);
+        connection_handler, topology_service, reconnect_writer_interval_ms, log_file);
     WAIT_NEW_WRITER_HANDLER new_writer_handler(
         connection_handler, topology_service, current_topology, reader_handler,
-        read_topology_interval_ms);
+        read_topology_interval_ms, log_file);
 
     auto original_writer = current_topology->get_writer();
     topology_service->mark_host_down(original_writer);
@@ -255,7 +285,7 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
 
     // Try reconnecting to the original writer host
     auto reconnect_future = std::async(std::launch::async, std::ref(reconnect_handler),
-                                       std::cref(original_writer), std::ref(failover_sync),
+                                       original_writer, std::ref(failover_sync),
                                        std::ref(reconnect_result));
     
     // Concurrently see if topology has changed and try connecting to a new writer
@@ -274,11 +304,18 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
     }
 
     if (reconnect_result.connected) {
+        MYLOG_TRACE(log_file,
+                    "[FAILOVER_WRITER_HANDLER] Successfully re-connected to the current writer instance: %s",
+                    reconnect_result.new_topology->get_writer()->get_host_port_pair().c_str());
         return reconnect_result;
     } else if (new_writer_result.connected) {
+        MYLOG_TRACE(log_file,
+                    "[FAILOVER_WRITER_HANDLER] Successfully connected to the new writer instance: %s",
+                    reconnect_result.new_topology->get_writer()->get_host_port_pair().c_str());
         return new_writer_result;
     }
 
     // timeout
+    MYLOG_TRACE(log_file, "[FAILOVER_WRITER_HANDLER] Failed to connect to the writer instance.");
     return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
