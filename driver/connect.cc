@@ -965,9 +965,6 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     database= ds_get_utf8attr(ds->database, &ds->database8);
   }
 
-  if (ds->save_queries && !query_log)
-    query_log = init_query_log();
-
   /* Set the statement error prefix based on the server version. */
   strxmov(st_error_prefix, MYODBC_ERROR_PREFIX, "[mysqld-",
           mysql->get_server_version(), "]", NullS);
@@ -1098,6 +1095,9 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
 
   ds_lookup(ds);
 
+  if (ds->save_queries && !dbc->log_file) 
+    dbc->log_file = init_log_file();
+
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (!dbc->ds)
@@ -1211,6 +1211,9 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   case SQL_DRIVER_COMPLETE:
   case SQL_DRIVER_COMPLETE_REQUIRED:
+    if (ds->save_queries && !dbc->log_file) 
+      dbc->log_file = init_log_file();
+
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
     rc = dbc->fh->init_cluster_info();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
@@ -1385,6 +1388,9 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   }
 
+  if (ds->save_queries && !dbc->log_file) 
+      dbc->log_file = init_log_file();
+  
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
@@ -1497,7 +1503,7 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
   dbc->close();
 
   if (dbc->ds && dbc->ds->save_queries)
-    end_query_log(dbc->query_log);
+    end_log_file(dbc->log_file);
 
   /* free allocated packet buffer */
 

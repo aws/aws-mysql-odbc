@@ -36,6 +36,7 @@
 
 #include "cluster_topology_info.h"
 #include "connection.h"
+#include "mylog.h"
 
 #include <map>
 #include <mutex>
@@ -66,7 +67,7 @@ public:
 
 class TOPOLOGY_SERVICE : virtual public TOPOLOGY_SERVICE_INTERFACE {
 public:
-    TOPOLOGY_SERVICE();
+    TOPOLOGY_SERVICE(FILE* log_file);
     TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
     ~TOPOLOGY_SERVICE() override;
 
@@ -101,6 +102,8 @@ private:
     const std::string FIELD_SESSION_ID = "SESSION_ID";
     const std::string FIELD_LAST_UPDATED = "LAST_UPDATE_TIMESTAMP";
     const std::string FIELD_REPLICA_LAG = "REPLICA_LAG_IN_MILLISECONDS";
+
+    FILE* log_file = nullptr;
 
 protected:
     const int NO_CONNECTION_INDEX = -1;

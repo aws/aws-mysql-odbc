@@ -113,15 +113,15 @@
 
 #if defined(__APPLE__)
 
-#define DRIVER_QUERY_LOGFILE "/tmp/myodbc.sql"
+#define DRIVER_LOG_FILE "/tmp/myodbc.sql"
 
 #elif defined(_UNIX_)
 
-#define DRIVER_QUERY_LOGFILE "/tmp/myodbc.sql"
+#define DRIVER_LOG_FILE "/tmp/myodbc.sql"
 
 #else
 
-#define DRIVER_QUERY_LOGFILE "myodbc.sql"
+#define DRIVER_LOG_FILE "myodbc.sql"
 
 #endif
 
@@ -608,7 +608,7 @@ struct DBC
   std::list<DESC*> desc_list; // Explicit descriptors
   STMT_OPTIONS     stmt_options;
   MYERROR          error;
-  FILE             *query_log = nullptr;
+  FILE             *log_file = nullptr;
   char             st_error_prefix[255] = { 0 };
   std::string      database;
   SQLUINTEGER      login_timeout = 0;
@@ -1243,6 +1243,7 @@ void          delete_param_bind(DYNAMIC_ARRAY *param_bind);
 
 #include "myutil.h"
 #include "util/stringutil.h"
+#include "mylog.h"
 
 
 SQLRETURN SQL_API MySQLColAttribute(SQLHSTMT hstmt, SQLUSMALLINT column,

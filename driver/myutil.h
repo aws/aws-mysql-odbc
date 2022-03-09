@@ -51,12 +51,6 @@
 #define reset_ptr(x) {if (x) x= 0;}
 #define digit(A) ((int) (A - '0'))
 
-#define MYLOG_QUERY(A,B) {if ((A)->dbc->ds->save_queries) \
-               query_print((A)->dbc->query_log,(char*) B);}
-
-#define MYLOG_DBC_QUERY(A,B) {if((A)->ds->save_queries) \
-               query_print((A)->query_log,(char*) B);}
-
 /* A few character sets we care about. */
 #define ASCII_CHARSET_NUMBER  11
 #define BINARY_CHARSET_NUMBER 63
@@ -317,11 +311,6 @@ void *ptr_offset_adjust   (void *ptr, SQLULEN *bind_offset,
                           SQLULEN row);
 
 void free_internal_result_buffers(STMT *stmt);
-
-/* Functions used when debugging */
-void query_print          (FILE *log_file,char *query);
-FILE *init_query_log      (void);
-void end_query_log        (FILE *query_log);
 
 enum enum_field_types map_sql2mysql_type(SQLSMALLINT sql_type);
 
