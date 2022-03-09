@@ -159,6 +159,8 @@ public class IntegrationContainerTest {
         .withEnv("AWS_ACCESS_KEY_ID", ACCESS_KEY)
         .withEnv("AWS_SECRET_ACCESS_KEY", SECRET_ACCESS_KEY)
         .withEnv("TEST_DATABASE", TEST_DATABASE)
+        .withEnv("AWS_ACCESS_KEY_ID", ACCESS_KEY)
+        .withEnv("AWS_SECRET_ACCESS_KEY", SECRET_ACCESS_KEY)
         .withEnv("TEST_SERVER", dbHostCluster)
         .withEnv("TEST_RO_SERVER", dbHostClusterRo)
         .withEnv("TOXIPROXY_CLUSTER_NETWORK_ALIAS", "toxiproxy-instance-cluster")

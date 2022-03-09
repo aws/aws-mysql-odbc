@@ -1,4 +1,4 @@
-name: Build and Run Community Tests
+name: Community Tests
 
 on:
   push:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build-windows:
-    name: Windows Build & Run Community Tests
+    name: Windows
     runs-on: windows-2019
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
@@ -108,7 +108,7 @@ jobs:
           path: ${{ github.workspace }}/build/test/Testing/Temporary/LastTest.log
 
   build-linux:
-    name: Linux Build & Run Community Tests
+    name: Linux
     runs-on: ubuntu-latest
     env:
       CMAKE_GENERATOR: Unix Makefiles

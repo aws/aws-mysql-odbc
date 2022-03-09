@@ -1,4 +1,4 @@
-name: Build and Run Failover Tests
+name: Failover Unit Tests
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ env:
 
 jobs:
   build-windows:
-    name: Windows Build & Run Failover Tests
+    name: Windows
     runs-on: windows-2019
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
@@ -38,6 +38,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_GTESTS=TRUE
+                -DENABLE_INTEGRATION_TESTS=FALSE
 
       # Configure test environment
       - name: Build Driver and Copy files
@@ -83,7 +84,7 @@ jobs:
           path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
 
   build-linux:
-    name: Linux Build & Run Failover Tests
+    name: Linux
     runs-on: ubuntu-latest
     env:
       CMAKE_GENERATOR: Unix Makefiles
@@ -112,6 +113,7 @@ jobs:
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DWITH_UNIXODBC=1
                 -DENABLE_GTESTS=TRUE
+                -DENABLE_INTEGRATION_TESTS=FALSE
 
       # Build driver
       - name: Build driver
