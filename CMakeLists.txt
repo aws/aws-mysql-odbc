@@ -449,6 +449,10 @@ IF(WIN32)
                                 SET(NEW_FLAGS "${NEW_FLAGS} /RTC1 ")
                         ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
+                        IF(CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
+                          SET(NEW_FLAGS "${NEW_FLAGS} /Od")
+                        ENDIF(CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
+
                         # *FORCE* to override whats already placed into the cache
                         SET(CMAKE_${TYPE}_FLAGS${CFG} "${NEW_FLAGS}" CACHE STRING
                                 "CMAKE_${TYPE}_FLAGS${CFG} (overwritten for odbc)" FORCE)
