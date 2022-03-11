@@ -311,7 +311,7 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
     } else if (new_writer_result.connected) {
         MYLOG_TRACE(log_file,
                     "[FAILOVER_WRITER_HANDLER] Successfully connected to the new writer instance: %s",
-                    reconnect_result.new_topology->get_writer()->get_host_port_pair().c_str());
+                    new_writer_result.new_topology->get_writer()->get_host_port_pair().c_str());
         return new_writer_result;
     }
 
