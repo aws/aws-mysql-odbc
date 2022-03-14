@@ -34,6 +34,7 @@
 #ifndef __TOPOLOGYSERVICE_H__
 #define __TOPOLOGYSERVICE_H__
 
+#include "cluster_aware_metrics_container.h"
 #include "cluster_topology_info.h"
 #include "connection.h"
 #include "mylog.h"
@@ -41,6 +42,8 @@
 #include <map>
 #include <mutex>
 #include <cstring>
+#include <chrono>
+#include <ctime>
 
 // TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.000;
 #define DEFAULT_REFRESH_RATE_IN_MILLISECONDS 30000
@@ -63,6 +66,7 @@ public:
     virtual void mark_host_down(std::shared_ptr<HOST_INFO> host) = 0;
     virtual void mark_host_up(std::shared_ptr<HOST_INFO> host) = 0;
     virtual void set_refresh_rate(int refresh_rate) = 0;
+    virtual void set_gather_metric(bool can_gather) = 0;
 };
 
 class TOPOLOGY_SERVICE : virtual public TOPOLOGY_SERVICE_INTERFACE {
@@ -83,6 +87,7 @@ public:
     void mark_host_down(std::shared_ptr<HOST_INFO> host) override;
     void mark_host_up(std::shared_ptr<HOST_INFO> host) override;
     void set_refresh_rate(int refresh_rate) override;
+    void set_gather_metric(bool can_gather) override;
     void clear_all();
     void clear();
 
@@ -107,13 +112,12 @@ private:
 
 protected:
     const int NO_CONNECTION_INDEX = -1;
-    int refresh_rate_in_milliseconds;
+    int refresh_rate_in_ms;
 
     std::string cluster_id;
     std::shared_ptr<HOST_INFO> cluster_instance_host;
 
-    // TODO performance metrics
-    // bool gather_perf_Metrics = false;
+    std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container;
 
     bool refresh_needed(std::time_t last_updated);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(CONNECTION_INTERFACE* connection);

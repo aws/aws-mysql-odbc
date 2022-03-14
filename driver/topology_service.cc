@@ -31,12 +31,14 @@
   @brief TOPOLOGY_SERVICE functions.
 */
 
+#include "cluster_aware_metrics_container.h"
 #include "topology_service.h"
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(FILE* log_file)
     : log_file{log_file},
       cluster_instance_host{nullptr},
-      refresh_rate_in_milliseconds{DEFAULT_REFRESH_RATE_IN_MILLISECONDS} {
+      refresh_rate_in_ms{DEFAULT_REFRESH_RATE_IN_MILLISECONDS},
+      metrics_container{std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>()}{
 
   // TODO get better initial cluster id
   time_t now = time(0);
@@ -44,10 +46,11 @@ TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(FILE* log_file)
 }
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE& ts) {
-    refresh_rate_in_milliseconds = ts.refresh_rate_in_milliseconds;
+    refresh_rate_in_ms = ts.refresh_rate_in_ms;
     cluster_id = ts.cluster_id;
     cluster_instance_host = ts.cluster_instance_host;
     log_file = ts.log_file;
+    metrics_container = ts.metrics_container;
 }
 
 TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
@@ -58,6 +61,7 @@ TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
 void TOPOLOGY_SERVICE::set_cluster_id(std::string cluster_id) {
     MYLOG_TRACE(this->log_file, "[TOPOLOGY_SERVICE] cluster ID=%s", cluster_id.c_str());
     this->cluster_id = cluster_id;
+    metrics_container->set_cluster_id(cluster_id);
 }
 
 void TOPOLOGY_SERVICE::set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template) {
@@ -75,7 +79,7 @@ void TOPOLOGY_SERVICE::set_cluster_instance_template(std::shared_ptr<HOST_INFO> 
 }
 
 void TOPOLOGY_SERVICE::set_refresh_rate(int refresh_rate) {
-    refresh_rate_in_milliseconds = refresh_rate;
+    refresh_rate_in_ms = refresh_rate;
 }
 
 std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::get_last_used_reader() {
@@ -141,6 +145,10 @@ void TOPOLOGY_SERVICE::mark_host_up(std::shared_ptr<HOST_INFO> host) {
     lock.unlock();
 }
 
+void TOPOLOGY_SERVICE::set_gather_metric(bool can_gather) {
+    this->metrics_container->set_gather_metric(can_gather);
+}
+
 void TOPOLOGY_SERVICE::clear_all() {
     std::unique_lock<std::mutex> lock(topology_cache_mutex);
     topology_cache.clear();
@@ -181,9 +189,15 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION
 
 // TODO consider thread safety and usage of pointers
 std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_from_cache() {
-    if (topology_cache.empty())
+    if (topology_cache.empty()) {
+        // TODO Put into container
+        metrics_container->register_use_cached_topology(false);
         return nullptr;
+    }
+        
     auto result = topology_cache.find(cluster_id);
+    // TODO Put into container
+    metrics_container->register_use_cached_topology(true);
     return result != topology_cache.end() ? result->second : nullptr;
 }
 
@@ -206,7 +220,7 @@ void TOPOLOGY_SERVICE::put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topol
 // TODO harmonize time function accross objects so the times are comparable
 bool TOPOLOGY_SERVICE::refresh_needed(std::time_t last_updated) {
 
-    return  time(0) - last_updated > (refresh_rate_in_milliseconds / 1000);
+    return  time(0) - last_updated > (refresh_rate_in_ms / 1000);
 }
 
 std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
@@ -250,6 +264,8 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info = nullptr;
 
+    std::chrono::steady_clock::time_point start_time_ms = std::chrono::steady_clock::now();
+
     if (connection->try_execute_query(RETRIEVE_TOPOLOGY_SQL)) {
         topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
         std::map<std::string, std::shared_ptr<HOST_INFO>> instances;
@@ -277,6 +293,9 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
         }
     }
 
+    std::chrono::steady_clock::time_point end_time_ms = std::chrono::steady_clock::now();
+    long elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_ms - start_time_ms).count();
+    metrics_container->register_topology_query_execution_time(elasped_time_ms);
     return topology_info;
 }
 
