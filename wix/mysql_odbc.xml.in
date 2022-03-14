@@ -1,33 +1,34 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <!-- *****************************************************************************************
- Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
-
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License, version 2.0, as
- published by the Free Software Foundation.
-
- This program is also distributed with certain software (including
- but not limited to OpenSSL) that is licensed under separate terms,
- as designated in a particular file or component or in included license
- documentation. The authors of MySQL hereby grant you an
- additional permission to link the program and your derivative works
- with the separately licensed software that they have included with
- MySQL.
-
- Without limiting anything contained in the foregoing, this file,
- which is part of MySQL Connector/ODBC, is also subject to the
- Universal FOSS Exception, version 1.0, a copy of which can be found at
- http://oss.oracle.com/licenses/universal-foss-exception.
-
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- See the GNU General Public License, version 2.0, for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software Foundation, Inc.,
- 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ AWS ODBC Driver for MySQL
+ Copyright Amazon.com Inc. or affiliates.
+ 
+ This program is free software; you can redistribute it and/or modify 
+ it under the terms of the GNU General Public License, version 2.0, as 
+ published by the Free Software Foundation. 
+ 
+ This program is also distributed with certain software (including 
+ but not limited to OpenSSL) that is licensed under separate terms, 
+ as designated in a particular file or component or in included license 
+ documentation. The authors of this program hereby grant you an 
+ additional permission to link the program and your derivative works 
+ with the separately licensed software that they have included with 
+ MySQL. 
+ 
+ Without limiting anything contained in the foregoing, this file, 
+ which is part of this connector, is also subject to the 
+ Universal FOSS Exception, version 1.0, a copy of which can be found at 
+ http://oss.oracle.com/licenses/universal-foss-exception. 
+ 
+ This program is distributed in the hope that it will be useful, but 
+ WITHOUT ANY WARRANTY; without even the implied warranty of 
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ See the GNU General Public License, version 2.0, for more details. 
+ 
+ You should have received a copy of the GNU General Public License 
+ along with this program; if not, write to the Free Software Foundation, Inc., 
+ 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA 
 -->
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
@@ -41,7 +42,7 @@
   -->
 
   <Product Id="@CONNECTOR_PKG_ID1@" UpgradeCode="FF073FBB-32E2-4052-B6B2-830C5ED4A809" Codepage="utf-8"
-    Name="MySQL Connector/ODBC $(var.odbc_ver_short)" Version="$(var.odbc_ver_long)" Language="1033" Manufacturer="Oracle Corporation">
+    Name="AWS MySQL Connector/ODBC $(var.odbc_ver_short)" Version="$(var.odbc_ver_long)" Language="1033" Manufacturer="Amazon.com Inc. or affiliates">
 
   <!-- *****************************************************************************************
     Package
@@ -56,7 +57,7 @@
     <?endif ?>
 
     <Package Id="@CONNECTOR_PKG_ID2@" Keywords="Installer,MSI,Database"
-      Description="MySQL Connector/ODBC" Manufacturer="Oracle Corporation"
+      Description="AWS MySQL Connector/ODBC" Manufacturer="Amazon.com Inc. or affiliates"
       InstallerVersion="200" Platform="$(var.odbc_platform)"
       Languages="1033" SummaryCodepage="1252" Compressed='yes' />
     <?include mysql-connector-odbc-msi-arpprops.xml ?>
@@ -225,9 +226,9 @@
     -->
 
     <?if $(var.odbc_64bit) = 1 ?>
-    <Feature Id="ODBC" Title="MySQL Connector/ODBC $(var.odbc_ver_long) 64-bit drivers" Level="1" Description="Installs the MySQL ODBC $(var.odbc_ver_long) 64-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
+    <Feature Id="ODBC" Title="AWS MySQL Connector/ODBC $(var.odbc_ver_long) 64-bit drivers" Level="1" Description="Installs the AWS MySQL ODBC $(var.odbc_ver_long) 64-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
     <?else ?>
-    <Feature Id="ODBC" Title="MySQL Connector/ODBC $(var.odbc_ver_long) 32-bit drivers" Level="1" Description="Installs the MySQL ODBC $(var.odbc_ver_long) 32-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
+    <Feature Id="ODBC" Title="AWS MySQL Connector/ODBC $(var.odbc_ver_long) 32-bit drivers" Level="1" Description="Installs the AWS MySQL ODBC $(var.odbc_ver_long) 32-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
     <?endif ?>
       <ComponentRef Id="RegKeys" />
       <ComponentRef Id="lib" />
@@ -273,15 +274,15 @@
     <Property Id="ProgressType1">Installing</Property>
     <Property Id="ProgressType0">install</Property>
 
-    <Property Id="QualifiedProductName">MySQL Connector/ODBC $(var.odbc_ver_long)($(var.odbc_driver_type_suffix))</Property>
-    <Property Id="InstallationDirectory">MySQL Connector-ODBC</Property>
+    <Property Id="QualifiedProductName">AWS MySQL Connector/ODBC $(var.odbc_ver_long)($(var.odbc_driver_type_suffix))</Property>
+    <Property Id="InstallationDirectory">AWS MySQL Connector-ODBC</Property>
 
     <Property Id="ReinstallFileVersion">o</Property>
     <Property Id="RebootYesNo">Yes</Property>
     <Property Id="ReinstallModeText">omus</Property>
     <Property Id="ReinstallRepair">r</Property>
 
-    <Property Id="SetupType">Typical</Property>
+    <Property Id="SetupType">Complete</Property>
     <Property Id="ConfigureServer">1</Property>
 
     <!-- The Guid has to be the same as in the mysql_odbc_fragment.xml -->
