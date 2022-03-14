@@ -236,6 +236,7 @@ static SQLWCHAR W_SSL_CRLPATH[] =
 static SQLWCHAR W_DISABLE_CLUSTER_FAILOVER[] = { 'D', 'I', 'S', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
 static SQLWCHAR W_ALLOW_READER_CONNECTIONS[] = { 'A', 'L', 'L', 'O', 'W', '_', 'R', 'E', 'A', 'D', 'E', 'R', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', 'I', 'O', 'N', 'S', 0 };
 static SQLWCHAR W_GATHER_PERF_METRICS[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', 0 };
+static SQLWCHAR W_GATHER_PERF_METRICS_PER_INSTANCE[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', '_','P','E','R','_','I','N','S','T','A','N', 'C', 'E', 0 };
 static SQLWCHAR W_HOST_PATTERN[] = { 'H', 'O', 'S', 'T', '_', 'P', 'A', 'T', 'T', 'E', 'R', 'N', 0 };
 static SQLWCHAR W_CLUSTER_ID[] = { 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'I', 'D', 0 };
 static SQLWCHAR W_TOPOLOGY_REFRESH_RATE[] = { 'T', 'O', 'P', 'O', 'L', 'O', 'G', 'Y', '_', 'R', 'R', 0 };
@@ -288,7 +289,8 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         W_OCI_CONFIG_FILE, W_OCI_CONFIG_PROFILE, W_AUTHENTICATION_KERBEROS_MODE,
                         W_TLS_VERSIONS, W_SSL_CRL, W_SSL_CRLPATH,
                         /* Failover */
-                        W_DISABLE_CLUSTER_FAILOVER, W_ALLOW_READER_CONNECTIONS, W_GATHER_PERF_METRICS, 
+                        W_DISABLE_CLUSTER_FAILOVER, W_ALLOW_READER_CONNECTIONS, 
+                        W_GATHER_PERF_METRICS, W_GATHER_PERF_METRICS_PER_INSTANCE,
                         W_HOST_PATTERN, W_CLUSTER_ID, W_TOPOLOGY_REFRESH_RATE,
                         W_FAILOVER_TIMEOUT, W_FAILOVER_TOPOLOGY_REFRESH_RATE,
                         W_FAILOVER_WRITER_RECONNECT_INTERVAL, 
@@ -1124,6 +1126,8 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
     *booldest = &ds->allow_reader_connections;  
   else if (!sqlwcharcasecmp(W_GATHER_PERF_METRICS, param))
     *booldest = &ds->gather_perf_metrics;
+  else if (!sqlwcharcasecmp(W_GATHER_PERF_METRICS_PER_INSTANCE, param))
+    *booldest = &ds->gather_metrics_per_instance;
   else if (!sqlwcharcasecmp(W_HOST_PATTERN, param))
     *strdest = &ds->host_pattern;
   else if (!sqlwcharcasecmp(W_CLUSTER_ID, param))
@@ -1687,6 +1691,7 @@ int ds_add(DataSource *ds)
   if (ds_add_intprop(ds->name, W_DISABLE_CLUSTER_FAILOVER, ds->disable_cluster_failover)) goto error;
   if (ds_add_intprop(ds->name, W_ALLOW_READER_CONNECTIONS, ds->allow_reader_connections)) goto error;
   if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS, ds->gather_perf_metrics)) goto error;
+  if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS_PER_INSTANCE, ds->gather_metrics_per_instance)) goto error;
   if (ds_add_strprop(ds->name, W_HOST_PATTERN, ds->host_pattern)) goto error;
   if (ds_add_strprop(ds->name, W_CLUSTER_ID, ds->cluster_id)) goto error;
   if (ds_add_intprop(ds->name, W_TOPOLOGY_REFRESH_RATE, ds->topology_refresh_rate)) goto error;
@@ -2025,6 +2030,7 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
     ds->disable_cluster_failover = ds_source->disable_cluster_failover;
     ds->allow_reader_connections = ds_source->allow_reader_connections;
     ds->gather_perf_metrics = ds_source->gather_perf_metrics;
+    ds->gather_metrics_per_instance = ds_source->gather_metrics_per_instance;
     ds->topology_refresh_rate = ds_source->topology_refresh_rate;
     ds->failover_timeout = ds_source->failover_timeout;
     ds->failover_topology_refresh_rate =

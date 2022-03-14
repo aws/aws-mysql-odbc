@@ -1495,6 +1495,23 @@ void DBC::free_connection_stmts()
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 {
   DBC *dbc= (DBC *) hdbc;
+  DataSource* ds = dbc->ds;
+
+  if (ds && ds->gather_perf_metrics) {
+    std::string cluster_id_str;
+    const char* clid =
+      ds_get_utf8attr(ds->cluster_id, &ds->cluster_id8);
+    cluster_id_str = (clid ? clid : "");
+
+    if ((cluster_id_str.empty() || ds->gather_metrics_per_instance) && dbc->mysql) {
+      cluster_id_str = dbc->mysql->get_host();
+      cluster_id_str.append(":").append(std::to_string(dbc->mysql->get_port()));
+    }
+
+    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, 
+        dbc->ds->gather_metrics_per_instance, 
+        dbc->log_file);
+  }
 
   CHECK_HANDLE(hdbc);
 

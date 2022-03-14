@@ -40,8 +40,12 @@
   @purpose : internal function to execute query and return result
   frees query if query != stmt->query
 */
-SQLRETURN do_query(STMT *stmt,char *query, SQLULEN query_length)
+SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 {
+    if (stmt && stmt->dbc && stmt->dbc->fh) {
+      stmt->dbc->fh->invoke_start_time();
+    }
+
     int error= SQL_ERROR, native_error= 0;
     assert(stmt);
     LOCK_STMT_DEFER(stmt);

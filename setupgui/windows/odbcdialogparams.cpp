@@ -419,7 +419,7 @@ void btnDetails_Click (HWND hwnd)
     syncTabs(hwnd, pParams);
 	}
   
-  int h = (mod == -1) ? 420 : 790; /* rect.bottom - rect.top + 310*mod */
+  int h = (mod == -1) ? 420 : 810; /* rect.bottom - rect.top + 310*mod */
 	MoveWindow( hwnd, rect.left, rect.top, rect.right - rect.left, h, TRUE );
 }
 
@@ -662,6 +662,18 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
     case IDC_RADIO_tcp:
     case IDC_RADIO_pipe:
       SwitchTcpOrPipe(hwnd, !!Button_GetCheck(GetDlgItem(hwnd, IDC_RADIO_pipe)));
+      break;
+    case IDC_CHECK_gather_perf_metrics:
+      {
+        HWND failoverTab = TabCtrl_1.hTabPages[FAILOVER_TAB-1];
+        assert(failoverTab);
+        HWND prefetch = GetDlgItem(failoverTab, IDC_CHECK_gather_metrics_per_instance);
+        assert(prefetch);
+
+        EnableWindow(prefetch, !!Button_GetCheck(GetDlgItem(failoverTab,
+            IDC_CHECK_gather_perf_metrics)));
+        setBoolFieldData(failoverTab, IDC_CHECK_gather_metrics_per_instance, Button_GetCheck(prefetch));
+      }
       break;
     case IDC_CHECK_cursor_prefetch_active:
       {

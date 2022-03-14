@@ -41,6 +41,9 @@ class MOCK_CONNECTION : public CONNECTION_INTERFACE {
     MOCK_METHOD(bool, try_execute_query, (const char*));
     MOCK_METHOD(char**, fetch_next_row, ());
     MOCK_METHOD(void, mock_connection_destructor, ());
+    MOCK_METHOD(char*, get_host, ());
+    MOCK_METHOD(unsigned int, get_port, ());
+
     ~MOCK_CONNECTION() override { mock_connection_destructor(); }
 };
 
@@ -52,6 +55,7 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE_INTERFACE {
     MOCK_METHOD(void, mark_host_down, (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(void, mark_host_up, (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(void, set_refresh_rate, (int));
+    MOCK_METHOD(void, set_gather_metric, (bool can_gather));
 };
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
@@ -73,6 +77,18 @@ class MOCK_FAILOVER_SYNC : public FAILOVER_SYNC {
 public:
     MOCK_FAILOVER_SYNC() : FAILOVER_SYNC(1) {}
     MOCK_METHOD(bool, is_completed, ());
+};
+
+class MOCK_CLUSTER_AWARE_METRICS_CONTAINER : public CLUSTER_AWARE_METRICS_CONTAINER {
+public:
+    MOCK_CLUSTER_AWARE_METRICS_CONTAINER() : CLUSTER_AWARE_METRICS_CONTAINER() {}
+    MOCK_CLUSTER_AWARE_METRICS_CONTAINER(DBC* dbc, DataSource* ds) : CLUSTER_AWARE_METRICS_CONTAINER(dbc, ds) {}
+
+    // Expose protected functions
+    bool is_enabled() { return CLUSTER_AWARE_METRICS_CONTAINER::is_enabled(); }
+    bool is_instance_metrics_enabled() { return CLUSTER_AWARE_METRICS_CONTAINER::is_instance_metrics_enabled(); }
+
+    MOCK_METHOD(std::string, get_curr_conn_url, ());
 };
 
 #endif /* __MOCKOBJECTS_H__ */

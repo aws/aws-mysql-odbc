@@ -57,20 +57,24 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
     : FAILOVER_HANDLER(
           dbc, ds, std::make_shared<FAILOVER_CONNECTION_HANDLER>(dbc),
           std::make_shared<TOPOLOGY_SERVICE>(
-              (dbc && dbc->log_file) ? dbc->log_file : nullptr)) {}
+              (dbc && dbc->log_file) ? dbc->log_file : nullptr),
+          std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds)) {}
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
                                    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-                                   std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service) {
+                                   std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+                                   std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container) {
     std::stringstream err;
     if (!dbc || !ds) {
         err << "Internal error.";
         throw err.str();
     }
+
     this->dbc = dbc;
     this->ds = ds;
     this->topology_service = topology_service;
     this->topology_service->set_refresh_rate(ds->topology_refresh_rate);
+    this->topology_service->set_gather_metric(ds->gather_perf_metrics);
     this->connection_handler = connection_handler;
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
@@ -81,6 +85,7 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
         this->connection_handler, ds->failover_timeout,
         ds->failover_topology_refresh_rate,
         ds->failover_writer_reconnect_interval, dbc->log_file);
+    this->metrics_container = metrics_container;
 }
 
 FAILOVER_HANDLER::~FAILOVER_HANDLER() {}
@@ -181,7 +186,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         }
 
         if (!clid_str.empty()) {
-            topology_service->set_cluster_id(clid_str);
+            set_cluster_id(clid_str);
 
         } else if (m_is_rds) {
             // If it's a cluster endpoint, or a reader cluster endpoint, then
@@ -192,7 +197,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                 clid_str.assign(cluster_rds_host);
                 clid_str.append(":");
                 clid_str.append(std::to_string(host_pattern_port));
-                topology_service->set_cluster_id(clid_str);
+                set_cluster_id(clid_str);
             }
         }
 
@@ -205,7 +210,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         // ts->setClusterInstanceTemplate(host_template);
 
         if (!clid_str.empty()) {
-            topology_service->set_cluster_id(clid_str);
+            set_cluster_id(clid_str);
         }
 
         rc = create_connection_and_initialize_topology();
@@ -236,7 +241,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             topology_service->set_cluster_instance_template(host_template);
 
             if (!clid_str.empty()) {
-                topology_service->set_cluster_id(clid_str);
+                set_cluster_id(clid_str);
             }
 
             rc = create_connection_and_initialize_topology();
@@ -267,14 +272,14 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             }
 
             if (!clid_str.empty()) {
-                topology_service->set_cluster_id(clid_str);
+                set_cluster_id(clid_str);
             } else if (m_is_rds_proxy) {
                 // Each proxy is associated with a single cluster so it's safe
                 // to use RDS Proxy Url as cluster identification
                 clid_str.assign(main_host);
                 clid_str.append(":");
                 clid_str.append(std::to_string(main_port));
-                topology_service->set_cluster_id(clid_str);
+                set_cluster_id(clid_str);
             } else {
                 // If it's cluster endpoint or reader cluster endpoint,
                 // then let's use as cluster identification
@@ -285,7 +290,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                     clid_str.assign(cluster_rds_host);
                     clid_str.append(":");
                     clid_str.append(std::to_string(main_port));
-                    topology_service->set_cluster_id(clid_str);
+                    set_cluster_id(clid_str);
                 }
             }
 
@@ -295,6 +300,11 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
 
     initialized = true;
     return rc;
+}
+
+void FAILOVER_HANDLER::set_cluster_id(std::string cluster_id) {
+    topology_service->set_cluster_id(cluster_id);
+    metrics_container->set_cluster_id(cluster_id);
 }
 
 bool FAILOVER_HANDLER::is_dns_pattern_valid(std::string host) {
@@ -370,9 +380,11 @@ bool FAILOVER_HANDLER::is_cluster_topology_available() {
 SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
     SQLRETURN rc = connection_handler->do_connect(dbc, ds, false);
     if (!SQL_SUCCEEDED(rc)) {
+        metrics_container->register_invalid_initial_connection(true);
         return rc;
     }
 
+    metrics_container->register_invalid_initial_connection(false);
     current_topology = topology_service->get_topology(dbc->mysql, false);
     if (current_topology) {
         m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster;
@@ -421,21 +433,34 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
         return false;
     }
 
+    bool failover_success = false; // If failover happened & succeeded
+
     if (ec.rfind("08", 0) == 0) {  // start with "08"
 
         // invalidate current connection
         current_host = nullptr;
         // close transaction if needed
+        
+        long elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - invoke_start_time_ms).count();
+        metrics_container->register_failure_detection_time(elasped_time_ms);
+
+        failover_start_time_ms = std::chrono::steady_clock::now();
 
         if (current_topology && current_topology->total_hosts() > 1 &&
-            ds->allow_reader_connections) {  // there're readers in topology
-            return failover_to_reader(new_error_code);
+            ds->allow_reader_connections) {  // there are readers in topology
+            failover_success = failover_to_reader(new_error_code);
+            elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
+            metrics_container->register_reader_failover_procedure_time(elasped_time_ms);
         } else {
-            return failover_to_writer(new_error_code);
+            failover_success = failover_to_writer(new_error_code);
+            elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
+            metrics_container->register_writer_failover_procedure_time(elasped_time_ms);
+
         }
     }
 
-    return false;
+    metrics_container->register_failover_connects(failover_success);
+    return failover_success;
 }
 
 bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
@@ -480,4 +505,8 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code) {
         "[FAILOVER_HANDLER] The active SQL connection has changed due to a "
         "connection failure. Please re-configure session state if required.");
     return true;
+}
+
+void FAILOVER_HANDLER::invoke_start_time() {
+    invoke_start_time_ms = std::chrono::steady_clock::now();
 }

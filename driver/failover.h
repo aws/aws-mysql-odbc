@@ -161,7 +161,8 @@ class FAILOVER_HANDLER {
     FAILOVER_HANDLER(
         DBC* dbc, DataSource* ds,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service);
+        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+        std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container);
     ~FAILOVER_HANDLER();
     SQLRETURN init_cluster_info();
     bool trigger_failover_if_needed(const char* error_code, const char*& new_error_code);
@@ -169,6 +170,7 @@ class FAILOVER_HANDLER {
     bool is_rds();
     bool is_rds_proxy();
     bool is_cluster_topology_available();
+    void invoke_start_time();
 
    private:
     DBC* dbc = nullptr;
@@ -198,6 +200,11 @@ class FAILOVER_HANDLER {
     bool is_ipv6(std::string host);
     bool failover_to_reader(const char*& new_error_code);
     bool failover_to_writer(const char*& new_error_code);
+
+    void set_cluster_id(std::string cluster_id);
+    std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container;
+    std::chrono::steady_clock::time_point invoke_start_time_ms;
+    std::chrono::steady_clock::time_point failover_start_time_ms;
 };
 
 // ************************************************************************************************
