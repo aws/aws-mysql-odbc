@@ -1,5 +1,6 @@
 <!-- *****************************************************************************************
- Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved. 
+ AWS ODBC Driver for MySQL
+ Copyright Amazon.com Inc. or affiliates.
  
  This program is free software; you can redistribute it and/or modify 
  it under the terms of the GNU General Public License, version 2.0, as 
@@ -8,13 +9,13 @@
  This program is also distributed with certain software (including 
  but not limited to OpenSSL) that is licensed under separate terms, 
  as designated in a particular file or component or in included license 
- documentation. The authors of MySQL hereby grant you an 
+ documentation. The authors of this program hereby grant you an 
  additional permission to link the program and your derivative works 
  with the separately licensed software that they have included with 
  MySQL. 
  
  Without limiting anything contained in the foregoing, this file, 
- which is part of MySQL Connector/ODBC, is also subject to the 
+ which is part of this connector, is also subject to the 
  Universal FOSS Exception, version 1.0, a copy of which can be found at 
  http://oss.oracle.com/licenses/universal-foss-exception. 
  
@@ -506,8 +507,6 @@
     -->
 
     <Dialog Id="SetupTypeDialog" Width="374" Height="266" Title="[ProductName] - Setup Wizard" NoMinimize="yes">
-      <Control Id="RadioGroup" Type="RadioButtonGroup" X="22" Y="62" Width="264" Height="166" Property="SetupType"
-        FixedSize="yes" />
       <Control Id="Back" Type="PushButton" X="164" Y="243" Width="66" Height="17" Text="&lt; &amp;Back">
           <!-- No longer making this differentiation as requested by David Madsen -->
           <!--
@@ -521,15 +520,10 @@
       </Control>
       <Control Id="Next" Type="PushButton" X="230" Y="243" Width="66" Height="17" Default="yes"
         Text="&amp;Next &gt;">
-        <Publish Event="NewDialog" Value="CustomSetupDialog">SetupType = "Custom"</Publish>
         <Publish Event="NewDialog" Value="ReadyToInstallDialog">SetupType &lt;&gt; "Custom"</Publish>
-        <Publish Property="SelectedSetupType" Value="Typical">SetupType = "Typical"</Publish>
         <Publish Property="SelectedSetupType" Value="Complete">SetupType = "Complete"</Publish>
-        <Publish Property="SelectedSetupType" Value="Custom">SetupType = "Custom"</Publish>
-        <Publish Event="SetInstallLevel" Value="1">SetupType="Typical"</Publish>
-        <Publish Event="SetInstallLevel" Value="10">SetupType="Complete"</Publish>
-	<Publish Event="SetInstallLevel" Value="1">SetupType="Custom"</Publish>
-	<Publish Property="TargetPath1" Value="[INSTALLDIR] -> [Connector_ODBC] -> [TARGETDIR]">1</Publish>
+        <Publish Event="SetInstallLevel" Value="1">SetupType="Complete"</Publish>
+        <Publish Property="TargetPath1" Value="[INSTALLDIR] -> [Connector_ODBC] -> [TARGETDIR]">1</Publish>
       </Control>
       
       <Control Id="Cancel" Type="PushButton" X="301" Y="243" Width="66" Height="17" Cancel="yes"
@@ -537,7 +531,7 @@
         <Publish Event="SpawnDialog" Value="CancelSetupDialog">1</Publish>
       </Control>
       <Control Id="DlgDesc" Type="Text" X="21" Y="23" Width="292" Height="25" Transparent="yes">
-        <Text>Choose the setup type that best suits your needs.</Text>
+        <Text>Choose the setup type that best suits your needs. There is currently only one setup type available.</Text>
       </Control>
       <Control Id="DlgTitle" Type="Text" X="13" Y="6" Width="292" Height="25" Transparent="yes">
         <Text>{&amp;MSSansBold8}Setup Type</Text>
@@ -550,20 +544,10 @@
       <Control Id="DlgLine" Type="Line" X="0" Y="234" Width="378" Height="0" />
       
       <Control Id="CompText" Type="Text" X="79" Y="137" Width="246" Height="31">
-        <Text>All program features will be installed. (Requires the most disk space.)</Text>
+        <Text>Currently only the complete setup type is available. All program features will be installed. (Requires the most disk space.)</Text>
       </Control>
-      <Control Id="CompleteIco" Type="Icon" X="33" Y="134" Width="36" Height="36" FixedSize="yes"
+      <Control Id="CompleteIco" Type="Icon" X="33" Y="127" Width="36" Height="36" FixedSize="yes"
         IconSize="48" Text="SetupTypeComp" />
-      <Control Id="CustText" Type="Text" X="79" Y="195" Width="246" Height="30">
-        <Text>Choose which program features you want installed and where they will be installed. Recommended for advanced users.</Text>
-      </Control>
-      <Control Id="CustomIco" Type="Icon" X="33" Y="192" Width="36" Height="36" FixedSize="yes"
-        IconSize="48" Text="SetupTypeCust" />        
-      <Control Id="TypicalText" Type="Text" X="79" Y="82" Width="246" Height="31">
-          <Text>Common program features will be installed. Recommended for general use.</Text>
-      </Control>
-      <Control Id="TypicalIcon" Type="Icon" X="33" Y="79" Width="36" Height="36" FixedSize="yes" 
-        IconSize="48" Text="SetupTypeTyp" />        
     </Dialog>
     
      <!-- *****************************************************************************************
@@ -692,8 +676,13 @@
         <Publish Event="SpawnDialog" Value="CancelSetupDialog">1</Publish>
       </Control>
       <Control Id="Back" Type="PushButton" X="164" Y="243" Width="66" Height="17" Text="&lt; &amp;Back">
+        <Condition Action="hide">ProgressType0="Repair"</Condition>
         <Publish Event="NewDialog" Value="SetupTypeDialog">SetupType &lt;&gt; "Custom"</Publish>
         <Publish Event="NewDialog" Value="CustomSetupDialog">SetupType = "Custom"</Publish>
+      </Control>
+      <Control Id="BackToRepair" Type="PushButton" X="164" Y="243" Width="66" Height="17" Text="&lt; &amp;Back">
+        <Condition Action="show">ProgressType0="Repair"</Condition>
+        <Publish Event="NewDialog" Value="MaintenanceTypeDialog">1</Publish>
       </Control>
       <Control Id="GroupBox1" Type="Text" X="19" Y="92" Width="330" Height="133" Disabled="yes"
         Sunken="yes" Transparent="yes" TabSkip="no" />

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <!-- *****************************************************************************************
- Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
-
+ AWS ODBC Driver for MySQL
+ Copyright Amazon.com Inc. or affiliates.
+ 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License, version 2.0, as
  published by the Free Software Foundation.
@@ -51,7 +52,7 @@
   <?endif ?>
 
   <Product Id="@CONNECTOR_PKG_ID1@" UpgradeCode="$(var.upgrade_code)" Codepage="utf-8"
-    Name="MySQL Connector/ODBC $(var.odbc_ver_short)$(var.odbc_license_suffix) ($(var.odbc_arch))" Version="$(var.odbc_ver_long)" Language="1033" Manufacturer="Oracle Corporation">
+    Name="AWS MySQL Connector/ODBC $(var.odbc_ver_short)" Version="$(var.odbc_ver_long)" Language="1033" Manufacturer="Amazon.com Inc. or affiliates">
 
   <!-- *****************************************************************************************
     Package
@@ -61,7 +62,7 @@
   -->
 
     <Package Id="@CONNECTOR_PKG_ID2@" Keywords="Installer,MSI,Database"
-      Description="MySQL Connector/ODBC" Manufacturer="Oracle Corporation"
+      Description="AWS MySQL Connector/ODBC" Manufacturer="Amazon.com Inc. or affiliates"
       InstallerVersion="200" Platform="$(var.odbc_platform)"
       Languages="1033" SummaryCodepage="1252" Compressed='yes' />
     <?include mysql-connector-odbc-msi-arpprops.xml ?>
@@ -230,9 +231,9 @@
     -->
 
     <?if $(var.odbc_64bit) = 1 ?>
-    <Feature Id="ODBC" Title="MySQL Connector/ODBC $(var.odbc_ver_long) 64-bit drivers" Level="1" Description="Installs the MySQL ODBC $(var.odbc_ver_long) 64-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
+    <Feature Id="ODBC" Title="AWS MySQL Connector/ODBC $(var.odbc_ver_long) 64-bit drivers" Level="1" Description="Installs the AWS MySQL ODBC $(var.odbc_ver_long) 64-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
     <?else ?>
-    <Feature Id="ODBC" Title="MySQL Connector/ODBC $(var.odbc_ver_long) 32-bit drivers" Level="1" Description="Installs the MySQL ODBC $(var.odbc_ver_long) 32-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
+    <Feature Id="ODBC" Title="AWS MySQL Connector/ODBC $(var.odbc_ver_long) 32-bit drivers" Level="1" Description="Installs the AWS MySQL ODBC $(var.odbc_ver_long) 32-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
     <?endif ?>
       <ComponentRef Id="RegKeys" />
       <ComponentRef Id="driver" />
@@ -278,15 +279,15 @@
     <Property Id="ProgressType1">Installing</Property>
     <Property Id="ProgressType0">install</Property>
 
-    <Property Id="QualifiedProductName">MySQL Connector/ODBC $(var.odbc_ver_long)($(var.odbc_driver_type_suffix))</Property>
-    <Property Id="InstallationDirectory">MySQL Connector-ODBC</Property>
+    <Property Id="QualifiedProductName">AWS MySQL Connector/ODBC $(var.odbc_ver_long)($(var.odbc_driver_type_suffix))</Property>
+    <Property Id="InstallationDirectory">AWS MySQL Connector-ODBC</Property>
 
     <Property Id="ReinstallFileVersion">o</Property>
     <Property Id="RebootYesNo">Yes</Property>
     <Property Id="ReinstallModeText">omus</Property>
     <Property Id="ReinstallRepair">r</Property>
 
-    <Property Id="SetupType">Typical</Property>
+    <Property Id="SetupType">Complete</Property>
     <Property Id="ConfigureServer">1</Property>
 
     <!-- The Guid has to be the same as in the mysql_odbc_fragment.xml -->
