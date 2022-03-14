@@ -306,6 +306,11 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_BOOL_TAB(FAILOVER_TAB, disable_cluster_failover);
   GET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
   GET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
+  if (READ_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics))
+  {
+    GET_BOOL_TAB(FAILOVER_TAB, gather_metrics_per_instance);
+  }
+
   GET_STRING_TAB(FAILOVER_TAB, host_pattern);
   GET_STRING_TAB(FAILOVER_TAB, cluster_id);
   GET_UNSIGNED_TAB(FAILOVER_TAB, topology_refresh_rate);
@@ -419,6 +424,15 @@ void syncTabs(HWND hwnd, DataSource *params)
   SET_BOOL_TAB(FAILOVER_TAB, disable_cluster_failover);
   SET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
   SET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
+  if(READ_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics))
+  {
+#ifdef _WIN32
+    SET_ENABLED(FAILOVER_TAB, IDC_CHECK_gather_metrics_per_instance, TRUE);
+#endif
+    SET_CHECKED_TAB(FAILOVER_TAB, gather_perf_metrics, TRUE);
+    SET_BOOL_TAB(FAILOVER_TAB, gather_metrics_per_instance);
+  }
+
   SET_STRING_TAB(FAILOVER_TAB, host_pattern);
   SET_STRING_TAB(FAILOVER_TAB, cluster_id);
 

@@ -573,6 +573,7 @@ int list_datasource_details(DataSource *ds)
   if (ds->disable_cluster_failover) printf("\tDISABLE_CLUSTER_FAILOVER\n");
   if (ds->allow_reader_connections) printf("\tALLOW_READER_CONNECTIONS\n");
   if (ds->gather_perf_metrics) printf("\tGATHER_PERF_METRICS\n");
+  if (ds->gather_metrics_per_instance) printf("\tGATHER_METRICS_PER_INSTANCE\n");
   if (ds->topology_refresh_rate) printf("\tTOPOLOGY_REFRESH_RATE=%d\n", ds->topology_refresh_rate);
   if (ds->failover_timeout) printf("\tFAILOVER_TIMEOUT=%d\n", ds->failover_timeout);
   if (ds->failover_topology_refresh_rate) printf("\tFAILOVER_TOPOLOGY_REFRESH_RATE=%d\n", ds->failover_topology_refresh_rate);
