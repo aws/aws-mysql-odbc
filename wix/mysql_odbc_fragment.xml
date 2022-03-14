@@ -60,8 +60,8 @@
               <File Id="myodbc8w.dll" Name="myodbc8w.dll" Checksum="yes" DiskId="1" Source="x64\myodbc8w.dll">
                 <ODBCDriver Id="MySQL_ODBC_8.0w_Driver" Name="MySQL ODBC 8.0 Unicode Driver" SetupFile="myodbc8S.dll" />
               </File>
-              <File Id="readme" Name="README.txt" DiskId="1" Source="doc\README.txt"/>
-              <File Id="changelog" Name="ChangeLog.txt" DiskId="1" Source="doc\ChangeLog.txt"/>
+              <File Id="readme" Name="README.md" DiskId="1" Source="doc\README.md"/>
+              <File Id="changelog" Name="ChangeLog" DiskId="1" Source="doc\ChangeLog"/>
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
@@ -89,8 +89,8 @@
               <File Id="myodbc8w.dll" Name="myodbc8w.dll" Checksum="yes" DiskId="1" Source="x86\myodbc8w.dll">
                 <ODBCDriver Id="MySQL_ODBC_8.0w_Driver" Name="MySQL ODBC 8.0 Unicode Driver" SetupFile="myodbc8S.dll" />
               </File>
-              <File Id="readme" Name="README.txt" DiskId="1" Source="doc\README.txt"/>
-              <File Id="changelog" Name="ChangeLog.txt" DiskId="1" Source="doc\ChangeLog.txt"/>
+              <File Id="readme" Name="README.md" DiskId="1" Source="doc\README.md"/>
+              <File Id="changelog" Name="ChangeLog" DiskId="1" Source="doc\ChangeLog"/>
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />

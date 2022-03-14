@@ -280,7 +280,7 @@
     <Property Id="ReinstallModeText">omus</Property>
     <Property Id="ReinstallRepair">r</Property>
 
-    <Property Id="SetupType">Typical</Property>
+    <Property Id="SetupType">Complete</Property>
     <Property Id="ConfigureServer">1</Property>
 
     <!-- The Guid has to be the same as in the mysql_odbc_fragment.xml -->
