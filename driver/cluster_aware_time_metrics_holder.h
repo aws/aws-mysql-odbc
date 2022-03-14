@@ -26,31 +26,23 @@
  *
  */
 
-#ifndef __MYLOG_H__
-#define __MYLOG_H__
+#ifndef __CLUSTERAWARETIMEMETRICSHOLDER_H__
+#define __CLUSTERAWARETIMEMETRICSHOLDER_H__
 
-#include <cstdio>
-#include <string>
+#include "base_metrics_holder.h"
 
-#define MYLOG_QUERY(A, B)                               \
-  {                                                     \
-    if ((A)->dbc->ds->save_queries)                     \
-      trace_print((A)->dbc->log_file, (const char *)B); \
-  }
+class CLUSTER_AWARE_TIME_METRICS_HOLDER : public BASE_METRICS_HOLDER {
+public:
+    CLUSTER_AWARE_TIME_METRICS_HOLDER(std::string metric_name);
+    ~CLUSTER_AWARE_TIME_METRICS_HOLDER();
 
-#define MYLOG_DBC_QUERY(A, B)                                               \
-  {                                                                         \
-    if ((A)->ds->save_queries) trace_print((A)->log_file, (const char *)B); \
-  }
+    void register_query_execution_time(long queryTimeMs) override;
+    std::string report_metrics() override;
 
-#define MYLOG_TRACE(A, ...)                            \
-  {                                                    \
-    if ((A) != nullptr) trace_print((A), __VA_ARGS__); \
-  }
+    void debug();
 
-/* Functions used when debugging */
-FILE *init_log_file(void);
-void end_log_file(FILE *log_file);
-void trace_print(FILE *log_file, const char *fmt, ...);
+protected:
+    std::string metric_name = "";
+};
 
-#endif /* __MYLOG_H__ */
+#endif /* __CLUSTERAWARETIMEMETRICSHOLDER_H__ */

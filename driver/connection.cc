@@ -147,6 +147,14 @@ char* CONNECTION::get_host_info() {
     return this->connection->host_info;
 }
 
+char* CONNECTION::get_host() {
+    return this->connection->host;
+}
+
+unsigned int CONNECTION::get_port() {
+    return this->connection->port;
+}
+
 unsigned long CONNECTION::get_max_packet() {
     return this->connection->net.max_packet;
 }
