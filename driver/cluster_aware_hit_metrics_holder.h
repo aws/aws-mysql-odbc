@@ -26,31 +26,22 @@
  *
  */
 
-#ifndef __MYLOG_H__
-#define __MYLOG_H__
+#ifndef __CLUSTERAWAREHITMETRICSHOLDER_H__
+#define __CLUSTERAWAREHITMETRICSHOLDER_H__
 
-#include <cstdio>
-#include <string>
+#include "mylog.h"
 
-#define MYLOG_QUERY(A, B)                               \
-  {                                                     \
-    if ((A)->dbc->ds->save_queries)                     \
-      trace_print((A)->dbc->log_file, (const char *)B); \
-  }
+class CLUSTER_AWARE_HIT_METRICS_HOLDER {
+    public:
+        CLUSTER_AWARE_HIT_METRICS_HOLDER(std::string metric_name);
+        ~CLUSTER_AWARE_HIT_METRICS_HOLDER(); 
+        void register_metrics(bool is_hit);
+        std::string report_metrics();
 
-#define MYLOG_DBC_QUERY(A, B)                                               \
-  {                                                                         \
-    if ((A)->ds->save_queries) trace_print((A)->log_file, (const char *)B); \
-  }
+    protected:
+        std::string metric_name = "";
+        int number_of_reports = 0;
+        int number_of_hits = 0;
+};
 
-#define MYLOG_TRACE(A, ...)                            \
-  {                                                    \
-    if ((A) != nullptr) trace_print((A), __VA_ARGS__); \
-  }
-
-/* Functions used when debugging */
-FILE *init_log_file(void);
-void end_log_file(FILE *log_file);
-void trace_print(FILE *log_file, const char *fmt, ...);
-
-#endif /* __MYLOG_H__ */
+#endif /* __CLUSTERAWAREHITMETRICSHOLDER_H__ */

@@ -26,31 +26,42 @@
  *
  */
 
-#ifndef __MYLOG_H__
-#define __MYLOG_H__
+#ifndef __BASEMETRICSHOLDER_H__
+#define __BASEMETRICSHOLDER_H__
 
-#include <cstdio>
-#include <string>
+#include <climits>
+#include <cmath>
+#include <cstring>
+#include <vector>
 
-#define MYLOG_QUERY(A, B)                               \
-  {                                                     \
-    if ((A)->dbc->ds->save_queries)                     \
-      trace_print((A)->dbc->log_file, (const char *)B); \
-  }
+#include "mylog.h"
 
-#define MYLOG_DBC_QUERY(A, B)                                               \
-  {                                                                         \
-    if ((A)->ds->save_queries) trace_print((A)->log_file, (const char *)B); \
-  }
+class BASE_METRICS_HOLDER {
+public:
+    BASE_METRICS_HOLDER();
+    ~BASE_METRICS_HOLDER();
 
-#define MYLOG_TRACE(A, ...)                            \
-  {                                                    \
-    if ((A) != nullptr) trace_print((A), __VA_ARGS__); \
-  }
+    virtual void register_query_execution_time(long query_time_ms);
+    virtual std::string report_metrics();
 
-/* Functions used when debugging */
-FILE *init_log_file(void);
-void end_log_file(FILE *log_file);
-void trace_print(FILE *log_file, const char *fmt, ...);
+private:
+    void create_initial_histogram(long* breakpoints, long lower_bound, long upper_bound);
+    void add_to_histogram(int* histogram_counts, long* histogram_breakpoints, long value, int number_of_times, long current_lower_bound, long current_upper_bound);
+    void add_to_performance_histogram(long value, int number_of_times);
+    void check_and_create_performance_histogram();
+    void repartition_histogram(int* hist_counts, long* hist_breakpoints, long current_lower_bound, long current_upper_bound);
+    void repartition_performance_histogram();
+    
+protected:
+    const static int HISTOGRAM_BUCKETS = 20;
+    long longest_query_time_ms = 0;
+    long number_of_queries_issued = 0;
+    long* old_hist_breakpoints = nullptr;
+    int* old_hist_counts = nullptr;
+    long shortest_query_time_ms = LONG_MAX;
+    double total_query_time_ms = 0;
+    long* perf_metrics_hist_breakpoints = nullptr;
+    int* perf_metrics_hist_counts = nullptr;
+};
 
-#endif /* __MYLOG_H__ */
+#endif /* __BASEMETRICSHOLDER_H__ */

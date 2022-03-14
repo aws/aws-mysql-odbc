@@ -17,6 +17,8 @@ public:
     virtual bool is_connected() = 0;
     virtual bool try_execute_query(const char* query) = 0;
     virtual char** fetch_next_row() = 0;
+    virtual char* get_host() = 0;
+    virtual unsigned int get_port() = 0;
 };
 
 class CONNECTION : virtual public CONNECTION_INTERFACE {
@@ -53,6 +55,8 @@ public:
     int get_option(enum mysql_option option, const void* arg);
 
     char* get_host_info();
+    char* get_host() override;
+    unsigned int get_port() override;
     unsigned long get_max_packet();
 
     unsigned long get_server_capabilities();
