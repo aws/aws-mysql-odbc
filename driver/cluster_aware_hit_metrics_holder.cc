@@ -26,31 +26,30 @@
  *
  */
 
-#ifndef __MYLOG_H__
-#define __MYLOG_H__
+#include "cluster_aware_hit_metrics_holder.h"
 
-#include <cstdio>
-#include <string>
+CLUSTER_AWARE_HIT_METRICS_HOLDER::CLUSTER_AWARE_HIT_METRICS_HOLDER(std::string metric_name):metric_name{metric_name} {}
 
-#define MYLOG_QUERY(A, B)                               \
-  {                                                     \
-    if ((A)->dbc->ds->save_queries)                     \
-      trace_print((A)->dbc->log_file, (const char *)B); \
-  }
+CLUSTER_AWARE_HIT_METRICS_HOLDER::~CLUSTER_AWARE_HIT_METRICS_HOLDER() {}
 
-#define MYLOG_DBC_QUERY(A, B)                                               \
-  {                                                                         \
-    if ((A)->ds->save_queries) trace_print((A)->log_file, (const char *)B); \
-  }
+void CLUSTER_AWARE_HIT_METRICS_HOLDER::register_metrics(bool is_hit) {
+    number_of_reports++;
+    if (is_hit) {
+        number_of_hits++;
+    }
+}
 
-#define MYLOG_TRACE(A, ...)                            \
-  {                                                    \
-    if ((A) != nullptr) trace_print((A), __VA_ARGS__); \
-  }
+std::string CLUSTER_AWARE_HIT_METRICS_HOLDER::report_metrics() {
+    std::string log_message = "";
 
-/* Functions used when debugging */
-FILE *init_log_file(void);
-void end_log_file(FILE *log_file);
-void trace_print(FILE *log_file, const char *fmt, ...);
+    log_message.append("\n** Performance Metrics Report for '");
+    log_message.append(metric_name);
+    log_message.append("' **\n");
+    log_message.append("\nNumber of reports: ").append(std::to_string(number_of_reports));
+    if (number_of_reports > 0) {
+      log_message.append("\nNumber of hits: ").append(std::to_string(number_of_hits));
+      log_message.append("\nRatio : ").append(std::to_string(number_of_hits * 100.0 / number_of_reports)).append(" %");
+    }
 
-#endif /* __MYLOG_H__ */
+    return log_message;
+}
