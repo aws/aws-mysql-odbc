@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <!-- *****************************************************************************************
- Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved. 
+ AWS ODBC Driver for MySQL
+ Copyright Amazon.com Inc. or affiliates.
  
  This program is free software; you can redistribute it and/or modify 
  it under the terms of the GNU General Public License, version 2.0, as 
@@ -10,13 +11,13 @@
  This program is also distributed with certain software (including 
  but not limited to OpenSSL) that is licensed under separate terms, 
  as designated in a particular file or component or in included license 
- documentation. The authors of MySQL hereby grant you an 
+ documentation. The authors of this program hereby grant you an 
  additional permission to link the program and your derivative works 
  with the separately licensed software that they have included with 
  MySQL. 
  
  Without limiting anything contained in the foregoing, this file, 
- which is part of MySQL Connector/ODBC, is also subject to the 
+ which is part of this connector, is also subject to the 
  Universal FOSS Exception, version 1.0, a copy of which can be found at 
  http://oss.oracle.com/licenses/universal-foss-exception. 
  
@@ -48,20 +49,20 @@
       <Directory Id="ProgramFilesFolder">
       <?endif?>
         <Directory Id="MySQL" Name="MySQL">
-          <Directory Id="Connector_ODBC" Name="Connector ODBC $(var.odbc_ver_short)">
+          <Directory Id="Connector_ODBC" Name="AWS Connector ODBC $(var.odbc_ver_short)">
             <Directory Id="INSTALLDIR" Name=".">
 
           <?if $(var.odbc_64bit) = 1 ?>
 
             <Component Id="driver" Guid="C1960400-BFC6-4E6E-AF30-4C19EF5A3F07" SharedDllRefCount="yes" Win64="yes">
               <File Id="myodbc8a.dll" Name="myodbc8a.dll" Checksum="yes" KeyPath="yes" DiskId="1" Source="x64\myodbc8a.dll">
-                <ODBCDriver Id="MySQL_ODBC_8.0a_Driver" Name="MySQL ODBC 8.0 ANSI Driver" SetupFile="myodbc8S.dll" />
+                <ODBCDriver Id="MySQL_ODBC_8.0a_Driver" Name="AWS MySQL ODBC 8.0 ANSI Driver" SetupFile="myodbc8S.dll" />
               </File>
               <File Id="myodbc8w.dll" Name="myodbc8w.dll" Checksum="yes" DiskId="1" Source="x64\myodbc8w.dll">
-                <ODBCDriver Id="MySQL_ODBC_8.0w_Driver" Name="MySQL ODBC 8.0 Unicode Driver" SetupFile="myodbc8S.dll" />
+                <ODBCDriver Id="MySQL_ODBC_8.0w_Driver" Name="AWS MySQL ODBC 8.0 Unicode Driver" SetupFile="myodbc8S.dll" />
               </File>
-              <File Id="readme" Name="README.txt" DiskId="1" Source="doc\README.txt"/>
-              <File Id="changelog" Name="ChangeLog.txt" DiskId="1" Source="doc\ChangeLog.txt"/>
+              <File Id="readme" Name="README.md" DiskId="1" Source="doc\README.md"/>
+              <File Id="changelog" Name="ChangeLog" DiskId="1" Source="doc\ChangeLog"/>
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
@@ -84,13 +85,13 @@
           <?else ?>
             <Component Id="driver" Guid="83B6877B-3220-4C5F-A1B5-84787E9798DD" SharedDllRefCount="yes">
               <File Id="myodbc8a.dll" Name="myodbc8a.dll" Checksum="yes" KeyPath="yes" DiskId="1" Source="x86\myodbc8a.dll">
-                <ODBCDriver Id="MySQL_ODBC_8.0a_Driver" Name="MySQL ODBC 8.0 ANSI Driver" SetupFile="myodbc8S.dll" />
+                <ODBCDriver Id="MySQL_ODBC_8.0a_Driver" Name="AWS MySQL ODBC 8.0 ANSI Driver" SetupFile="myodbc8S.dll" />
               </File>
               <File Id="myodbc8w.dll" Name="myodbc8w.dll" Checksum="yes" DiskId="1" Source="x86\myodbc8w.dll">
-                <ODBCDriver Id="MySQL_ODBC_8.0w_Driver" Name="MySQL ODBC 8.0 Unicode Driver" SetupFile="myodbc8S.dll" />
+                <ODBCDriver Id="MySQL_ODBC_8.0w_Driver" Name="AWS MySQL ODBC 8.0 Unicode Driver" SetupFile="myodbc8S.dll" />
               </File>
-              <File Id="readme" Name="README.txt" DiskId="1" Source="doc\README.txt"/>
-              <File Id="changelog" Name="ChangeLog.txt" DiskId="1" Source="doc\ChangeLog.txt"/>
+              <File Id="readme" Name="README.md" DiskId="1" Source="doc\README.md"/>
+              <File Id="changelog" Name="ChangeLog" DiskId="1" Source="doc\ChangeLog"/>
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />

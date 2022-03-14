@@ -79,3 +79,11 @@ testframework/patches/
 testframework/hs_err_pid*.log
 *.sh
 
+# Wix files
+*.wixobj
+*.wixpdb
+/wix/mysql-odbc-*.xml
+/wix/*.msi
+/wix/myodbc_version.xml
+/wix/x64
+/wix/x86
