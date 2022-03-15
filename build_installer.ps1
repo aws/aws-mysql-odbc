@@ -50,8 +50,8 @@ if ($null -eq $MYSQL_DIR) {
 }
 
 # BUILD DRIVER
-cmake -S . -G "Visual Studio 16 2019" -DMYSQL_DIR=$MYSQL_DIR -DMYSQLCLIENT_STATIC_LINKING=TRUE
-cmake --build . --config $CONFIGURATION
+cmake -S . -G "Visual Studio 16 2019" -DMYSQL_DIR="$MYSQL_DIR" -DMYSQLCLIENT_STATIC_LINKING=TRUE
+cmake --build . --config "$CONFIGURATION"
 
 # CREATE INSTALLER
 # Copy dll, installer, and info files to wix folder
