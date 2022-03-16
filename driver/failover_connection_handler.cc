@@ -98,9 +98,9 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
             dbc_clone->ds = ds_new();
             ds_copy(dbc_clone->ds, source_dbc->ds);
         } else {
-            throw std::runtime_error(
-                "Cannot allocate connection handle when cloning DBC in writer "
-                "failover process");
+            const char* err = "Cannot allocate connection handle when cloning DBC in writer failover process";
+            MYLOG_DBC_TRACE(dbc, err);
+            throw std::runtime_error(err);
         }
     }
     return dbc_clone;
