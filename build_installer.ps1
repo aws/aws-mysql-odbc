@@ -38,8 +38,9 @@ Note that building the installer requires the following:
 - CMake 2.4.6 (http://www.cmake.org)
 #>
 
-$CONFIGURATION = $args[0]
-$MYSQL_DIR = $args[1]
+$ARCHITECTURE = $args[0]
+$CONFIGURATION = $args[1]
+$MYSQL_DIR = $args[2]
 
 # Set default values
 if ($null -eq $CONFIGURATION) {
@@ -67,7 +68,12 @@ Copy-Item .\ChangeLog .\Wix\doc
 Copy-Item .\README.md .\Wix\doc
 
 Set-Location .\Wix
-cmake -DMSI_64=1 -G "NMake Makefiles"
+if ($ARCHITECTURE -eq "x64") {
+    cmake -DMSI_64=1 -G "NMake Makefiles"
+}
+else {
+    cmake -DMSI_64=0 -G "NMake Makefiles"
+}
 nmake
 
 Set-Location ..\
