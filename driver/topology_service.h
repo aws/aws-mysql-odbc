@@ -71,7 +71,7 @@ public:
 
 class TOPOLOGY_SERVICE : virtual public TOPOLOGY_SERVICE_INTERFACE {
 public:
-    TOPOLOGY_SERVICE(FILE* log_file);
+    TOPOLOGY_SERVICE(FILE* log_file, unsigned long dbc_id);
     TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
     ~TOPOLOGY_SERVICE() override;
 
@@ -109,6 +109,7 @@ private:
     const std::string FIELD_REPLICA_LAG = "REPLICA_LAG_IN_MILLISECONDS";
 
     FILE* log_file = nullptr;
+    unsigned long dbc_id = 0;
 
 protected:
     const int NO_CONNECTION_INDEX = -1;
