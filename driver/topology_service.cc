@@ -34,8 +34,9 @@
 #include "cluster_aware_metrics_container.h"
 #include "topology_service.h"
 
-TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(FILE* log_file)
+TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(FILE* log_file, unsigned long dbc_id)
     : log_file{log_file},
+      dbc_id{dbc_id},
       cluster_instance_host{nullptr},
       refresh_rate_in_ms{DEFAULT_REFRESH_RATE_IN_MILLISECONDS},
       metrics_container{std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>()}{
@@ -50,6 +51,7 @@ TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE& ts) {
     cluster_id = ts.cluster_id;
     cluster_instance_host = ts.cluster_instance_host;
     log_file = ts.log_file;
+    dbc_id = ts.dbc_id;
     metrics_container = ts.metrics_container;
 }
 
@@ -59,7 +61,7 @@ TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
 }
 
 void TOPOLOGY_SERVICE::set_cluster_id(std::string cluster_id) {
-    MYLOG_TRACE(this->log_file, "[TOPOLOGY_SERVICE] cluster ID=%s", cluster_id.c_str());
+    MYLOG_TRACE(log_file, dbc_id, "[TOPOLOGY_SERVICE] cluster ID=%s", cluster_id.c_str());
     this->cluster_id = cluster_id;
     metrics_container->set_cluster_id(cluster_id);
 }
@@ -72,7 +74,7 @@ void TOPOLOGY_SERVICE::set_cluster_instance_template(std::shared_ptr<HOST_INFO> 
     if (cluster_instance_host)
         cluster_instance_host.reset();
 
-    MYLOG_TRACE(this->log_file,
+    MYLOG_TRACE(log_file, dbc_id,
                 "[TOPOLOGY_SERVICE] cluster instance host=%s, port=%d",
                 host_template->get_host().c_str(), host_template->get_port());
     cluster_instance_host = host_template;
@@ -289,7 +291,9 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
         }
         topology_info->is_multi_writer_cluster = writer_count > 1 ? true : false;
         if (writer_count == 0) {
-            MYLOG_TRACE(this->log_file, "[TOPOLOGY_SERVICE] The topology query returned an invalid topology - no writer instance detected");
+            MYLOG_TRACE(log_file, dbc_id,
+                        "[TOPOLOGY_SERVICE] The topology query returned an "
+                        "invalid topology - no writer instance detected");
         }
     }
 

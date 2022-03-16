@@ -30,27 +30,40 @@
 #define __MYLOG_H__
 
 #include <cstdio>
+#include <memory>
+#include <mutex>
 #include <string>
 
-#define MYLOG_QUERY(A, B)                               \
-  {                                                     \
-    if ((A)->dbc->ds->save_queries)                     \
-      trace_print((A)->dbc->log_file, (const char *)B); \
-  }
-
-#define MYLOG_DBC_QUERY(A, B)                                               \
+#define MYLOG_STMT_TRACE(A, B)                                              \
   {                                                                         \
-    if ((A)->ds->save_queries) trace_print((A)->log_file, (const char *)B); \
+    if ((A)->dbc->ds->save_queries)                                         \
+      trace_print((A)->dbc->log_file.get(), (A)->dbc->id, (const char *)B); \
   }
 
-#define MYLOG_TRACE(A, ...)                            \
-  {                                                    \
-    if ((A) != nullptr) trace_print((A), __VA_ARGS__); \
+#define MYLOG_DBC_TRACE(A, ...) \
+  { trace_print((A)->log_file.get(), (A)->id, __VA_ARGS__); }
+
+#define MYLOG_TRACE(A, B, ...)                            \
+  {                                                       \
+    if ((A) != nullptr) trace_print((A), B, __VA_ARGS__); \
   }
+
+// stateless functor object for deleting FILE handle
+struct FILEDeleter {
+  void operator()(FILE *file) {
+    if (file) {
+      fclose(file);
+      file = nullptr;
+    }
+  }
+};
+
+static std::shared_ptr<FILE> log_file;
+static std::mutex log_file_mutex;
 
 /* Functions used when debugging */
-FILE *init_log_file(void);
-void end_log_file(FILE *log_file);
-void trace_print(FILE *log_file, const char *fmt, ...);
+std::shared_ptr<FILE> init_log_file();
+void end_log_file();
+void trace_print(FILE *file, unsigned long dbc_id, const char *fmt, ...);
 
 #endif /* __MYLOG_H__ */
