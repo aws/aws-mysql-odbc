@@ -164,7 +164,7 @@ static MYSQL_RES *server_list_dbkeys(STMT *stmt,
     query.append(tmpbuff, cnt);
     query.append("`");
 
-    MYLOG_DBC_QUERY(dbc, query.c_str());
+    MYLOG_DBC_TRACE(dbc, query.c_str());
     if (exec_stmt_query(stmt, query.c_str(), query.length(), FALSE))
         return NULL;
     return mysql->store_result();
@@ -305,7 +305,7 @@ static MYSQL_RES *table_privs_raw_data( STMT *      stmt,
 
   query.append(" ORDER BY Db, Table_name, Table_priv, User");
 
-  MYLOG_DBC_QUERY(dbc, query.c_str());
+  MYLOG_DBC_TRACE(dbc, query.c_str());
   if (exec_stmt_query(stmt, query.c_str(), query.length(), FALSE))
     return NULL;
 
@@ -456,8 +456,7 @@ MYSQL_RES *server_show_create_table(STMT        *stmt,
     query.append(" `").append((char *)table).append("`");
   }
 
-  MYLOG_QUERY(stmt, query.c_str());
-
+  MYLOG_STMT_TRACE(stmt, query.c_str());
 
   if (mysql->real_query(query.c_str(), (unsigned long)query.length()))
   {
@@ -763,7 +762,7 @@ static MYSQL_RES *server_list_proc_params(STMT *stmt,
     qbuff.append(" ORDER BY Db, name");
   }
 
-  MYLOG_DBC_QUERY(dbc, qbuff.c_str());
+  MYLOG_DBC_TRACE(dbc, qbuff.c_str());
   if (exec_stmt_query(stmt, qbuff.c_str(), qbuff.length(), FALSE))
     return NULL;
 

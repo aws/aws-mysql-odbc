@@ -71,7 +71,7 @@ static SQLRETURN my_transact(SQLHDBC hdbc, SQLSMALLINT CompletionType)
       return ((DBC*)hdbc)->set_error(MYERR_S1012, NULL, 0);
     }
 
-    MYLOG_DBC_QUERY(dbc, query);
+    MYLOG_DBC_TRACE(dbc, query);
 
     LOCK_DBC(dbc);
     int return_code_server_alive, return_code_real_query;

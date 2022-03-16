@@ -248,7 +248,7 @@ MYSQL_RES *db_status(STMT *stmt, std::string &db)
 
   query.append(" ORDER BY SCHEMA_NAME");
 
-  MYLOG_QUERY(stmt, query.c_str());
+  MYLOG_STMT_TRACE(stmt, query.c_str());
 
   if (exec_stmt_query(stmt, query.c_str(), query.length(), FALSE))
   {
@@ -356,7 +356,7 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
 
   query.append(" ORDER BY TABLE_SCHEMA, TABLE_NAME");
 
-  MYLOG_QUERY(stmt, query.c_str());
+  MYLOG_STMT_TRACE(stmt, query.c_str());
 
   if (exec_stmt_query(stmt, query.c_str(), query.length(), FALSE))
   {
@@ -459,7 +459,7 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
     query.append("'");
   }
 
-  MYLOG_QUERY(stmt, query.c_str());
+  MYLOG_STMT_TRACE(stmt, query.c_str());
 
   if (exec_stmt_query(stmt, query.c_str(), query.length(), FALSE))
   {
@@ -888,7 +888,7 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
       throw stmt->error;
     }
 
-    MYLOG_QUERY(stmt, query.c_str());
+    MYLOG_STMT_TRACE(stmt, query.c_str());
     if (!no_ssps)
     {
       // In case of SSPS the call will throw an error.
@@ -903,7 +903,7 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
         // Throwing the error for NO_SSPS case.
         throw stmt->dbc->error;
       }
-      mysql_res = mysql_store_result(stmt->dbc->mysql);
+      mysql_res = stmt->dbc->store_result();
     }
   }
   catch (const MYERROR &e)

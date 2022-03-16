@@ -34,6 +34,8 @@
 #ifndef __DRIVER_H__
 #define __DRIVER_H__
 
+#include <atomic>
+
 #include "../MYODBC_MYSQL.h"
 #include "../MYODBC_CONF.h"
 #include "../MYODBC_ODBC.h"
@@ -115,7 +117,7 @@
 
 #define DRIVER_LOG_FILE "/tmp/myodbc.sql"
 
-#elif defined(_UNIX_)
+#elif defined(__UNIX__)
 
 #define DRIVER_LOG_FILE "/tmp/myodbc.sql"
 
@@ -598,6 +600,8 @@ struct	ENV
 };
 
 
+static std::atomic_ulong last_dbc_id{1};
+
 /* Connection handler */
 
 struct DBC
@@ -608,7 +612,7 @@ struct DBC
   std::list<DESC*> desc_list; // Explicit descriptors
   STMT_OPTIONS     stmt_options;
   MYERROR          error;
-  FILE             *log_file = nullptr;
+  std::shared_ptr<FILE> log_file; // empty shared_ptr
   char             st_error_prefix[255] = { 0 };
   std::string      database;
   SQLUINTEGER      login_timeout = 0;
@@ -619,6 +623,7 @@ struct DBC
   ulong            net_buffer_len = 0;
   uint             commit_flag = 0;
   bool             has_query_attrs = false;
+  ulong            id;
 
   std::recursive_mutex lock;
 
