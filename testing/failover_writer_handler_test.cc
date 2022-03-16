@@ -125,7 +125,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderRes
         .WillRepeatedly(Return(nullptr));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000, nullptr);
+        mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000, nullptr, 0);
     auto result = writer_handler.failover(current_topology);
 
     EXPECT_TRUE(result.connected);
@@ -179,7 +179,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
                                           mock_reader_a_connection))));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, nullptr);
+        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, nullptr, 0);
     auto result = writer_handler.failover(current_topology);
 
     EXPECT_TRUE(result.connected);
@@ -221,7 +221,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBDefers) {
                                                     mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 2000, 2000, nullptr);
+        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 2000, 2000, nullptr, 0);
     auto result = writer_handler.failover(current_topology);
 
     EXPECT_TRUE(result.connected);
@@ -280,7 +280,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
                                                     mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, nullptr);
+        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, nullptr, 0);
     auto result = writer_handler.failover(current_topology);
 
     EXPECT_TRUE(result.connected);
@@ -341,7 +341,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
                                                     mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, nullptr);
+        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, nullptr, 0);
     auto result = writer_handler.failover(current_topology);
 
     EXPECT_TRUE(result.connected);
@@ -407,7 +407,7 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
                                                     mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 1000, 2000, 2000, nullptr);
+        mock_ts, mock_reader_handler, mock_connection_handler, 1000, 2000, 2000, nullptr, 0);
     auto result = writer_handler.failover(current_topology);
 
     EXPECT_FALSE(result.connected);
@@ -456,7 +456,7 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed)
                                                     mock_reader_a_connection)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000, nullptr);
+        mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000, nullptr, 0);
     auto result = writer_handler.failover(current_topology);
 
     EXPECT_FALSE(result.connected);

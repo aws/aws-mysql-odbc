@@ -1420,9 +1420,9 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
       cluster_id_str.append(":").append(std::to_string(dbc->mysql->get_port()));
     }
 
-    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, 
-        dbc->ds->gather_metrics_per_instance, 
-        dbc->log_file);
+    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(
+        cluster_id_str, dbc->ds->gather_metrics_per_instance,
+        dbc->log_file ? dbc->log_file.get() : nullptr, dbc->id);
   }
 
   CHECK_HANDLE(hdbc);
@@ -1431,8 +1431,10 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 
   dbc->close();
 
-  if (dbc->ds && dbc->ds->save_queries)
-    end_log_file(dbc->log_file);
+  if (dbc->ds && dbc->ds->save_queries) {
+    dbc->log_file.reset();
+    end_log_file();
+  }
 
   /* free allocated packet buffer */
 
