@@ -92,11 +92,15 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   # but a dynamic module that will be loaded by ODBC manager. One
   # consequence of this is that on Windows import libraries will not
   # be generated nor installed.
-  IF(ENABLE_GTESTS)
-    ADD_LIBRARY(${DRIVER_NAME} ${DRIVER_SRCS})
-  ELSE(ENABLE_GTESTS)
+  IF(WIN32)
+    IF(ENABLE_GTESTS)
+      ADD_LIBRARY(${DRIVER_NAME} ${DRIVER_SRCS})
+    ELSE(ENABLE_GTESTS)
+      ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS})
+    ENDIF(ENABLE_GTESTS)
+  ELSE(WIN32)
     ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS})
-  ENDIF(ENABLE_GTESTS)
+  ENDIF(WIN32)
 
   ADD_COVERAGE(${DRIVER_NAME})
 
