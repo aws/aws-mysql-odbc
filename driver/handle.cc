@@ -69,9 +69,12 @@ bool ENV::has_connections()
   return conn_list.size() > 0;
 }
 
-DBC::DBC(ENV *p_env)  : env(p_env), mysql(nullptr),
-                        txn_isolation(DEFAULT_TXN_ISOLATION),
-                        last_query_time((time_t) time((time_t*) 0))
+DBC::DBC(ENV *p_env)
+    : id{last_dbc_id++},
+      env(p_env),
+      mysql(nullptr),
+      txn_isolation(DEFAULT_TXN_ISOLATION),
+      last_query_time((time_t)time((time_t *)0))
 {
   //mysql->net.vio = nullptr;
   myodbc_ov_init(env->odbc_ver);
