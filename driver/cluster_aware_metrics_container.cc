@@ -78,12 +78,12 @@ void CLUSTER_AWARE_METRICS_CONTAINER::set_gather_metric(bool can_gather) {
     this->can_gather = can_gather;
 }
 
-void CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url, bool for_instances, FILE* log) {
+void CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url, bool for_instances, FILE* log, unsigned long dbc_id) {
     if (!log) {
         return;
     }
     
-    MYLOG_TRACE(log, report_metrics(conn_url, for_instances).c_str());
+    MYLOG_TRACE(log, dbc_id, report_metrics(conn_url, for_instances).c_str());
 }
 
 std::string CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url, bool for_instances) {

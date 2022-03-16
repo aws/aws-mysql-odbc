@@ -73,7 +73,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       query_length= strlen(query);
     }
 
-    MYLOG_QUERY(stmt, query);
+    MYLOG_STMT_TRACE(stmt, query);
     DO_LOCK_STMT();
     if ( check_if_server_is_alive( stmt->dbc ) )
     {
@@ -109,7 +109,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
       scroller_create(stmt, query, query_length);
       scroller_move(stmt);
-      MYLOG_QUERY(stmt, stmt->scroller.query);
+      MYLOG_STMT_TRACE(stmt, stmt->scroller.query);
 
       native_error = stmt->dbc->mysql->real_query(
           stmt->scroller.query,
@@ -139,11 +139,11 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
                         mysql_stmt_errno(stmt->ssps));
         goto exit;
       }
-      MYLOG_QUERY(stmt, "ssps has been executed");
+      MYLOG_STMT_TRACE(stmt, "ssps has been executed");
     }
     else
     {
-      MYLOG_QUERY(stmt, "Using direct execution");
+      MYLOG_STMT_TRACE(stmt, "Using direct execution");
       /* Need to close ps handler if it is open as our relsult will be generated
          by direct execution. and ps handler may create some chaos */
       ssps_close(stmt);
@@ -158,11 +158,11 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       native_error = stmt->dbc->mysql->real_query(query, query_length);
     }
 
-    MYLOG_QUERY(stmt, "query has been executed");
+    MYLOG_STMT_TRACE(stmt, "query has been executed");
 
     if (native_error)
     {
-      MYLOG_QUERY(stmt, stmt->dbc->mysql->error());
+      MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql->error());
       stmt->set_error("HY000");
 
       /* For some errors - translating to more appropriate status */
