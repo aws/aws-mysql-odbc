@@ -228,7 +228,7 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
   pos+= stmt->dbc->mysql->real_escape_string(pos, table, strlen(table));
   pos= myodbc_stpmov(pos, "`");
 
-  MYLOG_QUERY(stmt, buff);
+  MYLOG_STMT_TRACE(stmt, buff);
 
   assert(stmt);
   LOCK_DBC(stmt->dbc);
@@ -573,8 +573,8 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
   */
 
   select = "SELECT * FROM `" + stmt->table_name + "` LIMIT 0";
-  MYLOG_QUERY(stmt, select.c_str());
-  LOCK_DBC(stmt->dbc);
+  MYLOG_STMT_TRACE(stmt, select.c_str());
+  LOCK_STMT(stmt);
   if (exec_stmt_query_std(stmt, select, false) ||
       !(presultAllColumns = stmt->dbc->mysql->store_result()))
   {

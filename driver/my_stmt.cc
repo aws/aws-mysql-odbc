@@ -435,7 +435,7 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
     && !IS_BATCH(&stmt->query)
     && preparable_on_server(&stmt->query, stmt->dbc->mysql->get_server_version()))
   {
-    MYLOG_QUERY(stmt, "Using prepared statement");
+    MYLOG_STMT_TRACE(stmt, "Using prepared statement");
     ssps_init(stmt);
 
     /* If the query is in the form of "WHERE CURRENT OF" - we do not need to prepare
@@ -451,7 +451,7 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
 
      if (prep_res)
       {
-        MYLOG_QUERY(stmt, stmt->dbc->mysql->error());
+        MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql->error());
 
         stmt->set_error("HY000");
         translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
@@ -669,7 +669,7 @@ SQLRETURN scroller_prefetch(STMT * stmt)
     }
   }
 
-  MYLOG_QUERY(stmt, stmt->scroller.query);
+  MYLOG_STMT_TRACE(stmt, stmt->scroller.query);
 
   LOCK_DBC(stmt->dbc);
 
