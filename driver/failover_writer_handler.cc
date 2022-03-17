@@ -24,7 +24,7 @@ void FAILOVER_SYNC::mark_as_complete(bool cancel_other_tasks) {
         num_tasks = 0;
     } else {
         if (num_tasks <= 0) {
-            throw "Trying to cancel a failover process that is already done.";
+            throw std::runtime_error("Trying to cancel a failover process that is already done.");
         }
         num_tasks--;
     }
