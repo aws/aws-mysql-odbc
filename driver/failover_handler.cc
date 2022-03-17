@@ -303,6 +303,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
 }
 
 void FAILOVER_HANDLER::set_cluster_id(std::string cluster_id) {
+    this->cluster_id = cluster_id;
     topology_service->set_cluster_id(cluster_id);
     metrics_container->set_cluster_id(cluster_id);
 }
