@@ -33,6 +33,8 @@
 
 #include "cluster_topology_info.h"
 
+#include <stdexcept>
+
 /**
   Initialize and return random number.
 
@@ -97,7 +99,7 @@ void CLUSTER_TOPOLOGY_INFO::update_time() {
 
 std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_writer() {
     if (writers.size() <= 0) {
-        throw "No writer available";
+        throw std::runtime_error("No writer available");
     }
 
     return writers[0];
@@ -106,7 +108,7 @@ std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_writer() {
 std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_next_reader() {
     int num_readers = readers.size();
     if (num_readers <= 0) {
-        throw "No reader available";
+        throw std::runtime_error("No reader available");
     }
 
     if (current_reader == -1) { // initialize for the first time
@@ -125,7 +127,7 @@ std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_next_reader() {
 
 std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_reader(int i) {
     if (i < 0 || i >= readers.size()) {
-        throw "No reader available at index " + i;
+        throw std::runtime_error("No reader available at index " + i);
     }
 
     return readers[i];

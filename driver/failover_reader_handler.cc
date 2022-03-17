@@ -234,7 +234,9 @@ void CONNECT_TO_READER_HANDLER::operator()(
                 log_file, dbc_id,
                 "[CONNECT_TO_READER_HANDLER] Failed to connect to reader: %s",
                 reader->get_host_port_pair().c_str());
+            if (!f_sync.is_completed()) {
+                f_sync.mark_as_complete(false);
+            }
         }
     }
-    f_sync.mark_as_complete(false);
 }
