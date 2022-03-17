@@ -1498,10 +1498,10 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
   DataSource* ds = dbc->ds;
 
   if (ds && ds->gather_perf_metrics) {
-    std::string cluster_id_str;
-    const char* clid =
-      ds_get_utf8attr(ds->cluster_id, &ds->cluster_id8);
-    cluster_id_str = (clid ? clid : "");
+    std::string cluster_id_str = "";
+    if (dbc->fh) {
+      cluster_id_str = dbc->fh->cluster_id;
+    }
 
     if ((cluster_id_str.empty() || ds->gather_metrics_per_instance) && dbc->mysql) {
       cluster_id_str = dbc->mysql->get_host();
