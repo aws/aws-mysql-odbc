@@ -95,13 +95,11 @@ std::shared_ptr<HOST_INFO> FailoverHandlerTest::reader_host = nullptr;
 std::shared_ptr<CLUSTER_TOPOLOGY_INFO> FailoverHandlerTest::topology = nullptr;
 
 TEST_F(FailoverHandlerTest, NullDBC) {
-    EXPECT_THROW(FAILOVER_HANDLER failover_handler(nullptr, ds), std::string);
+    EXPECT_THROW(FAILOVER_HANDLER failover_handler(nullptr, ds), std::runtime_error);
 }
 
 TEST_F(FailoverHandlerTest, NullDS) {
-    EXPECT_THROW(
-        FAILOVER_HANDLER failover_handler(dbc, nullptr),
-        std::string);
+    EXPECT_THROW(FAILOVER_HANDLER failover_handler(dbc, nullptr), std::runtime_error);
 }
 
 TEST_F(FailoverHandlerTest, CustomDomain) {
@@ -155,7 +153,7 @@ TEST_F(FailoverHandlerTest, IP_TopologyAvailable_PatternRequired) {
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    EXPECT_THROW(failover_handler.init_cluster_info(), std::string);
+    EXPECT_THROW(failover_handler.init_cluster_info(), std::runtime_error);
 }
 
 TEST_F(FailoverHandlerTest, IP_TopologyNotAvailable) {
