@@ -67,7 +67,7 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
     std::stringstream err;
     if (!dbc || !ds) {
         err << "Internal error.";
-        throw err.str();
+        throw std::runtime_error(err.str());
     }
 
     this->dbc = dbc;
@@ -112,13 +112,13 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
     } catch (std::string& e) {
         err << "Invalid server '" << ds->server8 << "'.";
         MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw err.str();
+        throw std::runtime_error(err.str());
     }
 
     if (hosts.size() == 0) {
         err << "Empty server host.";
         MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw err.str();
+        throw std::runtime_error(err.str());
     }
 
     std::string main_host(hosts[0].name);
@@ -143,13 +143,13 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         } catch (std::string& e) {
             err << "Invalid host pattern: '" << hp_str << "' - the value could not be parsed";
             MYLOG_TRACE(dbc->log_file.get(), dbc->id, err.str().c_str());
-            throw err.str();
+            throw std::runtime_error(err.str());
         }
 
         if (host_patterns.size() == 0) {
             err << "Empty host pattern.";
             MYLOG_DBC_TRACE(dbc, err.str().c_str());
-            throw err.str();
+            throw std::runtime_error(err.str());
         }
 
         std::string host_pattern(host_patterns[0].name);
@@ -161,7 +161,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                     "placeholder for the DB instance identifiers  of the cluster "
                     "instances";
             MYLOG_DBC_TRACE(dbc, err.str().c_str());
-            throw err.str();
+            throw std::runtime_error(err.str());
         }
 
         auto host_template = std::make_shared<HOST_INFO>(host_pattern, host_pattern_port);
@@ -176,13 +176,13 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         if (m_is_rds_proxy) {
             err << "RDS Proxy url can't be used as an instance pattern.";
             MYLOG_DBC_TRACE(dbc, err.str().c_str());
-            throw err.str();
+            throw std::runtime_error(err.str());
         }
 
         if (m_is_rds_custom_cluster) {
             err << "RDS Custom Cluster endpoint can't be used as an instance pattern.";
             MYLOG_DBC_TRACE(dbc, err.str().c_str());
-            throw err.str();
+            throw std::runtime_error(err.str());
         }
 
         if (!clid_str.empty()) {
@@ -222,7 +222,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                     "failover functionality, set the 'Disable Cluster Failover' "
                     "configuration property to true.";
             MYLOG_DBC_TRACE(dbc, err.str().c_str());
-            throw err.str();
+            throw std::runtime_error(err.str());
         }
 
         m_is_rds = false;        // actually we don't know
@@ -253,7 +253,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                      "to connect without  failover functionality, set the "
                      "'Disable Cluster Failover' configuration property to true.";
                 MYLOG_DBC_TRACE(dbc, err.str().c_str());
-                throw err.str();
+                throw std::runtime_error(err.str());
             }
         } else {
             // It's RDS
@@ -268,7 +268,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                        "configuration to specify the host pattern for the "
                        "cluster you are trying to connect to.";
                 MYLOG_DBC_TRACE(dbc, err.str().c_str());
-                throw err.str();
+                throw std::runtime_error(err.str());
             }
 
             if (!clid_str.empty()) {
