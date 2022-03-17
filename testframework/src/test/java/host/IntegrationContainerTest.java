@@ -52,6 +52,8 @@ public class IntegrationContainerTest {
   private static final String TEST_PASSWORD =
       !StringUtils.isNullOrEmpty(System.getenv("TEST_PASSWORD")) ?
           System.getenv("TEST_PASSWORD") : "my_test_password";
+  private static final String ACCESS_KEY = System.getenv("AWS_ACCESS_KEY_ID");
+  private static final String SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
 
   private static final String DRIVER_LOCATION = System.getenv("DRIVER_PATH");
   private static final String TEST_DB_CLUSTER_IDENTIFIER = System.getenv("TEST_DB_CLUSTER_IDENTIFIER");
@@ -154,6 +156,8 @@ public class IntegrationContainerTest {
         .withEnv("TEST_DSN", TEST_DSN)
         .withEnv("TEST_UID", TEST_USERNAME)
         .withEnv("TEST_PASSWORD", TEST_PASSWORD)
+        .withEnv("AWS_ACCESS_KEY_ID", ACCESS_KEY)
+        .withEnv("AWS_SECRET_ACCESS_KEY", SECRET_ACCESS_KEY)
         .withEnv("TEST_DATABASE", TEST_DATABASE)
         .withEnv("TEST_SERVER", dbHostCluster)
         .withEnv("TEST_RO_SERVER", dbHostClusterRo)
