@@ -24,17 +24,22 @@
  *
  */
 
+// This include order matters on Windows
+#include <aws/rds/model/TargetState.h>
+#include <aws/rds/model/TargetHealth.h>
+
+#include <aws/rds/RDSClient.h>
+#include "toxiproxy/toxiproxy_client.h"
+
 #include <aws/core/Aws.h>
 #include <aws/core/auth/AWSCredentialsProvider.h>
-#include <aws/rds/RDSClient.h>
 #include <aws/rds/model/DBCluster.h>
 #include <aws/rds/model/DBClusterMember.h>
 #include <aws/rds/model/DescribeDBClustersRequest.h>
+
 #include <gtest/gtest.h>
 #include <sql.h>
 #include <sqlext.h>
-
-#include "toxiproxy/toxiproxy_client.h"
 
 #define MAX_NAME_LEN 255
 #define SQL_MAX_MESSAGE_LENGTH 512
@@ -161,8 +166,7 @@ class NetworkFailoverIntegrationTest : public testing::Test {
     auto outcome = client.DescribeDBClusters(rds_req);
 
     if (!outcome.IsSuccess()) {
-      std::cerr << "Error describing cluster. " << outcome.GetError().GetMessage() << std::endl;
-      FAIL();
+      FAIL() << "Error describing cluster. ";
     }
 
     auto result = outcome.GetResult();
@@ -269,7 +273,7 @@ class NetworkFailoverIntegrationTest : public testing::Test {
 
   std::string get_default_proxied_config() const {
     char template_connection[4096];
-    sprintf(template_connection, "%sHOST_PATTERN=%s;NETWORK_TIMEOUT=2;", get_default_config().c_str(), PROXIED_CLUSTER_TEMPLATE.c_str());
+    sprintf(template_connection, "%sHOST_PATTERN=%s;", get_default_config().c_str(), PROXIED_CLUSTER_TEMPLATE.c_str());
     std::string config(template_connection);
     return config;
   }
