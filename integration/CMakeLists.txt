@@ -85,7 +85,7 @@ enable_testing()
 
 add_executable(
   integration
-  simple_connect_test.cc
+  failover_integration_test.cc
   network_failover_integration_test.cc
 )
 
