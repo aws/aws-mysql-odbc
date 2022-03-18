@@ -5,6 +5,7 @@ out/
 x64/
 x86/
 **/*.dir
+*.pkg
 
 # Test artifacts
 test/Testing/**
@@ -36,6 +37,8 @@ cmake/sql*.c
 mysql_strings/uca900_ja_tbls.cc
 mysql_strings/uca900_zh_tbls.cc
 getmysqlversion.c
+_CPack_Packages/
+install_manifest*.txt
 
 driver/drivera.def
 driver/drivera.rc
