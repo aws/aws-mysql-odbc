@@ -69,10 +69,18 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           DRIVER_PATH: ${{ github.workspace }}/build
 
-      - name: 'Archive junit results'
+      - name: 'Display and save log'
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          echo "Displaying logs"
+          cat myodbc.sql
+          mkdir -p ./reports/tests
+          cp myodbc.sql ./reports/tests/myodbc.sql
+
+      - name: 'Archive log results'
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: 'junit-report'
+          name: 'integration-test-logs'
           path: build/reports/tests/
           retention-days: 5    

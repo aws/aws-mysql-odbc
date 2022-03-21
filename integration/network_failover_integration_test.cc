@@ -266,7 +266,7 @@ class NetworkFailoverIntegrationTest : public testing::Test {
 
   std::string get_default_config() const {
     char template_connection[4096];
-    sprintf(template_connection, "DSN=%s;UID=%s;PWD=%s;", dsn, user, pwd);
+    sprintf(template_connection, "DSN=%s;UID=%s;PWD=%s;LOG_QUERY=1;", dsn, user, pwd);
     std::string config(template_connection);
     return config;
   }
@@ -395,7 +395,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_read_only) {
   const std::string reader_id = get_reader_id();
   const std::string server = get_endpoint(reader_id);
 
-  sprintf(reinterpret_cast<char*>(connIn), "%sSERVER=%s;PORT=%d;ALLOW_READER_CONNECTIONS=1", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
+  sprintf(reinterpret_cast<char*>(connIn), "%sSERVER=%s;PORT=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
 
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, connIn, SQL_NTS, connOut, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
@@ -439,7 +439,7 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
   const std::string writer_id = get_writer_id();
   const std::string reader_id = get_reader_id();
   const std::string server = get_endpoint(reader_id);
-  sprintf(reinterpret_cast<char*>(connIn), "%sSERVER=%s;PORT=%d;FAILOVER_T=%s;ALLOW_READER_CONNECTIONS=1", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, "10000");
+  sprintf(reinterpret_cast<char*>(connIn), "%sSERVER=%s;PORT=%d;FAILOVER_T=%s;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, "10000");
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, connIn, SQL_NTS, connOut, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (size_t index = 0; index < readers.size() - 1; ++index) {
