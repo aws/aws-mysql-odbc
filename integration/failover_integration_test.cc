@@ -93,7 +93,7 @@ protected:
 // Helper functions
 
 void build_connection_string(SQLCHAR* conn_in, char* dsn, char* user, char* pwd, std::string server, int port) {
-  sprintf(reinterpret_cast<char*>(conn_in), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;", dsn, user, pwd, server.c_str(), port);
+  sprintf(reinterpret_cast<char*>(conn_in), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;LOG_QUERY=1;", dsn, user, pwd, server.c_str(), port);
 }
 
 std::vector<std::string> retrieve_topology_via_SQL(SQLCHAR* conn_in) {
