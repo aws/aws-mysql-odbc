@@ -55,8 +55,6 @@ namespace {
 class TopologyServiceTest : public testing::Test {
 protected:
     static void SetUpTestSuite() {
-        mc = new MOCK_CONNECTION();
-		
         ts = new TOPOLOGY_SERVICE(nullptr, 0);
         cluster_instance = std::make_shared<HOST_INFO>("?.XYZ.us-east-2.rds.amazonaws.com", 1234);
         ts->set_cluster_instance_template(cluster_instance);
@@ -65,16 +63,17 @@ protected:
 
     static void TearDownTestSuite() {
         cluster_instance.reset();
-        delete mc;
         delete ts;
     }
 
     void SetUp() override {
+        mc = new MOCK_CONNECTION();
         ts->set_refresh_rate(DEFAULT_REFRESH_RATE_IN_MILLISECONDS);
     }
 
     void TearDown() override {
         ts->clear_all();
+        delete mc;
     }
 };
 
