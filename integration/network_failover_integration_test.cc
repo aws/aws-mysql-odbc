@@ -325,24 +325,6 @@ TEST_F(NetworkFailoverIntegrationTest, connection_test) {
   test_connection(MYSQL_RO_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
 }
 
-TEST_F(NetworkFailoverIntegrationTest, validate_connection_when_network_down) {
-  const std::string server = MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX;
-  sprintf(reinterpret_cast<char*>(connIn), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, connIn, SQL_NTS, connOut, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
-
-  assert_query_succeeded();
-
-  disable_connectivity(proxy_instance_1);
-
-  const std::string expected = "08S01";
-  assert_query_failed(expected);
-
-  enable_connectivity(proxy_instance_1);
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
-}
-
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
   const std::string writer_id = get_writer_id();
   const std::string server = get_endpoint(writer_id);
