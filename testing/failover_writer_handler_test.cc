@@ -103,7 +103,7 @@ class FailoverWriterHandlerTest : public testing::Test {
 // taskA: successfully re-connect to writer; return new connection
 // taskB: fail to connect to any reader due to exception
 // expected test result: new connection by taskA
-TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderResult) {
+TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
     mock_writer_connection = new MOCK_CONNECTION();
     EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
 
@@ -131,6 +131,9 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderRes
     EXPECT_TRUE(result.connected);
     EXPECT_FALSE(result.is_new_host);
     EXPECT_THAT(result.new_connection, mock_writer_connection);
+
+    // Explicit delete on writer connection as it's returned as a valid result
+    delete mock_writer_connection;
 }
 
 // Verify that writer failover handler can re-connect to a current writer node.
@@ -140,9 +143,13 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBEmptyReaderRes
 // taskB: successfully connect to reader-a and then new writer but it takes more
 // time than taskA
 // expected test result: new connection by taskA
-TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
+TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
     mock_writer_connection = new MOCK_CONNECTION();
     mock_reader_a_connection = new MOCK_CONNECTION();
+
+    // May not have actually connected during failover
+    // Cannot delete at the end as it may cause double delete
+    Mock::AllowLeak(mock_reader_a_connection);
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -152,7 +159,6 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
     EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
         .WillRepeatedly(Return(mock_writer_connection));
@@ -185,6 +191,9 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
     EXPECT_TRUE(result.connected);
     EXPECT_FALSE(result.is_new_host);
     EXPECT_THAT(result.new_connection, mock_writer_connection);
+
+    // Explicit delete on writer connection as it's returned as a valid result
+    delete mock_writer_connection;
 }
 
 // Verify that writer failover handler can re-connect to a current writer node.
@@ -193,7 +202,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_SlowReaderA) {
 // taskB: successfully connect to readerA and retrieve topology, but latest
 // writer is not new (defer to taskA)
 // expected test result: new connection by taskA
-TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBDefers) {
+TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
     mock_writer_connection = new MOCK_CONNECTION();
     mock_reader_a_connection = new MOCK_CONNECTION();
     EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
@@ -227,6 +236,9 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBDefers) {
     EXPECT_TRUE(result.connected);
     EXPECT_FALSE(result.is_new_host);
     EXPECT_THAT(result.new_connection, mock_writer_connection);
+
+    // Explicit delete on writer connection as it's returned as a valid result
+    delete mock_writer_connection;
 }
 
 // Verify that writer failover handler can re-connect to a new writer node.
@@ -236,11 +248,15 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ReconnectToWriter_TaskBDefers) {
 // but it takes more time than taskB
 // taskB: successfully connect to readerA and then to new-writer
 // expected test result: new connection to writer by taskB
-TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
+TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     mock_writer_connection = new MOCK_CONNECTION();
     mock_new_writer_connection = new MOCK_CONNECTION();
     mock_reader_a_connection = new MOCK_CONNECTION();
     mock_reader_b_connection = new MOCK_CONNECTION();
+
+    // May not have actually connected during failover
+    // Cannot delete at the end as it may cause double delete
+    Mock::AllowLeak(mock_writer_connection);
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -289,6 +305,9 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
     EXPECT_EQ(3, result.new_topology->total_hosts());
     EXPECT_EQ(new_writer_instance_name,
             result.new_topology->get_writer()->instance_name);
+
+    // Explicit delete on new writer connection as it's returned as a valid result
+    delete mock_new_writer_connection;
 }
 
 // Verify that writer failover handler can re-connect to a new writer node.
@@ -296,11 +315,10 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_SlowWriter) {
 // taskA: successfully reconnect, but initial-writer is now a reader (defer to taskB) 
 // taskB: successfully connect to readerA and then to new-writer 
 // expected test result: new connection to writer by taskB
-TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
+TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
     mock_writer_connection = new MOCK_CONNECTION();
     mock_new_writer_connection = new MOCK_CONNECTION();
     mock_reader_a_connection = new MOCK_CONNECTION();
-    mock_reader_b_connection = new MOCK_CONNECTION();
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -308,7 +326,7 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
     new_topology->add_host(reader_a_host);
     new_topology->add_host(reader_b_host);
 
-    EXPECT_CALL(*mock_writer_connection, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mock_writer_connection, is_connected()).WillOnce(Return(true));
     EXPECT_CALL(*mock_writer_connection, mock_connection_destructor());
 
     EXPECT_CALL(*mock_new_writer_connection, is_connected()).WillRepeatedly(Return(true));
@@ -316,14 +334,11 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
     EXPECT_CALL(*mock_reader_a_connection, is_connected()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_reader_a_connection, mock_connection_destructor());
 
-    EXPECT_CALL(*mock_reader_b_connection, is_connected()).WillRepeatedly(Return(true));
-
     EXPECT_CALL(*mock_connection_handler, connect(writer_host))
-        .WillRepeatedly(Return(mock_writer_connection));
+        .WillOnce(Return(mock_writer_connection))
+        .WillRepeatedly(Return(nullptr)); // Connection is deleted after first connect
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host))
         .WillRepeatedly(Return(mock_reader_a_connection));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host))
-        .WillRepeatedly(Return(mock_reader_b_connection));
     EXPECT_CALL(*mock_connection_handler, connect(new_writer_host))
         .WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
@@ -333,7 +348,6 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
     EXPECT_CALL(*mock_ts, get_topology(_, true))
         .WillRepeatedly(Return(new_topology));
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
-    EXPECT_CALL(*mock_ts, mark_host_up(_)).Times(AnyNumber());
     EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
@@ -350,6 +364,9 @@ TEST_F(FailoverWriterHandlerTest, DISABLED_ConnectToReaderA_TaskADefers) {
     EXPECT_EQ(4, result.new_topology->total_hosts());
     EXPECT_EQ(new_writer_instance_name,
             result.new_topology->get_writer()->instance_name);
+    
+    // Explicit delete on new writer connection as it's returned as a valid result
+    delete mock_new_writer_connection;
 }
 
 // Verify that writer failover handler fails to re-connect to any writer node.
