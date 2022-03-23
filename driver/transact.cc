@@ -59,7 +59,7 @@ static SQLRETURN my_transact(SQLHDBC hdbc, SQLSMALLINT CompletionType)
     case SQL_ROLLBACK:
       if (!trans_supported(dbc))
       {
-	return set_conn_error((DBC*)hdbc,MYERR_S1C00,
+	    return set_conn_error(dbc, MYERR_S1C00,
 			      "Underlying server does not support transactions, upgrade to version >= 3.23.38",0);
       }
       query= "ROLLBACK";
@@ -67,30 +67,16 @@ static SQLRETURN my_transact(SQLHDBC hdbc, SQLSMALLINT CompletionType)
       break;
 
     default:
-      return set_conn_error((DBC*)hdbc,MYERR_S1012,NULL,0);
+      return set_conn_error(dbc, MYERR_S1012, NULL, 0);
     }
 
     MYLOG_DBC_TRACE(dbc, query);
 
-    LOCK_DBC(dbc);
-    int return_code_server_alive, return_code_real_query;
-    if ((return_code_server_alive = check_if_server_is_alive(dbc)) ||
-        (return_code_real_query = dbc->mysql->real_query(query, length)))
+    result = odbc_stmt(dbc, query, length, true);
+    
+    if (SQL_SUCCEEDED(result))
     {
-      result= set_conn_error((DBC*)hdbc,MYERR_S1000,
-			     dbc->mysql->error(),
-			     dbc->mysql->error_code());
-      
-      if (return_code_server_alive ||
-          return_code_real_query == CR_SERVER_GONE_ERROR ||
-          return_code_real_query == CR_SERVER_LOST) 
-      {
-        const char *error_code;
-        if (dbc->fh->trigger_failover_if_needed("08S01", error_code)) 
-        {
-          result = set_conn_error(dbc, MYERR_08S02, "The active SQL connection has changed.", 0);
-        }
-      }
+        dbc->transaction_open = false;
     }
   }
   return(result);
