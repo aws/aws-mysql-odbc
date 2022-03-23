@@ -278,9 +278,9 @@ SQLRETURN set_env_error(ENV *env, myodbc_errid errid, const char *errtext,
 */
 
 SQLRETURN set_conn_error(DBC *dbc, myodbc_errid errid, const char *errtext,
-                         SQLINTEGER errcode)
+                         SQLINTEGER errcode, char* prefix)
 {
-  dbc->error = MYERROR(errid, errtext, errcode, MYODBC_ERROR_PREFIX);
+  dbc->error = MYERROR(errid, errtext, errcode, prefix);
   return dbc->error.retcode;
 }
 
