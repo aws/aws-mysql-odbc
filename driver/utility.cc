@@ -82,20 +82,18 @@ SQLRETURN exec_stmt_query_std(STMT *stmt, const std::string &query,
 }
 
 /**
-
-
-/**
   Execute a SQL statement.
 
-  @param[in] dbc       The database connection
-  @param[in] query     The query to execute
-  @param[in] req_lock  The flag if dbc->lock thread lock should be used
-                       when executing a query
+  @param[in] dbc          The database connection
+  @param[in] query        The query to execute
+  @param[in] query_length The string length of the query
+  @param[in] req_lock     The flag if dbc->lock thread lock should be used
+                          when executing a query
   */
 SQLRETURN odbc_stmt(DBC *dbc, const char *query,
                     SQLULEN query_length, my_bool req_lock)
 {
-  SQLRETURN result= SQL_SUCCESS;
+  SQLRETURN result = SQL_SUCCESS;
   LOCK_DBC_DEFER(dbc);
 
   if (req_lock)
@@ -105,30 +103,39 @@ SQLRETURN odbc_stmt(DBC *dbc, const char *query,
 
   if (query_length == SQL_NTS)
   {
-    query_length= strlen(query);
+    query_length = strlen(query);
   }
 
-  int return_code_server_alive, return_code_real_query;
-  if ((return_code_server_alive = check_if_server_is_alive(dbc)) ||
-      (return_code_real_query = dbc->mysql->real_query(query, query_length)))
+  bool server_alive = is_server_alive(dbc);
+  if (!server_alive || dbc->mysql->real_query(query, query_length))
   {
-    result = set_conn_error(dbc, MYERR_S1000, dbc->mysql->error(), dbc->mysql->error_code());
+      const unsigned int mysql_error_code = dbc->mysql->error_code();
 
-    if (return_code_server_alive ||
-        return_code_real_query == CR_SERVER_GONE_ERROR ||
-        return_code_real_query == CR_SERVER_LOST) 
-    {
-      const char *error_code;
-      if (dbc->fh->trigger_failover_if_needed("08S01", error_code)) 
+      result = set_conn_error(dbc, MYERR_S1000, dbc->mysql->error(), mysql_error_code);
+
+      if (!server_alive || is_connection_lost(mysql_error_code))
       {
-        result = set_conn_error(dbc, MYERR_08S02, "The active SQL connection has changed.", 0);
+          bool rollback = (!autocommit_on(dbc) && trans_supported(dbc)) || dbc->transaction_open;
+          if (rollback)
+          {
+              dbc->mysql->real_query("ROLLBACK", 8);
+          }
+          dbc->transaction_open = false;
+
+          const char* error_code;
+          if (dbc->fh->trigger_failover_if_needed("08S01", error_code))
+          {
+              result = set_conn_error(dbc, MYERR_08S02, "The active SQL connection has changed.", 0, "");
+          }
+          else
+          {
+              result = set_conn_error(dbc, MYERR_08S01, "The active SQL connection was lost.", 0, "");
+          }
       }
-    }
   }
 
   return result;
 }
-
 
 /**
   Link a list of fields to the current statement result.
@@ -2463,10 +2470,10 @@ ulong str_to_time_as_long(const char *str, uint length)
   the server is up with mysql_ping (to force a reconnect)
 */
 
-int check_if_server_is_alive( DBC *dbc )
+bool is_server_alive( DBC *dbc )
 {
     time_t seconds= (time_t) time( (time_t*)0 );
-    int result= 0;
+    bool server_alive = true;
 
     if ( (ulong)(seconds - dbc->last_query_time) >= CHECK_IF_ALIVE )
     {
@@ -2488,12 +2495,12 @@ int check_if_server_is_alive( DBC *dbc )
             */
 
             if (is_connection_lost(dbc->mysql->error_code()))
-                result = 1;
+                server_alive = false;
         }
     }
     dbc->last_query_time = seconds;
 
-    return result;
+    return server_alive;
 }
 
 

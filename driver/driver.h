@@ -643,6 +643,8 @@ struct DBC
   // Connection have been put to the pool
   int           need_to_wakeup = 0;
   fido_callback_func fido_callback = nullptr;
+  // Flag to indicate whether we have a transaction open
+  bool              transaction_open = false;
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
 
