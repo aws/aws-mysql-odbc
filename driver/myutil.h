@@ -258,7 +258,7 @@ void  myodbc_init               (void);
 void  myodbc_ov_init            (SQLINTEGER odbc_version);
 void  myodbc_sqlstate2_init     (void);
 void  myodbc_sqlstate3_init     (void);
-int   check_if_server_is_alive  (DBC *dbc);
+bool  is_server_alive           (DBC *dbc);
 
 bool   myodbc_append_quoted_name_std(std::string &str, const char *name);
 

@@ -81,7 +81,6 @@ SQLRETURN exec_stmt_query_std(STMT *stmt, const std::string &query,
   return stmt->dbc->execute_query(query.c_str(), query.size(), req_lock);
 }
 
-
 /**
   Link a list of fields to the current statement result.
 
@@ -2447,10 +2446,10 @@ ulong str_to_time_as_long(const char *str, uint length)
   the server is up with mysql_ping (to force a reconnect)
 */
 
-int check_if_server_is_alive( DBC *dbc )
+bool is_server_alive( DBC *dbc )
 {
     time_t seconds= (time_t) time( (time_t*)0 );
-    int result= 0;
+    bool server_alive = true;
 
     if ( (ulong)(seconds - dbc->last_query_time) >= CHECK_IF_ALIVE )
     {
@@ -2472,12 +2471,12 @@ int check_if_server_is_alive( DBC *dbc )
             */
 
             if (is_connection_lost(dbc->mysql->error_code()))
-                result = 1;
+                server_alive = false;
         }
     }
     dbc->last_query_time = seconds;
 
-    return result;
+    return server_alive;
 }
 
 
