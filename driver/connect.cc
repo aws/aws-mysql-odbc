@@ -1578,20 +1578,27 @@ SQLRETURN DBC::execute_query(const char* query,
     query_length = strlen(query);
   }
 
-  int return_code_server_alive, return_code_real_query;
-  if ((return_code_server_alive = check_if_server_is_alive(this)) ||
-      (return_code_real_query = this->mysql->real_query(query, query_length)))
-  {
-    result = set_error(MYERR_S1000, this->mysql->error(), this->mysql->error_code());
+  bool server_alive = is_server_alive(this);
+  if (!server_alive || this->mysql->real_query(query, query_length)) {
+    const unsigned int mysql_error_code = this->mysql->error_code();
 
-    if (return_code_server_alive ||
-        return_code_real_query == CR_SERVER_GONE_ERROR ||
-        return_code_real_query == CR_SERVER_LOST) 
-    {
+    result = set_error(MYERR_S1000, this->mysql->error(), mysql_error_code);
+
+    if (!server_alive || is_connection_lost(mysql_error_code)) {
+      bool rollback = (!autocommit_on(this) && trans_supported(this)) ||
+                      this->transaction_open;
+      if (rollback) {
+        this->mysql->real_query("ROLLBACK", 8);
+      }
+      this->transaction_open = false;
+
       const char *error_code;
-      if (this->fh->trigger_failover_if_needed("08S01", error_code)) 
-      {
-        result = set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
+      if (this->fh->trigger_failover_if_needed("08S01", error_code)) {
+        result =
+            set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
+      } else {
+        result =
+            set_error(MYERR_08S01, "The active SQL connection was lost.", 0);
       }
     }
   }

@@ -32,6 +32,8 @@
 */
 
 #include "driver.h"
+#include "driver/query_parsing.h"
+
 #include <locale.h>
 
 
@@ -46,8 +48,12 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       stmt->dbc->fh->invoke_start_time();
     }
 
-    int error= SQL_ERROR, native_error= 0;
     assert(stmt);
+
+    SQLRETURN error = SQL_ERROR;
+    int native_error = 0;
+    bool trigger_failover_upon_error = true;
+
     LOCK_STMT_DEFER(stmt);
 
     if (!query)
@@ -75,7 +81,8 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     MYLOG_STMT_TRACE(stmt, query);
     DO_LOCK_STMT();
-    if ( check_if_server_is_alive( stmt->dbc ) )
+
+    if ( !is_server_alive( stmt->dbc ) )
     {
       stmt->set_error("08S01" /* "HYT00" */,
                       stmt->dbc->mysql->error(),
@@ -111,9 +118,13 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       scroller_move(stmt);
       MYLOG_STMT_TRACE(stmt, stmt->scroller.query);
 
-      native_error = stmt->dbc->mysql->real_query(
-          stmt->scroller.query,
-          (unsigned long)stmt->scroller.query_len);
+      SQLRETURN rc = stmt->dbc->execute_query(stmt->scroller.query,
+                               static_cast<unsigned long>(stmt->scroller.query_len), false);
+      if (!SQL_SUCCEEDED(rc))
+      {
+          native_error = stmt->dbc->error.native_error;
+          trigger_failover_upon_error = false; // possible failover was already handled in execute_query()
+      }
     }
       /* Not using ssps for scroller so far. Relaxing a bit condition
        if allow_multiple_statements option selected by primitive check if
@@ -144,30 +155,65 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
     else
     {
       MYLOG_STMT_TRACE(stmt, "Using direct execution");
-      /* Need to close ps handler if it is open as our relsult will be generated
+      /* Need to close ps handler if it is open as our result will be generated
          by direct execution. and ps handler may create some chaos */
       ssps_close(stmt);
 
-      native_error = stmt->bind_query_attrs(false);
-      if (native_error == SQL_ERROR)
+      if (stmt->bind_query_attrs(false) == SQL_ERROR)
       {
         error = SQL_ERROR;
         goto exit;
       }
 
-      native_error = stmt->dbc->mysql->real_query(query, query_length);
+      SQLRETURN rc = stmt->dbc->execute_query(query, query_length, false);
+      if (SQL_SUCCEEDED(rc))
+      {
+          const std::vector<std::string> statements = parse_query_into_statements(query);
+          for (int i = statements.size() - 1; i >= 0; i--)
+          {
+              std::string statement = statements[i];
+              for (auto& c : statement) c = toupper(c);
+
+              if (statement == "START TRANSACTION" || statement == "BEGIN")
+              {
+                  stmt->dbc->transaction_open = true;
+                  break;
+              }
+              else if (statement == "COMMIT" || statement == "ROLLBACK")
+              {
+                  stmt->dbc->transaction_open = false;
+                  break;
+              }
+          }
+      }
+      else
+      {
+          native_error = stmt->dbc->error.native_error;
+          trigger_failover_upon_error = false; // possible failover was already handled in execute_query()
+      }
     }
 
     MYLOG_STMT_TRACE(stmt, "query has been executed");
 
     if (native_error)
     {
-      MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql->error());
-      stmt->set_error("HY000");
+      const auto error_code = stmt->dbc->mysql->error_code();
+      if (error_code)
+      {
+          MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql->error());
+          stmt->set_error("HY000");
 
-      /* For some errors - translating to more appropriate status */
-      translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                      stmt->dbc->mysql->error_code());
+          // For some errors - translating to more appropriate status
+          translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000, error_code);
+      }
+      else
+      {
+          MYLOG_STMT_TRACE(stmt, stmt->dbc->error.message.c_str());
+          stmt->set_error(stmt->dbc->error.sqlstate.c_str(),
+              stmt->dbc->error.message.c_str(),
+              stmt->dbc->error.native_error);
+      }
+
       goto exit;
     }
 
@@ -216,7 +262,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
     error= SQL_SUCCESS;
 
 exit:
-    if (error == SQL_ERROR) {
+    if (trigger_failover_upon_error && error == SQL_ERROR) {
       const char *error_code;
       if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), error_code))
         stmt->set_error(error_code, "The active SQL connection has changed.", 0);

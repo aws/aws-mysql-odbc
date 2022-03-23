@@ -434,7 +434,6 @@ MYSQL_RES *server_show_create_table(STMT        *stmt,
                                     SQLCHAR     *table,
                                     SQLSMALLINT  table_length)
 {
-  CONNECTION *mysql= stmt->dbc->mysql;
 	char tmpbuff[1024];
   std::string query;
   size_t cnt = 0;
@@ -458,12 +457,12 @@ MYSQL_RES *server_show_create_table(STMT        *stmt,
 
   MYLOG_STMT_TRACE(stmt, query.c_str());
 
-  if (mysql->real_query(query.c_str(), (unsigned long)query.length()))
+  if (!SQL_SUCCEEDED(stmt->dbc->execute_query(query.c_str(), (SQLULEN)query.length(), false)))
   {
     return NULL;
   }
 
-  return mysql->store_result();
+  return stmt->dbc->mysql->store_result();
 }
 
 

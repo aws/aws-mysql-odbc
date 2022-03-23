@@ -635,6 +635,7 @@ struct DBC
   SQLULEN            sql_select_limit = -1;        // value of the sql_select_limit currently set for a session
                                                    //   (SQLULEN)(-1) if wasn't set
   int                need_to_wakeup = 0;           // Connection have been put to the pool
+  bool               transaction_open = false;     // Flag to indicate whether we have a transaction open
   fido_callback_func fido_callback = nullptr;
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */

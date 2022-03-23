@@ -54,6 +54,7 @@ add_executable(
   failover_handler_test.cc
   failover_reader_handler_test.cc
   failover_writer_handler_test.cc
+  query_parsing_test.cc
   topology_service_test.cc
 )
 
