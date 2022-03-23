@@ -259,14 +259,14 @@ void  myodbc_init               (void);
 void  myodbc_ov_init            (SQLINTEGER odbc_version);
 void  myodbc_sqlstate2_init     (void);
 void  myodbc_sqlstate3_init     (void);
-int   check_if_server_is_alive  (DBC *dbc);
+bool  is_server_alive           (DBC *dbc);
 
 bool   myodbc_append_quoted_name_std(std::string &str, const char *name);
 
 SQLRETURN set_handle_error          (SQLSMALLINT HandleType, SQLHANDLE handle,
                                     myodbc_errid errid, const char *errtext, SQLINTEGER errcode);
 SQLRETURN set_conn_error(DBC *dbc,myodbc_errid errid, const char *errtext,
-                        SQLINTEGER errcode);
+                        SQLINTEGER errcode, char* prefix = MYODBC_ERROR_PREFIX);
 SQLRETURN set_env_error (ENV * env,myodbc_errid errid, const char *errtext,
                         SQLINTEGER errcode);
 SQLRETURN copy_str_data (SQLSMALLINT HandleType, SQLHANDLE Handle,
