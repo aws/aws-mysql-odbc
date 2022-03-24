@@ -70,7 +70,21 @@ protected:
         metrics_container = std::make_shared<MOCK_CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds);
     }
 
-    void TearDown() override {}
+    void TearDown() override {
+        if (SQL_NULL_HDBC != hdbc) {
+            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+        }
+        if (SQL_NULL_HENV != env) {
+            SQLFreeHandle(SQL_HANDLE_ENV, env);
+        }
+        if (nullptr != dbc) {
+            dbc = nullptr;
+        }
+        if (nullptr != ds) {
+            ds_delete(ds);
+            ds = nullptr;
+        }
+    }
 };
 
 TEST_F(ClusterAwareMetricsContainerTest, isEnabled) {
