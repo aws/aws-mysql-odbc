@@ -8,7 +8,8 @@ on:
       - '**/*.md'
 
 env:
-  BUILD_TYPE: Release
+  LINUX_BUILD_TYPE: Release
+  WINDOWS_BUILD_TYPE: Debug
 
 jobs:
   build-windows:
@@ -22,10 +23,23 @@ jobs:
         uses: actions/checkout@v2
 
       # Configure build environment/dependencies
-      - name: Install MySQL client libs
+      - name: Cache MySQL client libs and include files
+        id: cache-mysql
+        uses: actions/cache@v3
+        with:
+          path: |
+            C:/mysql-8.0.26-winx64/
+          key: ${{ runner.os }}-mysql-${{ hashFiles('**/VersionInfo.h') }}
+
+      - name: Install MySQL client libs and include files
+        if: steps.cache-mysql.outputs.cache-hit != 'true'
         run: |
           curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.26-winx64.zip -o mysql.zip
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.26-winx64-debug-test.zip -o mysql-debug.zip
           unzip -d C:/ mysql.zip
+          mkdir C:/mysql-8.0.26-winx64-debug
+          unzip -d C:/mysql-8.0.26-winx64-debug mysql-debug.zip
+          mv -Force C:/mysql-8.0.26-winx64-debug/mysql-8.0.26-winx64/lib/debug/mysqlclient.lib C:/mysql-8.0.26-winx64/lib/mysqlclient.lib
             
       - name: Create build environment
         shell: bash
@@ -35,7 +49,7 @@ jobs:
         shell: bash
         run: cmake -S . -B build -A x64
                 -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DCMAKE_BUILD_TYPE=$WINDOWS_BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_GTESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
@@ -45,17 +59,20 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}/build
         run: |
-          cmake --build . --config $BUILD_TYPE
+          cmake --build . --config $WINDOWS_BUILD_TYPE
 
       - name: Run failover tests
         if: always()
         working-directory: ${{ github.workspace }}/build/testing
         shell: bash
-        run: ctest -C $BUILD_TYPE --output-on-failure
-        env:
-          TEST_DSN: test
-          TEST_UID: root
-          TEST_DRIVER: MySQL ODBC 8.0 Driver
+        run: ctest -C $WINDOWS_BUILD_TYPE --output-on-failure
+
+      - name: Check memory leaks
+        if: always()
+        working-directory: ${{ github.workspace }}/build/testing/Testing/Temporary
+        run:  |
+          $is_leaking = Select-String  -Path ./LastTest.log -Pattern 'leak' -SimpleMatch
+          if ($is_leaking) {echo $is_leaking; exit 1;}
 
       # Upload artifacts
       - name: Upload build artifacts - Binaries
@@ -80,7 +97,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: windows-failover_results
+          name: windows-failover-results
           path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
 
   build-linux:
@@ -109,7 +126,7 @@ jobs:
         shell: bash
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DCMAKE_BUILD_TYPE=$LINUX_BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DWITH_UNIXODBC=1
                 -DENABLE_GTESTS=TRUE
@@ -119,7 +136,7 @@ jobs:
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: cmake --build . --config $BUILD_TYPE
+        run: cmake --build . --config $LINUX_BUILD_TYPE
 
       # Test driver
       - name: Run failover tests on Linux
@@ -145,5 +162,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: linux-failover_results
+          name: linux-failover-results
           path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log

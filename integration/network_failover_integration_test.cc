@@ -41,7 +41,7 @@
 #include <sql.h>
 #include <sqlext.h>
 
-#define MAX_NAME_LEN 255
+#define MAX_NAME_LEN 4096
 #define SQL_MAX_MESSAGE_LENGTH 512
 static const std::string DOWN_STREAM_STR = "DOWNSTREAM";
 static const std::string UP_STREAM_STR = "UPSTREAM";

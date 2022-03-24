@@ -40,7 +40,7 @@
 #include <sqlext.h>
 #include <gtest/gtest.h>
 
-#define MAX_NAME_LEN 255
+#define MAX_NAME_LEN 4096
 #define SQL_MAX_MESSAGE_LENGTH 512
 
 static SQLHENV env;
