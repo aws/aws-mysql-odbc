@@ -192,15 +192,18 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION
 // TODO consider thread safety and usage of pointers
 std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_from_cache() {
     if (topology_cache.empty()) {
-        // TODO Put into container
         metrics_container->register_use_cached_topology(false);
         return nullptr;
     }
         
     auto result = topology_cache.find(cluster_id);
-    // TODO Put into container
+    if (result == topology_cache.end()) {
+        metrics_container->register_use_cached_topology(false);
+        return nullptr;
+    }
+    
     metrics_container->register_use_cached_topology(true);
-    return result != topology_cache.end() ? result->second : nullptr;
+    return result->second;
 }
 
 // TODO consider thread safety and usage of pointers
