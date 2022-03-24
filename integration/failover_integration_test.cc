@@ -35,6 +35,7 @@
 #include <aws/rds/model/FailoverDBClusterRequest.h>
 
 #include <cstdlib>
+#include <stdexcept>
 #include <sql.h>
 #include <sqlext.h>
 #include <gtest/gtest.h>
@@ -174,11 +175,11 @@ std::vector<std::string> retrieve_topology_via_SDK(Aws::RDS::RDSClient client, A
   const Aws::RDS::Model::DBCluster cluster = result.GetDBClusters()[0];
 
   for (const auto& instance : cluster.GetDBClusterMembers()) {
-    Aws::String instance_id = instance.GetDBInstanceIdentifier();
+    std::string instance_id(instance.GetDBInstanceIdentifier());
     if (instance.GetIsClusterWriter()) {
-      writer = instance.GetDBInstanceIdentifier();
+      writer = instance_id;
     } else {
-      readers.push_back(instance.GetDBInstanceIdentifier());
+      readers.push_back(instance_id);
     }
   }
 
@@ -187,6 +188,18 @@ std::vector<std::string> retrieve_topology_via_SDK(Aws::RDS::RDSClient client, A
     instances.push_back(reader);
   }
   return instances;
+}
+
+std::pair<std::string, std::string> retrieve_writer_endpoint(Aws::RDS::RDSClient client,
+                                                             Aws::String cluster_id,
+                                                             std::string endpoint_suffix) {
+  std::vector<std::string> instances = retrieve_topology_via_SDK(client, cluster_id);
+  if (instances.empty()) {
+    throw std::runtime_error("Unable to fetch cluster instances.");
+  }
+  const std::string writer_id = instances[0];
+  auto instance = std::make_pair(writer_id, writer_id + endpoint_suffix);
+  return instance;
 }
 
 Aws::RDS::Model::DBCluster get_DB_cluster(Aws::RDS::RDSClient client, Aws::String cluster_id) {
@@ -263,29 +276,6 @@ bool is_DB_instance_reader(Aws::RDS::RDSClient client, Aws::String cluster_id, A
 
 // Tests
 
-TEST_F(FailoverIntegrationTest, ClusterInstancesRetrieval) {
-  Aws::Client::ClientConfiguration clientConfig;
-  clientConfig.region = "us-east-2";
-  Aws::Auth::AWSCredentials credentials;
-  credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
-  credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
-  Aws::RDS::RDSClient client(credentials, clientConfig);
-
-  std::vector<std::string> instances_sdk = retrieve_topology_via_SDK(client, cluster_id);
-  EXPECT_FALSE(instances_sdk.empty());
-  std::string initial_writer_id = instances_sdk[0];
-  std::string initial_writer(initial_writer_id);
-  initial_writer.append(DB_CONN_STR_SUFFIX);
-
-  build_connection_string(conn_in, dsn, user, pwd, initial_writer, MYSQL_PORT);
-  std::vector<std::string> instances_sql = retrieve_topology_via_SQL(conn_in);
-
-  EXPECT_FALSE(instances_sql.empty());
-
-  EXPECT_EQ(instances_sdk[0], instances_sql[0]);
-  EXPECT_EQ(instances_sdk.size(), instances_sql.size());
-}
-
 /**
 * Current writer dies, a reader instance is nominated to be a new writer, failover to the new
 * writer. Driver failover occurs when executing a method against the connection
@@ -298,13 +288,11 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
   credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
   Aws::RDS::RDSClient client(credentials, clientConfig);
 
-  std::vector<std::string> instances = retrieve_topology_via_SDK(client, cluster_id);
-  EXPECT_FALSE(instances.empty());
-  std::string initial_writer_id = instances[0];
-  std::string initial_writer(initial_writer_id);
-  initial_writer.append(DB_CONN_STR_SUFFIX);
+  auto initial_writer = retrieve_writer_endpoint(client, cluster_id, DB_CONN_STR_SUFFIX);
+  auto initial_writer_id = initial_writer.first;
+  auto initial_writer_endpoint = initial_writer.second;
   
-  build_connection_string(conn_in, dsn, user, pwd, initial_writer, MYSQL_PORT);
+  build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT);
   SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
   SQLSMALLINT len, length;
@@ -346,11 +334,7 @@ TEST_F(FailoverIntegrationTest, EndToEndTest) {
   credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
   Aws::RDS::RDSClient client(credentials, clientConfig);
 
-  std::vector<std::string> instances = retrieve_topology_via_SDK(client, cluster_id);
-  EXPECT_FALSE(instances.empty());
-  std::string initial_writer_id = instances[0];
-  std::string initial_writer(initial_writer_id);
-  initial_writer.append(DB_CONN_STR_SUFFIX);
+  std::string initial_writer = retrieve_writer_endpoint(client, cluster_id, DB_CONN_STR_SUFFIX).second;
 
   build_connection_string(conn_in, dsn, user, pwd, initial_writer, MYSQL_PORT);
   SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
