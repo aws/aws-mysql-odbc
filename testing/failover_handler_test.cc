@@ -87,6 +87,10 @@ class FailoverHandlerTest : public testing::Test {
         if (nullptr != dbc) {
             dbc = nullptr;
         }
+        if (nullptr != ds) {
+            ds_delete(ds);
+            ds = nullptr;
+        }
     }
 };
 
