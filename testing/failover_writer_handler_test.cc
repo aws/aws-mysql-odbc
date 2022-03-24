@@ -252,7 +252,6 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     mock_writer_connection = new MOCK_CONNECTION();
     mock_new_writer_connection = new MOCK_CONNECTION();
     mock_reader_a_connection = new MOCK_CONNECTION();
-    mock_reader_b_connection = new MOCK_CONNECTION();
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
@@ -276,10 +275,7 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_writer_connection;
         }));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host))
-        .WillRepeatedly(Return(mock_reader_a_connection));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host))
-        .WillRepeatedly(Return(mock_reader_b_connection));
+
     EXPECT_CALL(*mock_connection_handler, connect(new_writer_host))
         .WillRepeatedly(Return(mock_new_writer_connection));
 

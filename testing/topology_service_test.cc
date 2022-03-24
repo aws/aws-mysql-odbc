@@ -255,6 +255,8 @@ TEST_F(TopologyServiceTest, SharedTopology) {
     // the underlying shared topology got cleared.
     EXPECT_EQ(nullptr, topology1);
     EXPECT_EQ(nullptr, topology2);
+
+    delete ts2;
 }
 
 TEST_F(TopologyServiceTest, ClearCache) {

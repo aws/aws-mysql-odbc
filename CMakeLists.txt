@@ -446,7 +446,7 @@ IF(WIN32)
                         # Add some additional help for debug builds
                         IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
                                 STRING(REPLACE "/Zi" "/ZI" NEW_FLAGS "${NEW_FLAGS}")
-                                SET(NEW_FLAGS "${NEW_FLAGS} /RTC1 ")
+                                SET(NEW_FLAGS "${NEW_FLAGS} /RTC1")
                         ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
                         IF(CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
