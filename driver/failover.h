@@ -203,6 +203,7 @@ class FAILOVER_HANDLER {
     bool failover_to_reader(const char*& new_error_code);
     bool failover_to_writer(const char*& new_error_code);
 
+    void set_cluster_id(std::string host, int port);
     void set_cluster_id(std::string cluster_id);
     std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container;
     std::chrono::steady_clock::time_point invoke_start_time_ms;
