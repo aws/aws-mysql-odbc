@@ -36,6 +36,8 @@
 #include "cluster_aware_metrics.h"
 #include "mylog.h"
 
+#define DEFAULT_CLUSTER_ID "no_id"
+
 struct DBC;
 struct DataSource;
 
@@ -70,7 +72,7 @@ private:
     bool can_gather = false;    
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
-    std::string cluster_id = "[Unknown Id]";
+    std::string cluster_id = DEFAULT_CLUSTER_ID;
 
 protected:
     bool is_enabled();
