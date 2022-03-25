@@ -151,7 +151,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
     // Cannot delete at the end as it may cause double delete
     Mock::AllowLeak(mock_reader_a_connection);
 
-    auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
+    const auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
     new_topology->add_host(reader_a_host);
     new_topology->add_host(reader_b_host);
@@ -170,7 +170,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
     EXPECT_CALL(*mock_ts, get_topology(mock_reader_a_connection, true))
         .WillRepeatedly(Return(new_topology));
 
-    Sequence s;
+    const Sequence s;
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).InSequence(s);
     EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).InSequence(s);
 
@@ -186,7 +186,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
 
     FAILOVER_WRITER_HANDLER writer_handler(
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, nullptr, 0);
-    auto result = writer_handler.failover(current_topology);
+    const auto result = writer_handler.failover(current_topology);
 
     EXPECT_TRUE(result.connected);
     EXPECT_FALSE(result.is_new_host);
@@ -257,7 +257,7 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     // Cannot delete at the end as it may cause double delete
     Mock::AllowLeak(mock_writer_connection);
 
-    auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
+    const auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
     new_topology->add_host(reader_a_host);
     new_topology->add_host(reader_b_host);
