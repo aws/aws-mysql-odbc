@@ -268,7 +268,7 @@ TEST_F(FailoverHandlerTest, RDS_CustomCluster) {
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
     EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(0);
+    EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(1);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_cluster_info();
@@ -291,7 +291,7 @@ TEST_F(FailoverHandlerTest, RDS_Instance) {
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
     EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(0);
+    EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(1);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_cluster_info();

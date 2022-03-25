@@ -1503,7 +1503,7 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
       cluster_id_str = dbc->fh->cluster_id;
     }
 
-    if ((cluster_id_str.empty() || ds->gather_metrics_per_instance) && dbc->mysql) {
+    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds->gather_metrics_per_instance) && dbc->mysql) {
       cluster_id_str = dbc->mysql->get_host();
       cluster_id_str.append(":").append(std::to_string(dbc->mysql->get_port()));
     }
