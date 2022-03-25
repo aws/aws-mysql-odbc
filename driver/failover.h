@@ -172,7 +172,7 @@ class FAILOVER_HANDLER {
     bool is_rds_proxy();
     bool is_cluster_topology_available();
     void invoke_start_time();
-    std::string cluster_id = "no_id";
+    std::string cluster_id = DEFAULT_CLUSTER_ID;
 
    private:
     DBC* dbc = nullptr;
