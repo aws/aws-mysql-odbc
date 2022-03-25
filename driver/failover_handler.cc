@@ -194,10 +194,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             std::string cluster_rds_host =
                 get_rds_cluster_host_url(host_pattern);
             if (!cluster_rds_host.empty()) {
-                clid_str.assign(cluster_rds_host);
-                clid_str.append(":");
-                clid_str.append(std::to_string(host_pattern_port));
-                set_cluster_id(clid_str);
+                set_cluster_id(cluster_rds_host, host_pattern_port);
             }
         }
 
@@ -276,21 +273,17 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             } else if (m_is_rds_proxy) {
                 // Each proxy is associated with a single cluster so it's safe
                 // to use RDS Proxy Url as cluster identification
-                clid_str.assign(main_host);
-                clid_str.append(":");
-                clid_str.append(std::to_string(main_port));
-                set_cluster_id(clid_str);
+                set_cluster_id(main_host, main_port);
             } else {
                 // If it's cluster endpoint or reader cluster endpoint,
                 // then let's use as cluster identification
 
-                std::string cluster_rds_host =
-                    get_rds_cluster_host_url(main_host);
+                std::string cluster_rds_host = get_rds_cluster_host_url(main_host);
                 if (!cluster_rds_host.empty()) {
-                    clid_str.assign(cluster_rds_host);
-                    clid_str.append(":");
-                    clid_str.append(std::to_string(main_port));
-                    set_cluster_id(clid_str);
+                    set_cluster_id(cluster_rds_host, main_port);
+                } else {
+                    // Main host is an instance endpoint
+                    set_cluster_id(main_host, main_port);
                 }
             }
 
@@ -300,6 +293,11 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
 
     initialized = true;
     return rc;
+}
+
+void FAILOVER_HANDLER::set_cluster_id(std::string host, int port) {
+    const std::string cluster_id = host + ":" + std::to_string(port);
+    set_cluster_id(cluster_id);
 }
 
 void FAILOVER_HANDLER::set_cluster_id(std::string cluster_id) {
