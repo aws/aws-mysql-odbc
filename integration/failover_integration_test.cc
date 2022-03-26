@@ -52,6 +52,11 @@ protected:
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
   std::string SESSION_TOKEN = std::getenv("AWS_SESSION_TOKEN");
+  Aws::Auth::AWSCredentials credentials = Aws::Auth::AWSCredentials(Aws::String(ACCESS_KEY),
+                                                                    Aws::String(SECRET_ACCESS_KEY),
+                                                                    Aws::String(SESSION_TOKEN));
+  Aws::Client::ClientConfiguration client_config;
+  Aws::RDS::RDSClient rds_client;
 
   char* dsn = std::getenv("TEST_DSN");
   char* db = std::getenv("TEST_DATABASE");
@@ -85,7 +90,8 @@ protected:
   }
 
   void SetUp() override {
-
+    client_config.region = "us-east-2";
+    rds_client = Aws::RDS::RDSClient(credentials, client_config);
   }
 
   void TearDown() override {  
@@ -282,15 +288,7 @@ bool is_DB_instance_reader(Aws::RDS::RDSClient client, Aws::String cluster_id, A
 * writer. Driver failover occurs when executing a method against the connection
 */
 TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionInvocation) {
-  Aws::Client::ClientConfiguration clientConfig;
-  clientConfig.region = "us-east-2";
-  Aws::Auth::AWSCredentials credentials;
-  credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
-  credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
-  credentials.SetSessionToken(Aws::String(SESSION_TOKEN));
-  Aws::RDS::RDSClient client(credentials, clientConfig);
-
-  auto initial_writer = retrieve_writer_endpoint(client, cluster_id, DB_CONN_STR_SUFFIX);
+  auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
   auto initial_writer_id = initial_writer.first;
   auto initial_writer_endpoint = initial_writer.second;
   
@@ -304,7 +302,7 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
     FAIL();
   }
 
-  failover_cluster_and_wait_until_writer_changed(client, cluster_id, initial_writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
 
   SQLCHAR buf2[255];
   SQLLEN buflen2;
@@ -322,23 +320,14 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
   EXPECT_EQ(expected, state);
   
   std::string current_connection_id = query_instance_id(dbc);
-  EXPECT_TRUE(is_DB_instance_writer(client, cluster_id, current_connection_id));
+  EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
   EXPECT_NE(current_connection_id, initial_writer_id);
 
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
 TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
-  Aws::Client::ClientConfiguration client_config;
-  client_config.region = "us-east-2";
-  Aws::Auth::AWSCredentials credentials;
-  credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
-  credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
-  credentials.SetSessionToken(Aws::String(SESSION_TOKEN));
-  Aws::RDS::RDSClient client(credentials, client_config);
-
-  auto initial_writer =
-      retrieve_writer_endpoint(client, cluster_id, DB_CONN_STR_SUFFIX);
+  auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
   auto initial_writer_id = initial_writer.first;
 
   SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
@@ -351,18 +340,14 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
       reinterpret_cast<char*>(conn_in),
       "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;LOG_QUERY=1;MULTI_STATEMENTS=0;",
       dsn, user, pwd, MYSQL_CLUSTER_URL.c_str(), MYSQL_PORT);
-  EXPECT_EQ(SQL_SUCCESS,
-            SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out,
-                             MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 
   sprintf(
     reinterpret_cast<char*>(conn_in),
     "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;LOG_QUERY=1;MULTI_STATEMENTS=1;",
     dsn, user, pwd, MYSQL_CLUSTER_URL.c_str(), MYSQL_PORT);
-  EXPECT_EQ(SQL_SUCCESS,
-            SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out,
-                             MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   SQLHSTMT handle;
   SQLSMALLINT stmt_length;
@@ -374,17 +359,15 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
   // Verify that connection accepts multi-statement sql
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
 
-  // Crash writer isntance and nominate a new writer
-  failover_cluster_and_wait_until_writer_changed(client, cluster_id, initial_writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+
   EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, (SQLCHAR*)"select @aurora_server_id", SQL_NTS));
-  EXPECT_EQ(SQL_SUCCESS,
-            SQLError(env, dbc, handle, stmt_sqlstate, &native_error, message,
-                     SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+  EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
   const std::string state = reinterpret_cast<char*>(stmt_sqlstate);
   const std::string expected = "08S02";
   EXPECT_EQ(expected, state);
 
-  // Verify that connection still accepts multi-statement sql
+  // Verify that connection still accepts multi-statement SQL
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
 
   EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
@@ -392,15 +375,7 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
 }
 
 TEST_F(FailoverIntegrationTest, EndToEndTest) {
-  Aws::Client::ClientConfiguration clientConfig;
-  clientConfig.region = "us-east-2";
-  Aws::Auth::AWSCredentials credentials;
-  credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
-  credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
-  credentials.SetSessionToken(Aws::String(SESSION_TOKEN));
-  Aws::RDS::RDSClient client(credentials, clientConfig);
-
-  std::string initial_writer = retrieve_writer_endpoint(client, cluster_id, DB_CONN_STR_SUFFIX).second;
+  std::string initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX).second;
 
   build_connection_string(conn_in, dsn, user, pwd, initial_writer, MYSQL_PORT);
   SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
@@ -423,7 +398,7 @@ TEST_F(FailoverIntegrationTest, EndToEndTest) {
   EXPECT_EQ(SQL_SUCCESS, SQLGetData(handle, 1, SQL_CHAR, buf, sizeof(buf), &buflen));
   EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
 
-  failover_cluster(client, cluster_id);
+  failover_cluster(rds_client, cluster_id);
   std::this_thread::sleep_for(std::chrono::seconds(90));
 
   SQLCHAR buf2[255];
