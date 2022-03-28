@@ -164,3 +164,69 @@ jobs:
         with:
           name: linux-failover-results
           path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
+
+  build-mac:
+    name: MacOS
+    runs-on: macos-latest
+    env:
+      CMAKE_GENERATOR: Unix Makefiles
+      MYSQL_DIR: /usr/local/opt/mysql-client
+      ODBC_DM_INCLUDES: /usr/local/include
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Configure build environment/dependencies
+      - name: Install MySQL client libs & other dependencies
+        run: |
+          brew unlink unixodbc
+          brew install libiodbc mysql-client
+      
+      - name: Create build environment
+        shell: bash
+        run: cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B build
+                -G "$CMAKE_GENERATOR"
+                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DMYSQLCLIENT_STATIC_LINKING=true
+                -DODBC_INCLUDES=$ODBC_DM_INCLUDES
+                -DENABLE_GTESTS=TRUE
+                -DENABLE_INTEGRATION_TESTS=FALSE
+
+      # Build driver
+      - name: Build driver
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: |
+          export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
+          cmake --build .
+
+      # Test driver
+      - name: Run driver tests
+        if: success()
+        working-directory: ${{ github.workspace }}/build/testing
+        shell: bash
+        run: ctest
+
+      # Upload artifacts
+      - name: Upload build artifacts - Binaries
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos-binaries
+          path: ${{ github.workspace }}/build/bin/
+      - name: Upload build artifacts - Libraries
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos-libraries
+          path: ${{ github.workspace }}/build/lib/
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos-failover-results
+          path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
