@@ -49,9 +49,8 @@ int main(int argc, char** argv) {
   std::cout << (failures ? "Not all tests passed." : "All tests passed")
             << std::endl;
 #ifdef __APPLE__
-  // Disable malloc logging and report memory leaks
+  // Disable malloc logging
   system("unset MallocStackLogging");
-  system("leaks testing > leaks_testing");
 #endif
   return failures;
 }
