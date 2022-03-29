@@ -50,7 +50,7 @@ public:
     HOST_INFO(std::string host, int port, HOST_STATE state, bool is_writer);
     HOST_INFO(const char* host, int port, HOST_STATE state, bool is_writer);
     ~HOST_INFO();
-    const int NO_PORT = -1;
+
 
     int get_port();
     std::string get_host();
@@ -63,6 +63,7 @@ public:
     bool is_host_writer();
     void mark_as_writer(bool writer);
     static bool is_host_same(const std::shared_ptr<HOST_INFO>& h1, const std::shared_ptr<HOST_INFO>& h2);
+    static constexpr int NO_PORT = -1;
 
     // used to be properties - TODO - remove the ones that are not necessary
     std::string session_id;
@@ -73,7 +74,7 @@ public:
 private:
     const std::string HOST_PORT_SEPARATOR = ":";
     const std::string host;
-    const int port;
+    const int port = NO_PORT;
 
     HOST_STATE host_state;
     bool is_writer;
