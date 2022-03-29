@@ -39,10 +39,7 @@
 // through CLUSTER_TOPOLOGY_INFO
 // Move the implementation to it's own file
 
-HOST_INFO::HOST_INFO()
-    : HOST_INFO("", -1)
-{
-}
+HOST_INFO::HOST_INFO() : HOST_INFO("", NO_PORT) {}
 
 HOST_INFO::HOST_INFO(std::string host, int port)
     : HOST_INFO(host, port, UP, false) {}
