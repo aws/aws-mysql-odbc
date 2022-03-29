@@ -71,7 +71,7 @@ jobs:
         if: always()
         working-directory: ${{ github.workspace }}/build/testing/Testing/Temporary
         run:  |
-          $is_leaking = Select-String  -Path ./LastTest.log -Pattern 'leak' -SimpleMatch
+          $is_leaking = Select-String -Path ./LastTest.log -Pattern 'leak' -SimpleMatch
           if ($is_leaking) {echo $is_leaking; exit 1;}
 
       # Upload artifacts
@@ -211,6 +211,14 @@ jobs:
         shell: bash
         run: ctest
 
+      - name: Check memory leaks
+        if: always()
+        working-directory: ${{ github.workspace }}/build/testing/bin
+        run:  |
+          leaks -atExit -- ./testing > ../leaks_testing.txt
+          export is_leaking=$?
+          if (( $is_leaking != 0 )); then echo $is_leaking; exit 1; else echo "no memory leaks"; fi;
+
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
@@ -230,3 +238,9 @@ jobs:
         with:
           name: macos-failover-results
           path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
+      - name: Upload memory leaks check
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos-memory-leaks-results
+          path: ${{ github.workspace }}/build/testing/leaks_testing.txt
