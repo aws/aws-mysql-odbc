@@ -1582,12 +1582,14 @@ SQLRETURN DBC::execute_query(const char* query,
   if (!server_alive || this->mysql->real_query(query, query_length)) {
     const unsigned int mysql_error_code = this->mysql->error_code();
 
+    MYLOG_DBC_TRACE(this, this->mysql->error());
     result = set_error(MYERR_S1000, this->mysql->error(), mysql_error_code);
 
     if (!server_alive || is_connection_lost(mysql_error_code)) {
       bool rollback = (!autocommit_on(this) && trans_supported(this)) ||
                       this->transaction_open;
       if (rollback) {
+        MYLOG_DBC_TRACE(this, "Rolling back");
         this->mysql->real_query("ROLLBACK", 8);
       }
       this->transaction_open = false;
