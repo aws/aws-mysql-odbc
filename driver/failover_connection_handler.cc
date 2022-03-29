@@ -79,7 +79,7 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(CONNECTION_INTERFACE* new_co
         // TODO: should we also update dbc->ds when updating connection? How
         // this would affect the user?  Same mentioned in TODO above
         //  The only difference would be ds->server and ds->server8. Currently
-        //  we're presering the initial server information.
+        //  we're preserving the initial server information.
     }
 }
 
