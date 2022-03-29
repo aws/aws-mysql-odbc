@@ -1583,6 +1583,7 @@ SQLRETURN DBC::execute_query(const char* query,
   {
       const unsigned int mysql_error_code = dbc->mysql->error_code();
 
+      MYLOG_DBC_TRACE(dbc, dbc->mysql->error());
       result = set_error(MYERR_S1000, dbc->mysql->error(), mysql_error_code);
 
       if (!server_alive || is_connection_lost(mysql_error_code))
@@ -1590,6 +1591,7 @@ SQLRETURN DBC::execute_query(const char* query,
           bool rollback = (!autocommit_on(dbc) && trans_supported(dbc)) || dbc->transaction_open;
           if (rollback)
           {
+              MYLOG_DBC_TRACE(dbc, "Rolling back");
               dbc->mysql->real_query("ROLLBACK", 8);
           }
           dbc->transaction_open = false;
