@@ -57,6 +57,7 @@ class NetworkFailoverIntegrationTest : public testing::Test {
   char* pwd = std::getenv("TEST_PASSWORD");
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
+  std::string SESSION_TOKEN = std::getenv("AWS_SESSION_TOKEN");
 
   std::vector<Aws::RDS::Model::DBClusterMember> readers;
   Aws::RDS::Model::DBClusterMember writer;
@@ -158,6 +159,7 @@ class NetworkFailoverIntegrationTest : public testing::Test {
     Aws::Auth::AWSCredentials credentials;
     credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
     credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
+    credentials.SetSessionToken(Aws::String(SESSION_TOKEN));
 
     Aws::String cluster_id(MYSQL_CLUSTER_URL.substr(0, MYSQL_CLUSTER_URL.find('.')));
     Aws::RDS::RDSClient client(credentials, clientConfig);
