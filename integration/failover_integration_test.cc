@@ -51,6 +51,7 @@ class FailoverIntegrationTest : public testing::Test {
 protected:
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
+  std::string SESSION_TOKEN = std::getenv("AWS_SESSION_TOKEN");
 
   char* dsn = std::getenv("TEST_DSN");
   char* db = std::getenv("TEST_DATABASE");
@@ -286,6 +287,7 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
   Aws::Auth::AWSCredentials credentials;
   credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
   credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
+  credentials.SetSessionToken(Aws::String(SESSION_TOKEN));
   Aws::RDS::RDSClient client(credentials, clientConfig);
 
   auto initial_writer = retrieve_writer_endpoint(client, cluster_id, DB_CONN_STR_SUFFIX);
@@ -332,6 +334,7 @@ TEST_F(FailoverIntegrationTest, EndToEndTest) {
   Aws::Auth::AWSCredentials credentials;
   credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
   credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
+  credentials.SetSessionToken(Aws::String(SESSION_TOKEN));
   Aws::RDS::RDSClient client(credentials, clientConfig);
 
   std::string initial_writer = retrieve_writer_endpoint(client, cluster_id, DB_CONN_STR_SUFFIX).second;

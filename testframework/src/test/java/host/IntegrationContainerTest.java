@@ -54,6 +54,7 @@ public class IntegrationContainerTest {
           System.getenv("TEST_PASSWORD") : "my_test_password";
   private static final String ACCESS_KEY = System.getenv("AWS_ACCESS_KEY_ID");
   private static final String SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
+  private static final String SESSION_TOKEN = System.getenv("AWS_SESSION_TOKEN");
 
   private static final String DRIVER_LOCATION = System.getenv("DRIVER_PATH");
   private static final String TEST_DB_CLUSTER_IDENTIFIER = System.getenv("TEST_DB_CLUSTER_IDENTIFIER");
@@ -161,6 +162,7 @@ public class IntegrationContainerTest {
         .withEnv("TEST_DATABASE", TEST_DATABASE)
         .withEnv("AWS_ACCESS_KEY_ID", ACCESS_KEY)
         .withEnv("AWS_SECRET_ACCESS_KEY", SECRET_ACCESS_KEY)
+        .withEnv("AWS_SESSION_TOKEN", SESSION_TOKEN)
         .withEnv("TEST_SERVER", dbHostCluster)
         .withEnv("TEST_RO_SERVER", dbHostClusterRo)
         .withEnv("TOXIPROXY_CLUSTER_NETWORK_ALIAS", "toxiproxy-instance-cluster")
