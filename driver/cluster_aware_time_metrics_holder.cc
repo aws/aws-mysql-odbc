@@ -35,7 +35,7 @@ CLUSTER_AWARE_TIME_METRICS_HOLDER::~CLUSTER_AWARE_TIME_METRICS_HOLDER() {}
 std::string CLUSTER_AWARE_TIME_METRICS_HOLDER::report_metrics() {
     std::string log_message = "";
 
-    log_message.append("\n** Performance Metrics Report for '").append(metric_name).append("' **\n");
+    log_message.append("\n\n** Performance Metrics Report for '").append(metric_name).append("' **");
     if (number_of_queries_issued > 0) {
       log_message.append("\nLongest reported time: ").append(std::to_string(longest_query_time_ms)).append(" ms");
       log_message.append("\nShortest reported time: ").append(std::to_string(shortest_query_time_ms)).append(" ms");
@@ -104,9 +104,4 @@ std::string CLUSTER_AWARE_TIME_METRICS_HOLDER::report_metrics() {
 
 void CLUSTER_AWARE_TIME_METRICS_HOLDER::register_query_execution_time(long query_time_ms) {
 	BASE_METRICS_HOLDER::register_query_execution_time(query_time_ms);
-}
-
-void CLUSTER_AWARE_TIME_METRICS_HOLDER::debug() {
-    printf("Metric Name: %s\n", metric_name.c_str());
-    printf("\tExecute Times: %d\n", number_of_queries_issued);
 }
