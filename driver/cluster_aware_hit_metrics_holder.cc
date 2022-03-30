@@ -42,9 +42,9 @@ void CLUSTER_AWARE_HIT_METRICS_HOLDER::register_metrics(bool is_hit) {
 std::string CLUSTER_AWARE_HIT_METRICS_HOLDER::report_metrics() {
     std::string log_message = "";
 
-    log_message.append("\n** Performance Metrics Report for '");
+    log_message.append("\n\n** Performance Metrics Report for '");
     log_message.append(metric_name);
-    log_message.append("' **\n");
+    log_message.append("' **");
     log_message.append("\nNumber of reports: ").append(std::to_string(number_of_reports));
     if (number_of_reports > 0) {
       log_message.append("\nNumber of hits: ").append(std::to_string(number_of_hits));

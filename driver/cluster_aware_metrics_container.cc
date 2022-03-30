@@ -87,7 +87,7 @@ void CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url, bool 
 }
 
 std::string CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url, bool for_instances) {
-    std::string log_message = "";
+    std::string log_message = "\n";
 
     std::unordered_map<std::string, std::shared_ptr<CLUSTER_AWARE_METRICS>>::const_iterator has_metrics = for_instances ? instance_metrics.find(conn_url) : cluster_metrics.find(conn_url);
     if ((for_instances ? instance_metrics.end() : cluster_metrics.end()) == has_metrics) {
@@ -104,7 +104,8 @@ std::string CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url
         .append(conn_url)
         .append("' **\n");
 
-    log_message.append(metrics->report_metrics());
+    log_message.append(metrics->report_metrics())
+        .append("\n");
 
     return log_message;
 }
