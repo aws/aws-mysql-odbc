@@ -39,8 +39,6 @@ public:
     void register_query_execution_time(long queryTimeMs) override;
     std::string report_metrics() override;
 
-    void debug();
-
 protected:
     std::string metric_name = "";
 };
