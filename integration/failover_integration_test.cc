@@ -328,6 +328,69 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
+TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
+  Aws::Client::ClientConfiguration client_config;
+  client_config.region = "us-east-2";
+  Aws::Auth::AWSCredentials credentials;
+  credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
+  credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
+  credentials.SetSessionToken(Aws::String(SESSION_TOKEN));
+  Aws::RDS::RDSClient client(credentials, client_config);
+
+  auto initial_writer =
+      retrieve_writer_endpoint(client, cluster_id, DB_CONN_STR_SUFFIX);
+  auto initial_writer_id = initial_writer.first;
+
+  SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
+  SQLINTEGER native_error;
+  SQLSMALLINT len;
+
+  // Establish the topology cache so that we can later assert that new connections does not inherit properties from
+  // cached connection either before or after failover
+  sprintf(
+      reinterpret_cast<char*>(conn_in),
+      "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;LOG_QUERY=1;MULTI_STATEMENTS=0;",
+      dsn, user, pwd, MYSQL_CLUSTER_URL.c_str(), MYSQL_PORT);
+  EXPECT_EQ(SQL_SUCCESS,
+            SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out,
+                             MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+
+  sprintf(
+    reinterpret_cast<char*>(conn_in),
+    "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;LOG_QUERY=1;MULTI_STATEMENTS=1;",
+    dsn, user, pwd, MYSQL_CLUSTER_URL.c_str(), MYSQL_PORT);
+  EXPECT_EQ(SQL_SUCCESS,
+            SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out,
+                             MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+
+  SQLHSTMT handle;
+  SQLSMALLINT stmt_length;
+  SQLCHAR stmt_sqlstate[6];
+  const auto query = (SQLCHAR*)"select @@aurora_server_id; select 1; select 2;";
+
+  EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
+
+  // Verify that connection accepts multi-statement sql
+  EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
+
+  // Crash writer isntance and nominate a new writer
+  failover_cluster_and_wait_until_writer_changed(client, cluster_id, initial_writer_id);
+  EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, (SQLCHAR*)"select @aurora_server_id", SQL_NTS));
+  EXPECT_EQ(SQL_SUCCESS,
+            SQLError(env, dbc, handle, stmt_sqlstate, &native_error, message,
+                     SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+  const std::string state = reinterpret_cast<char*>(stmt_sqlstate);
+  const std::string expected = "08S02";
+  EXPECT_EQ(expected, state);
+
+  // Verify that connection still accepts multi-statement sql
+  EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
+
+  EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
+  EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+}
+
 TEST_F(FailoverIntegrationTest, EndToEndTest) {
   Aws::Client::ClientConfiguration clientConfig;
   clientConfig.region = "us-east-2";
