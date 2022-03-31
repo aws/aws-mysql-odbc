@@ -433,6 +433,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
     }
 
     bool failover_success = false; // If failover happened & succeeded
+    bool in_transaction = !autocommit_on(dbc) || dbc->transaction_open;
 
     if (ec.rfind("08", 0) == 0) {  // start with "08"
 
@@ -459,6 +460,9 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
     }
 
     metrics_container->register_failover_connects(failover_success);
+    if (in_transaction) {
+        new_error_code = "08007";
+    }
     return failover_success;
 }
 

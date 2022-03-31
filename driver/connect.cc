@@ -1592,16 +1592,22 @@ SQLRETURN DBC::execute_query(const char* query,
         MYLOG_DBC_TRACE(this, "Rolling back");
         this->mysql->real_query("ROLLBACK", 8);
       }
-      this->transaction_open = false;
 
       const char *error_code;
       if (this->fh->trigger_failover_if_needed("08S01", error_code)) {
+        if (strcmp(error_code, "08007") == 0) {
+        result =
+            set_error(MYERR_08007, "Connection failure during transaction.", 0);
+        } else {
         result =
             set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
+        }
       } else {
         result =
             set_error(MYERR_08S01, "The active SQL connection was lost.", 0);
       }
+
+      this->transaction_open = false;
     }
   }
 
