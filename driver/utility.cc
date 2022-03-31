@@ -122,17 +122,25 @@ SQLRETURN odbc_stmt(DBC *dbc, const char *query,
               MYLOG_DBC_TRACE(dbc, "Rolling back");
               dbc->mysql->real_query("ROLLBACK", 8);
           }
-          dbc->transaction_open = false;
 
           const char* error_code;
           if (dbc->fh->trigger_failover_if_needed("08S01", error_code))
           {
-              result = set_conn_error(dbc, MYERR_08S02, "The active SQL connection has changed.", 0, "");
+              if (strcmp(error_code, "08007") == 0)
+              {
+                  result = set_conn_error(dbc, MYERR_08007, "Connection failure during transaction.", 0, "");
+              }
+              else
+              {
+                  result = set_conn_error(dbc, MYERR_08S02, "The active SQL connection has changed.", 0, "");
+              }
           }
           else
           {
               result = set_conn_error(dbc, MYERR_08S01, "The active SQL connection was lost.", 0, "");
           }
+          
+          dbc->transaction_open = false;
       }
   }
 
