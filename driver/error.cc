@@ -99,7 +99,8 @@ static MYODBC3_ERR_STR myodbc3_errors[]=
   {"42S22","Column not found", SQL_ERROR},
   {"08S01","Communication link failure", SQL_ERROR},
   {"08004","Server rejected the connection", SQL_ERROR},
-  {"08S02","Communication link changed", SQL_ERROR}
+  {"08S02","Communication link changed", SQL_ERROR},
+  {"08007","Connection failure during transaction", SQL_ERROR}
 };
 
 
@@ -419,11 +420,11 @@ MySQLGetDiagRec(SQLSMALLINT handle_type, SQLHANDLE handle, SQLSMALLINT record,
 bool is_odbc3_subclass(std::string sqlstate)
 {
   char *states[]= { "01S00", "01S01", "01S02", "01S06", "01S07", "07S01",
-    "08S01", "08S02", "21S01", "21S02", "25S01", "25S02", "25S03", "42S01", 
-    "42S02", "42S11", "42S12", "42S21", "42S22", "HY095", "HY097", "HY098", 
-    "HY099", "HY100", "HY101", "HY105", "HY107", "HY109", "HY110", "HY111", 
-    "HYT00", "HYT01", "IM001", "IM002", "IM003", "IM004", "IM005", "IM006", 
-    "IM007", "IM008", "IM010", "IM011", "IM012"};
+    "08S01", "08S02", "08007", "21S01", "21S02", "25S01", "25S02", "25S03",
+    "42S01", "42S02", "42S11", "42S12", "42S21", "42S22", "HY095", "HY097",
+    "HY098", "HY099", "HY100", "HY101", "HY105", "HY107", "HY109", "HY110", 
+    "HY111", "HYT00", "HYT01", "IM001", "IM002", "IM003", "IM004", "IM005", 
+    "IM006", "IM007", "IM008", "IM010", "IM011", "IM012"};
   size_t i;
 
   if (sqlstate.empty())

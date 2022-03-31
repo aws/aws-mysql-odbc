@@ -128,6 +128,7 @@ typedef enum myodbc_errid
     /* Please add new errors to the end of enum, and not in alphabet order */
     MYERR_08004,
     MYERR_08S02,
+    MYERR_08007,
 } myodbc_errid;
 
 /*
