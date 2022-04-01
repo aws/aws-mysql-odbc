@@ -22,11 +22,18 @@ tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
-tasks.register<Test>("test-docker") {
+tasks.register<Test>("test-failover") {
+    filter.includeTestsMatching("host.IntegrationContainerTest.testRunFailoverTestInContainer")
+}
+
+tasks.register<Test>("test-community") {
+    filter.includeTestsMatching("host.IntegrationContainerTest.testRunTestInContainer")
+}
+
+tasks.withType<Test> {
     useJUnitPlatform()
     group = "verification"
     this.testLogging {
         this.showStandardStreams = true
     }
-    filter.includeTestsMatching("host.IntegrationContainerTest.testRunFailoverTestInContainer")
 }
