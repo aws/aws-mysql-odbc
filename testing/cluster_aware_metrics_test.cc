@@ -45,7 +45,7 @@ protected:
     SQLHENV env = SQL_NULL_HENV;
     SQLHDBC hdbc = SQL_NULL_HDBC;
     DBC* dbc = nullptr;
-    DataSource* ds;
+    DataSource* ds = nullptr;
 
     std::shared_ptr<MOCK_CLUSTER_AWARE_METRICS_CONTAINER> metrics_container;
 
@@ -60,6 +60,7 @@ protected:
         env = SQL_NULL_HENV;
         hdbc = SQL_NULL_HDBC;
         dbc = nullptr;
+        ds = nullptr;
 
         SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
         SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
@@ -92,35 +93,33 @@ protected:
 };
 
 TEST_F(ClusterAwareMetricsContainerTest, isEnabled) {
-    std::shared_ptr<MOCK_CLUSTER_AWARE_METRICS_CONTAINER> metrics_container
+    std::shared_ptr<MOCK_CLUSTER_AWARE_METRICS_CONTAINER> metrics
         = std::make_shared<MOCK_CLUSTER_AWARE_METRICS_CONTAINER>();
-    EXPECT_FALSE(metrics_container->is_enabled());
-    EXPECT_FALSE(metrics_container->is_instance_metrics_enabled());
-    metrics_container->set_gather_metric(true);
+    EXPECT_FALSE(metrics->is_enabled());
+    EXPECT_FALSE(metrics->is_instance_metrics_enabled());
+    metrics->set_gather_metric(true);
+    EXPECT_TRUE(metrics->is_enabled());
+    EXPECT_TRUE(metrics->is_instance_metrics_enabled());
+
+    ds->gather_perf_metrics = true;
+    ds->gather_metrics_per_instance = true;
     EXPECT_TRUE(metrics_container->is_enabled());
     EXPECT_TRUE(metrics_container->is_instance_metrics_enabled());
 
-    ds->gather_perf_metrics = true;
-    ds->gather_metrics_per_instance = true;
-    std::shared_ptr<MOCK_CLUSTER_AWARE_METRICS_CONTAINER> ds_metrics_container
-        = std::make_shared<MOCK_CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds);
-    EXPECT_TRUE(ds_metrics_container->is_enabled());
-    EXPECT_TRUE(ds_metrics_container->is_instance_metrics_enabled());
-
     ds->gather_perf_metrics = false;
     ds->gather_metrics_per_instance = false;
-    EXPECT_FALSE(ds_metrics_container->is_enabled());
-    EXPECT_FALSE(ds_metrics_container->is_instance_metrics_enabled());
+    EXPECT_FALSE(metrics_container->is_enabled());
+    EXPECT_FALSE(metrics_container->is_instance_metrics_enabled());
 
     ds->gather_perf_metrics = true;
     ds->gather_metrics_per_instance = false;
-    EXPECT_TRUE(ds_metrics_container->is_enabled());
-    EXPECT_FALSE(ds_metrics_container->is_instance_metrics_enabled());
+    EXPECT_TRUE(metrics_container->is_enabled());
+    EXPECT_FALSE(metrics_container->is_instance_metrics_enabled());
 
     ds->gather_perf_metrics = false;
     ds->gather_metrics_per_instance = true;
-    EXPECT_FALSE(ds_metrics_container->is_enabled());
-    EXPECT_TRUE(ds_metrics_container->is_instance_metrics_enabled());
+    EXPECT_FALSE(metrics_container->is_enabled());
+    EXPECT_TRUE(metrics_container->is_instance_metrics_enabled());
 }
 
 TEST_F(ClusterAwareMetricsContainerTest, collectClusterOnly) {
@@ -143,11 +142,8 @@ TEST_F(ClusterAwareMetricsContainerTest, collectClusterOnly) {
     std::string cluster_logs = metrics_container->report_metrics(cluster_id, false);
     std::string instance_logs = metrics_container->report_metrics(cluster_id, true);
 
-    int cluster_length = std::count(cluster_logs.begin(),
-        cluster_logs.end(), '\n');
-
-    int instance_length = std::count(instance_logs.begin(),
-        instance_logs.end(), '\n');
+    auto cluster_length = std::count(cluster_logs.begin(), cluster_logs.end(), '\n');
+    auto instance_length = std::count(instance_logs.begin(), instance_logs.end(), '\n');
 
     EXPECT_TRUE(cluster_length > instance_length);
 }
@@ -173,11 +169,8 @@ TEST_F(ClusterAwareMetricsContainerTest, collectInstance) {
     std::string cluster_logs = metrics_container->report_metrics(cluster_id, false);
     std::string instance_logs = metrics_container->report_metrics(instance_url, true);
 
-    int cluster_length = std::count(cluster_logs.begin(),
-        cluster_logs.end(), '\n');
-
-    int instance_length = std::count(instance_logs.begin(),
-        instance_logs.end(), '\n');
+    auto cluster_length = std::count(cluster_logs.begin(), cluster_logs.end(), '\n');
+    auto instance_length = std::count(instance_logs.begin(), instance_logs.end(), '\n');
 
     EXPECT_TRUE(cluster_length == instance_length);
 }

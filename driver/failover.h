@@ -30,7 +30,7 @@ class FAILOVER_CONNECTION_HANDLER {
         FAILOVER_CONNECTION_HANDLER(DBC* dbc);
         virtual ~FAILOVER_CONNECTION_HANDLER();
 
-        virtual SQLRETURN do_connect(DBC* dbc, DataSource* ds, bool failover_enabled);
+        virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled);
         virtual CONNECTION_INTERFACE* connect(std::shared_ptr<HOST_INFO> host_info);
         void update_connection(CONNECTION_INTERFACE* new_connection);
 

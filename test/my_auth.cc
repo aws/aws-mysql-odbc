@@ -48,7 +48,6 @@ DECLARE_TEST(t_plugin_auth)
   HSTMT hstmt1;
   SQLCHAR buf[255];
   SQLLEN buflen;
-  SQLRETURN rc;
   SQLUSMALLINT plugin_status= FALSE;
 
   ok_sql(hstmt, "SELECT PLUGIN_NAME FROM INFORMATION_SCHEMA.PLUGINS "
@@ -218,7 +217,6 @@ DECLARE_TEST(t_ldap_auth)
   HSTMT hstmt1;
   SQLCHAR buf[255];
   SQLLEN buflen;
-  SQLRETURN rc;
   const char* ldap_user = getenv("LDAP_USER");
   const char* ldap_user_dn = getenv("LDAP_USER_DN");
   const char* ldap_simple_pwd = getenv("LDAP_SIMPLE_PWD");
