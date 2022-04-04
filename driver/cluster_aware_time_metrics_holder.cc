@@ -102,6 +102,6 @@ std::string CLUSTER_AWARE_TIME_METRICS_HOLDER::report_metrics() {
     return log_message;
 }
 
-void CLUSTER_AWARE_TIME_METRICS_HOLDER::register_query_execution_time(long query_time_ms) {
+void CLUSTER_AWARE_TIME_METRICS_HOLDER::register_query_execution_time(long long query_time_ms) {
 	BASE_METRICS_HOLDER::register_query_execution_time(query_time_ms);
 }

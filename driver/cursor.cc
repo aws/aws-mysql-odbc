@@ -726,7 +726,6 @@ static SQLRETURN build_set_clause_std(STMT *stmt, SQLULEN irow,
     for ( ncol= 0; ncol < stmt->result->field_count; ++ncol )
     {
         SQLLEN *pcbValue;
-        SQLCHAR *to = (SQLCHAR*)stmt->buf();
 
         field= mysql_fetch_field_direct(result,ncol);
         arrec= desc_get_rec(stmt->ard, ncol, FALSE);
@@ -932,6 +931,10 @@ static SQLRETURN fetch_bookmark(STMT *stmt)
 
   IS_BOOKMARK_VARIABLE(stmt);
   arrec= desc_get_rec(stmt->ard, -1, FALSE);
+  if (arrec == NULL)
+  {
+      return SQL_ERROR;
+  }
 
   if (!ARD_IS_BOUND(arrec))
   {
@@ -1006,6 +1009,10 @@ static SQLRETURN setpos_delete_bookmark_std(STMT *stmt, std::string &query)
 
   IS_BOOKMARK_VARIABLE(stmt);
   arrec= desc_get_rec(stmt->ard, -1, FALSE);
+  if (arrec == NULL)
+  {
+      return SQL_ERROR;
+  }
 
   if (!ARD_IS_BOUND(arrec))
   {
@@ -1162,6 +1169,10 @@ static SQLRETURN setpos_update_bookmark_std(STMT *stmt, std::string &query)
 
   IS_BOOKMARK_VARIABLE(stmt);
   arrec= desc_get_rec(stmt->ard, -1, FALSE);
+  if (arrec == NULL)
+  {
+      return SQL_ERROR;
+  }
 
   if (!ARD_IS_BOUND(arrec))
   {
@@ -1476,7 +1487,6 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
 
     if (stmt->stmt_options.bookmarks == SQL_UB_VARIABLE)
     {
-      ulong copy_bytes= 0;
       int _len= 0;
       char _value[21];
       DESCREC *arrec;
@@ -1763,7 +1773,7 @@ SQLRETURN SQL_API my_SQLSetPos(SQLHSTMT hstmt, SQLSETPOSIROW irow,
                 {
                     MYSQL_FIELD *field= mysql_fetch_field_direct(result, nCol);
                     myodbc_append_quoted_name_std(ins_query, field->org_name);
-                    if (nCol + 1 < result->field_count)
+                    if (nCol < result->field_count - 1)
                       ins_query.append(",");
                 }
 

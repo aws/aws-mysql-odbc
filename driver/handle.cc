@@ -450,9 +450,6 @@ void delete_param_bind(DYNAMIC_ARRAY *param_bind)
 */
 SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc,SQLHSTMT *phstmt)
 {
-#ifndef _UNIX_
-  HGLOBAL  hstmt;
-#endif
   std::unique_ptr<STMT> stmt;
   DBC   *dbc= (DBC*) hdbc;
 

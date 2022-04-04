@@ -30,7 +30,6 @@
 
 DECLARE_TEST(my_pcbvalue)
 {
-    SQLRETURN   rc;
     SQLLEN      nRowCount;
     SQLINTEGER  nData= 500;
     SQLLEN      int_pcbValue, pcbValue, pcbValue1, pcbValue2;
@@ -146,7 +145,6 @@ DECLARE_TEST(my_pcbvalue)
 /* to test the pcbValue on cursor ops **/
 DECLARE_TEST(my_pcbvalue_add)
 {
-    SQLRETURN   rc;
     SQLLEN      nRowCount;
     SQLINTEGER  nData= 500;
     SQLLEN      int_pcbValue, pcbValue, pcbValue1, pcbValue2;
@@ -268,8 +266,6 @@ DECLARE_TEST(my_pcbvalue_add)
 /* spaces in column names */
 DECLARE_TEST(my_columnspace)
 {
-    SQLRETURN   rc;
-
   ok_sql(hstmt, "DROP TABLE IF EXISTS TestColNames");
 
   ok_sql(hstmt, "CREATE TABLE `TestColNames`(`Value One` text, `Value Two` text,`Value Three` text)");
@@ -304,7 +300,6 @@ DECLARE_TEST(my_columnspace)
 /* to test the empty string returning NO_DATA */
 DECLARE_TEST(my_empty_string)
 {
-    SQLRETURN   rc;
     SQLLEN      pcbValue;
     SQLCHAR     szData[255]={0};
 

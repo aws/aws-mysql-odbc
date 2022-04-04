@@ -49,8 +49,8 @@ long SLOW_CLOSE::get_delay() const
   return delay;
 }
 
-SLOW_CLOSE* SLOW_CLOSE::set_delay(long delay)
+SLOW_CLOSE* SLOW_CLOSE::set_delay(long delay_val)
 {
-  post_attribute("delay", delay);
+  post_attribute("delay", delay_val);
   return this;
 }

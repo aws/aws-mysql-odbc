@@ -266,8 +266,6 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 {
   SQLRETURN rc= SQL_SUCCESS;
   unsigned long flags;
-  /* Use 'int' and fill all bits to avoid alignment Bug#25920 */
-  unsigned int opt_ssl_verify_server_cert = ~0;
   const my_bool on= 1;
   unsigned int on_int = 1;
   unsigned long max_long = ~0L;

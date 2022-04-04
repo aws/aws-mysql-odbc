@@ -462,7 +462,7 @@ IF(WIN32)
   if(NOT MAINTAINER_MODE)
 
     # TODO: instead fix code to not generate compile warnings
-    add_compile_options(/W1 /wd4133 /wd4047 /wd4313 /wd4197)
+    add_compile_options(/W2)
 
   else()
 

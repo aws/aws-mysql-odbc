@@ -1260,11 +1260,20 @@ int ds_from_kvpair(DataSource *ds, const SQLWCHAR *attrs, SQLWCHAR delim)
     while (*(++split) == ' ');
 
     /* check for an "escaped" value */
-    if ((*split == '{' && (end= sqlwcharchr(attrs, '}')) == NULL) ||
-        /* or a delimited value */
-        (*split != '{' && (end= sqlwcharchr(attrs, delim)) == NULL))
-      /* otherwise, take the rest of the string */
-      end= attrs + sqlwcharlen(attrs);
+    if (*split == '{')
+    {
+        if ((end = sqlwcharchr(attrs, '}')) == NULL)
+        {
+            /* take the rest of the string */
+            end = attrs + sqlwcharlen(attrs);
+        }
+    }
+    /* or a delimited value */
+    else if ((end = sqlwcharchr(attrs, delim)) == NULL)
+    {
+        /* take the rest of the string */
+        end = attrs + sqlwcharlen(attrs);
+    }
 
     /* remove trailing spaces on value (not escaped part) */
     len = end - split - 1;
@@ -1451,12 +1460,13 @@ int ds_add_strprop(const SQLWCHAR *name, const SQLWCHAR *propname,
   /* don't write if its null or empty string */
   if (propval && *propval)
   {
-    BOOL rc;
     SAVE_MODE();
-    rc= SQLWritePrivateProfileStringW(name, propname, propval, W_ODBC_INI);
-    if (rc)
-      RESTORE_MODE();
-    return !rc;
+    if (SQLWritePrivateProfileStringW(name, propname, propval, W_ODBC_INI))
+    {
+        RESTORE_MODE();
+        return 0;
+    }
+    return 1;
   }
 
   return 0;

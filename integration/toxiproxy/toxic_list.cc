@@ -31,7 +31,7 @@
 
 #include <utility>
 
-TOXIC* TOXIC_LIST::get(const std::string& name)
+TOXIC* TOXIC_LIST::get(std::string& name)
 {
   const std::string toxic_path = get_toxic_path(std::move(name));
   const nlohmann::json json_object = client->get(toxic_path);
@@ -75,7 +75,7 @@ LATENCY* TOXIC_LIST::latency(const std::string& name, TOXIC_DIRECTION direction,
   return new LATENCY(client, path, name, direction, latency);
 }
 
-SLICER* TOXIC_LIST::slicer(const std::string& name, TOXIC_DIRECTION direction, long average_size, long delay) const
+SLICER* TOXIC_LIST::slicer(const std::string& name, TOXIC_DIRECTION direction, long delay) const
 {
   return new SLICER(client, path, name, direction, delay);
 }

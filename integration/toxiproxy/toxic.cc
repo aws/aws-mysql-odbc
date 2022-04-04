@@ -71,9 +71,9 @@ void TOXIC::create_toxic(const std::string& toxic_list_path)
   set_from_json(client->post(toxic_list_path, toxic_json));
 }
 
-void TOXIC::post_attribute(std::string name, long value)
+void TOXIC::post_attribute(std::string name_val, long value)
 {
-  const nlohmann::json toxic_json = { {name, value} };
+  const nlohmann::json toxic_json = { {name_val, value} };
 
   set_from_json(client->post(path, toxic_json));
 }
@@ -85,8 +85,8 @@ void TOXIC::set_from_json(nlohmann::json json_object)
   set_attributes(json_object["attributes"]);
 
   std::string stream_value = json_object["stream"].get<std::string>();
-  for (auto& c : stream_value)
-    c = toupper(c);
+  for (char& c : stream_value)
+    c = (char)toupper(c);
 
   const auto it = TOXIPROXY_HTTP_CLIENT::str_to_toxic_direction_map.find(stream_value);
   if (it != TOXIPROXY_HTTP_CLIENT::str_to_toxic_direction_map.end())
@@ -95,9 +95,9 @@ void TOXIC::set_from_json(nlohmann::json json_object)
   }
 }
 
-void TOXIC::set_toxicity(double toxicity)
+void TOXIC::set_toxicity(double toxicity_val)
 {
-  set_from_json(client->post(path, "toxicity", toxicity));
+  set_from_json(client->post(path, "toxicity", toxicity_val));
 }
 
 std::string TOXIC::get_name() const { return name; }

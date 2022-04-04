@@ -45,7 +45,6 @@ DECLARE_TEST(t_plugin_auth)
   HSTMT hstmt1;
   SQLCHAR buf[255];
   SQLLEN buflen;
-  SQLRETURN rc;
   SQLUSMALLINT plugin_status= FALSE;
 
   ok_sql(hstmt, "SELECT PLUGIN_NAME FROM INFORMATION_SCHEMA.PLUGINS "
@@ -54,7 +53,7 @@ DECLARE_TEST(t_plugin_auth)
   SQLGetData(hstmt, 1, SQL_CHAR, buf, sizeof(buf), &buflen);
 
   /* Check whether plugin already exist, if not install it. */
-  if(strcmp(buf, "test_plugin_server")!=0)
+  if(strcmp((char*)buf, "test_plugin_server")!=0)
   {
     plugin_status= TRUE;
 #ifdef _WIN32
@@ -69,8 +68,8 @@ DECLARE_TEST(t_plugin_auth)
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
 
   /* Can FAIL if user does not exists */
-  SQLExecDirect(hstmt, "DROP USER `plug_13070711`@`localhost`", SQL_NTS);
-  SQLExecDirect(hstmt, "DROP USER `plug_13070711`@`%`", SQL_NTS);
+  SQLExecDirect(hstmt, (SQLCHAR*)"DROP USER `plug_13070711`@`localhost`", SQL_NTS);
+  SQLExecDirect(hstmt, (SQLCHAR*)"DROP USER `plug_13070711`@`%`", SQL_NTS);
 
   ok_sql(hstmt, "CREATE USER `plug_13070711`@`%` "
                   "IDENTIFIED BY 'plug_dest_passwd';");
@@ -215,7 +214,6 @@ DECLARE_TEST(t_ldap_auth)
   HSTMT hstmt1;
   SQLCHAR buf[255];
   SQLLEN buflen;
-  SQLRETURN rc;
   const char* ldap_user = getenv("LDAP_USER");
   const char* ldap_user_dn = getenv("LDAP_USER_DN");
   const char* ldap_simple_pwd = getenv("LDAP_SIMPLE_PWD");
@@ -228,19 +226,19 @@ DECLARE_TEST(t_ldap_auth)
   {
     if(ldap_user_dn)
     {
-      sprintf(buf, "CREATE USER IF NOT EXISTS ldap_simple@'%%' IDENTIFIED WITH "
+      sprintf((char*)buf, "CREATE USER IF NOT EXISTS ldap_simple@'%%' IDENTIFIED WITH "
                    "authentication_ldap_simple AS '%s'",ldap_user_dn);
       rc = SQLExecDirect(hstmt, buf, SQL_NTS);
-      sprintf(buf, "GRANT ALL ON *.* to ldap_simple@'%%'");
+      sprintf((char*)buf, "GRANT ALL ON *.* to ldap_simple@'%%'");
       rc = SQLExecDirect(hstmt,(SQLCHAR*)buf, SQL_NTS);
     }
 
     if(ldap_user)
     {
-      sprintf(buf, "CREATE USER IF NOT EXISTS  %s@'%%' IDENTIFIED WITH authentication_ldap_sasl",
+      sprintf((char*)buf, "CREATE USER IF NOT EXISTS  %s@'%%' IDENTIFIED WITH authentication_ldap_sasl",
               ldap_user);
       rc = SQLExecDirect(hstmt, buf, SQL_NTS);
-      sprintf(buf, "GRANT ALL ON *.* to  %s@'%%'",
+      sprintf((char*)buf, "GRANT ALL ON *.* to  %s@'%%'",
               ldap_user);
       rc = SQLExecDirect(hstmt, buf, SQL_NTS);
     }

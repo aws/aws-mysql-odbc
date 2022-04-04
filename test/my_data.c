@@ -35,7 +35,7 @@ DECLARE_TEST(my_json)
   SQLCHAR buf[255], qbuf[255];
   DECLARE_BASIC_HANDLES(henv2, hdbc2, hstmt2);
   alloc_basic_handles_with_opt(&henv2, &hdbc2, &hstmt2, NULL, NULL, NULL, NULL,
-                               "CHARSET=utf8");
+                               (SQLCHAR*)"CHARSET=utf8");
 
   const char *json = "{\"key1\": \"value1\", \"key2\": \"value2\"}";
   const char *json2 = "{\"key1\": \"value10\", \"key2\": \"value20\"}";
@@ -43,7 +43,7 @@ DECLARE_TEST(my_json)
   ok_sql(hstmt2, "DROP TABLE IF EXISTS t_bug_json");
   ok_sql(hstmt2, "CREATE TABLE t_bug_json(id INT PRIMARY KEY, jdoc JSON)");
 
-  snprintf(qbuf, 255, "INSERT INTO t_bug_json VALUES (1, '%s')", json);
+  snprintf((char*)qbuf, 255, "INSERT INTO t_bug_json VALUES (1, '%s')", json);
   ok_stmt(hstmt2, SQLExecDirect(hstmt2, qbuf, SQL_NTS));
 
   ok_stmt(hstmt2, SQLColumns(hstmt2, mydb, SQL_NTS, NULL, 0,
@@ -57,7 +57,7 @@ DECLARE_TEST(my_json)
 
   expect_stmt(hstmt2, SQLFetch(hstmt2), SQL_NO_DATA);
   ok_stmt(hstmt2, SQLFreeStmt(hstmt2, SQL_CLOSE));
-  ok_stmt(hstmt2, SQLPrepare(hstmt2, "SELECT id, jdoc FROM t_bug_json WHERE id=?",
+  ok_stmt(hstmt2, SQLPrepare(hstmt2, (SQLCHAR*)"SELECT id, jdoc FROM t_bug_json WHERE id=?",
                             SQL_NTS));
   ok_stmt(hstmt2, SQLBindParameter(hstmt2, 1, SQL_PARAM_INPUT, SQL_C_DEFAULT,
                                   SQL_INTEGER, 10, 0, &id_value, 0, &out_bytes[0]));
@@ -68,7 +68,7 @@ DECLARE_TEST(my_json)
   expect_stmt(hstmt2, SQLFetch(hstmt2), SQL_NO_DATA);
 
   ok_stmt(hstmt2, SQLFreeStmt(hstmt2, SQL_CLOSE));
-  ok_stmt(hstmt2, SQLPrepare(hstmt2, "UPDATE t_bug_json SET jdoc = ? "\
+  ok_stmt(hstmt2, SQLPrepare(hstmt2, (SQLCHAR*)"UPDATE t_bug_json SET jdoc = ? "\
                                    "WHERE id = ?", SQL_NTS));
 
   out_bytes[0] = strlen(json2);
@@ -81,7 +81,7 @@ DECLARE_TEST(my_json)
 
   ok_stmt(hstmt2, SQLExecute(hstmt2));
 
-  ok_stmt(hstmt2, SQLPrepare(hstmt2, "SELECT id, jdoc FROM t_bug_json WHERE id=?",
+  ok_stmt(hstmt2, SQLPrepare(hstmt2, (SQLCHAR*)"SELECT id, jdoc FROM t_bug_json WHERE id=?",
                             SQL_NTS));
   out_bytes[0] = 0;
   ok_stmt(hstmt2, SQLBindParameter(hstmt2, 1, SQL_PARAM_INPUT, SQL_C_DEFAULT,
@@ -101,7 +101,6 @@ DECLARE_TEST(my_json)
 
 DECLARE_TEST(my_local_infile)
 {
-  SQLRETURN rc = 0;
   SQLINTEGER num_rows = 0;
   FILE *csv_file = NULL;
 
@@ -120,7 +119,7 @@ DECLARE_TEST(my_local_infile)
   fclose(csv_file);
 
   ok_sql(hstmt, "SET GLOBAL local_infile=true");
-  rc = SQLExecDirect(hstmt, "LOAD DATA LOCAL INFILE 'test_local_infile.csv' " \
+  rc = SQLExecDirect(hstmt, (SQLCHAR*)"LOAD DATA LOCAL INFILE 'test_local_infile.csv' " \
                     "INTO TABLE test_local_infile " \
                     "FIELDS TERMINATED BY ',' " \
                     "LINES TERMINATED BY '\\n'", SQL_NTS);
@@ -132,11 +131,11 @@ DECLARE_TEST(my_local_infile)
 
   rc = alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1,
                                     NULL, NULL, NULL, NULL,
-                                    "ENABLE_LOCAL_INFILE=1");
+                                    (SQLCHAR*)"ENABLE_LOCAL_INFILE=1");
   if (rc != SQL_SUCCESS) goto END_TEST;
 
   rc = SQLExecDirect(hstmt1,
-                     "LOAD DATA LOCAL INFILE 'test_local_infile.csv' " \
+                     (SQLCHAR*)"LOAD DATA LOCAL INFILE 'test_local_infile.csv' " \
                      "INTO TABLE test_local_infile " \
                      "FIELDS TERMINATED BY ',' " \
                      "LINES TERMINATED BY '\\n'", SQL_NTS);
@@ -147,7 +146,7 @@ DECLARE_TEST(my_local_infile)
       goto END_TEST;
   }
 
-  rc = SQLExecDirect(hstmt, "SELECT count(*) FROM test_local_infile", SQL_NTS);
+  rc = SQLExecDirect(hstmt, (SQLCHAR*)"SELECT count(*) FROM test_local_infile", SQL_NTS);
   if (rc != SQL_SUCCESS) goto END_TEST;
   rc = SQLFetch(hstmt);
   if (rc != SQL_SUCCESS) goto END_TEST;

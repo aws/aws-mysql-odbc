@@ -49,8 +49,8 @@ long TIMEOUT::get_timeout() const
   return timeout;
 }
 
-TIMEOUT* TIMEOUT::set_timeout(long timeout)
+TIMEOUT* TIMEOUT::set_timeout(long timeout_val)
 {
-  post_attribute("timeout", timeout);
+  post_attribute("timeout", timeout_val);
   return this;
 }
