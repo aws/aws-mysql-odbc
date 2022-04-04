@@ -241,7 +241,7 @@ extern std::mutex global_fido_mutex;
 
 #if defined _WIN32
 
-  #define DECLARE_LOCALE_HANDLE int loc;
+  #define DECLARE_LOCALE_HANDLE int loc = 0;
 
     #define __LOCALE_SET(LOC) \
     { \
@@ -527,16 +527,16 @@ struct DESC {
     std::list<STMT*> stmt_list;
 
 
-  void stmt_list_remove(STMT *stmt)
+  void stmt_list_remove(STMT * p_stmt)
   {
     if (alloc_type == SQL_DESC_ALLOC_USER)
-      stmt_list.remove(stmt);
+      stmt_list.remove(p_stmt);
   }
 
-  void stmt_list_add(STMT *stmt)
+  void stmt_list_add(STMT *p_stmt)
   {
     if (alloc_type == SQL_DESC_ALLOC_USER)
-      stmt_list.emplace_back(stmt);
+      stmt_list.emplace_back(p_stmt);
   }
 
   inline bool is_apd()

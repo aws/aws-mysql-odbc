@@ -100,7 +100,7 @@ BOOL ssps_get_out_params(STMT *stmt)
     MYSQL_ROW values= NULL;
     DESCREC   *iprec, *aprec, *irrec;
     uint      counter= 0;
-    int       i, out_params;
+    int       i, out_params = 0;
 
     /*Since OUT parameters can be completely different - we have to free current
       bind and bind new */
@@ -768,10 +768,10 @@ SQLRETURN STMT::set_error(myodbc_errid errid)
   return set_error(errid, dbc->mysql->error(), dbc->mysql->error_code());
 }
 
-SQLRETURN STMT::set_error(const char *state, const char *msg,
+SQLRETURN STMT::set_error(const char *sqlstate, const char *msg,
                           SQLINTEGER errcode)
 {
-    error = MYERROR(state, msg, errcode, dbc->st_error_prefix);
+    error = MYERROR(sqlstate, msg, errcode, dbc->st_error_prefix);
     return error.retcode;
 }
 
@@ -947,8 +947,7 @@ int STMT::ssps_bind_result()
     int rc = mysql_stmt_bind_result(ssps, result_bind);
     if (rc)
     {
-      const char *err = mysql_stmt_error(ssps);
-      set_error("HY000", err, 0);
+      set_error("HY000", mysql_stmt_error(ssps), 0);
     }
     return rc;
   }

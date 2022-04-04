@@ -50,8 +50,8 @@ public:
     virtual ~CLUSTER_TOPOLOGY_INFO();
 
     void add_host(std::shared_ptr<HOST_INFO> host_info);
-    int total_hosts();
-    int num_readers(); // return number of readers in the cluster
+    size_t total_hosts();
+    size_t num_readers(); // return number of readers in the cluster
     std::time_t time_last_updated();
 
     std::shared_ptr<HOST_INFO> get_writer();

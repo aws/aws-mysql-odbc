@@ -66,8 +66,8 @@ TOXIC* TOXIC_TYPE::create_toxic(TOXIPROXY_HTTP_CLIENT* client, const std::string
 }
 
 TOXIC_TYPES TOXIC_TYPE::get_toxic_type(std::string type) {
-  for (auto& c : type)
-    c = toupper(c);
+  for (char& c : type)
+    c = (char)toupper(c);
 
   const auto it = str_to_toxic_types_map.find(type);
   if (it != str_to_toxic_types_map.end())

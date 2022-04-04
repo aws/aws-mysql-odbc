@@ -285,7 +285,7 @@ DECLARE_TEST(charset_utf8)
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
 
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
-                                        NULL, NULL, NULL, "CHARSET=utf8"));
+                                        NULL, NULL, NULL, (SQLCHAR*)"CHARSET=utf8"));
 
   ok_sql(hstmt1, "SELECT _latin1 0x73E36F207061756C6F");
 
@@ -361,7 +361,7 @@ DECLARE_TEST(charset_gbk)
   SQLCHAR str[]= "\xef\xbb\xbf\x27\xbf\x10";
 
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL, NULL,
-                                        NULL, NULL, "CHARSET=gbk"));
+                                        NULL, NULL, (SQLCHAR*)"CHARSET=gbk"));
 
   ok_stmt(hstmt1, SQLPrepare(hstmt1, (SQLCHAR *)"SELECT ?", SQL_NTS));
   ok_stmt(hstmt1, SQLBindParameter(hstmt1, 1, SQL_PARAM_INPUT, SQL_C_CHAR,
@@ -392,7 +392,7 @@ DECLARE_TEST(t_bug7445)
 
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
                                         NULL, NULL, NULL,
-                                        "MULTI_STATEMENTS=1"));
+                                        (SQLCHAR*)"MULTI_STATEMENTS=1"));
 
   ok_sql(hstmt1, "DROP TABLE IF EXISTS t_bug7445");
 
@@ -467,7 +467,7 @@ DECLARE_TEST(t_bug30840)
     skip("test does not work with all driver managers");
 
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL, NULL,
-                                        NULL, NULL, "NO_PROMPT=1"));
+                                        NULL, NULL, (SQLCHAR*)"NO_PROMPT=1"));
 
   free_basic_handles(&henv1, &hdbc1, &hstmt1);
   return OK;
@@ -613,7 +613,7 @@ DECLARE_TEST(setnames_conn)
   ok_env(henv, SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc1));
 
   expect_dbc(hdbc1, get_connection(&hdbc1, NULL, NULL, NULL,
-             NULL, "INITSTMT={set names utf8}"), SQL_ERROR);
+             NULL, (SQLCHAR*)"INITSTMT={set names utf8}"), SQL_ERROR);
 
   ok_con(hdbc1, SQLFreeHandle(SQL_HANDLE_DBC, hdbc1));
 
@@ -1052,7 +1052,7 @@ DECLARE_TEST(t_bug63844)
   ok_env(henv, SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc1));
 
   ok_con(hdbc1, SQLSetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
-                                  DatabaseName, strlen(DatabaseName)));
+                                  DatabaseName, strlen((char*)DatabaseName)));
 
   /* The driver crashes here on getting connected */
   ok_con(hdbc1, get_connection(&hdbc1, NULL, NULL, NULL, NULL, NULL));
@@ -1075,7 +1075,7 @@ DECLARE_TEST(t_bug52996)
   /* TODO: remove #ifdef _WIN32 when Linux and MacOS setup is released */
 #ifdef _WIN32
   int i, len;
-  SQLCHAR attrs[8192];
+  char attrs[8192];
   SQLCHAR drv[128];
   SQLLEN row_count= 0;
   DECLARE_BASIC_HANDLES(henv1, hdbc1, hstmt1);
@@ -1090,9 +1090,9 @@ DECLARE_TEST(t_bug52996)
     The last attribute in the list must end with ';'
   */
 
-  sprintf((char*)attrs, "DSN=bug52996dsn;SERVER=%s;USER=%s;PASSWORD=%s;"
-                          "DATABASE=%s;FOUND_ROWS=1;",
-                          myserver, myuid, mypwd, mydb);
+  sprintf(attrs, "DSN=bug52996dsn;SERVER=%s;USER=%s;PASSWORD=%s;"
+                 "DATABASE=%s;FOUND_ROWS=1;",
+                 myserver, myuid, mypwd, mydb);
 
   len= strlen(attrs);
 
@@ -1109,7 +1109,7 @@ DECLARE_TEST(t_bug52996)
   if (mydriver[0] == '{')
   {
     /* We need to remove {} in the driver name or it will not register */
-    len= strlen(mydriver);
+    len= strlen((char*)mydriver);
     memcpy(drv, mydriver+1, sizeof(SQLCHAR)*(len-2));
     drv[len-2]= '\0';
   }
@@ -1123,15 +1123,14 @@ DECLARE_TEST(t_bug52996)
     Trying to remove the DSN if it is left from the previous run,
     no need to check the result
   */
-  SQLConfigDataSource(NULL, ODBC_REMOVE_DSN, drv, "DSN=bug52996dsn\0\0");
+  SQLConfigDataSource(NULL, ODBC_REMOVE_DSN, (LPCSTR)drv, "DSN=bug52996dsn\0\0");
 
   /* Create the DSN */
-  ok_install(SQLConfigDataSource(NULL, ODBC_ADD_DSN, drv, attrs));
+  ok_install(SQLConfigDataSource(NULL, ODBC_ADD_DSN, (LPCSTR)drv, (LPCSTR)attrs));
 
   /* Connect using the new DSN and override FOUND_ROWS option in DSN */
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1,
-                               "bug52996dsn",
-                               NULL, NULL, NULL, "FOUND_ROWS=0"));
+                               (SQLCHAR*)"bug52996dsn", NULL, NULL, NULL, (SQLCHAR*)"FOUND_ROWS=0"));
 
   /* Check the affected tows */
   ok_sql(hstmt1, "UPDATE bug52996 SET c1=3 WHERE id < 4 ");
@@ -1149,7 +1148,7 @@ DECLARE_TEST(t_bug52996)
 
   ok_sql(hstmt, "DROP TABLE bug52996");
 
-  ok_install(SQLConfigDataSource(NULL, ODBC_REMOVE_DSN, drv, "DSN=bug52996dsn\0\0"));
+  ok_install(SQLConfigDataSource(NULL, ODBC_REMOVE_DSN, (LPCSTR)drv, "DSN=bug52996dsn\0\0"));
 #endif
 
   return res;
@@ -1228,7 +1227,7 @@ DECLARE_TEST(t_tls_opts)
     printf("Connection options: %s\n", connstr);
 
     int ret = alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
-      NULL, NULL, NULL, connstr);
+      NULL, NULL, NULL, (SQLCHAR*)connstr);
 
     // We accept a failed connection only if server does not support any
     // other versions except the one being disabled.
@@ -1334,7 +1333,7 @@ DECLARE_TEST(t_ssl_mode)
     is(OK == alloc_basic_handles_with_opt(
          &henv1, &hdbc1, &hstmt1, NULL,
          NULL, NULL, NULL,
-         i == 0 ? "SSLMODE=REQUIRED" : "ssl-mode=REQUIRED"));
+         (SQLCHAR*)(i == 0 ? "SSLMODE=REQUIRED" : "ssl-mode=REQUIRED")));
 
 
     /* Check the affected tows */

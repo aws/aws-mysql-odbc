@@ -26,8 +26,8 @@ FAILOVER_CONNECTION_HANDLER::FAILOVER_CONNECTION_HANDLER(DBC* dbc) : dbc{dbc} {}
 
 FAILOVER_CONNECTION_HANDLER::~FAILOVER_CONNECTION_HANDLER() {}
 
-SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc, DataSource* ds, bool failover_enabled) {
-    return dbc->connect(ds, failover_enabled);
+SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled) {
+    return dbc_ptr->connect(ds, failover_enabled);
 }
 
 CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(

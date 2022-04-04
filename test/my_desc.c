@@ -492,7 +492,7 @@ DECLARE_TEST(t_set_null_use_implicit)
   SQLHANDLE expard, hstmt1;
   SQLINTEGER imp_result= 0, exp_result= 0;
 
-  if(using_unixodbc_version(henv, "2.2.11"))
+  if(using_unixodbc_version(henv, (SQLCHAR*)"2.2.11"))
     skip("unixODBC 2.2.11 doesn't handle resetting statement "
          "descriptors correctly");
 
@@ -541,7 +541,6 @@ DECLARE_TEST(t_set_null_use_implicit)
 DECLARE_TEST(t_free_stmt_with_exp_desc)
 {
   SQLHANDLE expard, hstmt1;
-  SQLINTEGER imp_result= 0, exp_result= 0;
 
   ok_con(hdbc, SQLAllocHandle(SQL_HANDLE_DESC, hdbc, &expard));
   ok_con(hdbc, SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt1));
@@ -615,8 +614,8 @@ DECLARE_TEST(t_desc_curcatalog)
   SQLCHAR conn_in[512];
   SQLHANDLE ird;
 
-  is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, USE_DRIVER,
-                                        NULL, NULL, "", NULL));
+  is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, (SQLCHAR*)USE_DRIVER,
+                                        NULL, NULL, (SQLCHAR*)"", NULL));
 
   ok_sql(hstmt1, "select 10 AS no_catalog_column");
 

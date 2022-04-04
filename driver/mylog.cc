@@ -90,9 +90,9 @@ std::shared_ptr<FILE> init_log_file() {
     sprintf(filename, "c:\\%s", DRIVER_LOG_FILE);
   }
 
-  if ((file = fopen(filename, "a+")))
+  if (file = fopen(filename, "a+"))
 #else
-  if ((file = fopen(DRIVER_LOG_FILE, "a+")))
+  if (file = fopen(DRIVER_LOG_FILE, "a+"))
 #endif
   {
     fprintf(file, "-- Driver logging\n");

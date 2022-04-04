@@ -91,7 +91,6 @@ DECLARE_TEST(my_drop_table)
 DECLARE_TEST(my_table_dbs)
 {
     SQLCHAR    database[100];
-    SQLRETURN  rc;
     SQLINTEGER nrows= 0 ;
     SQLLEN lenOrNull, rowCount= 0;
 
@@ -117,7 +116,7 @@ DECLARE_TEST(my_table_dbs)
 
     ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
 
-    ok_stmt(hstmt, SQLTables(hstmt,(SQLCHAR *)SQL_ALL_CATALOGS,1,"",0,"",0,NULL,0));
+    ok_stmt(hstmt, SQLTables(hstmt,(SQLCHAR*)SQL_ALL_CATALOGS,1,(SQLCHAR*)"",0,(SQLCHAR*)"",0,NULL,0));
 
     /* Added calls to SQLRowCount just to have tests of it with SQLTAbles. */
     ok_stmt(hstmt, SQLRowCount(hstmt, &rowCount));
@@ -127,8 +126,7 @@ DECLARE_TEST(my_table_dbs)
     rc = SQLFreeStmt(hstmt, SQL_CLOSE);
     mystmt(hstmt,rc);
 
-    rc = SQLTables(hstmt,(SQLCHAR *)SQL_ALL_CATALOGS,SQL_NTS,"",0,"",0,
-                   NULL,0);
+    rc = SQLTables(hstmt,(SQLCHAR*)SQL_ALL_CATALOGS,SQL_NTS,(SQLCHAR*)"",0,(SQLCHAR*)"",0,NULL,0);
     mystmt(hstmt,rc);
 
     is_num(nrows, my_print_non_format_result(hstmt));
@@ -153,7 +151,7 @@ DECLARE_TEST(my_table_dbs)
     mystmt(hstmt,rc);
 
     /* Must return non-NULL catalogs */
-    rc = SQLTables(hstmt,(SQLCHAR *)SQL_ALL_CATALOGS,1,"",0,"",0,NULL,0);
+    rc = SQLTables(hstmt,(SQLCHAR *)SQL_ALL_CATALOGS,1,(SQLCHAR*)"",0,(SQLCHAR*)"",0,NULL,0);
     mystmt(hstmt,rc);
 
     rc = SQLFetch(hstmt);
@@ -196,7 +194,7 @@ DECLARE_TEST(my_table_dbs)
     ok_sql(hstmt, "CREATE DATABASE my_all_db_test3");
     ok_sql(hstmt, "CREATE DATABASE my_all_db_test4");
 
-    rc = SQLTables(hstmt, (SQLCHAR *)"%", 1, "", 0, "", 0, "", 0);
+    rc = SQLTables(hstmt, (SQLCHAR*)"%", 1, (SQLCHAR*)"", 0, (SQLCHAR*)"", 0, (SQLCHAR*)"", 0);
     mystmt(hstmt,rc);
 
     nrows += 4;
@@ -205,7 +203,7 @@ DECLARE_TEST(my_table_dbs)
     mystmt(hstmt,rc);
 
     rc = SQLTables(hstmt,(SQLCHAR *)SQL_ALL_CATALOGS, SQL_NTS,
-                   "", 0, "", 0, "", 0);
+                   (SQLCHAR*)"", 0, (SQLCHAR*)"", 0, (SQLCHAR*)"", 0);
     mystmt(hstmt,rc);
 
     is_num(my_print_non_format_result(hstmt), nrows);
@@ -213,7 +211,7 @@ DECLARE_TEST(my_table_dbs)
     mystmt(hstmt,rc);
 
     rc = SQLTables(hstmt, (SQLCHAR *)"my_all_db_test", SQL_NTS,
-                   "", 0, "", 0, "", 0);
+                   (SQLCHAR*)"", 0, (SQLCHAR*)"", 0, (SQLCHAR*)"", 0);
     mystmt(hstmt,rc);
 
     ok_stmt(hstmt, SQLRowCount(hstmt, &rowCount));
@@ -224,7 +222,7 @@ DECLARE_TEST(my_table_dbs)
     mystmt(hstmt,rc);
 
     rc = SQLTables(hstmt, (SQLCHAR *)"my_all_db_test%", SQL_NTS,
-                   "", 0, "", 0, NULL, 0);
+                   (SQLCHAR*)"", 0, (SQLCHAR*)"", 0, NULL, 0);
     mystmt(hstmt,rc);
 
     is_num(my_print_non_format_result(hstmt), 4);
@@ -443,8 +441,6 @@ DECLARE_TEST(t_catalog)
 
 DECLARE_TEST(tmysql_specialcols)
 {
-  SQLRETURN rc;
-
     tmysql_exec(hstmt,"drop table tmysql_specialcols");
     rc = tmysql_exec(hstmt,"create table tmysql_specialcols(col1 int primary key, col2 varchar(30), col3 int)");
     mystmt(hstmt,rc);
@@ -683,7 +679,6 @@ DECLARE_TEST(t_current_catalog_unicode)
 {
   SQLWCHAR    db[255];
   wchar_t     cur_db[255];
-  SQLRETURN   rc;
   SQLINTEGER  len;
 
   REQUIRES_UNICODE_DRIVER;
@@ -744,7 +739,6 @@ DECLARE_TEST(t_current_catalog_unicode)
 DECLARE_TEST(t_current_catalog_ansi)
 {
   SQLCHAR     cur_db[255], db[255];
-  SQLRETURN   rc;
   SQLINTEGER len;
 
   REQUIRES_ANSI_DRIVER;
@@ -799,8 +793,6 @@ DECLARE_TEST(t_current_catalog_ansi)
 
 DECLARE_TEST(tmysql_showkeys)
 {
-    SQLRETURN rc;
-
     tmysql_exec(hstmt,"drop table tmysql_spk");
 
     rc = tmysql_exec(hstmt,"create table tmysql_spk(col1 int primary key)");
@@ -885,7 +877,7 @@ DECLARE_TEST(t_sqltables)
   //r = SQLFreeStmt(hstmt, SQL_CLOSE);
   //mystmt(hstmt,r);
 
-  r = SQLTables(hstmt, "", 0, "", 0, "", 0, (SQLCHAR *)"%", SQL_NTS);
+  r = SQLTables(hstmt, (SQLCHAR*)"", 0, (SQLCHAR*)"", 0, (SQLCHAR*)"", 0, (SQLCHAR *)"%", SQL_NTS);
   mystmt(hstmt,r);
 
   rows= myresult(hstmt);
@@ -916,16 +908,16 @@ DECLARE_TEST(my_information_schema)
 
   /* We need to have istest__ as the default DB */
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
-                                        NULL, NULL, "istest__", NULL));
+                                        NULL, NULL, (SQLCHAR*)"istest__", NULL));
 
-  ok_stmt(hstmt1, SQLTables(hstmt1, "istest__", SQL_NTS, "", 0, "istab%",
+  ok_stmt(hstmt1, SQLTables(hstmt1, (SQLCHAR*)"istest__", SQL_NTS, (SQLCHAR*)"", 0, (SQLCHAR*)"istab%",
                             SQL_NTS, NULL, 0));
 
   /* all tables from all databases should be displayed */
   is_num(my_print_non_format_result(hstmt1), 3);
   ok_stmt(hstmt1, SQLFreeStmt(hstmt1, SQL_CLOSE));
 
-  ok_stmt(hstmt1, SQLTables(hstmt1, NULL, 0, NULL, 0, "istab%", SQL_NTS, NULL, 0));
+  ok_stmt(hstmt1, SQLTables(hstmt1, NULL, 0, NULL, 0, (SQLCHAR*)"istab%", SQL_NTS, NULL, 0));
 
   is_num(my_print_non_format_result(hstmt1), 1);
 
@@ -1050,8 +1042,8 @@ DECLARE_TEST(empty_set)
   /* SQLTables(): empty catalog with existing table */
   ok_sql(hstmt, "drop table if exists t_sqltables_empty");
   ok_sql(hstmt, "create table t_sqltables_empty (x int)");
-  ok_stmt(hstmt, SQLTables(hstmt, "", SQL_NTS, NULL, 0,
-			   (SQLCHAR *) "t_sqltables_empty", SQL_NTS,
+  ok_stmt(hstmt, SQLTables(hstmt, (SQLCHAR*)"", SQL_NTS, NULL, 0,
+			   (SQLCHAR *)"t_sqltables_empty", SQL_NTS,
 			   NULL, SQL_NTS));
   ok_stmt(hstmt, SQLNumResultCols(hstmt, &columns));
   is_num(columns, 5);
@@ -1142,7 +1134,7 @@ DECLARE_TEST(bug15713)
   {
     /* The connection strings must not include DATABASE. */
     is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
-      NULL, NULL, "", conn_opt[i]));
+      NULL, NULL, (SQLCHAR*)"", conn_opt[i]));
 
 
     ok_stmt(hstmt1, SQLColumns(hstmt1, (SQLCHAR*)"test", SQL_NTS,
@@ -1461,7 +1453,6 @@ DECLARE_TEST(t_bug32989)
 */
 DECLARE_TEST(t_bug33298)
 {
-  SQLRETURN rc= 0;
   expect_stmt(hstmt, SQLProcedureColumns(hstmt, NULL, 0, NULL, 0,
                                          NULL, 0, NULL, 0),
                                          SQL_SUCCESS);
@@ -1491,7 +1482,7 @@ DECLARE_TEST(t_bug12805)
   for (int i = 0; i < 2; i++)
   {
     is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
-      NULL, NULL, NULL, conn_opt[i]));
+      NULL, NULL, NULL, (SQLCHAR*)conn_opt[i]));
 
     ok_sql(hstmt1, "DROP TABLE IF EXISTS bug12805");
     ok_sql(hstmt1, "CREATE TABLE bug12805("\
@@ -1566,8 +1557,8 @@ DECLARE_TEST(t_bug30770)
   for (int i = 0; i < 2; i++)
   {
     /* Connect with no default daabase */
-    is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, USE_DRIVER,
-      NULL, NULL, "", conn_opt[i]));
+    is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, (SQLCHAR*)USE_DRIVER,
+      NULL, NULL, (SQLCHAR*)"", (SQLCHAR*)conn_opt[i]));
 
     sprintf((char*)buff, "USE %s;", mydb);
     ok_stmt(hstmt1, SQLExecDirect(hstmt1, buff, SQL_NTS));

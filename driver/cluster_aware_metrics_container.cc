@@ -46,15 +46,15 @@ void CLUSTER_AWARE_METRICS_CONTAINER::set_cluster_id(std::string id) {
     this->cluster_id = id;
 }
 
-void CLUSTER_AWARE_METRICS_CONTAINER::register_failure_detection_time(long time_ms) {
+void CLUSTER_AWARE_METRICS_CONTAINER::register_failure_detection_time(long long time_ms) {
     CLUSTER_AWARE_METRICS_CONTAINER::register_metrics([time_ms](std::shared_ptr<CLUSTER_AWARE_METRICS> metrics){metrics->register_failure_detection_time(time_ms);});
 }
 
-void CLUSTER_AWARE_METRICS_CONTAINER::register_writer_failover_procedure_time(long time_ms) {
+void CLUSTER_AWARE_METRICS_CONTAINER::register_writer_failover_procedure_time(long long time_ms) {
     CLUSTER_AWARE_METRICS_CONTAINER::register_metrics([time_ms](std::shared_ptr<CLUSTER_AWARE_METRICS> metrics){metrics->register_writer_failover_procedure_time(time_ms);});
 }
 
-void CLUSTER_AWARE_METRICS_CONTAINER::register_reader_failover_procedure_time(long time_ms) {
+void CLUSTER_AWARE_METRICS_CONTAINER::register_reader_failover_procedure_time(long long time_ms) {
     CLUSTER_AWARE_METRICS_CONTAINER::register_metrics([time_ms](std::shared_ptr<CLUSTER_AWARE_METRICS> metrics){metrics->register_reader_failover_procedure_time(time_ms);});
 }
 
@@ -70,12 +70,12 @@ void CLUSTER_AWARE_METRICS_CONTAINER::register_use_cached_topology(bool is_hit) 
     CLUSTER_AWARE_METRICS_CONTAINER::register_metrics([is_hit](std::shared_ptr<CLUSTER_AWARE_METRICS> metrics){metrics->register_use_cached_topology(is_hit);});
 }
 
-void CLUSTER_AWARE_METRICS_CONTAINER::register_topology_query_execution_time(long time_ms) {
+void CLUSTER_AWARE_METRICS_CONTAINER::register_topology_query_execution_time(long long time_ms) {
     CLUSTER_AWARE_METRICS_CONTAINER::register_metrics([time_ms](std::shared_ptr<CLUSTER_AWARE_METRICS> metrics){metrics->register_topology_query_time(time_ms);});
 }
 
-void CLUSTER_AWARE_METRICS_CONTAINER::set_gather_metric(bool can_gather) {
-    this->can_gather = can_gather;
+void CLUSTER_AWARE_METRICS_CONTAINER::set_gather_metric(bool gather) {
+    this->can_gather = gather;
 }
 
 void CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url, bool for_instances, FILE* log, unsigned long dbc_id) {

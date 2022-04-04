@@ -344,13 +344,11 @@ SQLRETURN SQL_API SQLParamOptions( SQLHSTMT     hstmt,
                                    SQLULEN      crow,
                                    SQLULEN      *pirow )
 {
-  SQLINTEGER buflen= SQL_IS_ULEN;
 #else
 SQLRETURN SQL_API SQLParamOptions( SQLHSTMT     hstmt,
                                    SQLUINTEGER  crow,
                                    SQLUINTEGER *pirow )
 {
-  SQLINTEGER buflen= SQL_IS_UINTEGER;
 #endif
   SQLRETURN rc;
   STMT *stmt= (STMT *)hstmt;

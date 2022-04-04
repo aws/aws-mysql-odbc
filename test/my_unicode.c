@@ -210,8 +210,7 @@ DECLARE_TEST(sqlchar)
   SQLWCHAR wbuff[MAX_ROW_DATA_LEN+1];
   wchar_t wcdata[]= L"S\x00e3o Paolo";
 
-  alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL, NULL, NULL,
-                               NULL, "");
+  alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL, NULL, NULL, NULL, (SQLCHAR*)"");
 
   ok_con(hdbc, SQLAllocStmt(hdbc1, &hstmt1));
 
@@ -437,7 +436,6 @@ DECLARE_TEST(sqlsetcursorname)
 
 DECLARE_TEST(sqlgetcursorname)
 {
-  SQLRETURN rc;
   HDBC hdbc1;
   SQLHSTMT hstmt1,hstmt2,hstmt3;
   SQLWCHAR curname[50];

@@ -1525,12 +1525,13 @@ int ds_add_strprop(const SQLWCHAR *name, const SQLWCHAR *propname,
   /* don't write if its null or empty string */
   if (propval && *propval)
   {
-    BOOL rc;
     SAVE_MODE();
-    rc= SQLWritePrivateProfileStringW(name, propname, propval, W_ODBC_INI);
-    if (rc)
-      RESTORE_MODE();
-    return !rc;
+    if (SQLWritePrivateProfileStringW(name, propname, propval, W_ODBC_INI))
+    {
+        RESTORE_MODE();
+        return 0;
+    }
+    return 1;
   }
 
   return 0;
