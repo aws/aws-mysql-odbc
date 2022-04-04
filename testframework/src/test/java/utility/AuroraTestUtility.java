@@ -76,6 +76,7 @@ public class AuroraTestUtility {
   // Default values
   private String dbUsername = "my_test_username";
   private String dbPassword = "my_test_password";
+  private String dbName = "test";
   private String dbIdentifier = "test-identifier";
   private String dbEngine = "aurora-mysql";
   private String dbInstanceClass = "db.r5.large";
@@ -135,14 +136,16 @@ public class AuroraTestUtility {
    * @param username   Master username for access to database
    * @param password   Master password for access to database
    * @param identifier Database identifier
+   * @param name       Database name
    * @return An endpoint for one of the instances
    * @throws InterruptedException when clusters have not started after 30 minutes
    */
-  public AuroraClusterInfo createCluster(String username, String password, String identifier)
+  public AuroraClusterInfo createCluster(String username, String password, String identifier, String name)
       throws InterruptedException {
     dbUsername = username;
     dbPassword = password;
     dbIdentifier = identifier;
+    dbName = name;
     return createCluster();
   }
 
@@ -162,6 +165,7 @@ public class AuroraTestUtility {
     // Create Cluster
     final CreateDBClusterRequest dbClusterRequest = new CreateDBClusterRequest()
         .withDBClusterIdentifier(dbIdentifier)
+        .withDatabaseName(dbName)
         .withMasterUsername(dbUsername)
         .withMasterUserPassword(dbPassword)
         .withSourceRegion(dbRegion)
