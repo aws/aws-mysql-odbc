@@ -36,7 +36,7 @@ public:
     CLUSTER_AWARE_TIME_METRICS_HOLDER(std::string metric_name);
     ~CLUSTER_AWARE_TIME_METRICS_HOLDER();
 
-    void register_query_execution_time(long queryTimeMs) override;
+    void register_query_execution_time(long long queryTimeMs) override;
     std::string report_metrics() override;
 
 protected:

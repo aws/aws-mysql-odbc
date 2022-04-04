@@ -94,7 +94,7 @@ extern "C"
 
 
 #define my_sys_init my_init
-#define x_free(A) { void *tmp= (A); if (tmp) my_free((char *) tmp); }
+#define x_free(A) { void *tmpBuf= (A); if (tmpBuf) my_free((char *) tmpBuf); }
 #define myodbc_malloc(A,B) my_malloc(PSI_NOT_INSTRUMENTED,A,B)
 
 #define myodbc_realloc(A,B,C) my_realloc(PSI_NOT_INSTRUMENTED,A,B,C)
