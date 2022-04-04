@@ -41,15 +41,16 @@ TOXIPROXY_CLIENT::TOXIPROXY_CLIENT(std::string protocol, std::string host, int p
 
 std::vector<PROXY*> TOXIPROXY_CLIENT::get_proxies() const
 {
-  std::vector<PROXY*> proxies;
+  std::vector<PROXY*> proxies_vec;
+  
   nlohmann::json json_object = client->get(PROXIES_API);
-  if (!json_object)
-    return proxies;
+  if (json_object)
+  {
+    for (auto elem : json_object.items())
+        proxies_vec.push_back(new PROXY(client, PROXIES_API + elem.key(), elem.value()));
+  }
 
-  for (auto elem : json_object.items())
-    proxies.push_back(new PROXY(client, PROXIES_API + elem.key(), elem.value()));
-
-  return proxies;
+  return proxies_vec;
 }
 
 PROXY* TOXIPROXY_CLIENT::create_proxy(std::string name, std::string listen, std::string upstream)

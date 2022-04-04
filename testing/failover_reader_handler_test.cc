@@ -119,24 +119,24 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> FailoverReaderHandlerTest::topology = nul
 // Helper function that generates a list of hosts.
 // Parameters: Number of reader hosts UP, number of reader hosts DOWN, number of writer hosts.
 CLUSTER_TOPOLOGY_INFO generate_topology(int readers_up, int readers_down, int writers) {
-  CLUSTER_TOPOLOGY_INFO topology = CLUSTER_TOPOLOGY_INFO();
+  CLUSTER_TOPOLOGY_INFO topology_info = CLUSTER_TOPOLOGY_INFO();
   int number = 0;
   for (int i = 0; i < readers_up; i++) {
     std::shared_ptr<HOST_INFO> reader_up = std::make_shared<HOST_INFO>("host" + number, 0123, UP, false);
-    topology.add_host(reader_up);
+    topology_info.add_host(reader_up);
     number++;
   }
   for (int i = 0; i < readers_down; i++) {
     std::shared_ptr<HOST_INFO> reader_down = std::make_shared<HOST_INFO>("host" + number, 0123, DOWN, false);
-    topology.add_host(reader_down);
+    topology_info.add_host(reader_down);
     number++;
   }
   for (int i = 0; i < writers; i++) {
     std::shared_ptr<HOST_INFO> writer = std::make_shared<HOST_INFO>("host" + number, 0123, UP, true);
-    topology.add_host(writer);
+    topology_info.add_host(writer);
     number++;
   }
-  return topology;
+  return topology_info;
 }
 
 // Unit tests for the function that generates the list of hosts based on number of hosts.
@@ -158,48 +158,48 @@ TEST_F(FailoverReaderHandlerTest, GenerateTopology) {
 
 TEST_F(FailoverReaderHandlerTest, BuildHostsList) {
     FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000, nullptr, 0);
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology;
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info;
     std::vector<std::shared_ptr<HOST_INFO>> hosts_list;
 
     //Case: 0 readers up, 0 readers down, 0 writers, writers included.
-    topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(0, 0, 0));
-    hosts_list = reader_handler.build_hosts_list(topology, true);
+    topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(0, 0, 0));
+    hosts_list = reader_handler.build_hosts_list(topology_info, true);
     EXPECT_EQ(0, hosts_list.size());
 
     //Case: 0 readers up, 0 readers down, 1 writers, writers included.
-    topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(0, 0, 1));
-    hosts_list = reader_handler.build_hosts_list(topology, true);
+    topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(0, 0, 1));
+    hosts_list = reader_handler.build_hosts_list(topology_info, true);
     EXPECT_EQ(1, hosts_list.size());
     EXPECT_TRUE(hosts_list[0]->is_host_writer());
 
     //Case: 0 readers up, 0 readers down, 1 writers, writers excluded.
-    topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(0, 0, 1));
-    hosts_list = reader_handler.build_hosts_list(topology, false);
+    topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(0, 0, 1));
+    hosts_list = reader_handler.build_hosts_list(topology_info, false);
     EXPECT_EQ(0, hosts_list.size());
 
     //Case: 1 readers up, 1 readers down, 0 writers, writers included.
-    topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(0, 1, 0));
-    hosts_list = reader_handler.build_hosts_list(topology, true);
+    topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(0, 1, 0));
+    hosts_list = reader_handler.build_hosts_list(topology_info, true);
     EXPECT_EQ(1, hosts_list.size());
     EXPECT_FALSE(hosts_list[0]->is_host_writer());
     EXPECT_FALSE(hosts_list[0]->is_host_up());
 
     //Case: 1 readers up, 0 readers down, 0 writers, writers included.
-    topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(1, 0, 0));
-    hosts_list = reader_handler.build_hosts_list(topology, true);
+    topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(1, 0, 0));
+    hosts_list = reader_handler.build_hosts_list(topology_info, true);
     EXPECT_EQ(1, hosts_list.size());
     EXPECT_FALSE(hosts_list[0]->is_host_writer());
     EXPECT_TRUE(hosts_list[0]->is_host_up());
 
     //Case: 1 readers up, 0 readers down, 1 writers, writers excluded.
-    topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(1, 0, 1));
-    hosts_list = reader_handler.build_hosts_list(topology, false);
+    topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(1, 0, 1));
+    hosts_list = reader_handler.build_hosts_list(topology_info, false);
     EXPECT_EQ(1, hosts_list.size());
     EXPECT_FALSE(hosts_list[0]->is_host_writer());
 
     //Case: 1 readers up, 1 readers down, 1 writers, writers excluded.
-    topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(1, 1, 2));
-    hosts_list = reader_handler.build_hosts_list(topology, false);
+    topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(1, 1, 2));
+    hosts_list = reader_handler.build_hosts_list(topology_info, false);
     EXPECT_EQ(2, hosts_list.size());
     EXPECT_FALSE(hosts_list[0]->is_host_writer());
     EXPECT_TRUE(hosts_list[0]->is_host_up());
@@ -207,8 +207,8 @@ TEST_F(FailoverReaderHandlerTest, BuildHostsList) {
     EXPECT_TRUE(hosts_list[1]->is_host_down());
 
     //Case: 1 readers up, 1 readers down, 1 writers, writers included.
-    topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(1, 1, 1));
-    hosts_list = reader_handler.build_hosts_list(topology, true);
+    topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>(generate_topology(1, 1, 1));
+    hosts_list = reader_handler.build_hosts_list(topology_info, true);
     EXPECT_EQ(3, hosts_list.size());
     EXPECT_FALSE(hosts_list[0]->is_host_writer());
     EXPECT_TRUE(hosts_list[0]->is_host_up());

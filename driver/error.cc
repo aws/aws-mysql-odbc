@@ -579,7 +579,7 @@ MySQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle, SQLSMALLINT record,
 
   case SQL_DIAG_CONNECTION_NAME:
   {
-    DataSource *ds;
+    DataSource *ds = nullptr;
     if (record <= 0)
       return SQL_ERROR;
 
@@ -617,7 +617,7 @@ MySQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle, SQLSMALLINT record,
 
   case SQL_DIAG_SERVER_NAME:
   {
-    DataSource *ds;
+    DataSource *ds = nullptr;
     if (record <= 0)
       return SQL_ERROR;
     if (handle_type == SQL_HANDLE_DESC)

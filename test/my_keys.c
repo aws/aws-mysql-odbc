@@ -32,7 +32,6 @@
 /* UPDATE with no keys ...  */
 DECLARE_TEST(my_no_keys)
 {
-    SQLRETURN rc;
     SQLINTEGER nData;
 
   ok_sql(hstmt, "DROP TABLE IF EXISTS my_no_keys");
@@ -108,7 +107,6 @@ DECLARE_TEST(my_no_keys)
 
 DECLARE_TEST(my_foreign_keys)
 {
-    SQLRETURN   rc=0;
     SQLCHAR     dbc[255];
 
     ok_sql(hstmt,"DROP DATABASE IF EXISTS test_odbc_fk");
@@ -440,7 +438,6 @@ void t_strstr()
 DECLARE_TEST(t_bug16920750)
 {
   SQLCHAR buff[255];
-  SQLLEN len;
 
   ok_sql(hstmt, "DROP SCHEMA IF EXISTS fk_test");
   ok_sql(hstmt, "CREATE SCHEMA fk_test");
@@ -505,6 +502,6 @@ END_TESTS
 myoption &= ~(1 << 30);
 RUN_TESTS_ONCE
 myoption |= (1 << 30);
-testname_suffix= "_no_i_s";
+testname_suffix= (SQLCHAR*)"_no_i_s";
 RUN_TESTS
 

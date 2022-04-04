@@ -60,10 +60,10 @@ TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
         cluster_instance_host.reset();
 }
 
-void TOPOLOGY_SERVICE::set_cluster_id(std::string cluster_id) {
-    MYLOG_TRACE(log_file, dbc_id, "[TOPOLOGY_SERVICE] cluster ID=%s", cluster_id.c_str());
-    this->cluster_id = cluster_id;
-    metrics_container->set_cluster_id(cluster_id);
+void TOPOLOGY_SERVICE::set_cluster_id(std::string cid) {
+    MYLOG_TRACE(log_file, dbc_id, "[TOPOLOGY_SERVICE] cluster ID=%s", cid.c_str());
+    this->cluster_id = cid;
+    metrics_container->set_cluster_id(this->cluster_id);
 }
 
 void TOPOLOGY_SERVICE::set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template) {
@@ -301,7 +301,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
     }
 
     std::chrono::steady_clock::time_point end_time_ms = std::chrono::steady_clock::now();
-    long elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_ms - start_time_ms).count();
+    long long elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time_ms - start_time_ms).count();
     metrics_container->register_topology_query_execution_time(elasped_time_ms);
     return topology_info;
 }
