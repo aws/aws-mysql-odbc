@@ -49,8 +49,8 @@ long SLICER::get_delay() const
   return delay;
 }
 
-SLICER* SLICER::set_delay(long delay)
+SLICER* SLICER::set_delay(long delay_val)
 {
-  post_attribute("delay", delay);
+  post_attribute("delay", delay_val);
   return this;
 }

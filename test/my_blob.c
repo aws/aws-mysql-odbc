@@ -31,7 +31,6 @@
 
 DECLARE_TEST(t_blob)
 {
-    SQLRETURN rc;
     SQLUINTEGER j= 0;
     SQLINTEGER l;
     SQLLEN cbValue;
@@ -139,7 +138,6 @@ DECLARE_TEST(t_blob)
 
 DECLARE_TEST(t_1piecewrite2)
 {
-    SQLRETURN rc;
     SQLLEN cbValue,cbValue2;
     SQLINTEGER l;
     SQLCHAR* blobbuf;
@@ -195,7 +193,6 @@ DECLARE_TEST(t_1piecewrite2)
 /* Test for a simple SQLPutData and SQLParamData handling for longtext */
 DECLARE_TEST(t_putdata)
 {
-  SQLRETURN  rc;
   SQLLEN     pcbLength;
   SQLINTEGER c1;
   SQLCHAR    data[255];
@@ -263,7 +260,6 @@ DECLARE_TEST(t_putdata)
 /* Test for a simple SQLPutData and SQLParamData handling for longtext */
 DECLARE_TEST(t_putdata1)
 {
-  SQLRETURN  rc;
   SQLLEN     pcbLength;
   SQLINTEGER c1;
   SQLCHAR    data[255];
@@ -333,7 +329,6 @@ DECLARE_TEST(t_putdata1)
 /* Test for a simple SQLPutData and SQLParamData handling for longtext */
 DECLARE_TEST(t_putdata2)
 {
-  SQLRETURN  rc;
   SQLLEN     pcbLength;
   SQLINTEGER c1;
   SQLCHAR    data[255];
@@ -421,7 +416,6 @@ DECLARE_TEST(t_putdata2)
 /* Test for a simple SQLPutData and SQLParamData handling bug #1316 */
 DECLARE_TEST(t_putdata3)
 {
-  SQLRETURN   rc;
   SQLINTEGER  id, id1, id2, id3;
   SQLLEN      resId, resUTimeSec, resUTimeMSec, resDataLen, resData;
 
@@ -530,7 +524,6 @@ DECLARE_TEST(t_putdata3)
 /* Test the bug when blob size > 8k */
 DECLARE_TEST(t_blob_bug)
 {
-  SQLRETURN  rc;
   SQLCHAR    *data;
   SQLINTEGER i, val;
   SQLLEN     length;
@@ -595,7 +588,6 @@ DECLARE_TEST(t_blob_bug)
 #define TEST_ODBC_TEXT_LEN 3000
 DECLARE_TEST(t_text_fetch)
 {
-  SQLRETURN  rc;
   SQLINTEGER i;
   SQLLEN     row_count, length;
   SQLCHAR    data[TEST_ODBC_TEXT_LEN+1];
@@ -855,7 +847,7 @@ DECLARE_TEST(t_bug_29282638)
   SQLCHAR     col2_buf[10000];
   SQLLEN      col2_cb = 0;
 
-  SQLCHAR     *param = (SQLCHAR*)"something";
+  char        *param = "something";
 
   ok_sql(hstmt, "DROP TABLE if exists bug_29282638");
 
@@ -864,7 +856,7 @@ DECLARE_TEST(t_bug_29282638)
   ok_sql(hstmt, "insert into bug_29282638 VALUES "
          "('something', repeat('abc', 1000))");
 
-  ok_stmt(hstmt, SQLPrepare(hstmt, "SELECT * FROM bug_29282638 WHERE col1 = ?", SQL_NTS));
+  ok_stmt(hstmt, SQLPrepare(hstmt, (SQLCHAR*)"SELECT * FROM bug_29282638 WHERE col1 = ?", SQL_NTS));
   ok_stmt(hstmt, SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 0, 0,
                                   param, strlen(param), NULL));
 

@@ -2176,7 +2176,8 @@ int str_to_ts(SQL_TIMESTAMP_STRUCT *ts, const char *str, int len, int zeroToMin,
               BOOL dont_use_set_locale)
 {
     uint year, length;
-    char buff[DATETIME_DIGITS + 1], *to;
+    char buff[DATETIME_DIGITS + 1] = {0};
+    char* to;
     const char *end;
     SQL_TIMESTAMP_STRUCT tmp_timestamp;
     SQLUINTEGER fraction;
@@ -2345,7 +2346,8 @@ my_bool str_to_time_st(SQL_TIME_STRUCT *ts, const char *str)
 my_bool str_to_date(SQL_DATE_STRUCT *rgbValue, const char *str,
                     uint length, int zeroToMin)
 {
-    uint field_length,year_length,digits,i,date[3];
+    uint field_length,year_length,digits,i;
+    uint date[3] = {0};
     const char *pos;
     const char *end= str+length;
     for ( ; !isdigit(*str) && str != end ; ++str ) ;
@@ -3090,7 +3092,6 @@ void sqlnum_to_str(SQL_NUMERIC_STRUCT *sqlnum, SQLCHAR *numstr,
   /* add zeros for negative scale */
   if (reqscale < 0)
   {
-    int i;
     reqscale *= -1;
     for (i= 1; i <= calcprec; ++i)
       *(numstr + i - reqscale)= *(numstr + i);

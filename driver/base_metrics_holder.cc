@@ -44,7 +44,7 @@ BASE_METRICS_HOLDER::~BASE_METRICS_HOLDER() {
     old_hist_counts = nullptr;
 }
 
-void BASE_METRICS_HOLDER::register_query_execution_time(long query_time_ms) {
+void BASE_METRICS_HOLDER::register_query_execution_time(long long query_time_ms) {
     if (query_time_ms > longest_query_time_ms) {
         longest_query_time_ms = query_time_ms;
 
@@ -121,20 +121,27 @@ std::string BASE_METRICS_HOLDER::report_metrics() {
     return log_message;
 }
 
-void BASE_METRICS_HOLDER::create_initial_histogram(long* breakpoints, long lower_bound, long upper_bound) {
-    double bucketSize = (((double) upper_bound - (double) lower_bound) / HISTOGRAM_BUCKETS) * 1.25;
+void BASE_METRICS_HOLDER::create_initial_histogram(long long* breakpoints, long long lower_bound, long long upper_bound) {
+    long long bucket_size = (long long)((((double) upper_bound - (double) lower_bound) / HISTOGRAM_BUCKETS) * 1.25);
 
-    if (bucketSize < 1) {
-        bucketSize = 1;
+    if (bucket_size < 1) {
+        bucket_size = 1;
     }
 
     for (int i = 0; i < HISTOGRAM_BUCKETS; i++) {
         breakpoints[i] = lower_bound;
-        lower_bound += bucketSize;
+        lower_bound += bucket_size;
     }
 }
 
-void BASE_METRICS_HOLDER::add_to_histogram(int* histogram_counts, long* histogram_breakpoints, long value, int number_of_times, long current_lower_bound, long current_upper_bound) {
+void BASE_METRICS_HOLDER::add_to_histogram(
+    int* histogram_counts,
+    long long* histogram_breakpoints,
+    long long value,
+    int number_of_times,
+    long long current_lower_bound,
+    long long current_upper_bound) {
+
     if (!histogram_counts) {
         create_initial_histogram(histogram_breakpoints, current_lower_bound, current_upper_bound);
     } else {
@@ -147,11 +154,11 @@ void BASE_METRICS_HOLDER::add_to_histogram(int* histogram_counts, long* histogra
     }
 }
 
-void BASE_METRICS_HOLDER::add_to_performance_histogram(long value, int number_of_times) {
+void BASE_METRICS_HOLDER::add_to_performance_histogram(long long value, int number_of_times) {
     check_and_create_performance_histogram();
 
     add_to_histogram(perf_metrics_hist_counts, perf_metrics_hist_breakpoints, value, number_of_times,
-        shortest_query_time_ms == LONG_MAX ? 0 : shortest_query_time_ms, longest_query_time_ms);
+        shortest_query_time_ms == LLONG_MAX ? 0 : shortest_query_time_ms, longest_query_time_ms);
 }
 
 void BASE_METRICS_HOLDER::check_and_create_performance_histogram() {
@@ -160,11 +167,16 @@ void BASE_METRICS_HOLDER::check_and_create_performance_histogram() {
     }
 
     if (!perf_metrics_hist_breakpoints) {
-        perf_metrics_hist_breakpoints = new long[HISTOGRAM_BUCKETS]();
+        perf_metrics_hist_breakpoints = new long long[HISTOGRAM_BUCKETS]();
     }
 }
 
-void BASE_METRICS_HOLDER::repartition_histogram(int* hist_counts, long* hist_breakpoints, long current_lower_bound, long current_upper_bound) {
+void BASE_METRICS_HOLDER::repartition_histogram(
+    int* hist_counts,
+    long long* hist_breakpoints,
+    long long current_lower_bound,
+    long long current_upper_bound) {
+
     if (!old_hist_counts) {
         old_hist_counts = new int[HISTOGRAM_BUCKETS];
         old_hist_breakpoints = new long[HISTOGRAM_BUCKETS];

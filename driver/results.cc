@@ -381,7 +381,7 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
              char *value, ulong length, DESCREC *arrec)
 {
   MYSQL_FIELD *field= mysql_fetch_field_direct(stmt->result, column_number);
-  SQLLEN    tmp;
+  SQLLEN    temp;
   long long numeric_value = 0;
   unsigned long long u_numeric_value = 0;
   my_bool   convert= 1;
@@ -449,7 +449,7 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
 
     if (!pcbValue)
     {
-      pcbValue= &tmp; /* Easier code */
+      pcbValue= &temp; /* Easier code */
     }
 
     if (field->type == MYSQL_TYPE_BIT)
@@ -1780,7 +1780,6 @@ fill_fetch_bookmark_buffers(STMT *stmt, ulong value, uint rownum)
   {
     SQLLEN *pcbValue= NULL;
     SQLPOINTER TargetValuePtr= NULL;
-    ulong copy_bytes= 0;
 
     stmt->reset_getdata_position();
 
@@ -2430,7 +2429,7 @@ SQLRETURN SQL_API my_SQLExtendedFetch( SQLHSTMT             hstmt,
       if (res != row_res || res != row_book)
       {
         /* Any successful row makes overall result SQL_SUCCESS_WITH_INFO */
-        if (SQL_SUCCEEDED(row_res) && SQL_SUCCEEDED(row_res))
+        if (SQL_SUCCEEDED(row_res))
         {
           res= SQL_SUCCESS_WITH_INFO;
         }

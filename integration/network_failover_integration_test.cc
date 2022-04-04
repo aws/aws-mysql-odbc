@@ -43,8 +43,8 @@
 
 #define MAX_NAME_LEN 255
 #define SQL_MAX_MESSAGE_LENGTH 512
-static const std::string DOWN_STREAM_STR = "DOWNSTREAM";
-static const std::string UP_STREAM_STR = "UPSTREAM";
+static std::string DOWN_STREAM_STR = "DOWNSTREAM";
+static std::string UP_STREAM_STR = "UPSTREAM";
 static SQLHENV env;
 static SQLHDBC dbc;
 static Aws::SDKOptions options;
@@ -62,8 +62,7 @@ class NetworkFailoverIntegrationTest : public testing::Test {
   std::vector<Aws::RDS::Model::DBClusterMember> readers;
   Aws::RDS::Model::DBClusterMember writer;
 
-  SQLCHAR connIn[4096], connOut[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
-  SQLINTEGER native_error;
+  SQLCHAR connIn[4096], connOut[4096], sqlstate[6];
   SQLSMALLINT len, length;
 
   std::string PROXIED_DOMAIN_NAME_SUFFIX = std::getenv("PROXIED_DOMAIN_NAME_SUFFIX");
@@ -466,7 +465,6 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   std::vector<std::string> previous_readers;
   const std::string expected_error = "08S02";
 
-  const std::string writer = get_writer_id();
   const std::string first_reader = get_reader_id();
   const std::string server = get_endpoint(first_reader);
   previous_readers.push_back(first_reader);

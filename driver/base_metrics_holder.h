@@ -41,26 +41,36 @@ public:
     BASE_METRICS_HOLDER();
     ~BASE_METRICS_HOLDER();
 
-    virtual void register_query_execution_time(long query_time_ms);
+    virtual void register_query_execution_time(long long query_time_ms);
     virtual std::string report_metrics();
 
 private:
-    void create_initial_histogram(long* breakpoints, long lower_bound, long upper_bound);
-    void add_to_histogram(int* histogram_counts, long* histogram_breakpoints, long value, int number_of_times, long current_lower_bound, long current_upper_bound);
-    void add_to_performance_histogram(long value, int number_of_times);
+    void create_initial_histogram(long long* breakpoints, long long lower_bound, long long upper_bound);
+    void add_to_histogram(
+        int* histogram_counts,
+        long long* histogram_breakpoints,
+        long long value,
+        int number_of_times,
+        long long current_lower_bound,
+        long long current_upper_bound);
+    void add_to_performance_histogram(long long value, int number_of_times);
     void check_and_create_performance_histogram();
-    void repartition_histogram(int* hist_counts, long* hist_breakpoints, long current_lower_bound, long current_upper_bound);
+    void repartition_histogram(
+        int* hist_counts,
+        long long* hist_breakpoints,
+        long long current_lower_bound,
+        long long current_upper_bound);
     void repartition_performance_histogram();
     
 protected:
     const static int HISTOGRAM_BUCKETS = 20;
-    long longest_query_time_ms = 0;
+    long long longest_query_time_ms = 0;
     long number_of_queries_issued = 0;
     long* old_hist_breakpoints = nullptr;
     int* old_hist_counts = nullptr;
-    long shortest_query_time_ms = LONG_MAX;
+    long long shortest_query_time_ms = LONG_MAX;
     double total_query_time_ms = 0;
-    long* perf_metrics_hist_breakpoints = nullptr;
+    long long* perf_metrics_hist_breakpoints = nullptr;
     int* perf_metrics_hist_counts = nullptr;
 };
 

@@ -637,7 +637,7 @@ MySQLSetStmtAttr(SQLHSTMT hstmt, SQLINTEGER Attribute, SQLPOINTER ValuePtr,
             {
               DESC *desc= (DESC *) ValuePtr;
               DESC **dest= NULL;
-              desc_desc_type desc_type;
+              desc_desc_type desc_type = DESC_UNKNOWN;
 
               if (Attribute == SQL_ATTR_APP_PARAM_DESC)
               {

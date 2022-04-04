@@ -236,8 +236,6 @@ void print_odbc_error(SQLHANDLE hnd, SQLSMALLINT type)
  */
 int list_driver_details(Driver *driver)
 {
-  SQLWCHAR buf[50000];
-  SQLWCHAR *entries= buf;
   int rc;
 
   /* lookup the driver */
@@ -594,7 +592,7 @@ int list_datasources()
   SQLHANDLE env;
   SQLRETURN rc;
   SQLUSMALLINT dir= 0; /* SQLDataSources fetch direction */
-  SQLCHAR name[256];
+  SQLCHAR server_name[256];
   SQLCHAR description[256];
 
   /* determine 'direction' to pass to SQLDataSources */
@@ -628,10 +626,10 @@ int list_datasources()
   }
 
   /* retrieve and print data source */
-  while ((rc= SQLDataSources(env, dir, name, 256, NULL, description,
+  while ((rc= SQLDataSources(env, dir, server_name, 256, NULL, description,
                              256, NULL)) == SQL_SUCCESS)
   {
-    printf("%-20s - %s\n", name, description);
+    printf("%-20s - %s\n", server_name, description);
     dir= SQL_FETCH_NEXT;
   }
 

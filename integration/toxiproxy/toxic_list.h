@@ -38,7 +38,7 @@ class TOXIC_LIST
 {
 public:
   TOXIC_LIST(TOXIPROXY_HTTP_CLIENT* client, std::string path) : client{ client }, path(std::move(path)) {}
-  TOXIC* get(const std::string& name);
+  TOXIC* get(std::string& name);
 
   template <typename T, typename std::enable_if<std::is_base_of<TOXIC, T>::value>::type* = nullptr>
   std::vector<T> get_all();
@@ -48,7 +48,7 @@ public:
 
   BANDWIDTH* bandwidth(const std::string& name, TOXIC_DIRECTION direction, long rate) const;
   LATENCY* latency(const std::string& name, TOXIC_DIRECTION direction, long latency) const;
-  SLICER* slicer(const std::string& name, TOXIC_DIRECTION direction, long average_size, long delay) const;
+  SLICER* slicer(const std::string& name, TOXIC_DIRECTION direction, long delay) const;
   SLOW_CLOSE* slow_close(const std::string& name, TOXIC_DIRECTION direction, long delay) const;
   TIMEOUT* timeout(const std::string& name, TOXIC_DIRECTION direction, long timeout) const;
   LIMIT_DATA* limit_data(const std::string& name, TOXIC_DIRECTION direction, long bytes) const;

@@ -32,19 +32,19 @@ CLUSTER_AWARE_METRICS::CLUSTER_AWARE_METRICS() {}
 
 CLUSTER_AWARE_METRICS::~CLUSTER_AWARE_METRICS() {}
 
-void CLUSTER_AWARE_METRICS::register_failure_detection_time(long time_ms) {
+void CLUSTER_AWARE_METRICS::register_failure_detection_time(long long time_ms) {
 	failure_detection->register_query_execution_time(time_ms);
 }
 
-void CLUSTER_AWARE_METRICS::register_writer_failover_procedure_time(long time_ms) {
+void CLUSTER_AWARE_METRICS::register_writer_failover_procedure_time(long long time_ms) {
 	writer_failover_procedure->register_query_execution_time(time_ms);
 }
 
-void CLUSTER_AWARE_METRICS::register_reader_failover_procedure_time(long time_ms) {
+void CLUSTER_AWARE_METRICS::register_reader_failover_procedure_time(long long time_ms) {
 	reader_failover_procedure->register_query_execution_time(time_ms);
 }
 
-void CLUSTER_AWARE_METRICS::register_topology_query_time(long time_ms) {
+void CLUSTER_AWARE_METRICS::register_topology_query_time(long long time_ms) {
 	topology_query->register_query_execution_time(time_ms);
 }
 

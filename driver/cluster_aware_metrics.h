@@ -38,10 +38,10 @@ class CLUSTER_AWARE_METRICS {
 public:
 	CLUSTER_AWARE_METRICS();
 	~CLUSTER_AWARE_METRICS();
-	void register_failure_detection_time(long time_ms);
-	void register_writer_failover_procedure_time(long time_ms);
-	void register_reader_failover_procedure_time(long time_ms);
-	void register_topology_query_time(long time_ms);
+	void register_failure_detection_time(long long time_ms);
+	void register_writer_failover_procedure_time(long long time_ms);
+	void register_reader_failover_procedure_time(long long time_ms);
+	void register_topology_query_time(long long time_ms);
 	void register_failover_connects(bool is_hit);
 	void register_invalid_initial_connection(bool is_hit);
 	void register_use_cached_topology(bool is_hit);	

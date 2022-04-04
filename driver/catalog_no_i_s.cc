@@ -852,9 +852,6 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
       SQLTypeMap *type_map;
       SQLSMALLINT dec;
       SQLULEN param_size= 0;
-      /* temp variables for debugging */
-      SQLUINTEGER dec_int= 0;
-      SQLINTEGER sql_type_int= 0;
 
       token= proc_get_param_type(token, (int)strlen(token), &ptype);
       token= proc_get_param_name(token, (int)strlen(token), (char*)param_name);

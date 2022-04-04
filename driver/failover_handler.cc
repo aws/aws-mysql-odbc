@@ -109,7 +109,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
     try {
         hosts = parse_host_list(
             ds_get_utf8attr(ds->server, &ds->server8), ds->port);
-    } catch (std::string& e) {
+    } catch (std::string&) {
         err << "Invalid server '" << ds->server8 << "'.";
         MYLOG_DBC_TRACE(dbc, err.str().c_str());
         throw std::runtime_error(err.str());
@@ -140,7 +140,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
 
         try {
             host_patterns = parse_host_list(hp_str.c_str(), port);
-        } catch (std::string& e) {
+        } catch (std::string&) {
             err << "Invalid host pattern: '" << hp_str << "' - the value could not be parsed";
             MYLOG_TRACE(dbc->log_file.get(), dbc->id, err.str().c_str());
             throw std::runtime_error(err.str());
@@ -296,14 +296,13 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
 }
 
 void FAILOVER_HANDLER::set_cluster_id(std::string host, int port) {
-    const std::string cluster_id = host + ":" + std::to_string(port);
-    set_cluster_id(cluster_id);
+    set_cluster_id(host + ":" + std::to_string(port));
 }
 
-void FAILOVER_HANDLER::set_cluster_id(std::string cluster_id) {
-    this->cluster_id = cluster_id;
-    topology_service->set_cluster_id(cluster_id);
-    metrics_container->set_cluster_id(cluster_id);
+void FAILOVER_HANDLER::set_cluster_id(std::string cid) {
+    this->cluster_id = cid;
+    topology_service->set_cluster_id(this->cluster_id);
+    metrics_container->set_cluster_id(this->cluster_id);
 }
 
 bool FAILOVER_HANDLER::is_dns_pattern_valid(std::string host) {
@@ -441,7 +440,8 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
         current_host = nullptr;
         // close transaction if needed
         
-        long elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - invoke_start_time_ms).count();
+        long long elasped_time_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - invoke_start_time_ms).count();
         metrics_container->register_failure_detection_time(elasped_time_ms);
 
         failover_start_time_ms = std::chrono::steady_clock::now();
@@ -449,11 +449,13 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
         if (current_topology && current_topology->total_hosts() > 1 &&
             ds->allow_reader_connections) {  // there are readers in topology
             failover_success = failover_to_reader(new_error_code);
-            elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
+            elasped_time_ms =
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
             metrics_container->register_reader_failover_procedure_time(elasped_time_ms);
         } else {
             failover_success = failover_to_writer(new_error_code);
-            elasped_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
+            elasped_time_ms =
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
             metrics_container->register_writer_failover_procedure_time(elasped_time_ms);
 
         }

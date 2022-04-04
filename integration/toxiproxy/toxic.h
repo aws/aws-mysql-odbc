@@ -68,7 +68,7 @@ public:
   void create_toxic(const std::string& toxic_list_path);
   void post_attribute(std::string name, long value);
   void set_from_json(nlohmann::json json_object);
-  void set_toxicity(double toxicity);
+  void set_toxicity(double toxicity_val);
   std::string get_name() const;
   TOXIC_DIRECTION get_stream() const;
   double get_toxicity() const;

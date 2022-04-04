@@ -813,7 +813,6 @@ inline bool is_ts_char(char c)
 const char *get_date_time_substr(const char *data, long &len)
 {
   const char* d_start = data;
-  long idx = 0;
   while(len && !is_ts_char(*d_start))
   {
     --len;
@@ -846,7 +845,7 @@ const char *get_date_time_substr(const char *data, long &len)
 SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
                        DESCREC *aprec, DESCREC *iprec, SQLULEN row)
 {
-    long length;
+    long length = 0;
     char buff[128], *data= NULL;
     BOOL convert= FALSE, free_data= FALSE;
     DBC *dbc= stmt->dbc;
@@ -1739,7 +1738,7 @@ static SQLRETURN find_next_dae_param(STMT *stmt,  SQLPOINTER *token)
 
 static SQLRETURN execute_dae(STMT *stmt)
 {
-  SQLRETURN rc;
+  SQLRETURN rc = SQL_ERROR;
   char *query;
   SQLULEN query_len = 0;
 

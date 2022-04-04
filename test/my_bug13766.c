@@ -44,7 +44,7 @@ DECLARE_TEST(bug13766_result)
   DECLARE_BASIC_HANDLES(henv1, hdbc1, hstmt1);
 
   alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL, NULL, NULL,
-                               NULL, "FLAG_ZERO_DATE_TO_MIN=1");
+                               NULL, (SQLCHAR*)"FLAG_ZERO_DATE_TO_MIN=1");
   SQL_DATE_STRUCT xdate[EL_NUM];
   SQL_TIMESTAMP_STRUCT xts[EL_NUM];
   SQLLEN isNull[12];
@@ -163,7 +163,7 @@ DECLARE_TEST(bug13766_query)
   DECLARE_BASIC_HANDLES(henv1, hdbc1, hstmt1);
 
   alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL, NULL, NULL,
-                               NULL, "FLAG_MIN_DATE_TO_ZERO=1");
+                               NULL, (SQLCHAR*)"FLAG_MIN_DATE_TO_ZERO=1");
 
   ok_sql(hstmt1, "SET @@SESSION.SQL_MODE=''");
 

@@ -49,15 +49,15 @@ public:
     ~CLUSTER_AWARE_METRICS_CONTAINER();
 
     void set_cluster_id(std::string cluster_id);
-    void register_failure_detection_time(long time_ms);
-    void register_writer_failover_procedure_time(long time_ms);
-    void register_reader_failover_procedure_time(long time_ms);
+    void register_failure_detection_time(long long time_ms);
+    void register_writer_failover_procedure_time(long long time_ms);
+    void register_reader_failover_procedure_time(long long time_ms);
     void register_failover_connects(bool is_hit);
     void register_invalid_initial_connection(bool is_hit);
     void register_use_cached_topology(bool is_hit);
-    void register_topology_query_execution_time(long time_ms);
+    void register_topology_query_execution_time(long long time_ms);
     
-    void set_gather_metric(bool can_gather);
+    void set_gather_metric(bool gather);
 
     static void report_metrics(std::string conn_url, bool for_instances, FILE* log, unsigned long dbc_id);
     static std::string report_metrics(std::string conn_url, bool for_instances);

@@ -422,9 +422,6 @@ int adjust_param_bind_array(STMT *stmt)
 */
 SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc,SQLHSTMT *phstmt)
 {
-#ifndef _UNIX_
-  HGLOBAL  hstmt;
-#endif
   std::unique_ptr<STMT> stmt;
   DBC   *dbc= (DBC*) hdbc;
 

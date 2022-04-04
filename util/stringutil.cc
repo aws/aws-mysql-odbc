@@ -1392,11 +1392,11 @@ char *myodbc_stpmov(char *dst, const char *src)
 char *myodbc_ll2str(longlong val, char *dst, int radix)
 {
   char buffer[65];
-  char _dig_vec_upper[] =
+  char dig_vec_upper[] =
     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   char *p;
   long long_val;
-  char *dig_vec = _dig_vec_upper;
+  char *dig_vec = dig_vec_upper;
   ulonglong uval = (ulonglong)val;
 
   if (radix < 0)
@@ -1679,7 +1679,6 @@ bool myodbc_append_os_quoted_std(std::string &str, const char *append, ...) {
   const char *quote_str = "\'";
   const uint quote_len = 1;
 #endif /* _WIN32 */
-  bool ret = true;
   va_list dirty_text;
   str.reserve(str.length() + 128);
   str.append(quote_str, quote_len); /* Leading quote */

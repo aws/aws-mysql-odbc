@@ -853,8 +853,8 @@ BOOL FormMain_OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     RedrawWindow(hwnd,NULL,NULL,RDW_INVALIDATE);
   }
 
-  BOOL b = DoCreateDialogTooltip();
-  return 0;
+	DoCreateDialogTooltip();
+	return 0;
 }
 
 

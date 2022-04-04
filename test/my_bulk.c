@@ -362,7 +362,7 @@ DECLARE_TEST(t_bulk_insert_bookmark)
 
   for (i= 0; i < MAX_BM_INS_COUNT; i++)
   {
-    is_num(atol(bData[i]), i + 1);
+    is_num(atol((char*)bData[i]), i + 1);
   }
 
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
@@ -372,7 +372,7 @@ DECLARE_TEST(t_bulk_insert_bookmark)
 
   for (i= 0; i < MAX_BM_INS_COUNT; i++)
   {
-    is_num(atol(bData[i]), i + 1);
+    is_num(atol((char*)bData[i]), i + 1);
     is_num(id[i], i + 1);
     if (i < 4)
     {
@@ -399,7 +399,6 @@ DECLARE_TEST(t_bulk_insert_bookmark)
 */
 DECLARE_TEST(t_bookmark_update)
 {
-  SQLLEN len= 0;
   SQLUSMALLINT rowStatus[4];
   SQLULEN numRowsFetched;
   SQLINTEGER nData[4], i;
@@ -450,7 +449,7 @@ DECLARE_TEST(t_bookmark_update)
 
   for (i= 0; i < 4; ++i)
   {
-    strcpy(szData[i], "xxxxxxxx");
+    strcpy((char*)szData[i], "xxxxxxxx");
   }
 
   ok_stmt(hstmt, SQLSetStmtOption(hstmt, SQL_ROWSET_SIZE, 2));
@@ -485,7 +484,6 @@ DECLARE_TEST(t_bookmark_update)
 */
 DECLARE_TEST(t_bookmark_delete)
 {
-  SQLLEN len= 0;
   SQLUSMALLINT rowStatus[4];
   SQLULEN numRowsFetched;
   SQLINTEGER nData[4];

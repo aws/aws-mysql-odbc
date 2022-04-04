@@ -125,7 +125,6 @@ DECLARE_TEST(t_scroll)
 /* Testing SQL_FETCH_RELATIVE with row_set_size as 10 */
 DECLARE_TEST(t_array_relative_10)
 {
-    SQLRETURN rc;
     SQLINTEGER iarray[15];
     SQLLEN   nrows, index;
     SQLUINTEGER i;
@@ -270,7 +269,6 @@ DECLARE_TEST(t_array_relative_10)
 /* Testing SQL_FETCH_RELATIVE with row_set_size as 1 */
 DECLARE_TEST(t_relative_1)
 {
-    SQLRETURN rc;
     SQLLEN nrows;
     SQLUINTEGER i;
     const SQLUINTEGER max_rows=10;
@@ -479,7 +477,6 @@ DECLARE_TEST(t_relative_1)
 /* Testing SQL_FETCH_RELATIVE with row_set_size as 2 */
 DECLARE_TEST(t_array_relative_2)
 {
-    SQLRETURN rc;
     SQLUINTEGER i;
     SQLLEN nrows;
     SQLINTEGER iarray[15];
@@ -791,7 +788,6 @@ DECLARE_TEST(t_array_relative_2)
 /* Testing SQL_FETCH_ABSOLUTE with row_set_size as 1 */
 DECLARE_TEST(t_absolute_1)
 {
-    SQLRETURN rc;
     SQLLEN nrows;
     SQLUINTEGER i;
     const SQLUINTEGER max_rows=10;
@@ -975,7 +971,6 @@ DECLARE_TEST(t_absolute_1)
 /* Testing SQL_FETCH_ABSOLUTE with row_set_size as 2 */
 DECLARE_TEST(t_absolute_2)
 {
-    SQLRETURN rc;
     SQLLEN nrows;
     SQLINTEGER iarray[15];
     const SQLUINTEGER max_rows=10;
