@@ -914,8 +914,6 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
     return set_conn_error((DBC*)hdbc, MYERR_S1C00, buff, 4000);
   }
   }
-
-  return SQL_SUCCESS;
 }
 
 

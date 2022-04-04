@@ -107,9 +107,8 @@ void build_connection_string(SQLCHAR* conn_in, char* dsn, char* user, char* pwd,
 std::vector<std::string> retrieve_topology_via_SQL(SQLCHAR* conn_in) {
   std::vector<std::string> instances;
 
-  SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
-  SQLINTEGER native_error;
-  SQLSMALLINT len, length;
+  SQLCHAR conn_out[4096];
+  SQLSMALLINT len;
 
   SQLRETURN rc = SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
   if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
@@ -144,13 +143,13 @@ std::vector<std::string> retrieve_topology_via_SQL(SQLCHAR* conn_in) {
   return instances;
 }
 
-std::string query_instance_id(SQLHDBC dbc) {
+std::string query_instance_id(SQLHDBC hdbc) {
   SQLCHAR buf[255];
   SQLLEN buflen;
   SQLHSTMT handle;
   const auto query = (SQLCHAR*)"SELECT @@aurora_server_id";
 
-  SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle);
+  SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &handle);
   SQLExecDirect(handle, query, SQL_NTS);
   const auto rc = SQLFetch(handle);
   if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
@@ -293,9 +292,9 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
   auto initial_writer_endpoint = initial_writer.second;
   
   build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT);
-  SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
+  SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
-  SQLSMALLINT len, length;
+  SQLSMALLINT len;
 
   SQLRETURN rc = SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
   if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
@@ -304,8 +303,6 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
 
   failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
 
-  SQLCHAR buf2[255];
-  SQLLEN buflen2;
   SQLHSTMT handle2;
   SQLSMALLINT stmt_length;
   SQLCHAR stmt_sqlstate[6];
@@ -378,9 +375,9 @@ TEST_F(FailoverIntegrationTest, EndToEndTest) {
   std::string initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX).second;
 
   build_connection_string(conn_in, dsn, user, pwd, initial_writer, MYSQL_PORT);
-  SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
+  SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
-  SQLSMALLINT len, length;
+  SQLSMALLINT len;
 
   SQLRETURN rc = SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
   if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
@@ -401,8 +398,6 @@ TEST_F(FailoverIntegrationTest, EndToEndTest) {
   failover_cluster(rds_client, cluster_id);
   std::this_thread::sleep_for(std::chrono::seconds(90));
 
-  SQLCHAR buf2[255];
-  SQLLEN buflen2;
   SQLHSTMT handle2;
   SQLSMALLINT stmt_length;
   SQLCHAR stmt_sqlstate[6];

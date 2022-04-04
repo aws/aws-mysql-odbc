@@ -41,7 +41,7 @@
   Returns random number.
  */
 int get_random_number() {
-    std::srand(time(nullptr));
+    std::srand((unsigned int)time(nullptr));
     return rand();
 }
 
@@ -80,11 +80,11 @@ void CLUSTER_TOPOLOGY_INFO::add_host(std::shared_ptr<HOST_INFO> host_info) {
     update_time();
 }
 
-int CLUSTER_TOPOLOGY_INFO::total_hosts() {
+size_t CLUSTER_TOPOLOGY_INFO::total_hosts() {
     return writers.size() + readers.size();
 }
 
-int CLUSTER_TOPOLOGY_INFO::num_readers() {
+size_t CLUSTER_TOPOLOGY_INFO::num_readers() {
     return readers.size();
 }
 
@@ -106,7 +106,7 @@ std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_writer() {
 }
 
 std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_next_reader() {
-    int num_readers = readers.size();
+    size_t num_readers = readers.size();
     if (num_readers <= 0) {
         throw std::runtime_error("No reader available");
     }

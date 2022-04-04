@@ -56,7 +56,7 @@ public:
   nlohmann::json get_attributes() override;
   TOXIC_TYPES get_type() override;
   long get_delay() const;
-  SLICER* set_delay(long delay);
+  SLICER* set_delay(long delay_val);
 
 private:
   long delay;

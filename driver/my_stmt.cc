@@ -486,8 +486,8 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
     uint i;
     for (i= 0; i < stmt->param_count; ++i)
     {
-      DESCREC *aprec= desc_get_rec(stmt->apd, i, TRUE);
-      DESCREC *iprec= desc_get_rec(stmt->ipd, i, TRUE);
+      desc_get_rec(stmt->apd, i, TRUE);
+      desc_get_rec(stmt->ipd, i, TRUE);
     }
   }
 
@@ -694,9 +694,9 @@ BOOL scrollable(STMT * stmt, char * query, char * query_end)
   /* FOR UPDATE*/
   {
     const char *before_token= query_end;
-    const char *last= mystr_get_prev_token(stmt->dbc->ansi_charset_info,
-                                                &before_token,
-                                                query);
+    mystr_get_prev_token(stmt->dbc->ansi_charset_info,
+                         &before_token,
+                         query);
     const char *prev= mystr_get_prev_token(stmt->dbc->ansi_charset_info,
                                                 &before_token,
                                                 query);

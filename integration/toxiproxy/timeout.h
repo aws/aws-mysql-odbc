@@ -56,7 +56,7 @@ public:
   nlohmann::json get_attributes() override;
   TOXIC_TYPES get_type() override;
   long get_timeout() const;
-  TIMEOUT* set_timeout(long timeout);
+  TIMEOUT* set_timeout(long timeout_val);
 
 private:
   long timeout;
