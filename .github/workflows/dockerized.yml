@@ -161,9 +161,11 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         run: |
           echo "Displaying logs"
-          cat myodbc.sql
-          mkdir -p ./reports/tests
-          cp myodbc.sql ./reports/tests/myodbc.sql
+          if [[ -f myodbc.sql && -s myodbc.sql ]]; then 
+            cat myodbc.sql
+            mkdir -p ./reports/tests
+            cp myodbc.sql ./reports/tests/myodbc.sql
+          fi
 
       - name: 'Archive log results'
         if: always()
