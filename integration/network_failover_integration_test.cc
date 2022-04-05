@@ -26,7 +26,7 @@
 
 #include "base_failover_integration_test.cc"
 
-class NetworkFailoverIntegrationTest : public FailoverIntegrationBaseTest {
+class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
  protected:
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
