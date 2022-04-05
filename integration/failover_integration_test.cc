@@ -510,6 +510,66 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
     EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
+/** Writer fails within a transaction. Open transaction with "START TRANSACTION". */
+TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransaction) {
+    // Get Writer Instance
+    auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
+    auto initial_writer_id = initial_writer.first;
+    auto initial_writer_endpoint = initial_writer.second;
+
+    // Build Connection string to writer instance
+    build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT, db);
+    SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
+    SQLINTEGER native_error;
+    SQLSMALLINT len, length;
+
+    // Connect to writer
+    EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+
+    // Set-up tests
+    SQLHSTMT handle;
+    SQLSMALLINT stmt_length;
+    SQLCHAR stmt_sqlstate[6];
+    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
+    const auto drop_table_query = (SQLCHAR*)"DROP TABLE IF EXISTS test3_3"; // Setting up tables
+    const auto create_table_query = (SQLCHAR*)"CREATE TABLE test3_3 (id INT NOT NULL PRIMARY KEY, test3_3_field VARCHAR(255) NOT NULL)"; 
+    const auto start_trans_query = (SQLCHAR*)"START TRANSACTION"; // Open a new transaction
+
+    // Execute setup query
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, drop_table_query, SQL_NTS));
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, create_table_query, SQL_NTS));
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, start_trans_query, SQL_NTS));
+
+    // Execute queries within the transaction
+    const auto insert_query_A = (SQLCHAR*)"INSERT INTO test3_3 VALUES (1, 'test field string 1')"; 
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_A, SQL_NTS));
+
+    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+
+    // If there is an active transaction (The insert queries), roll it back and return an error 08007.
+    EXPECT_EQ(SQL_ERROR, SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT));
+
+    // Check state
+    EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, nullptr, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+    const std::string state = (char*)stmt_sqlstate;
+    const std::string expected = "08007";
+    EXPECT_EQ(expected, state);
+
+    // Query new ID after failover
+    std::string current_connection_id = query_instance_id(dbc);
+
+    // Check if current connection is a new writer
+    EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
+    EXPECT_NE(current_connection_id, initial_writer_id);
+
+    // No rows should have been inserted to the table
+    EXPECT_EQ(0, count_table_rows(handle, "test3_3"));
+
+    // Clean up test
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, drop_table_query, SQL_NTS));
+    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+}
+
 /* Pooled connection tests. */
 
 /* Writer connection failover within the connection pool. */
