@@ -54,7 +54,7 @@ static SQLHENV env;
 static SQLHDBC dbc;
 static Aws::SDKOptions options;
 
-class FailoverIntegrationBaseTest : public testing::Test {
+class BaseFailoverIntegrationTest : public testing::Test {
 protected:
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
