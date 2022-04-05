@@ -36,31 +36,39 @@ class FailoverIntegrationTest : public BaseFailoverIntegrationTest {
                                                                     Aws::String(SESSION_TOKEN));
   Aws::Client::ClientConfiguration client_config;
   Aws::RDS::RDSClient rds_client;
+  SQLHENV env;
+  SQLHDBC dbc;
 
   static void SetUpTestSuite() {
     Aws::InitAPI(options);
-    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
-    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
-    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
   }
 
   static void TearDownTestSuite() {
-    if (nullptr != dbc) {
-      SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-    }
-    if (nullptr != env) {
-      SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
     Aws::ShutdownAPI(options);
   }
 
   void SetUp() override {
+    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
+    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
     client_config.region = "us-east-2";
     rds_client = Aws::RDS::RDSClient(credentials, client_config);
 
     cluster_instances = retrieve_topology_via_SDK(rds_client, cluster_id);
     writer_id = get_writer_id(cluster_instances);
     writer_endpoint = get_endpoint(writer_id);
+    readers = get_readers(cluster_instances);
+    reader_id = get_first_reader_id(cluster_instances);
+    reader_endpoint = get_proxied_endpoint(reader_id);
+  }
+
+  void TearDown() override {
+    if (nullptr != dbc) {
+      SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+    }
+    if (nullptr != env) {
+      SQLFreeHandle(SQL_HANDLE_ENV, env);
+    }
   }
 };
 
@@ -341,6 +349,56 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
 
   // Clean up test
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, drop_table_query, SQL_NTS));
+  EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+}
+
+/**
+ * Current reader dies, no other reader instance, failover to writer, then writer dies, failover
+ * to another available reader instance.
+ */
+TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstance) {
+  // Ensure all networks to instances are enabled
+  for (const auto& x : proxy_map) {
+    enable_connectivity(x.second);
+  }
+
+  // Disable all readers but one & writer
+  for (size_t index = 1; index < readers.size(); ++index) {
+    disable_instance(readers[index]);
+  }
+
+  const std::string initial_writer_id = writer_id;
+  const std::string initial_reader_id = reader_id;
+  const std::string initial_reader_endpoint = get_proxied_endpoint(initial_reader_id);
+
+  SQLCHAR conn_out[4096];
+  SQLSMALLINT len;
+  
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), initial_reader_endpoint.c_str(), MYSQL_PROXY_PORT);
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+
+  disable_instance(initial_reader_id);
+
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
+
+  std::string current_connection = query_instance_id(dbc);
+  EXPECT_EQ(current_connection, initial_writer_id);
+
+  // Re-enable 2 readers (Second & Third reader)
+  auto second_reader_id = readers[1];
+  auto third_reader_id = readers[2];
+  enable_instance(second_reader_id);
+  enable_instance(third_reader_id);
+
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+
+  // Query to trigger failover (Initial Writer)
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
+
+  // Expect that we're connected to reader 2 or 3
+  current_connection = query_instance_id(dbc);
+  EXPECT_TRUE(current_connection == second_reader_id || current_connection == third_reader_id);
+
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
