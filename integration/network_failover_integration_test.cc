@@ -36,25 +36,22 @@ class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
                                                                     Aws::String(SESSION_TOKEN));
   Aws::Client::ClientConfiguration client_config;
   Aws::RDS::RDSClient rds_client;
+  SQLHENV env;
+  SQLHDBC dbc;
 
   static void SetUpTestSuite() {
     Aws::InitAPI(options);
-    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
-    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
-    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
   }
 
   static void TearDownTestSuite() {
-    if (nullptr != dbc) {
-      SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-    }
-    if (nullptr != env) {
-      SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
     Aws::ShutdownAPI(options);
   }
 
   void SetUp() override {
+    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
+    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
     Aws::Client::ClientConfiguration client_config;
     client_config.region = "us-east-2";
     rds_client = Aws::RDS::RDSClient(credentials, client_config);
@@ -70,15 +67,24 @@ class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
     reader_id = get_first_reader_id(cluster_instances);
     reader_endpoint = get_proxied_endpoint(reader_id);
   }
+
+  void TearDown() {
+    if (nullptr != dbc) {
+      SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+    }
+    if (nullptr != env) {
+      SQLFreeHandle(SQL_HANDLE_ENV, env);
+    }
+  }
 };
 
 TEST_F(NetworkFailoverIntegrationTest, connection_test) {
-  test_connection(MYSQL_INSTANCE_1_URL, MYSQL_PORT);
-  test_connection(MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
-  test_connection(MYSQL_CLUSTER_URL, MYSQL_PORT);
-  test_connection(MYSQL_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
-  test_connection(MYSQL_RO_CLUSTER_URL, MYSQL_PORT);
-  test_connection(MYSQL_RO_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
+  test_connection(dbc, MYSQL_INSTANCE_1_URL, MYSQL_PORT);
+  test_connection(dbc, MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
+  test_connection(dbc, MYSQL_CLUSTER_URL, MYSQL_PORT);
+  test_connection(dbc, MYSQL_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
+  test_connection(dbc, MYSQL_RO_CLUSTER_URL, MYSQL_PORT);
+  test_connection(dbc, MYSQL_RO_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {

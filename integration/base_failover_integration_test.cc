@@ -50,17 +50,10 @@
 static std::string DOWN_STREAM_STR = "DOWNSTREAM";
 static std::string UP_STREAM_STR = "UPSTREAM";
 
-static SQLHENV env;
-static SQLHDBC dbc;
 static Aws::SDKOptions options;
 
 class BaseFailoverIntegrationTest : public testing::Test {
 protected:
-  // AWS credentials
-  std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
-  std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
-  std::string SESSION_TOKEN = std::getenv("AWS_SESSION_TOKEN");
-
   // Connection string parameters
   char* dsn = std::getenv("TEST_DSN");
   char* db = std::getenv("TEST_DATABASE");
@@ -181,7 +174,7 @@ protected:
 
     EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
     EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, query, SQL_NTS));
-    EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle, sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+    EXPECT_EQ(SQL_SUCCESS, SQLError(nullptr, nullptr, handle, sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
     const std::string state = (char*)sqlstate;
     EXPECT_EQ(expected_error, state);
     EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
@@ -191,41 +184,6 @@ protected:
 
   void build_connection_string(SQLCHAR* conn_in, char* dsn, char* user, char* pwd, std::string server, int port, char* db) {
     sprintf(reinterpret_cast<char*>(conn_in), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;DATABASE=%s;LOG_QUERY=1;", dsn, user, pwd, server.c_str(), port, db);
-  }
-
-  std::vector<std::string> query_topology(SQLCHAR* conn_in) {
-    std::vector<std::string> instances;
-
-    SQLCHAR conn_out[4096];
-    SQLSMALLINT len;
-    EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
-
-    SQLCHAR buf[255];
-    SQLLEN buflen;
-    SQLHSTMT handle;
-    const auto query = (SQLCHAR*)"SELECT SERVER_ID FROM information_schema.replica_host_status ORDER BY IF(SESSION_ID = 'MASTER_SESSION_ID', 0, 1)";
-
-    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
-    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
-    auto rc_fetch = SQLFetch(handle);
-
-    if (rc_fetch == SQL_NO_DATA) {
-      return instances;
-    }
-
-    while (rc_fetch != SQL_NO_DATA_FOUND) {
-      if (rc_fetch == SQL_ERROR) { 
-        break;
-      }
-      rc_fetch = SQLGetData(handle, 1, SQL_CHAR, buf, sizeof(buf), &buflen);
-      std::string instance_id((const char*)buf);
-      instances.push_back(instance_id);
-      rc_fetch = SQLFetch(handle);
-    }
-
-    EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
-    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
-    return instances;
   }
 
   std::string query_instance_id(SQLHDBC dbc) const {
@@ -448,7 +406,7 @@ protected:
     return config;
   }
 
-  void test_connection(const std::string test_server, int test_port) {
+  void test_connection(SQLHDBC dbc, const std::string test_server, int test_port) {
     sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), test_server.c_str(), test_port);
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
     EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
@@ -460,4 +418,3 @@ protected:
     }
   }
 };
-
