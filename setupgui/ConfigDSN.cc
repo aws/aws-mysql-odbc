@@ -162,7 +162,7 @@ BOOL INSTAPI ConfigDSNW(HWND hWnd, WORD nRequest, LPCWSTR pszDriver,
         hWnd means we will at least try to prompt, at which point
         the driver lib will be replaced by the name
       */
-      ds_set_strattr(&ds->driver, driver->lib);
+      ds_set_wstrattr(&ds->driver, driver->lib);
     }
     else
     {
@@ -170,7 +170,7 @@ BOOL INSTAPI ConfigDSNW(HWND hWnd, WORD nRequest, LPCWSTR pszDriver,
         no hWnd is a likely a call from an app w/no prompting so
         we put the driver name immediately
       */
-      ds_set_strattr(&ds->driver, driver->name);
+      ds_set_wstrattr(&ds->driver, driver->name);
     }
   case ODBC_CONFIG_DSN:
 

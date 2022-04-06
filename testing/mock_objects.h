@@ -78,7 +78,7 @@ class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
 class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
  public:
     MOCK_CONNECTION_HANDLER() : FAILOVER_CONNECTION_HANDLER(nullptr) {}
-    MOCK_METHOD(CONNECTION_INTERFACE*, connect, (std::shared_ptr<HOST_INFO>));
+    MOCK_METHOD(CONNECTION_INTERFACE*, connect, (const std::shared_ptr<HOST_INFO>&));
     MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*, bool));
 };
 

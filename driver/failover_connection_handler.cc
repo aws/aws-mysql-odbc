@@ -30,42 +30,35 @@ SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, 
     return dbc_ptr->connect(ds, failover_enabled);
 }
 
-CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(
-    std::shared_ptr<HOST_INFO> host_info) {
+CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info) {
 
     if (dbc == nullptr || dbc->ds == nullptr || host_info == nullptr) {
         return nullptr;
     }
-    // TODO Convert string to wstring. Note: need to revist if support Linux
-    auto host = host_info->get_host();
-    auto new_host = to_sqlwchar_string(host);
+    // TODO Convert string to wstring. Note: need to revisit if support Linux
+    const auto new_host = to_sqlwchar_string(host_info->get_host());
 
     DBC* dbc_clone = clone_dbc(dbc);
-    ds_set_strnattr(&dbc_clone->ds->server, (SQLWCHAR *) new_host.c_str(), new_host.size());
+    ds_set_wstrnattr(&dbc_clone->ds->server, (SQLWCHAR*)new_host.c_str(), new_host.size());
 
     CONNECTION_INTERFACE* new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
-    SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds, true);
+    const SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds, true);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
         new_connection = dbc_clone->mysql;
         dbc_clone->mysql = nullptr;
-
-        // TODO ponder whether or not we should update ds - the data source in
-        // original dbc while updating connection. currently as we don't do
-        // that, the original ds holds the initial, user supplied connection
-        // information, e.g. host, etc. the release_dbc method deletes the
-        // cloned dbc and cloned ds.
     }
 
-    // TODO guard these from potential exceptions thrown before, make sure
-    // release happens.
+    // TODO guard these from potential exceptions thrown before, make sure release happens.
     release_dbc(dbc_clone);
 
     return new_connection;
 }
 
-void FAILOVER_CONNECTION_HANDLER::update_connection(CONNECTION_INTERFACE* new_connection) {
+void FAILOVER_CONNECTION_HANDLER::update_connection(
+    CONNECTION_INTERFACE* new_connection, const std::string& new_host_name) {
+
     if (new_connection->is_connected()) {
         dbc->close();
 
@@ -76,10 +69,11 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(CONNECTION_INTERFACE* new_co
         
         CLEAR_DBC_ERROR(dbc);
 
-        // TODO: should we also update dbc->ds when updating connection? How
-        // this would affect the user?  Same mentioned in TODO above
-        //  The only difference would be ds->server and ds->server8. Currently
-        //  we're preserving the initial server information.
+        const sqlwchar_string new_host_name_wstr = to_sqlwchar_string(new_host_name);
+
+        // Update original ds to reflect change in host/server.
+        ds_set_wstrnattr(&dbc->ds->server, (SQLWCHAR*)new_host_name_wstr.c_str(), new_host_name_wstr.size());
+        ds_set_strnattr(&dbc->ds->server8, (SQLCHAR*)new_host_name.c_str(), new_host_name.size());
     }
 }
 

@@ -245,8 +245,10 @@ typedef struct{
 
 DataSource *ds_new();
 void ds_delete(DataSource *ds);
-int ds_set_strattr(SQLWCHAR **attr, const SQLWCHAR *val);
-int ds_set_strnattr(SQLWCHAR **attr, const SQLWCHAR *val, size_t charcount);
+int ds_set_strattr(SQLCHAR** attr, const SQLCHAR* val);
+int ds_set_wstrattr(SQLWCHAR **attr, const SQLWCHAR *val);
+int ds_set_strnattr(SQLCHAR** attr, const SQLCHAR* val, size_t charcount);
+int ds_set_wstrnattr(SQLWCHAR **attr, const SQLWCHAR *val, size_t charcount);
 int ds_lookup(DataSource *ds);
 int ds_from_kvpair(DataSource *ds, const SQLWCHAR *attrs, SQLWCHAR delim);
 int ds_add(DataSource *ds);

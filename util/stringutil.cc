@@ -634,6 +634,22 @@ outp:
 }
 
 
+/*
+ * Duplicate a SQLCHAR string. Memory is allocated with myodbc_malloc()
+ * and should be freed with my_free() or the x_free() macro.
+ *
+ * @return A pointer to a new string.
+ */
+SQLCHAR* sqlchardup(const SQLCHAR* str, const size_t len)
+{
+    const size_t length = len == SQL_NTS ? strlen((char*)str) : len;
+    SQLCHAR* res = (SQLCHAR*)myodbc_malloc(length + 1, MYF(0));
+    if (!res)
+        return nullptr;
+    memcpy(res, str, length);
+    res[length] = 0;
+    return res;
+}
 
 
 /*
@@ -706,14 +722,14 @@ size_t sqlwcharlen(const SQLWCHAR *wstr)
  *
  * @return A pointer to a new string.
  */
-SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, size_t charlen)
+SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, const size_t len)
 {
-  size_t chars= charlen == SQL_NTS ? sqlwcharlen(wstr) : charlen;
-  SQLWCHAR *res= (SQLWCHAR *)myodbc_malloc((chars + 1) * sizeof(SQLWCHAR), MYF(0));
+  const size_t length = len == SQL_NTS ? sqlwcharlen(wstr) : len;
+  SQLWCHAR *res = (SQLWCHAR *)myodbc_malloc((length + 1) * sizeof(SQLWCHAR), MYF(0));
   if (!res)
-    return NULL;
-  memcpy(res, wstr, chars * sizeof(SQLWCHAR));
-  res[chars]= 0;
+    return nullptr;
+  memcpy(res, wstr, length * sizeof(SQLWCHAR));
+  res[length]= 0;
   return res;
 }
 
