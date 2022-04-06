@@ -120,8 +120,12 @@ protected:
                                              {MYSQL_CLUSTER_URL, proxy_cluster},
                                              {MYSQL_RO_CLUSTER_URL, proxy_read_only_cluster}};
 
+  std::vector<std::string> cluster_instances;
   std::string writer_id;
-  std::vector<Aws::RDS::Model::DBClusterMember> readers;
+  std::string writer_endpoint;
+  std::vector<std::string> readers;
+  std::string reader_id;
+  std::string reader_endpoint;
 
   // Helper functions
 
@@ -131,6 +135,27 @@ protected:
 
   std::string get_proxied_endpoint(const std::string instance_id) const {
     return instance_id + DB_CONN_STR_SUFFIX + PROXIED_DOMAIN_NAME_SUFFIX;
+  }
+
+  std::string get_writer_id(std::vector<std::string> instances) {
+    if (instances.empty()) {
+      throw std::runtime_error("The input cluster topology is empty.");
+    }
+    return instances[0];
+  }
+
+  std::vector<std::string> get_readers(std::vector<std::string> instances) {
+    const std::vector<std::string>::const_iterator first_reader = instances.begin() + 1;
+    const std::vector<std::string>::const_iterator last_reader = instances.end();
+    std::vector<std::string> readers(first_reader, last_reader);
+    return readers;
+  }
+
+  std::string get_first_reader_id(std::vector<std::string> instances) {
+    if (instances.empty()) {
+      throw std::runtime_error("The input cluster topology is empty.");
+    }
+    return instances[1];
   }
 
   // Helper functions from integration tests
@@ -223,23 +248,11 @@ protected:
     return instances;
   }
 
-  std::pair<std::string, std::string> retrieve_writer_endpoint(Aws::RDS::RDSClient client,
-                                                               Aws::String cluster_id,
-                                                               std::string endpoint_suffix) {
-    std::vector<std::string> instances = retrieve_topology_via_SDK(client, cluster_id);
-    if (instances.empty()) {
-      throw std::runtime_error("Unable to fetch cluster instances.");
-    }
-    const std::string writer_id = instances[0];
-    auto instance = std::make_pair(writer_id, writer_id + endpoint_suffix);
-    return instance;
-  }
-
   Aws::RDS::Model::DBCluster get_DB_cluster(Aws::RDS::RDSClient client, Aws::String cluster_id) {
     Aws::RDS::Model::DescribeDBClustersRequest rds_req;
     rds_req.WithDBClusterIdentifier(cluster_id);
     auto outcome = client.DescribeDBClusters(rds_req);
-    auto result = outcome.GetResult();
+    const auto result = outcome.GetResult();
     return result.GetDBClusters().at(0);
   }
 
@@ -254,7 +267,7 @@ protected:
 
   Aws::RDS::Model::DBClusterMember get_DB_cluster_writer_instance(Aws::RDS::RDSClient client, Aws::String cluster_id) {
     Aws::RDS::Model::DBClusterMember instance;
-    Aws::RDS::Model::DBCluster cluster = get_DB_cluster(client, cluster_id);
+    const Aws::RDS::Model::DBCluster cluster = get_DB_cluster(client, cluster_id);
     for (const auto& member : cluster.GetDBClusterMembers()) {
       if (member.GetIsClusterWriter()) {
         return member;
@@ -292,7 +305,7 @@ protected:
 
   Aws::RDS::Model::DBClusterMember get_matched_DBClusterMember(Aws::RDS::RDSClient client, Aws::String cluster_id, Aws::String instance_id) {
     Aws::RDS::Model::DBClusterMember instance;
-    Aws::RDS::Model::DBCluster cluster = get_DB_cluster(client, cluster_id);
+    const Aws::RDS::Model::DBCluster cluster = get_DB_cluster(client, cluster_id);
     for (const auto& member : cluster.GetDBClusterMembers()) {
       Aws::String member_id = member.GetDBInstanceIdentifier();
       if (member_id == instance_id) {
@@ -340,51 +353,13 @@ protected:
     return nullptr;
   }
 
-  void get_topology() {
-    Aws::Client::ClientConfiguration clientConfig;
-    clientConfig.region = "us-east-2";
-
-    Aws::Auth::AWSCredentials credentials;
-    credentials.SetAWSAccessKeyId(Aws::String(ACCESS_KEY));
-    credentials.SetAWSSecretKey(Aws::String(SECRET_ACCESS_KEY));
-    credentials.SetSessionToken(Aws::String(SESSION_TOKEN));
-
-    Aws::String cluster_id(MYSQL_CLUSTER_URL.substr(0, MYSQL_CLUSTER_URL.find('.')));
-    Aws::RDS::RDSClient client(credentials, clientConfig);
-    Aws::RDS::Model::DescribeDBClustersRequest rds_req;
-    rds_req.WithDBClusterIdentifier(cluster_id);
-    auto outcome = client.DescribeDBClusters(rds_req);
-
-    if (!outcome.IsSuccess()) {
-      FAIL() << "Error describing cluster. ";
-    }
-
-    auto result = outcome.GetResult();
-    const Aws::Vector<Aws::RDS::Model::DBCluster> clusters = result.GetDBClusters();
-    for (const auto& cluster : clusters)  // Only one cluster in the vector
-    {
-      for (const auto& instance : cluster.GetDBClusterMembers()) {
-        if (instance.GetIsClusterWriter()) {
-          writer_id = instance.GetDBInstanceIdentifier();
-        } else {
-          readers.push_back(instance);
-        }
-      }
-    }
-  }
-
-  std::string get_reader_id() {
-    const std::string reader_id = readers[0].GetDBInstanceIdentifier();
-    return reader_id;
-  }
-
   bool is_db_instance_writer(const std::string instance) {
     return (writer_id == instance);
   }
 
   bool is_db_instance_reader(const std::string instance) {
-    for (const auto& reader : readers) {
-      if (reader.GetDBInstanceIdentifier() == instance) {
+    for (const auto& reader_id : readers) {
+      if (reader_id == instance) {
         return true;
       }
     }
