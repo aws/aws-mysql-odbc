@@ -63,7 +63,12 @@ class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
       enable_connectivity(x.second);
     }
 
-    get_topology();
+    cluster_instances = retrieve_topology_via_SDK(rds_client, cluster_id);
+    writer_id = get_writer_id(cluster_instances);
+    writer_endpoint = get_proxied_endpoint(writer_id);
+    readers = get_readers(cluster_instances);
+    reader_id = get_first_reader_id(cluster_instances);
+    reader_endpoint = get_proxied_endpoint(reader_id);
   }
 };
 
@@ -101,10 +106,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
-  const std::string reader_id = get_reader_id();
-  const std::string server = get_proxied_endpoint(reader_id);
-
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT);
 
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
@@ -121,10 +123,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
-  const std::string reader_id = get_reader_id();
-  const std::string server = get_proxied_endpoint(reader_id);
-
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT);
 
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
@@ -139,10 +138,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_read_only) {
-  const std::string reader_id = get_reader_id();
-  const std::string server = get_proxied_endpoint(reader_id);
-
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT);
 
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
@@ -183,20 +179,18 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
   // Assert there are at least 2 readers in the cluster.
   EXPECT_LE(2, readers.size());
 
-  const std::string reader_id = get_reader_id();
-  const std::string server = get_proxied_endpoint(reader_id);
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, 120000);
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT, 120000);
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (size_t index = 0; index < readers.size() - 1; ++index) {
-    disable_instance(readers[index].GetDBInstanceIdentifier());
+    disable_instance(readers[index]);
   }
 
   const std::string expected = "08S02";
   assert_query_failed(expected);
 
   const std::string current_connection = query_instance_id(dbc);
-  const std::string last_reader = readers.back().GetDBInstanceIdentifier();
+  const std::string last_reader = readers.back();
 
   // Assert that new instance is either the last reader instance or the writer instance.
   EXPECT_TRUE(current_connection == last_reader || current_connection == writer_id);
@@ -210,7 +204,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   std::vector<std::string> previous_readers;
   const std::string expected_error = "08S02";
 
-  const std::string first_reader = get_reader_id();
+  const std::string first_reader = reader_id;
   const std::string server = get_proxied_endpoint(first_reader);
   previous_readers.push_back(first_reader);
 
@@ -236,7 +230,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   // Find the fourth reader instance
   std::string last_reader;
   for (const auto& reader : readers) {
-    const std::string reader_id = reader.GetDBInstanceIdentifier();
+    const std::string reader_id = reader;
     bool is_same = false;
 
     for (const auto& used_reader : previous_readers) {
