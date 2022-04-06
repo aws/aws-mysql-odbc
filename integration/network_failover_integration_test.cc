@@ -77,8 +77,7 @@ TEST_F(NetworkFailoverIntegrationTest, connection_test) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
-  const std::string writer_id = get_writer_id();
-  const std::string server = get_endpoint(writer_id);
+  const std::string server = get_proxied_endpoint(writer_id);
 
   sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, 120000);
 
@@ -102,9 +101,8 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
-  const std::string writer_id = get_writer_id();
   const std::string reader_id = get_reader_id();
-  const std::string server = get_endpoint(reader_id);
+  const std::string server = get_proxied_endpoint(reader_id);
 
   sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
 
@@ -123,9 +121,8 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
-  const std::string writer_id = get_writer_id();
   const std::string reader_id = get_reader_id();
-  const std::string server = get_endpoint(reader_id);
+  const std::string server = get_proxied_endpoint(reader_id);
 
   sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
 
@@ -142,9 +139,8 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_read_only) {
-  const std::string writer_id = get_writer_id();
   const std::string reader_id = get_reader_id();
-  const std::string server = get_endpoint(reader_id);
+  const std::string server = get_proxied_endpoint(reader_id);
 
   sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT);
 
@@ -161,7 +157,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_read_only) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, writer_connection_fails_due_to_no_reader) {
-  const char* writer_id = get_writer_id().c_str();
+  const char* writer_char_id = writer_id.c_str();
   const std::string server = MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX;
 
   sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, 120000);
@@ -169,7 +165,7 @@ TEST_F(NetworkFailoverIntegrationTest, writer_connection_fails_due_to_no_reader)
 
   // Put all but writer down first
   for (const auto& x : proxy_map) {
-    if (x.first != writer_id) disable_connectivity(x.second);
+    if (x.first != writer_char_id) disable_connectivity(x.second);
   }
 
   // Crash the writer now
@@ -187,9 +183,8 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
   // Assert there are at least 2 readers in the cluster.
   EXPECT_LE(2, readers.size());
 
-  const std::string writer_id = get_writer_id();
   const std::string reader_id = get_reader_id();
-  const std::string server = get_endpoint(reader_id);
+  const std::string server = get_proxied_endpoint(reader_id);
   sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, 120000);
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
@@ -216,7 +211,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   const std::string expected_error = "08S02";
 
   const std::string first_reader = get_reader_id();
-  const std::string server = get_endpoint(first_reader);
+  const std::string server = get_proxied_endpoint(first_reader);
   previous_readers.push_back(first_reader);
 
   sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, 120000);
