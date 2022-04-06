@@ -728,7 +728,7 @@ int handle_datasource_action()
 
   /* set name if given */
   if (name)
-    ds_set_strattr(&ds->name, wname);
+    ds_set_wstrattr(&ds->name, wname);
 
   /* perform given action */
   switch (action)
