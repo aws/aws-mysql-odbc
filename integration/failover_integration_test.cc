@@ -57,6 +57,10 @@ class FailoverIntegrationTest : public BaseFailoverIntegrationTest {
   void SetUp() override {
     client_config.region = "us-east-2";
     rds_client = Aws::RDS::RDSClient(credentials, client_config);
+
+    cluster_instances = retrieve_topology_via_SDK(rds_client, cluster_id);
+    writer_id = get_writer_id(cluster_instances);
+    writer_endpoint = get_endpoint(writer_id);
   }
 };
 
@@ -65,24 +69,15 @@ class FailoverIntegrationTest : public BaseFailoverIntegrationTest {
 * writer. Driver failover occurs when executing a method against the connection
 */
 TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionInvocation) {
-  auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
-  auto initial_writer_id = initial_writer.first;
-  auto initial_writer_endpoint = initial_writer.second;
-  
-  build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT, db);
+  build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
   SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
   SQLSMALLINT len;
 
-  SQLRETURN rc = SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
-  if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
-    FAIL();
-  }
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
 
-  SQLCHAR buf[255];
-  SQLLEN buflen;
   SQLHSTMT handle;
   SQLSMALLINT stmt_length;
   SQLCHAR stmt_sqlstate[6];
@@ -96,17 +91,14 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
   const std::string expected = "08S02";
   EXPECT_EQ(expected, state);
   
-  std::string current_connection_id = query_instance_id(dbc);
+  const std::string current_connection_id = query_instance_id(dbc);
   EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
-  EXPECT_NE(current_connection_id, initial_writer_id);
+  EXPECT_NE(current_connection_id, writer_id);
 
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
 TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
-  auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
-  auto initial_writer_id = initial_writer.first;
-
   SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
   SQLSMALLINT len;
@@ -136,7 +128,7 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
   // Verify that connection accepts multi-statement sql
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
 
   EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, (SQLCHAR*)"select @aurora_server_id", SQL_NTS));
   EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
@@ -153,17 +145,11 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
 
 /** Writer fails within a transaction. Open transaction with "SET autocommit = 0" */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSqlZero) {
-    auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
-    auto initial_writer_id = initial_writer.first;
-    auto initial_writer_endpoint = initial_writer.second;
-
-    // Build Connection string to writer instance
-    build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT, db);
+    build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
     SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
     SQLINTEGER native_error;
     SQLSMALLINT len;
 
-    // Connect to writer
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
     // Setup tests
@@ -184,7 +170,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
     const auto insert_query_A = (SQLCHAR*)"INSERT INTO test3_1 VALUES (1, 'test field string 1')"; 
     EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_A, SQL_NTS));
 
-    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
 
     // If there is an active transaction (The insert queries), roll it back and return an error 08007.
     EXPECT_EQ(SQL_ERROR, SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT));
@@ -200,7 +186,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
 
     // Check if current connection is a new writer
     EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
-    EXPECT_NE(current_connection_id, initial_writer_id);
+    EXPECT_NE(current_connection_id, writer_id);
 
     // No rows should have been inserted to the table
     EXPECT_EQ(0, count_table_rows(handle, "test3_1"));
@@ -212,19 +198,14 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
 
 /** Writer fails within a transaction. Open transaction with SQLSetConnectAttr */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFalse) {
-    auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
-    auto initial_writer_id = initial_writer.first;
-    auto initial_writer_endpoint = initial_writer.second;
-
-    build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT, db);
-    SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
+    build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+    SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
     SQLINTEGER native_error;
-    SQLSMALLINT len, length;
+    SQLSMALLINT len;
 
-    // Connect to writer
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-    // Set-up tests
+    // Setup tests
     SQLHSTMT handle;
     SQLSMALLINT stmt_length;
     SQLCHAR stmt_sqlstate[6];
@@ -243,7 +224,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
     const auto insert_query_A = (SQLCHAR*)"INSERT INTO test3_2 VALUES (1, 'test field string 1')"; 
     EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_A, SQL_NTS));
 
-    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
     
     // If there is an active transaction, roll it back and return an error 08007.
     EXPECT_EQ(SQL_ERROR, SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT));
@@ -259,7 +240,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
 
     // Check if current connection is a new writer
     EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
-    EXPECT_NE(current_connection_id, initial_writer_id);
+    EXPECT_NE(current_connection_id, writer_id);
 
     // No rows should have been inserted to the table
     EXPECT_EQ(0, count_table_rows(handle, "test3_2"));
@@ -271,21 +252,15 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
 
 /** Writer fails within a transaction. Open transaction with "START TRANSACTION". */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransaction) {
-    // Get Writer Instance
-    auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
-    auto initial_writer_id = initial_writer.first;
-    auto initial_writer_endpoint = initial_writer.second;
-
-    // Build Connection string to writer instance
-    build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT, db);
-    SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
+    build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+    SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
     SQLINTEGER native_error;
-    SQLSMALLINT len, length;
+    SQLSMALLINT len;
 
     // Connect to writer
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-    // Set-up tests
+    // Setup tests
     SQLHSTMT handle;
     SQLSMALLINT stmt_length;
     SQLCHAR stmt_sqlstate[6];
@@ -303,7 +278,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
     const auto insert_query_A = (SQLCHAR*)"INSERT INTO test3_3 VALUES (1, 'test field string 1')"; 
     EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_A, SQL_NTS));
 
-    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
 
     // If there is an active transaction (The insert queries), roll it back and return an error 08007.
     EXPECT_EQ(SQL_ERROR, SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT));
@@ -319,7 +294,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
 
     // Check if current connection is a new writer
     EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
-    EXPECT_NE(current_connection_id, initial_writer_id);
+    EXPECT_NE(current_connection_id, writer_id);
 
     // No rows should have been inserted to the table
     EXPECT_EQ(0, count_table_rows(handle, "test3_3"));
@@ -331,18 +306,14 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
 
 /* Writer fails within NO transaction. */
 TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
-    auto initial_writer = retrieve_writer_endpoint(rds_client, cluster_id, DB_CONN_STR_SUFFIX);
-    auto initial_writer_id = initial_writer.first;
-    auto initial_writer_endpoint = initial_writer.second;
-
-    build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT, db);
-    SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
+    build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+    SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
     SQLINTEGER native_error;
-    SQLSMALLINT len, length;
+    SQLSMALLINT len;
 
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-    // Set-up tests
+    // Setup tests
     SQLHSTMT handle;
     SQLSMALLINT stmt_length;
     SQLCHAR stmt_sqlstate[6];
@@ -359,7 +330,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
     const auto insert_query_A = (SQLCHAR*)"INSERT INTO test3_4 VALUES (1, 'test field string 1')"; 
     EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_A, SQL_NTS));
 
-    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+    failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
 
     // Query expected to fail and rollback things in transaction
     const auto insert_query_B = (SQLCHAR*)"INSERT INTO test3_4 VALUES (2, 'test field string 2')";
@@ -378,7 +349,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
 
     // Check if current connection is a new writer
     EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
-    EXPECT_NE(current_connection_id, initial_writer_id);
+    EXPECT_NE(current_connection_id, writer_id);
 
     // ID 1 should have 1 row
     EXPECT_EQ(1, count_table_rows(handle, "test3_4 WHERE id = 1"));
@@ -395,29 +366,24 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
 
 /* Writer connection failover within the connection pool. */
 TEST_F(FailoverIntegrationTest, test_pooledWriterConnection_BasicFailover) {
-  std::vector<std::string> instances = retrieve_topology_via_SDK(rds_client, cluster_id);
-  const auto initial_writer_id = instances[0];
-  const auto nominated_writer_id = instances[1];
-  const auto initial_writer_endpoint = initial_writer_id + DB_CONN_STR_SUFFIX;
+  const auto nominated_writer_id = cluster_instances[1];
 
   // Enable connection pooling
   EXPECT_EQ(SQL_SUCCESS, SQLSetEnvAttr(NULL, SQL_ATTR_CONNECTION_POOLING, (SQLPOINTER)SQL_CP_ONE_PER_DRIVER, 0));
   EXPECT_EQ(SQL_SUCCESS, SQLSetEnvAttr(env, SQL_ATTR_CP_MATCH, reinterpret_cast<SQLPOINTER>(SQL_CP_STRICT_MATCH), 0));
 
-  build_connection_string(conn_in, dsn, user, pwd, initial_writer_endpoint, MYSQL_PORT, db);
-  SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
+  build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+  SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
-  SQLSMALLINT len, length;
+  SQLSMALLINT len;
 
   SQLRETURN rc = SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
   if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
     FAIL();
   }
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id, nominated_writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, nominated_writer_id);
 
-  SQLCHAR buf2[255];
-  SQLLEN buflen2;
   SQLHSTMT handle2;
   SQLSMALLINT stmt_length;
   SQLCHAR stmt_sqlstate[6];
