@@ -913,7 +913,7 @@ int ShowOdbcParamsDialog(DataSource* params, HWND ParentWnd, BOOL isPrompt)
       driver_delete(driver);
       return 0;
     }
-    ds_set_strattr(&params->driver, driver->name);
+    ds_set_wstrattr(&params->driver, driver->name);
     driver_delete(driver);
   }
   DialogBox(ghInstance, MAKEINTRESOURCE(IDD_DIALOG1), ParentWnd,

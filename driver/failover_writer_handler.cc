@@ -61,7 +61,7 @@ bool FAILOVER::is_writer_connected() {
     return new_connection && new_connection->is_connected();
 }
 
-bool FAILOVER::connect(std::shared_ptr<HOST_INFO> host_info) {
+bool FAILOVER::connect(const std::shared_ptr<HOST_INFO>& host_info) {
     new_connection = connection_handler->connect(host_info);
     return is_writer_connected();
 }

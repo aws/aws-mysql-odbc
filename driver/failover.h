@@ -31,8 +31,8 @@ class FAILOVER_CONNECTION_HANDLER {
         virtual ~FAILOVER_CONNECTION_HANDLER();
 
         virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled);
-        virtual CONNECTION_INTERFACE* connect(std::shared_ptr<HOST_INFO> host_info);
-        void update_connection(CONNECTION_INTERFACE* new_connection);
+        virtual CONNECTION_INTERFACE* connect(const std::shared_ptr<HOST_INFO>& host_info);
+        void update_connection(CONNECTION_INTERFACE* new_connection, const std::string& new_host_name);
 
     private:
         DBC* dbc;
@@ -224,7 +224,7 @@ class FAILOVER {
     bool is_writer_connected();
 
    protected:
-    bool connect(std::shared_ptr<HOST_INFO> host_info);
+    bool connect(const std::shared_ptr<HOST_INFO>& host_info);
     void sleep(int miliseconds);
     void release_new_connection();
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;

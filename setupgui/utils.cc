@@ -62,7 +62,7 @@ SQLRETURN Connect(SQLHDBC *hDbc, SQLHENV *hEnv, DataSource *params)
   assert(params->driver && *params->driver);
 
   /* Blank out DSN name, otherwise it will pull the info from the registry */
-  ds_set_strattr(&params->name, NULL);
+  ds_set_wstrattr(&params->name, NULL);
 
   ds_to_kvpair(params, string_connect_in, ';');
 

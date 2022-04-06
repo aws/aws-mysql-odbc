@@ -871,12 +871,25 @@ void ds_delete(DataSource *ds)
   x_free(ds);
 }
 
+/*
+ * Set a string attribute of a given data source object. The string
+ * will be copied into the object.
+ */
+int ds_set_strattr(SQLCHAR** attr, const SQLCHAR* val)
+{
+    x_free(*attr);
+    if (val && *val)
+        *attr = sqlchardup(val, SQL_NTS);
+    else
+        *attr = NULL;
+    return *attr || 0;
+}
 
 /*
  * Set a string attribute of a given data source object. The string
  * will be copied into the object.
  */
-int ds_set_strattr(SQLWCHAR **attr, const SQLWCHAR *val)
+int ds_set_wstrattr(SQLWCHAR **attr, const SQLWCHAR *val)
 {
   x_free(*attr);
   if (val && *val)
@@ -890,7 +903,31 @@ int ds_set_strattr(SQLWCHAR **attr, const SQLWCHAR *val)
  * Same as ds_set_strattr, but allows truncating the given string. If
  * charcount is 0 or SQL_NTS, it will act the same as ds_set_strattr.
  */
-int ds_set_strnattr(SQLWCHAR **attr, const SQLWCHAR *val, size_t charcount)
+int ds_set_strnattr(SQLCHAR** attr, const SQLCHAR* val, size_t charcount)
+{
+    x_free(*attr);
+
+    if (charcount == SQL_NTS)
+        charcount = strlen((char*)val);
+
+    if (!charcount)
+    {
+        *attr = NULL;
+        return 1;
+    }
+
+    if (val && *val)
+        *attr = sqlchardup(val, charcount);
+    else
+        *attr = NULL;
+    return *attr || 0;
+}
+
+/*
+ * Same as ds_set_wstrattr, but allows truncating the given string. If
+ * charcount is 0 or SQL_NTS, it will act the same as ds_set_wstrattr.
+ */
+int ds_set_wstrnattr(SQLWCHAR **attr, const SQLWCHAR *val, size_t charcount)
 {
   x_free(*attr);
 
@@ -1247,7 +1284,7 @@ int ds_lookup(DataSource *ds)
     else if (!valsize)
       /* skip blanks */;
     else if (dest && !*dest)
-      ds_set_strnattr(dest, val, valsize);
+      ds_set_wstrnattr(dest, val, valsize);
     else if (intdest)
       *intdest= sqlwchartoul(val, NULL);
     else if (booldest)
@@ -1353,11 +1390,11 @@ int ds_from_kvpair(DataSource *ds, const SQLWCHAR *attrs, SQLWCHAR delim)
       {
         if (*split == '{' && *end == '}')
         {
-          ds_set_strnattr(dest, split + 1, end - split - 1);
+          ds_set_wstrnattr(dest, split + 1, end - split - 1);
           ++end;
         }
         else
-          ds_set_strnattr(dest, split, end - split);
+          ds_set_wstrnattr(dest, split, end - split);
       }
       else if (intdest)
       {
@@ -1872,8 +1909,8 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
     }
 
     if (ds_source->name != nullptr) {
-        ds_set_strnattr(&ds->name, ds_source->name,
-                        sqlwcharlen(ds_source->name));
+        ds_set_wstrnattr(&ds->name, ds_source->name,
+                         sqlwcharlen(ds_source->name));
 
         // probably don't need to set the '8' variables, they seem to be set as
         // needed based on the non - '8', but it would look like this
@@ -1882,83 +1919,83 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
         }
     }
     if (ds_source->driver != nullptr) {
-        ds_set_strnattr(&ds->driver, ds_source->driver,
-                        sqlwcharlen(ds_source->driver));
+        ds_set_wstrnattr(&ds->driver, ds_source->driver,
+                         sqlwcharlen(ds_source->driver));
     }
     if (ds_source->description != nullptr) {
-        ds_set_strnattr(&ds->description, ds_source->description,
-                        sqlwcharlen(ds_source->description));
+        ds_set_wstrnattr(&ds->description, ds_source->description,
+                         sqlwcharlen(ds_source->description));
     }
     if (ds_source->server != nullptr) {
-        ds_set_strnattr(&ds->server, ds_source->server,
-                        sqlwcharlen(ds_source->server));
+        ds_set_wstrnattr(&ds->server, ds_source->server,
+                         sqlwcharlen(ds_source->server));
     }
     if (ds_source->uid != nullptr) {
-        ds_set_strnattr(&ds->uid, ds_source->uid, sqlwcharlen(ds_source->uid));
+        ds_set_wstrnattr(&ds->uid, ds_source->uid, sqlwcharlen(ds_source->uid));
     }
     if (ds_source->pwd != nullptr) {
-        ds_set_strnattr(&ds->pwd, ds_source->pwd, sqlwcharlen(ds_source->pwd));
+        ds_set_wstrnattr(&ds->pwd, ds_source->pwd, sqlwcharlen(ds_source->pwd));
     }
     if (ds_source->database != nullptr) {
-        ds_set_strnattr(&ds->database, ds_source->database,
-                        sqlwcharlen(ds_source->database));
+        ds_set_wstrnattr(&ds->database, ds_source->database,
+                         sqlwcharlen(ds_source->database));
     }
     if (ds_source->socket != nullptr) {
-        ds_set_strnattr(&ds->socket, ds_source->socket,
-                        sqlwcharlen(ds_source->socket));
+        ds_set_wstrnattr(&ds->socket, ds_source->socket,
+                         sqlwcharlen(ds_source->socket));
     }
     if (ds_source->initstmt != nullptr) {
-        ds_set_strnattr(&ds->initstmt, ds_source->initstmt,
-                        sqlwcharlen(ds_source->initstmt));
+        ds_set_wstrnattr(&ds->initstmt, ds_source->initstmt,
+                         sqlwcharlen(ds_source->initstmt));
     }
     if (ds_source->charset != nullptr) {
-        ds_set_strnattr(&ds->charset, ds_source->charset,
-                        sqlwcharlen(ds_source->charset));
+        ds_set_wstrnattr(&ds->charset, ds_source->charset,
+                         sqlwcharlen(ds_source->charset));
     }
     if (ds_source->sslkey != nullptr) {
-        ds_set_strnattr(&ds->sslkey, ds_source->sslkey,
-                        sqlwcharlen(ds_source->sslkey));
+        ds_set_wstrnattr(&ds->sslkey, ds_source->sslkey,
+                         sqlwcharlen(ds_source->sslkey));
     }
     if (ds_source->sslcert != nullptr) {
-        ds_set_strnattr(&ds->sslcert, ds_source->sslcert,
-                        sqlwcharlen(ds_source->sslcert));
+        ds_set_wstrnattr(&ds->sslcert, ds_source->sslcert,
+                         sqlwcharlen(ds_source->sslcert));
     }
     if (ds_source->sslca != nullptr) {
-        ds_set_strnattr(&ds->sslca, ds_source->sslca,
-                        sqlwcharlen(ds_source->sslca));
+        ds_set_wstrnattr(&ds->sslca, ds_source->sslca,
+                         sqlwcharlen(ds_source->sslca));
     }
     if (ds_source->sslcapath != nullptr) {
-        ds_set_strnattr(&ds->sslcapath, ds_source->sslcapath,
-                        sqlwcharlen(ds_source->sslcapath));
+        ds_set_wstrnattr(&ds->sslcapath, ds_source->sslcapath,
+                         sqlwcharlen(ds_source->sslcapath));
     }
     if (ds_source->sslcipher != nullptr) {
-        ds_set_strnattr(&ds->sslcipher, ds_source->sslcipher,
-                        sqlwcharlen(ds_source->sslcipher));
+        ds_set_wstrnattr(&ds->sslcipher, ds_source->sslcipher,
+                         sqlwcharlen(ds_source->sslcipher));
     }
     if (ds_source->sslmode != nullptr) {
-        ds_set_strnattr(&ds->sslmode, ds_source->sslmode,
-                        sqlwcharlen(ds_source->sslmode));
+        ds_set_wstrnattr(&ds->sslmode, ds_source->sslmode,
+                         sqlwcharlen(ds_source->sslmode));
     }
     if (ds_source->rsakey != nullptr) {
-        ds_set_strnattr(&ds->rsakey, ds_source->rsakey,
-                        sqlwcharlen(ds_source->rsakey));
+        ds_set_wstrnattr(&ds->rsakey, ds_source->rsakey,
+                         sqlwcharlen(ds_source->rsakey));
     }
     if (ds_source->savefile != nullptr) {
-        ds_set_strnattr(&ds->savefile, ds_source->savefile,
-                        sqlwcharlen(ds_source->savefile));
+        ds_set_wstrnattr(&ds->savefile, ds_source->savefile,
+                         sqlwcharlen(ds_source->savefile));
     }
     if (ds_source->plugin_dir != nullptr) {
-        ds_set_strnattr(&ds->plugin_dir, ds_source->plugin_dir,
-                        sqlwcharlen(ds_source->plugin_dir));
+        ds_set_wstrnattr(&ds->plugin_dir, ds_source->plugin_dir,
+                         sqlwcharlen(ds_source->plugin_dir));
     }
     if (ds_source->default_auth != nullptr) {
-        ds_set_strnattr(&ds->default_auth, ds_source->default_auth,
-                        sqlwcharlen(ds_source->default_auth));
+        ds_set_wstrnattr(&ds->default_auth, ds_source->default_auth,
+                         sqlwcharlen(ds_source->default_auth));
     }
     if (ds_source->load_data_local_dir != nullptr) {
-        ds_set_strnattr(&ds->load_data_local_dir,
-                        ds_source->load_data_local_dir,
-                        sqlwcharlen(ds_source->load_data_local_dir));
+        ds_set_wstrnattr(&ds->load_data_local_dir,
+                         ds_source->load_data_local_dir,
+                         sqlwcharlen(ds_source->load_data_local_dir));
     }
 
     ds->has_port = ds_source->has_port;
@@ -2021,12 +2058,12 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
 
     /* Failover */
     if (ds_source->host_pattern != nullptr) {
-        ds_set_strnattr(&ds->host_pattern, ds_source->host_pattern,
-                        sqlwcharlen(ds_source->host_pattern));
+        ds_set_wstrnattr(&ds->host_pattern, ds_source->host_pattern,
+                         sqlwcharlen(ds_source->host_pattern));
     }
     if (ds_source->cluster_id != nullptr) {
-        ds_set_strnattr(&ds->cluster_id, ds_source->cluster_id,
-                        sqlwcharlen(ds_source->cluster_id));
+        ds_set_wstrnattr(&ds->cluster_id, ds_source->cluster_id,
+                         sqlwcharlen(ds_source->cluster_id));
     }
 
     ds->disable_cluster_failover = ds_source->disable_cluster_failover;

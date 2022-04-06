@@ -789,12 +789,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     mysql->options(MYSQL_OPT_PROTOCOL, &protocol);
 
     //Setting server and port to the dsrc->server8 and dsrc->port
-    //TODO: IS THERE A FUNCTION TO DO THIS USING myodbc_malloc?
-    //COPY OF sqlwchardup
-    size_t chars = strlen(host);
-    x_free(dsrc->server8);
-    dsrc->server8 = (SQLCHAR *)myodbc_malloc(( chars + 1) , MYF(0));
-    memcpy(dsrc->server8, host, chars);
+    ds_set_strnattr(&dsrc->server8, (SQLCHAR*)host, strlen(host));
     dsrc->port = port;
 
     MYSQL *connect_result = dsrc->enable_dns_srv ?
@@ -1089,9 +1084,9 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
 
   ds= ds_new();
 
-  ds_set_strnattr(&ds->name, szDSN, cbDSN);
-  ds_set_strnattr(&ds->uid, szUID, cbUID);
-  ds_set_strnattr(&ds->pwd, szAuth, cbAuth);
+  ds_set_wstrnattr(&ds->name, szDSN, cbDSN);
+  ds_set_wstrnattr(&ds->uid, szUID, cbUID);
+  ds_set_wstrnattr(&ds->pwd, szAuth, cbAuth);
 
   ds_lookup(ds);
 

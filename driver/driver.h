@@ -1164,7 +1164,7 @@ namespace myodbc {
       SQLWSTRING  string_connect_in;
 
       assert(params->driver && *params->driver);
-      ds_set_strattr(&params->name, NULL);
+      ds_set_wstrattr(&params->name, NULL);
       ds_to_kvpair(params, string_connect_in, ';');
       if (SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc) != SQL_SUCCESS)
       {
