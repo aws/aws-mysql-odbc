@@ -474,7 +474,7 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
 
     if (result.connected) {
         current_host = result.new_host;
-        connection_handler->update_connection(result.new_connection);
+        connection_handler->update_connection(result.new_connection, current_host->get_host());
         new_error_code = "08S02";
         MYLOG_DBC_TRACE(dbc,
                     "[FAILOVER_HANDLER] The active SQL connection has changed "
@@ -503,7 +503,10 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code) {
         current_topology = result.new_topology;
         current_host = current_topology->get_writer();
     }
-    connection_handler->update_connection(result.new_connection);
+
+    connection_handler->update_connection(
+        result.new_connection, result.new_topology->get_writer()->get_host());
+    
     new_error_code = "08S02";
     MYLOG_DBC_TRACE(
         dbc,
