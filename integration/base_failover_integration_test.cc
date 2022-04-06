@@ -56,13 +56,12 @@ static Aws::SDKOptions options;
 
 class BaseFailoverIntegrationTest : public testing::Test {
 protected:
+  // AWS credentials
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
   std::string SESSION_TOKEN = std::getenv("AWS_SESSION_TOKEN");
 
-  std::vector<Aws::RDS::Model::DBClusterMember> readers;
-  Aws::RDS::Model::DBClusterMember writer;
-
+  // Connection string parameters
   char* dsn = std::getenv("TEST_DSN");
   char* db = std::getenv("TEST_DATABASE");
   char* user = std::getenv("TEST_UID");
@@ -121,31 +120,39 @@ protected:
                                              {MYSQL_CLUSTER_URL, proxy_cluster},
                                              {MYSQL_RO_CLUSTER_URL, proxy_read_only_cluster}};
 
+  std::string writer_id;
+  std::vector<Aws::RDS::Model::DBClusterMember> readers;
+
+  // Helper functions
+
+  std::string get_endpoint(const std::string instance_id) const {
+    return instance_id + DB_CONN_STR_SUFFIX;
+  }
+
+  std::string get_proxied_endpoint(const std::string instance_id) const {
+    return instance_id + DB_CONN_STR_SUFFIX + PROXIED_DOMAIN_NAME_SUFFIX;
+  }
+
   // Helper functions from integration tests
 
   void build_connection_string(SQLCHAR* conn_in, char* dsn, char* user, char* pwd, std::string server, int port, char* db) {
     sprintf(reinterpret_cast<char*>(conn_in), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;DATABASE=%s;LOG_QUERY=1;", dsn, user, pwd, server.c_str(), port, db);
   }
 
-  std::vector<std::string> retrieve_topology_via_SQL(SQLCHAR* conn_in) {
+  std::vector<std::string> query_topology(SQLCHAR* conn_in) {
     std::vector<std::string> instances;
 
-    SQLCHAR conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
-    SQLINTEGER native_error;
-    SQLSMALLINT len, length;
-
-    SQLRETURN rc = SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
-    if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
-      throw "SQLDriverConnect failed.";
-    }
+    SQLCHAR conn_out[4096];
+    SQLSMALLINT len;
+    EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
     SQLCHAR buf[255];
     SQLLEN buflen;
     SQLHSTMT handle;
     const auto query = (SQLCHAR*)"SELECT SERVER_ID FROM information_schema.replica_host_status ORDER BY IF(SESSION_ID = 'MASTER_SESSION_ID', 0, 1)";
 
-    SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle);
-    SQLExecDirect(handle, query, SQL_NTS);
+    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
     auto rc_fetch = SQLFetch(handle);
 
     if (rc_fetch == SQL_NO_DATA) {
@@ -162,8 +169,8 @@ protected:
       rc_fetch = SQLFetch(handle);
     }
 
-    SQLFreeHandle(SQL_HANDLE_STMT, handle);
-    SQLDisconnect(dbc);
+    EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
+    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
     return instances;
   }
 
@@ -358,7 +365,7 @@ protected:
     {
       for (const auto& instance : cluster.GetDBClusterMembers()) {
         if (instance.GetIsClusterWriter()) {
-          writer = instance;
+          writer_id = instance.GetDBInstanceIdentifier();
         } else {
           readers.push_back(instance);
         }
@@ -366,16 +373,13 @@ protected:
     }
   }
 
-  std::string get_writer_id() { return writer.GetDBInstanceIdentifier(); }
-
   std::string get_reader_id() {
     const std::string reader_id = readers[0].GetDBInstanceIdentifier();
     return reader_id;
   }
 
   bool is_db_instance_writer(const std::string instance) {
-    const std::string writer_instance = writer.GetDBInstanceIdentifier();
-    return (writer.GetDBInstanceIdentifier() == instance);
+    return (writer_id == instance);
   }
 
   bool is_db_instance_reader(const std::string instance) {
@@ -386,8 +390,6 @@ protected:
     }
     return false;
   }
-
-  std::string get_endpoint(const std::string instance_id) const { return instance_id + DB_CONN_STR_SUFFIX + PROXIED_DOMAIN_NAME_SUFFIX; }
 
   void disable_instance(const std::string instance) {
     PROXY* new_instance = get_proxy_from_map(instance);
@@ -425,7 +427,6 @@ protected:
       if (downstream) {
         downstream->remove();
       }
-
       if (upstream) {
         upstream->remove();
       }
