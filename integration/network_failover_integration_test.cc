@@ -117,7 +117,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
   const std::string expected = "08S02";
   assert_query_failed(expected);
 
-  const std::string new_reader_id = get_current_instance_id();
+  const std::string new_reader_id = query_instance_id(dbc);
   EXPECT_EQ(writer_id, new_reader_id);
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
@@ -136,7 +136,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
   const std::string expected = "08S02";
   assert_query_failed(expected);
 
-  const std::string new_instance = get_current_instance_id();
+  const std::string new_instance = query_instance_id(dbc);
   EXPECT_EQ(writer_id, new_instance);
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
@@ -155,7 +155,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_read_only) {
   const std::string expected = "08S02";
   assert_query_failed(expected);
 
-  const std::string new_reader_id = get_current_instance_id();
+  const std::string new_reader_id = query_instance_id(dbc);
   EXPECT_NE(writer_id, new_reader_id);
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
@@ -200,7 +200,7 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
   const std::string expected = "08S02";
   assert_query_failed(expected);
 
-  const std::string current_connection = get_current_instance_id();
+  const std::string current_connection = query_instance_id(dbc);
   const std::string last_reader = readers.back().GetDBInstanceIdentifier();
 
   // Assert that new instance is either the last reader instance or the writer instance.
@@ -225,7 +225,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   disable_instance(first_reader);
   assert_query_failed(expected_error);
 
-  const std::string second_reader = get_current_instance_id();
+  const std::string second_reader = query_instance_id(dbc);
   EXPECT_TRUE(is_db_instance_reader(second_reader));
   assert_is_new_reader(previous_readers, second_reader);
   previous_readers.push_back(second_reader);
@@ -233,7 +233,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   disable_instance(second_reader);
   assert_query_failed(expected_error);
 
-  const std::string third_reader = get_current_instance_id();
+  const std::string third_reader = query_instance_id(dbc);
   EXPECT_TRUE(is_db_instance_reader(third_reader));
   assert_is_new_reader(previous_readers, third_reader);
   previous_readers.push_back(third_reader);
@@ -267,7 +267,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   enable_instance(previous_readers[0]);
   enable_instance(previous_readers[1]);
 
-  const std::string current_instance_id = get_current_instance_id();
+  const std::string current_instance_id = query_instance_id(dbc);
   EXPECT_EQ(third_reader, current_instance_id);
 
   // Start crashing the third instance.
@@ -275,7 +275,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
 
   assert_query_failed(expected_error);
 
-  const std::string last_instance_id = get_current_instance_id();
+  const std::string last_instance_id = query_instance_id(dbc);
 
   // Assert that the last instance is either the first reader instance or the second reader instance.
   EXPECT_TRUE(last_instance_id == first_reader || last_instance_id == second_reader);
