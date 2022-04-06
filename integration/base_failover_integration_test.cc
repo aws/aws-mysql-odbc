@@ -167,21 +167,17 @@ protected:
     return instances;
   }
 
-  std::string query_instance_id(SQLHDBC dbc) {
+  std::string query_instance_id(SQLHDBC dbc) const {
     SQLCHAR buf[255];
     SQLLEN buflen;
     SQLHSTMT handle;
     const auto query = (SQLCHAR*)"SELECT @@aurora_server_id";
 
-    SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle);
-    SQLExecDirect(handle, query, SQL_NTS);
-    const auto rc = SQLFetch(handle);
-    if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
-      throw "Unable to fetch the instance id";
-    }
-
-    SQLGetData(handle, 1, SQL_CHAR, buf, sizeof(buf), &buflen);
-    SQLFreeHandle(SQL_HANDLE_STMT, handle);
+    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
+    EXPECT_EQ(SQL_SUCCESS, SQLFetch(handle));
+    EXPECT_EQ(SQL_SUCCESS, SQLGetData(handle, 1, SQL_CHAR, buf, sizeof(buf), &buflen));
+    EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
 
     std::string id((const char*)buf);
     return id;
@@ -392,21 +388,6 @@ protected:
   }
 
   std::string get_endpoint(const std::string instance_id) const { return instance_id + DB_CONN_STR_SUFFIX + PROXIED_DOMAIN_NAME_SUFFIX; }
-
-  std::string get_current_instance_id() const {
-    SQLCHAR buf[255];
-    SQLLEN buflen;
-    SQLHSTMT handle;
-
-    const auto query = (SQLCHAR*)"SELECT @@aurora_server_id";
-    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
-    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
-    EXPECT_EQ(SQL_SUCCESS, SQLFetch(handle));
-    EXPECT_EQ(SQL_SUCCESS, SQLGetData(handle, 1, SQL_CHAR, buf, sizeof(buf), &buflen));
-    EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
-    std::string ret = (char*)buf;
-    return ret;
-  }
 
   void disable_instance(const std::string instance) {
     PROXY* new_instance = get_proxy_from_map(instance);
