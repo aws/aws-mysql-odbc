@@ -127,6 +127,14 @@ protected:
   std::string reader_id;
   std::string reader_endpoint;
 
+  // Queries
+  SQLCHAR* SERVER_ID_QUERY = (SQLCHAR*)"SELECT @@aurora_server_id";
+
+  // Error codes
+  const std::string ERROR_COMM_LINK_FAILURE = "08S01";
+  const std::string ERROR_COMM_LINK_CHANGED = "08S02";
+  const std::string ERROR_CONN_FAILURE_DURING_TX = "08007";
+
   // Helper functions
 
   std::string get_endpoint(const std::string instance_id) const {
@@ -156,6 +164,27 @@ protected:
       throw std::runtime_error("The input cluster topology is empty.");
     }
     return instances[1];
+  }
+
+  void assert_query_succeeded(SQLHDBC dbc, SQLCHAR* query) const {
+    SQLHSTMT handle;
+    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
+    EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
+  }
+
+  void assert_query_failed(SQLHDBC dbc, SQLCHAR* query, const std::string expected_error) const {
+    SQLHSTMT handle;
+    SQLSMALLINT stmt_length;
+    SQLINTEGER native_error;
+    SQLCHAR message[SQL_MAX_MESSAGE_LENGTH], sqlstate[6];
+
+    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
+    EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, query, SQL_NTS));
+    EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle, sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+    const std::string state = (char*)sqlstate;
+    EXPECT_EQ(expected_error, state);
+    EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
   }
 
   // Helper functions from integration tests
@@ -203,14 +232,11 @@ protected:
     SQLCHAR buf[255];
     SQLLEN buflen;
     SQLHSTMT handle;
-    const auto query = (SQLCHAR*)"SELECT @@aurora_server_id";
-
     EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
-    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, SERVER_ID_QUERY, SQL_NTS));
     EXPECT_EQ(SQL_SUCCESS, SQLFetch(handle));
     EXPECT_EQ(SQL_SUCCESS, SQLGetData(handle, 1, SQL_CHAR, buf, sizeof(buf), &buflen));
     EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
-
     std::string id((const char*)buf);
     return id;
   }
@@ -424,33 +450,8 @@ protected:
 
   void test_connection(const std::string test_server, int test_port) {
     sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), test_server.c_str(), test_port);
-
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
     EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
-  }
-
-  void assert_query_succeeded() const {
-    const auto query = (SQLCHAR*)"SELECT @@aurora_server_id";
-    SQLHSTMT handle;
-
-    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
-    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
-    EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
-  }
-
-  void assert_query_failed(const std::string expected_error) const {
-    SQLHSTMT handle;
-    SQLSMALLINT stmt_length;
-    SQLINTEGER native_error;
-    SQLCHAR message[SQL_MAX_MESSAGE_LENGTH], stmt_sqlstate[6];
-    const auto query = (SQLCHAR*)"SELECT @@aurora_server_id";
-
-    EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
-    EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, query, SQL_NTS));
-    EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
-    const std::string state = (char*)stmt_sqlstate;
-    EXPECT_EQ(expected_error, state);
-    EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
   }
 
   void assert_is_new_reader(std::vector<std::string> old_readers, std::string new_reader) const {

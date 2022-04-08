@@ -70,26 +70,13 @@ class FailoverIntegrationTest : public BaseFailoverIntegrationTest {
 */
 TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionInvocation) {
   build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
-  SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
-  SQLINTEGER native_error;
+  SQLCHAR conn_out[4096];
   SQLSMALLINT len;
 
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
-
-  SQLHSTMT handle;
-  SQLSMALLINT stmt_length;
-  SQLCHAR stmt_sqlstate[6];
-  const auto query = (SQLCHAR*)"SELECT CONCAT(@@hostname, ':', @@port)";
-
-  EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
-  EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, query, SQL_NTS));
-  EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
-
-  const std::string state = (char*)stmt_sqlstate;
-  const std::string expected = "08S02";
-  EXPECT_EQ(expected, state);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
   
   const std::string current_connection_id = query_instance_id(dbc);
   EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
@@ -130,11 +117,10 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
 
   failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
 
-  EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, (SQLCHAR*)"select @aurora_server_id", SQL_NTS));
+  EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, SERVER_ID_QUERY, SQL_NTS));
   EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
   const std::string state = reinterpret_cast<char*>(stmt_sqlstate);
-  const std::string expected = "08S02";
-  EXPECT_EQ(expected, state);
+  EXPECT_EQ(ERROR_COMM_LINK_CHANGED, state);
 
   // Verify that connection still accepts multi-statement SQL
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
@@ -178,8 +164,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
   // Check state
   EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, nullptr, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
   const std::string state = (char*)stmt_sqlstate;
-  const std::string expected = "08007";
-  EXPECT_EQ(expected, state);
+  EXPECT_EQ(ERROR_CONN_FAILURE_DURING_TX, state);
 
   // Query new ID after failover
   std::string current_connection_id = query_instance_id(dbc);
@@ -232,8 +217,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
   // Check state
   EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, nullptr, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
   const std::string state = (char*)stmt_sqlstate;
-  const std::string expected = "08007";
-  EXPECT_EQ(expected, state);
+  EXPECT_EQ(ERROR_CONN_FAILURE_DURING_TX, state);
 
   // Query new ID after failover
   std::string current_connection_id = query_instance_id(dbc);
@@ -286,8 +270,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
   // Check state
   EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, nullptr, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
   const std::string state = (char*)stmt_sqlstate;
-  const std::string expected = "08007";
-  EXPECT_EQ(expected, state);
+  EXPECT_EQ(ERROR_CONN_FAILURE_DURING_TX, state);
 
   // Query new ID after failover
   std::string current_connection_id = query_instance_id(dbc);
@@ -341,8 +324,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
   // Check state
   EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
   const std::string state = (char*)stmt_sqlstate;
-  const std::string expected = "08S02";
-  EXPECT_EQ(expected, state);
+  EXPECT_EQ(ERROR_COMM_LINK_CHANGED, state);
 
   // Query new ID after failover
   std::string current_connection_id = query_instance_id(dbc);
@@ -383,24 +365,12 @@ TEST_F(FailoverIntegrationTest, test_pooledWriterConnection_BasicFailover) {
   }
 
   failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, nominated_writer_id);
-
-  SQLHSTMT handle2;
-  SQLSMALLINT stmt_length;
-  SQLCHAR stmt_sqlstate[6];
-  const auto query2 = (SQLCHAR*)"SELECT CONCAT(@@hostname, ':', @@port)";
-
-  EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle2));
-  EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle2, query2, SQL_NTS));
-  EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, handle2, stmt_sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
-
-  const std::string state = (char*)stmt_sqlstate;
-  const std::string expected = "08S02";
-  EXPECT_EQ(expected, state);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
   
   const std::string current_connection_id = query_instance_id(dbc);
-  const std::string next_cluster_writer_id = get_DB_cluster_writer_instance_id(rds_client, cluster_id);
+  const std::string next_writer_id = get_DB_cluster_writer_instance_id(rds_client, cluster_id);
   EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
-  EXPECT_EQ(next_cluster_writer_id, current_connection_id);
+  EXPECT_EQ(next_writer_id, current_connection_id);
   EXPECT_EQ(nominated_writer_id, current_connection_id);
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
