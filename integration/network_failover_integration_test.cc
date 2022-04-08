@@ -88,7 +88,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
 
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-  assert_query_succeeded();
+  assert_query_succeeded(dbc, SERVER_ID_QUERY);
 
   const auto writer_proxy = get_proxy_from_map(writer_id);
   if (writer_proxy) {
@@ -96,8 +96,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
   }
   disable_connectivity(proxy_cluster);
 
-  const std::string expected = "08S01";
-  assert_query_failed(expected);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_FAILURE);
 
   enable_connectivity(writer_proxy);
   enable_connectivity(proxy_cluster);
@@ -111,11 +110,12 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (const auto& x : proxy_map) {
-    if (x.first != writer_id) disable_connectivity(x.second);
+    if (x.first != writer_id) {
+      disable_connectivity(x.second);
+    }
   }
 
-  const std::string expected = "08S02";
-  assert_query_failed(expected);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   const std::string new_reader_id = query_instance_id(dbc);
   EXPECT_EQ(writer_id, new_reader_id);
@@ -128,9 +128,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(reader_id);
-
-  const std::string expected = "08S02";
-  assert_query_failed(expected);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   const std::string new_instance = query_instance_id(dbc);
   EXPECT_EQ(writer_id, new_instance);
@@ -143,9 +141,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_read_only) {
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(reader_id);
-
-  const std::string expected = "08S02";
-  assert_query_failed(expected);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   const std::string new_reader_id = query_instance_id(dbc);
   EXPECT_NE(writer_id, new_reader_id);
@@ -161,7 +157,9 @@ TEST_F(NetworkFailoverIntegrationTest, writer_connection_fails_due_to_no_reader)
 
   // Put all but writer down first
   for (const auto& x : proxy_map) {
-    if (x.first != writer_char_id) disable_connectivity(x.second);
+    if (x.first != writer_char_id) {
+      disable_connectivity(x.second);
+    }
   }
 
   // Crash the writer now
@@ -170,8 +168,7 @@ TEST_F(NetworkFailoverIntegrationTest, writer_connection_fails_due_to_no_reader)
     disable_connectivity(writer_proxy);
   }
 
-  const std::string expected = "08S01";
-  assert_query_failed(expected);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_FAILURE);
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
@@ -186,8 +183,7 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
     disable_instance(readers[index]);
   }
 
-  const std::string expected = "08S02";
-  assert_query_failed(expected);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   const std::string current_connection = query_instance_id(dbc);
   const std::string last_reader = readers.back();
@@ -202,7 +198,6 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   EXPECT_LE(4, readers.size());
 
   std::vector<std::string> previous_readers;
-  const std::string expected_error = "08S02";
 
   const std::string first_reader = reader_id;
   const std::string server = get_proxied_endpoint(first_reader);
@@ -212,7 +207,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(first_reader);
-  assert_query_failed(expected_error);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   const std::string second_reader = query_instance_id(dbc);
   EXPECT_TRUE(is_db_instance_reader(second_reader));
@@ -220,7 +215,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   previous_readers.push_back(second_reader);
 
   disable_instance(second_reader);
-  assert_query_failed(expected_error);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   const std::string third_reader = query_instance_id(dbc);
   EXPECT_TRUE(is_db_instance_reader(third_reader));
@@ -262,7 +257,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   // Start crashing the third instance.
   disable_instance(third_reader);
 
-  assert_query_failed(expected_error);
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   const std::string last_instance_id = query_instance_id(dbc);
 
