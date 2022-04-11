@@ -29,7 +29,7 @@
 #include <aws/rds/model/TargetHealth.h>
 
 #include <aws/rds/RDSClient.h>
-#include "toxiproxy/toxiproxy_client.h"
+#include <toxiproxy/toxiproxy_client.h>
 
 #include <aws/core/Aws.h>
 #include <aws/core/auth/AWSCredentialsProvider.h>
@@ -87,25 +87,24 @@ protected:
   std::string TOXIPROXY_INSTANCE_5_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_5_NETWORK_ALIAS");
   std::string TOXIPROXY_CLUSTER_NETWORK_ALIAS = std::getenv("TOXIPROXY_CLUSTER_NETWORK_ALIAS");
   std::string TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS = std::getenv("TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS");
-  int TOXIPROXY_CONTROL_PORT = 8474;
 
-  TOXIPROXY_CLIENT* toxiproxy_client_instance_1 = new TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_1_NETWORK_ALIAS, TOXIPROXY_CONTROL_PORT);
-  TOXIPROXY_CLIENT* toxiproxy_client_instance_2 = new TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_2_NETWORK_ALIAS, TOXIPROXY_CONTROL_PORT);
-  TOXIPROXY_CLIENT* toxiproxy_client_instance_3 = new TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_3_NETWORK_ALIAS, TOXIPROXY_CONTROL_PORT);
-  TOXIPROXY_CLIENT* toxiproxy_client_instance_4 = new TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_4_NETWORK_ALIAS, TOXIPROXY_CONTROL_PORT);
-  TOXIPROXY_CLIENT* toxiproxy_client_instance_5 = new TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_5_NETWORK_ALIAS, TOXIPROXY_CONTROL_PORT);
-  TOXIPROXY_CLIENT* toxiproxy_cluster = new TOXIPROXY_CLIENT(TOXIPROXY_CLUSTER_NETWORK_ALIAS, TOXIPROXY_CONTROL_PORT);
-  TOXIPROXY_CLIENT* toxiproxy_read_only_cluster = new TOXIPROXY_CLIENT(TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS, TOXIPROXY_CONTROL_PORT);
+  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_1 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_1_NETWORK_ALIAS);
+  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_2 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_2_NETWORK_ALIAS);
+  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_3 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_3_NETWORK_ALIAS);
+  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_4 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_4_NETWORK_ALIAS);
+  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_5 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_5_NETWORK_ALIAS);
+  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_cluster = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_CLUSTER_NETWORK_ALIAS);
+  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_read_only_cluster = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS);
 
-  PROXY* proxy_instance_1 = get_proxy(toxiproxy_client_instance_1, MYSQL_INSTANCE_1_URL, MYSQL_PORT);
-  PROXY* proxy_instance_2 = get_proxy(toxiproxy_client_instance_2, MYSQL_INSTANCE_2_URL, MYSQL_PORT);
-  PROXY* proxy_instance_3 = get_proxy(toxiproxy_client_instance_3, MYSQL_INSTANCE_3_URL, MYSQL_PORT);
-  PROXY* proxy_instance_4 = get_proxy(toxiproxy_client_instance_4, MYSQL_INSTANCE_4_URL, MYSQL_PORT);
-  PROXY* proxy_instance_5 = get_proxy(toxiproxy_client_instance_5, MYSQL_INSTANCE_5_URL, MYSQL_PORT);
-  PROXY* proxy_cluster = get_proxy(toxiproxy_cluster, MYSQL_CLUSTER_URL, MYSQL_PORT);
-  PROXY* proxy_read_only_cluster = get_proxy(toxiproxy_read_only_cluster, MYSQL_RO_CLUSTER_URL, MYSQL_PORT);
+  TOXIPROXY::PROXY* proxy_instance_1 = get_proxy(toxiproxy_client_instance_1, MYSQL_INSTANCE_1_URL, MYSQL_PORT);
+  TOXIPROXY::PROXY* proxy_instance_2 = get_proxy(toxiproxy_client_instance_2, MYSQL_INSTANCE_2_URL, MYSQL_PORT);
+  TOXIPROXY::PROXY* proxy_instance_3 = get_proxy(toxiproxy_client_instance_3, MYSQL_INSTANCE_3_URL, MYSQL_PORT);
+  TOXIPROXY::PROXY* proxy_instance_4 = get_proxy(toxiproxy_client_instance_4, MYSQL_INSTANCE_4_URL, MYSQL_PORT);
+  TOXIPROXY::PROXY* proxy_instance_5 = get_proxy(toxiproxy_client_instance_5, MYSQL_INSTANCE_5_URL, MYSQL_PORT);
+  TOXIPROXY::PROXY* proxy_cluster = get_proxy(toxiproxy_cluster, MYSQL_CLUSTER_URL, MYSQL_PORT);
+  TOXIPROXY::PROXY* proxy_read_only_cluster = get_proxy(toxiproxy_read_only_cluster, MYSQL_RO_CLUSTER_URL, MYSQL_PORT);
 
-  std::map<std::string, PROXY*> proxy_map = {{MYSQL_INSTANCE_1_URL.substr(0, MYSQL_INSTANCE_1_URL.find('.')), proxy_instance_1},
+  std::map<std::string, TOXIPROXY::PROXY*> proxy_map = {{MYSQL_INSTANCE_1_URL.substr(0, MYSQL_INSTANCE_1_URL.find('.')), proxy_instance_1},
                                              {MYSQL_INSTANCE_2_URL.substr(0, MYSQL_INSTANCE_2_URL.find('.')), proxy_instance_2},
                                              {MYSQL_INSTANCE_3_URL.substr(0, MYSQL_INSTANCE_3_URL.find('.')), proxy_instance_3},
                                              {MYSQL_INSTANCE_4_URL.substr(0, MYSQL_INSTANCE_4_URL.find('.')), proxy_instance_4},
@@ -324,12 +323,12 @@ protected:
 
   // Helper functions from network integration tests
 
-  PROXY* get_proxy(TOXIPROXY_CLIENT* client, const std::string& host, int port) const {
+  TOXIPROXY::PROXY* get_proxy(TOXIPROXY::TOXIPROXY_CLIENT* client, const std::string& host, int port) const {
     const std::string upstream = host + ":" + std::to_string(port);
     return client->get_proxy(upstream);
   }
 
-  PROXY* get_proxy_from_map(const std::string& url) {
+  TOXIPROXY::PROXY* get_proxy_from_map(const std::string& url) {
     const auto it = proxy_map.find(url);
     if (it != proxy_map.end()) {
       return it->second;
@@ -351,7 +350,7 @@ protected:
   }
 
   void disable_instance(const std::string instance) {
-    PROXY* new_instance = get_proxy_from_map(instance);
+    TOXIPROXY::PROXY* new_instance = get_proxy_from_map(instance);
     if (new_instance) {
       disable_connectivity(new_instance);
     } else {
@@ -359,16 +358,16 @@ protected:
     }
   }
 
-  void disable_connectivity(const PROXY* proxy) {
+  void disable_connectivity(const TOXIPROXY::PROXY* proxy) {
     const auto toxics = proxy->get_toxics();
     if (toxics) {
-      toxics->bandwidth(DOWN_STREAM_STR, TOXIC_DIRECTION::DOWNSTREAM, 0);
-      toxics->bandwidth(UP_STREAM_STR, TOXIC_DIRECTION::UPSTREAM, 0);
+      toxics->bandwidth(DOWN_STREAM_STR, TOXIPROXY::TOXIC_DIRECTION::DOWNSTREAM, 0);
+      toxics->bandwidth(UP_STREAM_STR, TOXIPROXY::TOXIC_DIRECTION::UPSTREAM, 0);
     }
   }
 
   void enable_instance(const std::string instance) {
-    PROXY* new_instance = get_proxy_from_map(instance);
+    TOXIPROXY::PROXY* new_instance = get_proxy_from_map(instance);
     if (new_instance) {
       enable_connectivity(new_instance);
     } else {
@@ -376,12 +375,12 @@ protected:
     }
   }
 
-  void enable_connectivity(const PROXY* proxy) {
-    TOXIC_LIST* toxics = proxy->get_toxics();
+  void enable_connectivity(const TOXIPROXY::PROXY* proxy) {
+    TOXIPROXY::TOXIC_LIST* toxics = proxy->get_toxics();
 
     if (toxics) {
-      TOXIC* downstream = toxics->get(DOWN_STREAM_STR);
-      TOXIC* upstream = toxics->get(UP_STREAM_STR);
+      TOXIPROXY::TOXIC* downstream = toxics->get(DOWN_STREAM_STR);
+      TOXIPROXY::TOXIC* upstream = toxics->get(UP_STREAM_STR);
 
       if (downstream) {
         downstream->remove();
