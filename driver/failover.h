@@ -243,7 +243,7 @@ public:
     ~CONNECT_TO_READER_HANDLER();
 
     void operator()(
-        const std::shared_ptr<HOST_INFO>& reader,
+        std::shared_ptr<HOST_INFO> reader,
         FAILOVER_SYNC& f_sync,
         READER_FAILOVER_RESULT& result);
 };
@@ -280,7 +280,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
     ~WAIT_NEW_WRITER_HANDLER();
 
     void operator()(
-        const std::shared_ptr<HOST_INFO>& original_writer,
+        std::shared_ptr<HOST_INFO> original_writer,
         FAILOVER_SYNC& f_sync,
         WRITER_FAILOVER_RESULT& result);
 
@@ -293,9 +293,9 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
     std::shared_ptr<HOST_INFO> current_reader_host;
 
     void refresh_topology_and_connect_to_new_writer(
-        const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync);
+        std::shared_ptr<HOST_INFO> original_writer, FAILOVER_SYNC& f_sync);
     void connect_to_reader(FAILOVER_SYNC& f_sync);
-    bool connect_to_writer(const std::shared_ptr<HOST_INFO>& writer_candidate);
+    bool connect_to_writer(std::shared_ptr<HOST_INFO> writer_candidate);
     void clean_up_reader_connection();
 };
 

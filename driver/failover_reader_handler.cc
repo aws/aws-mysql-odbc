@@ -152,13 +152,15 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
         
         std::shared_ptr<HOST_INFO> first_reader_host = hosts_list.at(i);
         first_connection_future = std::async(std::launch::async, std::ref(first_connection_handler),
-                                             std::cref(first_reader_host), std::ref(local_sync),
+                                             std::ref(first_reader_host), std::ref(local_sync),
                                              std::ref(first_connection_result));
 
+        std::shared_ptr<HOST_INFO> second_reader_host;
+
         if (!odd_hosts_number) {
-            std::shared_ptr<HOST_INFO> second_reader_host = hosts_list.at(i + 1);
+            second_reader_host = hosts_list.at(i + 1);
             second_connection_future = std::async(std::launch::async, std::ref(second_connection_handler),
-                                                  std::cref(second_reader_host), std::ref(local_sync),
+                                                  std::ref(second_reader_host), std::ref(local_sync),
                                                   std::ref(second_connection_result));
         }
 
@@ -204,7 +206,7 @@ CONNECT_TO_READER_HANDLER::CONNECT_TO_READER_HANDLER(
 CONNECT_TO_READER_HANDLER::~CONNECT_TO_READER_HANDLER() {}
 
 void CONNECT_TO_READER_HANDLER::operator()(
-    const std::shared_ptr<HOST_INFO>& reader,
+    std::shared_ptr<HOST_INFO> reader,
     FAILOVER_SYNC& f_sync,
     READER_FAILOVER_RESULT& result) {
     
