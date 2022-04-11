@@ -182,7 +182,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
   EXPECT_NE(current_connection_id, writer_id);
 
   // No rows should have been inserted to the table
-  EXPECT_EQ(0, count_table_rows(handle, "test3_1"));
+  EXPECT_EQ(0, query_count_table_rows(handle, "test3_1"));
 
   // Clean up test
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, drop_table_query, SQL_NTS));
@@ -235,7 +235,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
   EXPECT_NE(current_connection_id, writer_id);
 
   // No rows should have been inserted to the table
-  EXPECT_EQ(0, count_table_rows(handle, "test3_2"));
+  EXPECT_EQ(0, query_count_table_rows(handle, "test3_2"));
 
   // Clean up test
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, drop_table_query, SQL_NTS));
@@ -288,7 +288,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
   EXPECT_NE(current_connection_id, writer_id);
 
   // No rows should have been inserted to the table
-  EXPECT_EQ(0, count_table_rows(handle, "test3_3"));
+  EXPECT_EQ(0, query_count_table_rows(handle, "test3_3"));
 
   // Clean up test
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, drop_table_query, SQL_NTS));
@@ -341,11 +341,9 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
   EXPECT_TRUE(is_DB_instance_writer(rds_client, cluster_id, current_connection_id));
   EXPECT_NE(current_connection_id, writer_id);
 
-  // ID 1 should have 1 row
-  EXPECT_EQ(1, count_table_rows(handle, "test3_4 WHERE id = 1"));
-
-  // ID 2 should have NO rows
-  EXPECT_EQ(0, count_table_rows(handle, "test3_4 WHERE id = 2"));
+  // ID 1 should have 1 row, ID 2 should have NO rows
+  EXPECT_EQ(1, query_count_table_rows(handle, "test3_4", 1));
+  EXPECT_EQ(0, query_count_table_rows(handle, "test3_4", 2));
 
   // Clean up test
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, drop_table_query, SQL_NTS));
