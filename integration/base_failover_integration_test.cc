@@ -306,17 +306,25 @@ protected:
     return !get_matched_DBClusterMember(client, cluster_id, instance_id).GetIsClusterWriter();
   }
 
-  int count_table_rows(SQLHSTMT handle, const char* table) {
-    std::string select_count_query = "SELECT count(*) from ";
-    select_count_query.append(table);
-    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, (SQLCHAR*)select_count_query.c_str(), SQL_NTS));    
-    auto rc_fetch = SQLFetch(handle);
+  int query_count_table_rows(SQLHSTMT handle, const char* table_name, int id = -1) {
+    EXPECT_FALSE(table_name[0] == '\0');
+
+    //TODO Investigate how to use Prepared Statements to protect against SQL injection
+    char select_count_query[256];
+    if (id == -1) {
+      sprintf(select_count_query, "SELECT count(*) FROM %s", table_name);
+    } else {
+      sprintf(select_count_query, "SELECT count(*) FROM %s WHERE id = %d", table_name, id);
+    }
+
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, (SQLCHAR*)select_count_query, SQL_NTS));    
+    auto rc = SQLFetch(handle);
 
     SQLINTEGER buf = -1;
     SQLLEN buflen;
-    if (rc_fetch != SQL_NO_DATA_FOUND && rc_fetch != SQL_ERROR) {
-      rc_fetch = SQLGetData(handle, 1, SQL_INTEGER, &buf, sizeof(buf), &buflen);
-      rc_fetch = SQLFetch(handle); // To get cursor in correct position
+    if (rc != SQL_NO_DATA_FOUND && rc != SQL_ERROR) {
+      EXPECT_EQ(SQL_SUCCESS, SQLGetData(handle, 1, SQL_INTEGER, &buf, sizeof(buf), &buflen));
+      SQLFetch(handle); // To get cursor in correct position
     }
     return buf;
   }
