@@ -417,4 +417,23 @@ protected:
       EXPECT_NE(reader, new_reader);
     }
   }
+
+public:
+  ~BaseFailoverIntegrationTest() {
+    delete toxiproxy_client_instance_1;
+    delete toxiproxy_client_instance_2;
+    delete toxiproxy_client_instance_3;
+    delete toxiproxy_client_instance_4;
+    delete toxiproxy_client_instance_5;
+    delete toxiproxy_cluster;
+    delete toxiproxy_read_only_cluster;
+    
+    delete proxy_instance_1;
+    delete proxy_instance_2;
+    delete proxy_instance_3;
+    delete proxy_instance_4;
+    delete proxy_instance_5;
+    delete proxy_cluster;
+    delete proxy_read_only_cluster;
+  }
 };

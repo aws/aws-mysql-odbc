@@ -66,6 +66,7 @@ testframework/buildtest/
 testframework/dist/
 testframework/nbproject/
 testframework/patches/
+testframework/src/test/resources/*.ini
 *~
 *.lock
 *.swp
