@@ -32,8 +32,6 @@ project(integration)
 # GoogleTest requires at least C++11
 set(CMAKE_CXX_STANDARD 11)
 
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/toxiproxy")
-
 #-------------- unixodbc/iodbc/win -------------------
 if(WIN32)
   set(ODBCLIB odbc32)
@@ -54,6 +52,11 @@ FetchContent_Declare(
   awssdk
   GIT_REPOSITORY https://github.com/aws/aws-sdk-cpp
 )
+FetchContent_Declare(
+  toxiproxy
+  GIT_REPOSITORY https://github.com/Bit-Quill/toxiproxy-cpp
+  GIT_TAG main
+)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -63,23 +66,23 @@ set(BUILD_ONLY "rds" CACHE INTERNAL "")
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 
 set(CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
-    ""
-    CACHE STRING "Flags used for linking binaries during coverage builds."
-    FORCE)
+  ""
+  CACHE STRING "Flags used for linking binaries during coverage builds."
+  FORCE)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT
-    ""
-    CACHE STRING "Flags used by the shared libraries linker during coverage builds."
-    FORCE)
+  ""
+  CACHE STRING "Flags used by the shared libraries linker during coverage builds."
+  FORCE)
 mark_as_advanced(
-    CMAKE_CXX_FLAGS_DEBUGOPT
-    CMAKE_C_FLAGS_DEBUGOPT
-    CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
-    CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT)
-set(AWS_SDK_DEPENDENCES aws-c-auth aws-c-cal aws-c-common aws-c-compression
-    aws-c-event-stream aws-checksums aws-c-http aws-c-io aws-c-mqtt
-    aws-crt-cpp aws-c-s3 aws-cpp-sdk-core aws-cpp-sdk-rds)
+  CMAKE_CXX_FLAGS_DEBUGOPT
+  CMAKE_C_FLAGS_DEBUGOPT
+  CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
+  CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT)
+set(AWS_SDK_DEPENDENCIES aws-c-auth aws-c-cal aws-c-common aws-c-compression
+  aws-c-event-stream aws-checksums aws-c-http aws-c-io aws-c-mqtt
+  aws-crt-cpp aws-c-s3 aws-cpp-sdk-core aws-cpp-sdk-rds)
 
-FetchContent_MakeAvailable(googletest awssdk)
+FetchContent_MakeAvailable(googletest toxiproxy awssdk)
 
 enable_testing()
 
@@ -103,8 +106,7 @@ target_link_libraries(
   ${ODBCLIB}
   gtest_main
   toxiproxy
-  ${AWS_SDK_DEPENDENCES}
+  ${AWS_SDK_DEPENDENCIES}
 )
 
-set_target_properties(integration PROPERTIES
-                      RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+set_target_properties(integration PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
