@@ -537,6 +537,30 @@ IF(NOT MYSQLCLIENT_STATIC_LINKING)
   ADD_SUBDIRECTORY(mysql_strings)
 ENDIF()
 
+# Set values to help generate odbc.ini and odbcinst.ini files for Dockerized tests
+IF(ENABLE_GTESTS OR ENABLE_INTEGRATION_TESTS)
+  SET(ODBC_PATH ${CMAKE_SOURCE_DIR}/testframework/src/test/resources/)
+  SET(TEST_DRIVER "MyODBCa")
+  SET(DRIVER_PATH "/app/lib/libmyodbc8a.so")
+  SET(DRIVER_DESCRIPTION "AWS ANSI Driver for connecting to MySQL database server")
+  SET(DESCRIPTION "AWS MySQL ODBC ${CONNECTOR_MAJOR}.${CONNECTOR_MINOR} ANSI Driver for Dockerized tests")
+
+  IF(ENABLE_GTESTS)
+    SET(TEST_DSN "myodbc8a")
+    SET(TEST_DATABASE "test")
+    SET(TEST_SERVER "mysql-instance")
+    SET(TEST_UID "root")
+  ENDIF()
+
+  IF(ENABLE_INTEGRATION_TESTS)
+    SET(TEST_DSN "atlas")
+    SET(THREADING "0")
+  ENDIF()
+
+  CONFIGURE_FILE(${ODBC_PATH}/odbcinst.ini.in ${ODBC_PATH}/odbcinst.ini @ONLY)
+  CONFIGURE_FILE(${ODBC_PATH}/odbc.ini.in     ${ODBC_PATH}/odbc.ini @ONLY)
+ENDIF()
+
 ##############################################################################
 #
 #  Packaging
