@@ -1088,7 +1088,7 @@ struct STMT
   */
   SQLRETURN set_error(const char *state);
 
-  STMT(DBC *d) : dbc(d), result(NULL), array(NULL), result_array(NULL),
+  STMT(DBC *d) : dbc(d), result(NULL), fake_result(FALSE), array(NULL), result_array(NULL),
     current_values(NULL), fields(NULL), end_of_set(NULL),
     tempbuf(),
     stmt_options(dbc->stmt_options), lengths(nullptr), affected_rows(0),
