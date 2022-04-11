@@ -89,6 +89,8 @@ enable_testing()
 # Ordering matters, test will run in order of top to bottom
 add_executable(
   integration
+  connection_string_builder.cc
+  connection_string_builder_test.cc
   base_failover_integration_test.cc
   network_failover_integration_test.cc
   failover_integration_test.cc
