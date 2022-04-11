@@ -155,7 +155,7 @@ WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(
 WAIT_NEW_WRITER_HANDLER::~WAIT_NEW_WRITER_HANDLER() {}
 
 void WAIT_NEW_WRITER_HANDLER::operator()(
-    const std::shared_ptr<HOST_INFO>& original_writer,
+    std::shared_ptr<HOST_INFO> original_writer,
     FAILOVER_SYNC& f_sync,
     WRITER_FAILOVER_RESULT& result) {
 
@@ -201,7 +201,7 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader(FAILOVER_SYNC& f_sync) {
 
 // Use just connected reader to refresh topology and try to connect to a new writer
 void WAIT_NEW_WRITER_HANDLER::refresh_topology_and_connect_to_new_writer(
-    const std::shared_ptr<HOST_INFO>& original_writer, FAILOVER_SYNC& f_sync) {
+    std::shared_ptr<HOST_INFO> original_writer, FAILOVER_SYNC& f_sync) {
     while (!f_sync.is_completed()) {
         auto latest_topology = topology_service->get_topology(reader_connection, true);
         if (latest_topology->total_hosts() > 0) {
@@ -218,7 +218,7 @@ void WAIT_NEW_WRITER_HANDLER::refresh_topology_and_connect_to_new_writer(
 
 // Try to connect to the writer candidate
 bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
-    const std::shared_ptr<HOST_INFO>& writer_candidate) {
+    std::shared_ptr<HOST_INFO> writer_candidate) {
 
     MYLOG_TRACE(log_file, dbc_id,
       "[WAIT_NEW_WRITER_HANDLER] [TaskB] Trying to connect to a new writer: %s",
