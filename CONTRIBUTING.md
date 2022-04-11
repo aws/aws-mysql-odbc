@@ -1,45 +1,59 @@
 # Contributing Guidelines
 
-We love getting feedback from our users. Bugs and code contributions are great forms of feedback and we thank you for any bugs you report or code you contribute.
+Thank you for your interest in contributing to our project. Whether it's a bug report, new feature, correction, or additional
+documentation, we greatly value feedback and contributions from our community.
 
-## Reporting Issues
+Please read through this document before submitting any issues or pull requests to ensure we have all the necessary
+information to effectively respond to your bug report or contribution.
 
-Before reporting a new bug, please check first to see if a similar bug [exists](https://bugs.mysql.com/search.php).
 
-Bug reports should be as complete as possible.  Please try and include the following:
+## Reporting Bugs/Feature Requests
 
-* Complete steps to reproduce the issue
-* Any information about platform and environment that could be specific to the bug  
-* Specific version of the product you are using
-* Specific version of the server being used
-* Code written in C/C++/VB or another language to help reproduce the issue if possible
+We welcome you to use the GitHub issue tracker to report bugs or suggest features.
 
-## Contributing Code
+When filing an issue, please check existing open, or recently closed, issues to make sure somebody else hasn't already
+reported the issue. Please try to include as much information as you can. Details like these are incredibly useful:
 
-Contributing to this project is easy. You just need to follow these steps.
+* A reproducible test case or series of steps
+* The version of our code being used
+* Any modifications you've made relevant to the bug
+* Anything unusual about your environment or deployment
 
-* Sign the Oracle Contributor Agreement. You can find instructions for doing that at [OCA Page](https://oca.opensource.oracle.com/)
-* Develop your pull request
-  * Make sure you are aware of the requirements for the project (i.e. don't require C++17 if we are supporting C++11 and higher)
-* Validate your pull request by including tests that sufficiently cover the functionality
-* Verify that the entire test suite passes with your code applied
-* Submit your pull request
 
-## Running Tests
+## Contributing via Pull Requests
+Contributions via pull requests are much appreciated. Before sending us a pull request, please ensure that:
 
-Any contributed code should pass our unit tests.
-To run the unit tests you need to perform the following steps:
+1. You are working against the latest source on the *main* branch.
+2. You check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
+3. You open an issue to discuss any significant work - we would hate for your time to be wasted.
 
-* Build the Connector/ODBC
-* Register the new driver with the driver manager and create a DSN
-* Run MySQL Server
-* Set the following environment variables (optional):
-  * TEST_DSN = <the name of DSN previously created> (default = test)
-  * TEST_DRIVER = <the name of ODBC driver as registered in odbcinst.ini> (default = MySQL ODBC 8.0 Driver)
-  * TEST_UID = <MySQL user name> (default = root)
-  * TEST_PASSWORD = <MySQL password> (default is an empty string)
-  * TEST_SOCKET = <the path to the socket file in Unix-like OS> (default is an empty string)
-  * TEST_PORT = <the port number> (default = 3306)
-* In the OS command line enter the test subdirectory of Connector/ODBC build directory and run `ctest` utility
+To send us a pull request, please:
 
-At the end of `ctest` run the result should indicate 100% tests passed.
+1. Fork the repository.
+2. Modify the source; please focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
+3. Ensure local tests pass.
+4. Commit to your fork using clear commit messages.
+5. Send us a pull request, answering any default questions in the pull request interface.
+6. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
+
+GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
+[creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
+
+
+## Finding contributions to work on
+Looking at the existing issues is a great way to find something to contribute on. As our projects, by default, use the default GitHub issue labels (enhancement/bug/duplicate/help wanted/invalid/question/wontfix), looking at any 'help wanted' issues is a great place to start.
+
+
+## Code of Conduct
+This project has adopted the [Amazon Open Source Code of Conduct](https://aws.github.io/code-of-conduct).
+For more information see the [Code of Conduct FAQ](https://aws.github.io/code-of-conduct-faq) or contact
+opensource-codeofconduct@amazon.com with any additional questions or comments.
+
+
+## Security issue notifications
+If you discover a potential security issue in this project we ask that you notify AWS/Amazon Security via our [vulnerability reporting page](http://aws.amazon.com/security/vulnerability-reporting/). Please do **not** create a public github issue.
+
+
+## Licensing
+
+See the [LICENSE](LICENSE) file for our project's licensing. We will ask you to confirm the licensing of your contribution.
