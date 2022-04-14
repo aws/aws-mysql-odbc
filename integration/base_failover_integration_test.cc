@@ -202,12 +202,6 @@ protected:
     EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
   }
 
-  // Helper functions from integration tests
-
-  static void build_connection_string(SQLCHAR* conn_in, char* dsn, char* user, char* pwd, const std::string& server, const int port, char* db) {
-    sprintf(reinterpret_cast<char*>(conn_in), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;DATABASE=%s;LOG_QUERY=1;", dsn, user, pwd, server.c_str(), port, db);
-  }
-
   std::string query_instance_id(const SQLHDBC dbc) const {
     SQLCHAR buf[255] = "\0";
     SQLLEN buflen;
@@ -220,6 +214,8 @@ protected:
     std::string id(reinterpret_cast<char*>(buf));
     return id;
   }
+
+  // Helper functions from integration tests
 
   static std::vector<std::string> retrieve_topology_via_SDK(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     std::vector<std::string> instances;
@@ -336,6 +332,7 @@ protected:
   static int query_count_table_rows(const SQLHSTMT handle, const char* table_name, const int id = -1) {
     EXPECT_FALSE(table_name[0] == '\0');
 
+    //TODO Investigate how to use Prepared Statements to protect against SQL injection
     char select_count_query[256];
     if (id == -1) {
       sprintf(select_count_query, "SELECT count(*) FROM %s", table_name);
