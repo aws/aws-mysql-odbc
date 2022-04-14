@@ -44,6 +44,8 @@
 #include <sql.h>
 #include <sqlext.h>
 
+#include "connection_string_builder.cc"
+
 #define MAX_NAME_LEN 4096
 #define SQL_MAX_MESSAGE_LENGTH 512
 
@@ -75,6 +77,9 @@ protected:
   int MYSQL_PORT = atoi(std::getenv("MYSQL_PORT"));
   int MYSQL_PROXY_PORT = atoi(std::getenv("MYSQL_PROXY_PORT"));
   Aws::String cluster_id = MYSQL_CLUSTER_URL.substr(0, MYSQL_CLUSTER_URL.find('.'));
+
+  ConnectionStringBuilder builder;
+  std::string connection_string;
 
   SQLCHAR conn_in[4096], conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
