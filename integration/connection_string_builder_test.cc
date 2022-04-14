@@ -69,15 +69,17 @@ TEST_F(ConnectionStringBuilderTest, test_complete_string) {
                                    .withPWD("testPwd")
                                    .withLogQuery(false)
                                    .withAllowReaderConnections(true)
+                                   .withMultiStatements(false)
                                    .withDSN("testDSN")
                                    .withFailoverT(120000)
                                    .withPort(3306)
                                    .withDatabase("testDb")
                                    .withConnectTimeout(20)
                                    .withNetworkTimeout(20)
+                                   .withHostPattern("?.testDomain")
                                    .build();
 
-  const std::string expected = "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;DATABASE=testDb;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;FAILOVER_T=120000;CONNECT_TIMEOUT=20;NETWORK_TIMEOUT=20;";
+  const std::string expected = "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;DATABASE=testDb;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;MULTI_STATEMENTS=0;FAILOVER_T=120000;CONNECT_TIMEOUT=20;NETWORK_TIMEOUT=20;HOST_PATTERN=?.testDomain;";
   EXPECT_EQ(0, expected.compare(connection_string));
 }
 
@@ -118,14 +120,15 @@ TEST_F(ConnectionStringBuilderTest, test_setting_boolean_fields) {
                                    .withPWD("testPwd")
                                    .withLogQuery(false)
                                    .withAllowReaderConnections(true)
+                                   .withMultiStatements(true)
                                    .build();
 
-  const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;");
+  const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;MULTI_STATEMENTS=1;");
   EXPECT_EQ(0, expected.compare(connection_string));
 }
 
-// Create a builder with some values. Then append more values to the builder. Then build the connection string. Build will succeed.
-TEST_F(ConnectionStringBuilderTest, test_setting_multiple_steps) {
+// Create a builder with required values. Then append other properties to the builder. Then build the connection string. Build will succeed.
+TEST_F(ConnectionStringBuilderTest, test_setting_multiple_steps_1) {
   ConnectionStringBuilder builder = ConnectionStringBuilder();
   builder.withDSN("testDSN").withServer("testServer").withPort(3306);
 
@@ -136,8 +139,21 @@ TEST_F(ConnectionStringBuilderTest, test_setting_multiple_steps) {
   EXPECT_EQ(0, expected.compare(connection_string));
 }
 
-// Create a builder with some values. Then append more values to the builder, leaving required values unset. Then build the connection string.
-// Build will fail.
+// Create a builder initially without all required values. Then append other properties to the builder.
+// After second round of values, all required values are set. Build the connection string. Build will succeed.
+TEST_F(ConnectionStringBuilderTest, test_setting_multiple_steps_2) {
+  ConnectionStringBuilder builder = ConnectionStringBuilder();
+  builder.withDSN("testDSN").withServer("testServer").withUID("testUser").withPWD("testPwd");
+
+  builder.withPort(3306).withLogQuery(true);
+  const std::string connection_string = builder.build();
+
+  const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=1;");
+  EXPECT_EQ(0, expected.compare(connection_string));
+}
+
+// Create a builder with some values. Then append more values to the builder, but leaving required values unset.
+// Then build the connection string. Error expected.
 TEST_F(ConnectionStringBuilderTest, test_multiple_steps_without_required) {
   ConnectionStringBuilder builder = ConnectionStringBuilder();
   builder.withServer("testServer").withPort(3306);

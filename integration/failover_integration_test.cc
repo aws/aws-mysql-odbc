@@ -81,7 +81,6 @@ protected:
 */
 TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionInvocation) {
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
-
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
@@ -102,12 +101,12 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
 
   // Establish the topology cache so that we can later assert that new connections does not inherit properties from
   // cached connection either before or after failover
-  sprintf(reinterpret_cast<char*>(conn_in), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;LOG_QUERY=1;MULTI_STATEMENTS=0;", dsn, user, pwd, MYSQL_CLUSTER_URL.c_str(), MYSQL_PORT);
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withUID(user).withPWD(pwd).withMultiStatements(0).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 
-  sprintf(reinterpret_cast<char*>(conn_in), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;LOG_QUERY=1;MULTI_STATEMENTS=1;", dsn, user, pwd, MYSQL_CLUSTER_URL.c_str(), MYSQL_PORT);
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withUID(user).withPWD(pwd).withMultiStatements(1).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   SQLHSTMT handle;
   const auto query = AS_SQLCHAR("select @@aurora_server_id; select 1; select 2;");
@@ -134,7 +133,6 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
   SQLSMALLINT len;
-
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Setup tests
@@ -186,7 +184,6 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
   SQLSMALLINT len;
-
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Setup tests
@@ -236,13 +233,11 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
 
 /** Writer fails within a transaction. Open transaction with "START TRANSACTION". */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransaction) {
-  build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+  connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
   SQLSMALLINT len;
-
-  // Connect to writer
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Setup tests
   SQLHSTMT handle;
@@ -289,11 +284,10 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
 
 /* Writer fails within NO transaction. */
 TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
-  build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+  connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Setup tests
   SQLHSTMT handle;
@@ -356,8 +350,11 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   SQLCHAR conn_out[4096];
   SQLSMALLINT len;
 
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), initial_reader_endpoint.c_str(), MYSQL_PROXY_PORT);
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  ConnectionStringBuilder proxied_builder = ConnectionStringBuilder();
+  proxied_builder.withDSN(dsn).withUID(user).withPWD(pwd).withConnectTimeout(10).withNetworkTimeout(10);
+  proxied_builder.withPort(MYSQL_PROXY_PORT).withHostPattern(PROXIED_CLUSTER_TEMPLATE).withLogQuery(true);
+  connection_string = proxied_builder.withServer(initial_reader_endpoint).withAllowReaderConnections(true).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(initial_reader_id);
 
@@ -394,11 +391,10 @@ TEST_F(FailoverIntegrationTest, test_pooledWriterConnection_BasicFailover) {
   EXPECT_EQ(SQL_SUCCESS, SQLSetEnvAttr(NULL, SQL_ATTR_CONNECTION_POOLING, reinterpret_cast<SQLPOINTER>(SQL_CP_ONE_PER_DRIVER), 0));
   EXPECT_EQ(SQL_SUCCESS, SQLSetEnvAttr(env, SQL_ATTR_CP_MATCH, SQL_CP_STRICT_MATCH, 0));
 
-  build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+  connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, nominated_writer_id);
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
