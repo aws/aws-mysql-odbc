@@ -60,6 +60,9 @@ class FailoverIntegrationTest : public BaseFailoverIntegrationTest {
     readers = get_readers(cluster_instances);
     reader_id = get_first_reader_id(cluster_instances);
     reader_endpoint = get_proxied_endpoint(reader_id);
+
+    builder = ConnectionStringBuilder();
+    builder.withPort(MYSQL_PORT).withLogQuery(true);
   }
 
   void TearDown() override {
@@ -77,11 +80,11 @@ class FailoverIntegrationTest : public BaseFailoverIntegrationTest {
 * writer. Driver failover occurs when executing a method against the connection
 */
 TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionInvocation) {
-  build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+  connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
+
   SQLCHAR conn_out[4096];
   SQLSMALLINT len;
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, (SQLCHAR*)connection_string.c_str(), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
@@ -139,12 +142,12 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
 
 /** Writer fails within a transaction. Open transaction with "SET autocommit = 0" */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSqlZero) {
-  build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+  connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
   SQLSMALLINT len;
 
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, (SQLCHAR*)connection_string.c_str(), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Setup tests
   SQLHSTMT handle;
@@ -191,12 +194,12 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
 
 /** Writer fails within a transaction. Open transaction with SQLSetConnectAttr */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFalse) {
-  build_connection_string(conn_in, dsn, user, pwd, writer_endpoint, MYSQL_PORT, db);
+  connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
   SQLSMALLINT len;
 
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, (SQLCHAR*)connection_string.c_str(), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Setup tests
   SQLHSTMT handle;
@@ -414,11 +417,7 @@ TEST_F(FailoverIntegrationTest, test_pooledWriterConnection_BasicFailover) {
   SQLCHAR conn_out[4096], message[SQL_MAX_MESSAGE_LENGTH];
   SQLINTEGER native_error;
   SQLSMALLINT len;
-
-  SQLRETURN rc = SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
-  if ((rc != SQL_SUCCESS) && (rc != SQL_SUCCESS_WITH_INFO)) {
-    FAIL();
-  }
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, nominated_writer_id);
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
