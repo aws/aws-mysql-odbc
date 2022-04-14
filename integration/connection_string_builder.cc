@@ -37,11 +37,12 @@ class ConnectionString {
 
     ConnectionString() : m_dsn(""), m_server(""), m_port(-1),
                          m_uid(""), m_pwd(""), m_db(""), m_log_query(true), m_allow_reader_connections(false),
-                         m_failover_t(-1), m_connect_timeout(-1), m_network_timeout(-1),
+                         m_multi_statements(false), m_failover_t(-1), m_connect_timeout(-1), m_network_timeout(-1),
+                         m_host_pattern(""),
                          
                          is_set_uid(false), is_set_pwd(false), is_set_db(false), is_set_log_query(false),
-                         is_set_allow_reader_connections(false), is_set_failover_t(false),
-                         is_set_connect_timeout(false), is_set_network_timeout(false) {}
+                         is_set_allow_reader_connections(false), is_set_multi_statements(false), is_set_failover_t(false),
+                         is_set_connect_timeout(false), is_set_network_timeout(false), is_set_host_pattern(false) {};
 
     std::string get_connection_string() const {
       char conn_in[4096] = "\0";
@@ -63,6 +64,9 @@ class ConnectionString {
       if (is_set_allow_reader_connections) {
         length += sprintf(conn_in + length, "ALLOW_READER_CONNECTIONS=%d;", m_allow_reader_connections ? 1 : 0); 
       }
+      if (is_set_multi_statements) {
+        length += sprintf(conn_in + length, "MULTI_STATEMENTS=%d;", m_multi_statements ? 1 : 0); 
+      }
       if (is_set_failover_t) {
         length += sprintf(conn_in + length, "FAILOVER_T=%d;", m_failover_t); 
       }
@@ -72,6 +76,9 @@ class ConnectionString {
       if (is_set_network_timeout) {
         length += sprintf(conn_in + length, "NETWORK_TIMEOUT=%d;", m_network_timeout); 
       }
+      if (is_set_host_pattern) {
+        length += sprintf(conn_in + length, "HOST_PATTERN=%s;", m_host_pattern.c_str()); 
+      }
       sprintf(conn_in + length, "\0");
 
       std::string connection_string(conn_in);
@@ -80,28 +87,19 @@ class ConnectionString {
     
   private:
     // Required fields
-    std::string m_server;
+    std::string m_dsn, m_server;
     int m_port;
-    std::string m_dsn;
 
     // Optional fields
-    std::string m_uid;
-    std::string m_pwd;
-    std::string m_db;
-    bool m_log_query;
-    bool m_allow_reader_connections;
-    int m_failover_t;
-    int m_connect_timeout;
-    int m_network_timeout;
+    std::string m_uid, m_pwd, m_db;
+    bool m_log_query, m_allow_reader_connections, m_multi_statements;
+    int m_failover_t, m_connect_timeout, m_network_timeout;
+    std::string m_host_pattern;
 
-    bool is_set_uid;
-    bool is_set_pwd;
-    bool is_set_db;
-    bool is_set_log_query;
-    bool is_set_allow_reader_connections;
-    bool is_set_failover_t;
-    bool is_set_connect_timeout;
-    bool is_set_network_timeout;
+    bool is_set_uid, is_set_pwd, is_set_db;
+    bool is_set_log_query, is_set_allow_reader_connections, is_set_multi_statements;
+    bool is_set_failover_t, is_set_connect_timeout, is_set_network_timeout;
+    bool is_set_host_pattern;
 
     void set_dsn(const std::string& dsn) {
       m_dsn = dsn;
@@ -140,6 +138,11 @@ class ConnectionString {
       is_set_allow_reader_connections = true;
     }
 
+    void set_multi_statements(const bool& multi_statements) {
+      m_multi_statements = multi_statements;
+      is_set_multi_statements = true;
+    }
+
     void set_failover_t(const int& failover_t) {
       m_failover_t = failover_t;
       is_set_failover_t = true;
@@ -153,6 +156,11 @@ class ConnectionString {
     void set_network_timeout(const int& network_timeout) {
       m_network_timeout = network_timeout;
       is_set_network_timeout = true;
+    }
+
+    void set_host_pattern(const std::string& host_pattern) {
+      m_host_pattern = host_pattern;
+      is_set_host_pattern = true;
     }
 };
 
@@ -202,6 +210,11 @@ class ConnectionStringBuilder {
       return *this;
     }
 
+    ConnectionStringBuilder& withMultiStatements(const bool& multi_statements) {
+      connection_string->set_multi_statements(multi_statements);
+      return *this;
+    }
+
     ConnectionStringBuilder& withFailoverT(const int& failover_t) {
       connection_string->set_failover_t(failover_t);
       return *this;
@@ -214,6 +227,11 @@ class ConnectionStringBuilder {
 
     ConnectionStringBuilder& withNetworkTimeout(const int& network_timeout) {
       connection_string->set_network_timeout(network_timeout);
+      return *this;
+    }
+
+    ConnectionStringBuilder& withHostPattern(const std::string& host_pattern) {
+      connection_string->set_host_pattern(host_pattern);
       return *this;
     }
 
@@ -232,5 +250,4 @@ class ConnectionStringBuilder {
     
   private:
     std::unique_ptr<ConnectionString> connection_string;
-
 };
