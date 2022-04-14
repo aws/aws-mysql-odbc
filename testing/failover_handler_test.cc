@@ -83,10 +83,6 @@ class FailoverHandlerTest : public testing::Test {
         }
         if (SQL_NULL_HENV != env) {
             SQLFreeHandle(SQL_HANDLE_ENV, env);
-            #ifndef _UNIX_
-                // Needed to free memory on Windows
-                myodbc_end();
-            #endif
         }
         if (nullptr != dbc) {
             dbc = nullptr;
