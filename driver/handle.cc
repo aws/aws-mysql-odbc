@@ -162,7 +162,10 @@ SQLRETURN SQL_API my_SQLAllocEnv(SQLHENV *phenv)
   ENV *env;
 
   std::lock_guard<std::mutex> env_guard(g_lock);
-  myodbc_init(); // This will call mysql_library_init()
+#ifndef _UNIX_
+#else
+  myodbc_init();  // This will call mysql_library_init()
+#endif /* _UNIX_ */
 
 #ifndef USE_IODBC
     env = new ENV(SQL_OV_ODBC3_80);
