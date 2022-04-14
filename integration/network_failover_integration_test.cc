@@ -65,6 +65,10 @@ protected:
     readers = get_readers(cluster_instances);
     reader_id = get_first_reader_id(cluster_instances);
     reader_endpoint = get_proxied_endpoint(reader_id);
+
+    builder = ConnectionStringBuilder();
+    builder.withDSN(dsn).withUID(user).withPWD(pwd).withConnectTimeout(10).withNetworkTimeout(10);
+    builder.withPort(MYSQL_PROXY_PORT).withHostPattern(PROXIED_CLUSTER_TEMPLATE).withLogQuery(true);
   }
 
   void TearDown() override {
@@ -88,10 +92,8 @@ TEST_F(NetworkFailoverIntegrationTest, connection_test) {
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
   const std::string server = get_proxied_endpoint(writer_id);
-
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, GLOBAL_FAILOVER_TIMEOUT);
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withServer(server).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   assert_query_succeeded(dbc, SERVER_ID_QUERY);
 
@@ -110,9 +112,8 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT);
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withServer(reader_endpoint).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (const auto& x : proxy_map) {
     if (x.first != writer_id) {
@@ -128,9 +129,8 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT);
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withServer(reader_endpoint).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(reader_id);
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
@@ -141,9 +141,8 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_read_only) {
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT);
-
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withServer(reader_endpoint).withAllowReaderConnections(true).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(reader_id);
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
@@ -157,8 +156,8 @@ TEST_F(NetworkFailoverIntegrationTest, writer_connection_fails_due_to_no_reader)
   const char* writer_char_id = writer_id.c_str();
   const std::string server = MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX;
 
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, GLOBAL_FAILOVER_TIMEOUT);
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withServer(server).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Put all but writer down first
   for (const auto& x : proxy_map) {
@@ -181,8 +180,8 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
   // Assert there are at least 2 readers in the cluster.
   EXPECT_LE(2, readers.size());
 
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT, GLOBAL_FAILOVER_TIMEOUT);
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withServer(reader_endpoint).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).withAllowReaderConnections(true).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (size_t index = 0; index < readers.size() - 1; ++index) {
     disable_instance(readers[index]);
@@ -208,8 +207,8 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   const std::string server = get_proxied_endpoint(first_reader);
   previous_readers.push_back(first_reader);
 
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, GLOBAL_FAILOVER_TIMEOUT);
-  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  connection_string = builder.withServer(server).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).withAllowReaderConnections(true).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(first_reader);
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
