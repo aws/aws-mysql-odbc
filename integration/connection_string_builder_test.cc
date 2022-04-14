@@ -123,3 +123,23 @@ TEST_F(ConnectionStringBuilderTest, test_setting_boolean_fields) {
   const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;");
   EXPECT_EQ(0, expected.compare(connection_string));
 }
+
+// Create a builder with some values. Then append more values to the builder. Then build the connection string. Build will succeed.
+TEST_F(ConnectionStringBuilderTest, test_setting_multiple_steps) {
+  ConnectionStringBuilder builder = ConnectionStringBuilder();
+  builder.withDSN("testDSN").withServer("testServer").withPort(3306);
+
+  builder.withUID("testUser").withPWD("testPwd").withLogQuery(true);
+  const std::string connection_string = builder.build();
+
+  const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=1;");
+  EXPECT_EQ(0, expected.compare(connection_string));
+}
+
+// Create a builder with some values. Then append more values to the builder, leaving required values unset. Then build the connection string.
+// Build will fail.
+TEST_F(ConnectionStringBuilderTest, test_multiple_steps_without_required) {
+  ConnectionStringBuilder builder = ConnectionStringBuilder();
+  builder.withServer("testServer").withPort(3306);
+  EXPECT_THROW(builder.withUID("testUser").withPWD("testPwd").withLogQuery(true).build(), std::runtime_error);
+}

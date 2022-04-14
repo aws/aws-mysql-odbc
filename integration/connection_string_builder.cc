@@ -236,4 +236,3 @@ class ConnectionStringBuilder {
     std::unique_ptr<ConnectionString> connection_string;
 
 };
-
