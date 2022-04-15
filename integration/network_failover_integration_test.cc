@@ -27,7 +27,7 @@
 #include "base_failover_integration_test.cc"
 
 class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
- protected:
+protected:
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
   std::string SESSION_TOKEN = std::getenv("AWS_SESSION_TOKEN");
@@ -36,8 +36,8 @@ class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
                                                                     Aws::String(SESSION_TOKEN));
   Aws::Client::ClientConfiguration client_config;
   Aws::RDS::RDSClient rds_client;
-  SQLHENV env;
-  SQLHDBC dbc;
+  SQLHENV env = nullptr;
+  SQLHDBC dbc = nullptr;
 
   static void SetUpTestSuite() {
     Aws::InitAPI(options);
@@ -52,7 +52,6 @@ class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
-    Aws::Client::ClientConfiguration client_config;
     client_config.region = "us-east-2";
     rds_client = Aws::RDS::RDSClient(credentials, client_config);
 
@@ -68,7 +67,7 @@ class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
     reader_endpoint = get_proxied_endpoint(reader_id);
   }
 
-  void TearDown() {
+  void TearDown() override {
     if (nullptr != dbc) {
       SQLFreeHandle(SQL_HANDLE_DBC, dbc);
     }
@@ -90,7 +89,7 @@ TEST_F(NetworkFailoverIntegrationTest, connection_test) {
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
   const std::string server = get_proxied_endpoint(writer_id);
 
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, 120000);
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, GLOBAL_FAILOVER_TIMEOUT);
 
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
@@ -158,7 +157,7 @@ TEST_F(NetworkFailoverIntegrationTest, writer_connection_fails_due_to_no_reader)
   const char* writer_char_id = writer_id.c_str();
   const std::string server = MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX;
 
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, 120000);
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, GLOBAL_FAILOVER_TIMEOUT);
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Put all but writer down first
@@ -182,7 +181,7 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
   // Assert there are at least 2 readers in the cluster.
   EXPECT_LE(2, readers.size());
 
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT, 120000);
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), reader_endpoint.c_str(), MYSQL_PROXY_PORT, GLOBAL_FAILOVER_TIMEOUT);
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (size_t index = 0; index < readers.size() - 1; ++index) {
@@ -209,7 +208,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   const std::string server = get_proxied_endpoint(first_reader);
   previous_readers.push_back(first_reader);
 
-  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, 120000);
+  sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;FAILOVER_T=%d;ALLOW_READER_CONNECTIONS=1;", get_default_proxied_config().c_str(), server.c_str(), MYSQL_PROXY_PORT, GLOBAL_FAILOVER_TIMEOUT);
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(first_reader);

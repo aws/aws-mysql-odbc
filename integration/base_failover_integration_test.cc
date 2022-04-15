@@ -39,6 +39,8 @@
 #include <aws/rds/model/FailoverDBClusterRequest.h>
 
 #include <gtest/gtest.h>
+#include <cassert>
+#include <climits>
 #include <cstdlib>
 #include <stdexcept>
 #include <sql.h>
@@ -48,6 +50,15 @@
 
 #define MAX_NAME_LEN 4096
 #define SQL_MAX_MESSAGE_LENGTH 512
+
+#define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
+
+static int str_to_int(const char* str) {
+    const long int x = strtol(str, nullptr, 10);
+    assert(x <= INT_MAX);
+    assert(x >= INT_MIN);
+    return static_cast<int>(x);
+}
 
 static std::string DOWN_STREAM_STR = "DOWNSTREAM";
 static std::string UP_STREAM_STR = "UPSTREAM";
@@ -74,16 +85,18 @@ protected:
   std::string PROXIED_CLUSTER_TEMPLATE = std::getenv("PROXIED_CLUSTER_TEMPLATE");
   std::string DB_CONN_STR_SUFFIX = std::getenv("DB_CONN_STR_SUFFIX");
 
-  int MYSQL_PORT = atoi(std::getenv("MYSQL_PORT"));
-  int MYSQL_PROXY_PORT = atoi(std::getenv("MYSQL_PROXY_PORT"));
+  int MYSQL_PORT = str_to_int(std::getenv("MYSQL_PORT"));
+  int MYSQL_PROXY_PORT = str_to_int(std::getenv("MYSQL_PROXY_PORT"));
   Aws::String cluster_id = MYSQL_CLUSTER_URL.substr(0, MYSQL_CLUSTER_URL.find('.'));
+
+  static const int GLOBAL_FAILOVER_TIMEOUT = 120000;
 
   ConnectionStringBuilder builder;
   std::string connection_string;
 
-  SQLCHAR conn_in[4096], conn_out[4096], sqlstate[6], message[SQL_MAX_MESSAGE_LENGTH];
-  SQLINTEGER native_error;
-  SQLSMALLINT len, length;
+  SQLCHAR conn_in[4096] = "\0", conn_out[4096] = "\0", sqlstate[6] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
+  SQLINTEGER native_error = 0;
+  SQLSMALLINT len = 0, length = 0;
 
   std::string TOXIPROXY_INSTANCE_1_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_1_NETWORK_ALIAS");
   std::string TOXIPROXY_INSTANCE_2_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_2_NETWORK_ALIAS");
@@ -109,13 +122,15 @@ protected:
   TOXIPROXY::PROXY* proxy_cluster = get_proxy(toxiproxy_cluster, MYSQL_CLUSTER_URL, MYSQL_PORT);
   TOXIPROXY::PROXY* proxy_read_only_cluster = get_proxy(toxiproxy_read_only_cluster, MYSQL_RO_CLUSTER_URL, MYSQL_PORT);
 
-  std::map<std::string, TOXIPROXY::PROXY*> proxy_map = {{MYSQL_INSTANCE_1_URL.substr(0, MYSQL_INSTANCE_1_URL.find('.')), proxy_instance_1},
-                                             {MYSQL_INSTANCE_2_URL.substr(0, MYSQL_INSTANCE_2_URL.find('.')), proxy_instance_2},
-                                             {MYSQL_INSTANCE_3_URL.substr(0, MYSQL_INSTANCE_3_URL.find('.')), proxy_instance_3},
-                                             {MYSQL_INSTANCE_4_URL.substr(0, MYSQL_INSTANCE_4_URL.find('.')), proxy_instance_4},
-                                             {MYSQL_INSTANCE_5_URL.substr(0, MYSQL_INSTANCE_5_URL.find('.')), proxy_instance_5},
-                                             {MYSQL_CLUSTER_URL, proxy_cluster},
-                                             {MYSQL_RO_CLUSTER_URL, proxy_read_only_cluster}};
+  std::map<std::string, TOXIPROXY::PROXY*> proxy_map = {
+    {MYSQL_INSTANCE_1_URL.substr(0, MYSQL_INSTANCE_1_URL.find('.')), proxy_instance_1},
+    {MYSQL_INSTANCE_2_URL.substr(0, MYSQL_INSTANCE_2_URL.find('.')), proxy_instance_2},
+    {MYSQL_INSTANCE_3_URL.substr(0, MYSQL_INSTANCE_3_URL.find('.')), proxy_instance_3},
+    {MYSQL_INSTANCE_4_URL.substr(0, MYSQL_INSTANCE_4_URL.find('.')), proxy_instance_4},
+    {MYSQL_INSTANCE_5_URL.substr(0, MYSQL_INSTANCE_5_URL.find('.')), proxy_instance_5},
+    {MYSQL_CLUSTER_URL, proxy_cluster},
+    {MYSQL_RO_CLUSTER_URL, proxy_read_only_cluster}
+  };
 
   std::vector<std::string> cluster_instances;
   std::string writer_id;
@@ -125,7 +140,7 @@ protected:
   std::string reader_endpoint;
 
   // Queries
-  SQLCHAR* SERVER_ID_QUERY = (SQLCHAR*)"SELECT @@aurora_server_id";
+  SQLCHAR* SERVER_ID_QUERY = AS_SQLCHAR("SELECT @@aurora_server_id");
 
   // Error codes
   const std::string ERROR_COMM_LINK_FAILURE = "08S01";
@@ -134,64 +149,67 @@ protected:
 
   // Helper functions
 
-  std::string get_endpoint(const std::string instance_id) const {
+  std::string get_endpoint(const std::string& instance_id) const {
     return instance_id + DB_CONN_STR_SUFFIX;
   }
 
-  std::string get_proxied_endpoint(const std::string instance_id) const {
+  std::string get_proxied_endpoint(const std::string& instance_id) const {
     return instance_id + DB_CONN_STR_SUFFIX + PROXIED_DOMAIN_NAME_SUFFIX;
   }
 
-  std::string get_writer_id(std::vector<std::string> instances) {
+  static std::string get_writer_id(std::vector<std::string> instances) {
     if (instances.empty()) {
       throw std::runtime_error("The input cluster topology is empty.");
     }
     return instances[0];
   }
 
-  std::vector<std::string> get_readers(std::vector<std::string> instances) {
+  static std::vector<std::string> get_readers(std::vector<std::string> instances) {
+    if (instances.size() < 2) {
+      throw std::runtime_error("The input cluster topology does not contain a reader.");
+    }
     const std::vector<std::string>::const_iterator first_reader = instances.begin() + 1;
     const std::vector<std::string>::const_iterator last_reader = instances.end();
-    std::vector<std::string> readers(first_reader, last_reader);
-    return readers;
+    std::vector<std::string> readers_list(first_reader, last_reader);
+    return readers_list;
   }
 
-  std::string get_first_reader_id(std::vector<std::string> instances) {
-    if (instances.empty()) {
-      throw std::runtime_error("The input cluster topology is empty.");
+  static std::string get_first_reader_id(std::vector<std::string> instances) {
+    if (instances.size() < 2) {
+      throw std::runtime_error("The input cluster topology does not contain a reader.");
     }
     return instances[1];
   }
 
-  void assert_query_succeeded(SQLHDBC dbc, SQLCHAR* query) const {
+  void assert_query_succeeded(const SQLHDBC dbc, SQLCHAR* query) const {
     SQLHSTMT handle;
     EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
     EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
     EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
   }
 
-  void assert_query_failed(SQLHDBC dbc, SQLCHAR* query, const std::string expected_error) const {
+  void assert_query_failed(const SQLHDBC dbc, SQLCHAR* query, const std::string& expected_error) const {
     SQLHSTMT handle;
     SQLSMALLINT stmt_length;
-    SQLINTEGER native_error;
-    SQLCHAR message[SQL_MAX_MESSAGE_LENGTH], sqlstate[6];
+    SQLINTEGER native_err;
+    SQLCHAR msg[SQL_MAX_MESSAGE_LENGTH] = "\0", state[6] = "\0";
 
     EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
     EXPECT_EQ(SQL_ERROR, SQLExecDirect(handle, query, SQL_NTS));
-    EXPECT_EQ(SQL_SUCCESS, SQLError(nullptr, nullptr, handle, sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
-    const std::string state = (char*)sqlstate;
-    EXPECT_EQ(expected_error, state);
+    EXPECT_EQ(SQL_SUCCESS, SQLError(nullptr, nullptr, handle, state, &native_err, msg, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+    const std::string state_str = reinterpret_cast<char*>(state);
+    EXPECT_EQ(expected_error, state_str);
     EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
   }
 
   // Helper functions from integration tests
 
-  void build_connection_string(SQLCHAR* conn_in, char* dsn, char* user, char* pwd, std::string server, int port, char* db) {
+  static void build_connection_string(SQLCHAR* conn_in, char* dsn, char* user, char* pwd, const std::string& server, const int port, char* db) {
     sprintf(reinterpret_cast<char*>(conn_in), "DSN=%s;UID=%s;PWD=%s;SERVER=%s;PORT=%d;DATABASE=%s;LOG_QUERY=1;", dsn, user, pwd, server.c_str(), port, db);
   }
 
-  std::string query_instance_id(SQLHDBC dbc) const {
-    SQLCHAR buf[255];
+  std::string query_instance_id(const SQLHDBC dbc) const {
+    SQLCHAR buf[255] = "\0";
     SQLLEN buflen;
     SQLHSTMT handle;
     EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
@@ -199,11 +217,11 @@ protected:
     EXPECT_EQ(SQL_SUCCESS, SQLFetch(handle));
     EXPECT_EQ(SQL_SUCCESS, SQLGetData(handle, 1, SQL_CHAR, buf, sizeof(buf), &buflen));
     EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
-    std::string id((const char*)buf);
+    std::string id(reinterpret_cast<char*>(buf));
     return id;
   }
 
-  std::vector<std::string> retrieve_topology_via_SDK(Aws::RDS::RDSClient client, Aws::String cluster_id) {
+  static std::vector<std::string> retrieve_topology_via_SDK(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     std::vector<std::string> instances;
 
     std::string writer;
@@ -216,7 +234,7 @@ protected:
     if (!outcome.IsSuccess()) {
       return instances;
     }
- 
+
     const auto result = outcome.GetResult();
     const Aws::RDS::Model::DBCluster cluster = result.GetDBClusters()[0];
 
@@ -236,7 +254,7 @@ protected:
     return instances;
   }
 
-  Aws::RDS::Model::DBCluster get_DB_cluster(Aws::RDS::RDSClient client, Aws::String cluster_id) {
+  static Aws::RDS::Model::DBCluster get_DB_cluster(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     Aws::RDS::Model::DescribeDBClustersRequest rds_req;
     rds_req.WithDBClusterIdentifier(cluster_id);
     auto outcome = client.DescribeDBClusters(rds_req);
@@ -244,7 +262,7 @@ protected:
     return result.GetDBClusters().at(0);
   }
 
-  void wait_until_cluster_has_right_state(Aws::RDS::RDSClient client, Aws::String cluster_id) {
+  static void wait_until_cluster_has_right_state(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     Aws::String status = get_DB_cluster(client, cluster_id).GetStatus();
 
     while (status != "available") {
@@ -253,7 +271,7 @@ protected:
     }
   }
 
-  Aws::RDS::Model::DBClusterMember get_DB_cluster_writer_instance(Aws::RDS::RDSClient client, Aws::String cluster_id) {
+  static Aws::RDS::Model::DBClusterMember get_DB_cluster_writer_instance(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     Aws::RDS::Model::DBClusterMember instance;
     const Aws::RDS::Model::DBCluster cluster = get_DB_cluster(client, cluster_id);
     for (const auto& member : cluster.GetDBClusterMembers()) {
@@ -264,11 +282,12 @@ protected:
     return instance;
   }
 
-  Aws::String get_DB_cluster_writer_instance_id(Aws::RDS::RDSClient client, Aws::String cluster_id) {
+  static Aws::String get_DB_cluster_writer_instance_id(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     return get_DB_cluster_writer_instance(client, cluster_id).GetDBInstanceIdentifier();
   }
 
-  void wait_until_writer_instance_changed(Aws::RDS::RDSClient client, Aws::String cluster_id, Aws::String initial_writer_instance_id) {
+  static void wait_until_writer_instance_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id,
+                      const Aws::String& initial_writer_instance_id) {
     Aws::String next_cluster_writer_id = get_DB_cluster_writer_instance_id(client, cluster_id);
     while (initial_writer_instance_id == next_cluster_writer_id) {
       std::this_thread::sleep_for(std::chrono::seconds(3));
@@ -276,7 +295,7 @@ protected:
     }
   }
 
-  void failover_cluster(Aws::RDS::RDSClient client, Aws::String cluster_id, Aws::String target_instance_id = "") {
+  static void failover_cluster(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, const Aws::String& target_instance_id = "") {
     wait_until_cluster_has_right_state(client, cluster_id);
     Aws::RDS::Model::FailoverDBClusterRequest rds_req;
     rds_req.WithDBClusterIdentifier(cluster_id);
@@ -286,12 +305,15 @@ protected:
     auto outcome = client.FailoverDBCluster(rds_req);
   }
 
-  void failover_cluster_and_wait_until_writer_changed(Aws::RDS::RDSClient client, Aws::String cluster_id, Aws::String cluster_writer_id, Aws::String target_writer_id = "") {
+  static void failover_cluster_and_wait_until_writer_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id,
+                            const Aws::String& cluster_writer_id,
+                            const Aws::String& target_writer_id = "") {
     failover_cluster(client, cluster_id, target_writer_id);
     wait_until_writer_instance_changed(client, cluster_id, cluster_writer_id);
   }
 
-  Aws::RDS::Model::DBClusterMember get_matched_DBClusterMember(Aws::RDS::RDSClient client, Aws::String cluster_id, Aws::String instance_id) {
+  static Aws::RDS::Model::DBClusterMember get_matched_DBClusterMember(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id,
+                                 const Aws::String& instance_id) {
     Aws::RDS::Model::DBClusterMember instance;
     const Aws::RDS::Model::DBCluster cluster = get_DB_cluster(client, cluster_id);
     for (const auto& member : cluster.GetDBClusterMembers()) {
@@ -303,18 +325,17 @@ protected:
     return instance;
   }
 
-  bool is_DB_instance_writer(Aws::RDS::RDSClient client, Aws::String cluster_id, Aws::String instance_id) {
+  static bool is_DB_instance_writer(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, const Aws::String& instance_id) {
     return get_matched_DBClusterMember(client, cluster_id, instance_id).GetIsClusterWriter();
   }
 
-  bool is_DB_instance_reader(Aws::RDS::RDSClient client, Aws::String cluster_id, Aws::String instance_id) {
+  static bool is_DB_instance_reader(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, const Aws::String& instance_id) {
     return !get_matched_DBClusterMember(client, cluster_id, instance_id).GetIsClusterWriter();
   }
 
-  int query_count_table_rows(SQLHSTMT handle, const char* table_name, int id = -1) {
+  static int query_count_table_rows(const SQLHSTMT handle, const char* table_name, const int id = -1) {
     EXPECT_FALSE(table_name[0] == '\0');
 
-    //TODO Investigate how to use Prepared Statements to protect against SQL injection
     char select_count_query[256];
     if (id == -1) {
       sprintf(select_count_query, "SELECT count(*) FROM %s", table_name);
@@ -322,8 +343,8 @@ protected:
       sprintf(select_count_query, "SELECT count(*) FROM %s WHERE id = %d", table_name, id);
     }
 
-    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, (SQLCHAR*)select_count_query, SQL_NTS));    
-    auto rc = SQLFetch(handle);
+    EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, AS_SQLCHAR(select_count_query), SQL_NTS));
+    const auto rc = SQLFetch(handle);
 
     SQLINTEGER buf = -1;
     SQLLEN buflen;
@@ -336,7 +357,7 @@ protected:
 
   // Helper functions from network integration tests
 
-  TOXIPROXY::PROXY* get_proxy(TOXIPROXY::TOXIPROXY_CLIENT* client, const std::string& host, int port) const {
+  static TOXIPROXY::PROXY* get_proxy(TOXIPROXY::TOXIPROXY_CLIENT* client, const std::string& host, const int port) {
     const std::string upstream = host + ":" + std::to_string(port);
     return client->get_proxy(upstream);
   }
@@ -349,20 +370,20 @@ protected:
     return nullptr;
   }
 
-  bool is_db_instance_writer(const std::string instance) {
-    return (writer_id == instance);
+  bool is_db_instance_writer(const std::string& instance) const {
+    return writer_id == instance;
   }
 
-  bool is_db_instance_reader(const std::string instance) {
-    for (const auto& reader_id : readers) {
-      if (reader_id == instance) {
+  bool is_db_instance_reader(const std::string& instance) const {
+    for (const auto& reader : readers) {
+      if (reader == instance) {
         return true;
       }
     }
     return false;
   }
 
-  void disable_instance(const std::string instance) {
+  void disable_instance(const std::string& instance) {
     TOXIPROXY::PROXY* new_instance = get_proxy_from_map(instance);
     if (new_instance) {
       disable_connectivity(new_instance);
@@ -371,7 +392,7 @@ protected:
     }
   }
 
-  void disable_connectivity(const TOXIPROXY::PROXY* proxy) {
+  static void disable_connectivity(const TOXIPROXY::PROXY* proxy) {
     const auto toxics = proxy->get_toxics();
     if (toxics) {
       toxics->bandwidth(DOWN_STREAM_STR, TOXIPROXY::TOXIC_DIRECTION::DOWNSTREAM, 0);
@@ -379,7 +400,7 @@ protected:
     }
   }
 
-  void enable_instance(const std::string instance) {
+  void enable_instance(const std::string& instance) {
     TOXIPROXY::PROXY* new_instance = get_proxy_from_map(instance);
     if (new_instance) {
       enable_connectivity(new_instance);
@@ -388,7 +409,7 @@ protected:
     }
   }
 
-  void enable_connectivity(const TOXIPROXY::PROXY* proxy) {
+  static void enable_connectivity(const TOXIPROXY::PROXY* proxy) {
     TOXIPROXY::TOXIC_LIST* toxics = proxy->get_toxics();
 
     if (toxics) {
@@ -404,7 +425,7 @@ protected:
     }
   }
 
-  std::string get_default_config(int connect_timeout = 10, int network_timeout = 10) const {
+  std::string get_default_config(const int connect_timeout = 10, const int network_timeout = 10) const {
     char template_connection[4096];
     sprintf(template_connection, "DSN=%s;UID=%s;PWD=%s;LOG_QUERY=1;CONNECT_TIMEOUT=%d;NETWORK_TIMEOUT=%d;", dsn, user, pwd, connect_timeout, network_timeout);
     std::string config(template_connection);
@@ -418,20 +439,20 @@ protected:
     return config;
   }
 
-  void test_connection(SQLHDBC dbc, const std::string test_server, int test_port) {
+  void test_connection(const SQLHDBC dbc, const std::string& test_server, const int test_port) {
     sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), test_server.c_str(), test_port);
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
     EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
   }
 
-  void assert_is_new_reader(std::vector<std::string> old_readers, std::string new_reader) const {
+  static void assert_is_new_reader(const std::vector<std::string>& old_readers, const std::string& new_reader) {
     for (const auto& reader : old_readers) {
       EXPECT_NE(reader, new_reader);
     }
   }
 
 public:
-  ~BaseFailoverIntegrationTest() {
+  ~BaseFailoverIntegrationTest() override {
     delete toxiproxy_client_instance_1;
     delete toxiproxy_client_instance_2;
     delete toxiproxy_client_instance_3;
