@@ -24,8 +24,6 @@
  *
  */
 
-#include <cstdlib>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <memory>
@@ -43,9 +41,9 @@ class ConnectionString {
                          
                          is_set_uid(false), is_set_pwd(false), is_set_db(false), is_set_log_query(false),
                          is_set_allow_reader_connections(false), is_set_failover_t(false),
-                         is_set_connect_timeout(false), is_set_network_timeout(false) {};
+                         is_set_connect_timeout(false), is_set_network_timeout(false) {}
 
-    std::string get_connection_string() {
+    std::string get_connection_string() const {
       char conn_in[4096] = "\0";
       int length = 0;
       length += sprintf(conn_in, "DSN=%s;SERVER=%s;PORT=%d;", m_dsn.c_str(), m_server.c_str(), m_port);
@@ -74,7 +72,7 @@ class ConnectionString {
       if (is_set_network_timeout) {
         length += sprintf(conn_in + length, "NETWORK_TIMEOUT=%d;", m_network_timeout); 
       }
-      length += sprintf(conn_in + length, "\0");
+      sprintf(conn_in + length, "\0");
 
       std::string connection_string(conn_in);
       return connection_string;
@@ -219,7 +217,7 @@ class ConnectionStringBuilder {
       return *this;
     }
 
-    std::string build() {
+    std::string build() const {
       if (connection_string->m_dsn.empty()) {
         throw std::runtime_error("DSN is a required field in a connection string.");
       }
