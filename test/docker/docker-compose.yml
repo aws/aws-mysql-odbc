@@ -1,6 +1,6 @@
 services:
   mysql-odbc-test:
-    image: mysql:8.0.24
+    image: mysql:8.0.25
     container_name: myodbc-test
     restart: on-failure
     ports:
