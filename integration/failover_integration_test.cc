@@ -101,11 +101,11 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
 
   // Establish the topology cache so that we can later assert that new connections does not inherit properties from
   // cached connection either before or after failover
-  connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withUID(user).withPWD(pwd).withMultiStatements(0).build();
+  connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withMultiStatements(0).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 
-  connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withUID(user).withPWD(pwd).withMultiStatements(1).build();
+  connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withMultiStatements(1).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   SQLHSTMT handle;
