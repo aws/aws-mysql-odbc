@@ -72,7 +72,7 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "Comments", "provides core driver functionality\0"
-            VALUE "CompanyName", "Oracle Corporation\0"
+            VALUE "CompanyName", "Amazon.com Inc. or affiliates.\0"
 	          VALUE "FileDescription", "MySQL ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ @DRIVER_TYPE@ Driver\0"
             VALUE "FileVersion", MYODBC_STRFILEVER
             VALUE "InternalName", "myodbc8@CONNECTOR_DRIVER_TYPE_SHORT@\0"
