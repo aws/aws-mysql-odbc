@@ -69,7 +69,7 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "Comments", "provides setup library functionality\0"
-            VALUE "CompanyName", "Oracle Corporation\0"
+            VALUE "CompanyName", "Amazon.com Inc. or affiliates.\0"
             VALUE "FileDescription", "MySQL ODBC 8.0 Driver Setup Library\0"
             VALUE "FileVersion", MYODBC_STRFILEVER
             VALUE "InternalName", "myodbc8S\0"
