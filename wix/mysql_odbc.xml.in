@@ -71,9 +71,9 @@
       Upgrade Information
     -->
 
-    <Upgrade Id="FF073FBB-32E2-4052-B6B2-830C5ED4A809">
+    <Upgrade Id="5c230eb8-12f8-47bf-be2f-cd043ea2acb4">
       <!-- !!!SetVersion updates: Minimum, Maximum -->
-      <UpgradeVersion Property="PREVIOUSVERSIONINSTALLED" Minimum="5.0.999" Maximum="$(var.odbc_ver_prev)" IncludeMaximum="yes"
+      <UpgradeVersion Property="PREVIOUSVERSIONINSTALLED" Minimum="0.0.0" Maximum="$(var.odbc_ver_prev)" IncludeMaximum="yes"
         IncludeMinimum="yes"  />
       <!-- !!!SetVersion updates: Minimum, Maximum -->
       <UpgradeVersion Property="NEWERPRODUCTFOUND" Minimum="$(var.odbc_ver_long)" Maximum="$(var.odbc_ver_short).999" OnlyDetect="yes"
