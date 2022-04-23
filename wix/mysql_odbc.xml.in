@@ -209,9 +209,9 @@
       <DirectoryRef Id="ProgramFilesFolder">
       <Component Id="RegKeys" Guid="AECCA4A7-9405-466A-8393-4F0876DCD21A" DiskId="1">
     <?endif ?>
-        <RegistryKey Id="MysqlKey" Root="HKLM" Key="SOFTWARE\MySQL AB\[ProductName]"
+        <RegistryKey Id="AwsMysqlKey" Root="HKLM" Key="SOFTWARE\Amazon\[ProductName]"
                   Action="createAndRemoveOnUninstall"/>
-        <RegistryValue Id="Version" Root="HKLM" Key="SOFTWARE\MySQL AB\[ProductName]"
+        <RegistryValue Id="Version" Root="HKLM" Key="SOFTWARE\Amazon\[ProductName]"
                   Name="Version" Type="string" Value="[ProductVersion]"/>
     <!--Need these to make candle happy -->
     <?if $(var.odbc_64bit) = 1 ?>
