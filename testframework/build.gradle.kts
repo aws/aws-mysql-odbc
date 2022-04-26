@@ -27,7 +27,7 @@ tasks.register<Test>("test-failover") {
 }
 
 tasks.register<Test>("test-community") {
-    filter.includeTestsMatching("host.IntegrationContainerTest.testRunTestInContainer")
+    filter.includeTestsMatching("host.IntegrationContainerTest.testRunCommunityTestInContainer")
 }
 
 tasks.withType<Test> {
