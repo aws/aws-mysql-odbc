@@ -249,9 +249,9 @@ public class AuroraTestUtility {
     final AuthorizeSecurityGroupIngressRequest authRequest = new AuthorizeSecurityGroupIngressRequest()
         .withGroupName(dbSecGroup)
         .withCidrIp(ipAddress + "/32")
-        .withIpProtocol("-1") // All protocols
-        .withFromPort(0) // For all ports
-        .withToPort(65535);
+        .withIpProtocol("TCP") // All protocols
+        .withFromPort(3306) // For all ports
+        .withToPort(3306);
 
     try {
       ec2Client.authorizeSecurityGroupIngress(authRequest);
@@ -274,9 +274,9 @@ public class AuroraTestUtility {
     final RevokeSecurityGroupIngressRequest revokeRequest = new RevokeSecurityGroupIngressRequest()
         .withGroupName(dbSecGroup)
         .withCidrIp(ipAddress + "/32")
-        .withIpProtocol("-1") // All protocols
-        .withFromPort(0) // For all ports
-        .withToPort(65535);
+        .withIpProtocol("TCP") // All protocols
+        .withFromPort(3306) // For all ports
+        .withToPort(3306);
 
     try {
       ec2Client.revokeSecurityGroupIngress(revokeRequest);
