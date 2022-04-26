@@ -157,7 +157,7 @@ public class ContainerHelper {
   }
 
   public static GenericContainer<?> createMysqlContainer(Network network) {
-    return new GenericContainer<>("mysql:8.0.25")
+    return new GenericContainer<>("mysql:8.0.27")
         .withNetwork(network)
         .withNetworkAliases("mysql-instance")
         .withEnv("MYSQL_ROOT_PASSWORD", "root")
