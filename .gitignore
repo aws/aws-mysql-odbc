@@ -1,4 +1,5 @@
 ﻿# Build artifacts
+build/
 bin/
 lib/
 out/
