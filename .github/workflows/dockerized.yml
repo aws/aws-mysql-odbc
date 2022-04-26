@@ -151,6 +151,20 @@ jobs:
           AWS_SESSION_TOKEN: ${{ env.TEMP_AWS_SESSION_TOKEN }}
           DRIVER_PATH: ${{ github.workspace }}/build
 
+      - name: 'Get Github Action IP'
+        id: ip
+        uses: haythem/public-ip@v1.2
+        
+      - name: 'Remove Github Action IP'
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-name default \
+            --protocol tcp \
+            --port 3306 \
+            --cidr ${{ steps.ip.outputs.ipv4 }}/32 \
+          2>&1 > /dev/null;
+
       - name: 'Display and save log'
         if: always()
         working-directory: ${{ github.workspace }}/build
