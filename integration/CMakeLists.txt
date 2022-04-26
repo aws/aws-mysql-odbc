@@ -86,14 +86,18 @@ FetchContent_MakeAvailable(googletest toxiproxy awssdk)
 
 enable_testing()
 
-# Ordering matters, test will run in order of top to bottom
+set(TEST_SOURCES connection_string_builder.cc base_failover_integration_test.cc connection_string_builder_test.cc)
+set(INTEGRATION_TESTS network_failover_integration_test.cc failover_integration_test.cc)
+
+if(NOT ENABLE_PERFORMANCE_TESTS)
+  set(TEST_SOURCES ${TEST_SOURCES} ${INTEGRATION_TESTS})
+else()
+  set(TEST_SOURCES ${TEST_SOURCES} failover_performance_test.cc)
+endif()
+
 add_executable(
   integration
-  connection_string_builder.cc
-  connection_string_builder_test.cc
-  base_failover_integration_test.cc
-  network_failover_integration_test.cc
-  failover_integration_test.cc
+  ${TEST_SOURCES}
 )
 
 include(GoogleTest)

@@ -97,10 +97,8 @@ public class ContainerHelper {
         .withFileSystemBind(driverPath, "/app", BindMode.READ_WRITE)
         .withPrivilegedMode(true) // it's needed to control Linux core settings like TcpKeepAlive
         .withCopyFileToContainer(MountableFile.forHostPath("./gradlew"), "app/gradlew")
-        .withCopyFileToContainer(MountableFile.forHostPath("./gradle.properties"),
-            "app/gradle.properties")
-        .withCopyFileToContainer(MountableFile.forHostPath("./build.gradle.kts"),
-            "app/build.gradle.kts")
+        .withCopyFileToContainer(MountableFile.forHostPath("./gradle.properties"), "app/gradle.properties")
+        .withCopyFileToContainer(MountableFile.forHostPath("./build.gradle.kts"), "app/build.gradle.kts")
         .withCopyFileToContainer(MountableFile.forHostPath("./src/test/resources/odbc.ini"), "/etc/odbc.ini")
         .withCopyFileToContainer(MountableFile.forHostPath("./src/test/resources/odbcinst.ini"), "/etc/odbcinst.ini");
   }
