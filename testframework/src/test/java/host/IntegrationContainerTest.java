@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.lang.Thread;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -79,12 +78,76 @@ public class IntegrationContainerTest {
   private static String runnerIP = null;
   private static String dbConnStrSuffix = "";
 
+  private static final Network NETWORK = Network.newNetwork();
+
   @BeforeAll
   static void setUp() throws InterruptedException, UnknownHostException {
-    Network network = Network.newNetwork();
-    mysqlContainer = ContainerHelper.createMysqlContainer(network);
-    mysqlContainer.start();
+    testContainer = createTestContainer(NETWORK);
+  }
 
+  @AfterAll
+  static void tearDown() {
+    if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY) && !StringUtils.isNullOrEmpty(dbHostCluster)) {
+      if (StringUtils.isNullOrEmpty(TEST_DB_CLUSTER_IDENTIFIER)) {
+        auroraUtil.deleteCluster();
+      } else {
+        auroraUtil.deleteCluster(TEST_DB_CLUSTER_IDENTIFIER);
+      }
+
+      auroraUtil.ec2DeauthorizesIP(runnerIP);
+
+      for (ToxiproxyContainer proxy : proxyContainers) {
+        proxy.stop();
+      }
+    }
+
+    testContainer.stop();
+    if (mysqlContainer != null) {
+      mysqlContainer.stop();
+    }
+  }
+
+  @Test
+  public void testRunCommunityTestInContainer()
+      throws UnsupportedOperationException, IOException, InterruptedException {
+    setupCommunityTests(NETWORK);
+
+    try {
+      // Allow the non root user to access this folder which contains log files. Required to run tests
+      testContainer.execInContainer("chown", DOCKER_UID, "/app/test/Testing/Temporary");
+    } catch (Exception e) {
+      fail("Test container was not initialized correctly");
+    }
+
+    containerHelper.runCTest(testContainer, "test");
+  }
+
+  @Test
+  public void testRunFailoverTestInContainer()
+      throws UnsupportedOperationException, IOException, InterruptedException {
+    setupFailoverIntegrationTests(NETWORK);
+    
+    containerHelper.runExecutable(testContainer, "integration/bin", "integration");
+  }
+
+  protected static GenericContainer<?> createTestContainer(final Network network) {
+    return containerHelper.createTestContainer(
+            "odbc/rds-test-container",
+            DRIVER_LOCATION)
+        .withNetworkAliases(TEST_CONTAINER_NAME)
+        .withNetwork(network)
+        .withEnv("TEST_DSN", TEST_DSN)
+        .withEnv("TEST_UID", TEST_USERNAME)
+        .withEnv("TEST_PASSWORD", TEST_PASSWORD)
+        .withEnv("TEST_DATABASE", TEST_DATABASE)
+        .withEnv("MYSQL_PORT", Integer.toString(MYSQL_PORT))
+        .withEnv("ODBCINI", "/etc/odbc.ini")
+        .withEnv("ODBCINST", "/etc/odbcinst.ini")
+        .withEnv("ODBCSYSINI", "/etc")
+        .withEnv("TEST_DRIVER", "/app/lib/libmyodbc8a.so");
+  }
+
+  private void setupFailoverIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
     if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY)) {
       // Comment out below to not create a new cluster & instances
       AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, TEST_DB_CLUSTER_IDENTIFIER, TEST_DATABASE);
@@ -124,97 +187,43 @@ public class IntegrationContainerTest {
       );
     }
 
-    testContainer = initializeTestContainer(network);
-
-    try {
-      // Allow the non root user to access this folder which contains log files. Required to run tests
-      testContainer.execInContainer("chown", DOCKER_UID, "/app/test/Testing/Temporary");
-    } catch (Exception e) {
-      fail("Test container was not initialized correctly");
-    }
-
-    // Give containers time to be fully initalized
-    Thread.sleep(20000);
-  }
-
-  @AfterAll
-  static void tearDown() {
-    if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY)) {
-      if (StringUtils.isNullOrEmpty(TEST_DB_CLUSTER_IDENTIFIER)) {
-        auroraUtil.deleteCluster();
-      } else {
-        auroraUtil.deleteCluster(TEST_DB_CLUSTER_IDENTIFIER);
-      }
-
-      auroraUtil.ec2DeauthorizesIP(runnerIP);
-
-      for (ToxiproxyContainer proxy : proxyContainers) {
-        proxy.stop();
-      }
-    }
-
-    testContainer.stop();
-    mysqlContainer.stop();
-  }
-
-  @Test
-  public void testRunTestInContainer()
-      throws UnsupportedOperationException, IOException, InterruptedException {
-    containerHelper.runCTest(testContainer, "test");
-  }
-
-  @Test
-  public void testRunFailoverTestInContainer()
-      throws UnsupportedOperationException, IOException, InterruptedException {
-    containerHelper.runExecutable(testContainer, "integration/bin", "integration");
-  }
-
-  protected static GenericContainer<?> initializeTestContainer(final Network network) {
-    final GenericContainer<?> container = containerHelper.createTestContainer(
-            "odbc/rds-test-container",
-            DRIVER_LOCATION)
-        .withNetworkAliases(TEST_CONTAINER_NAME)
-        .withNetwork(network)
-        .withEnv("TEST_DSN", TEST_DSN)
-        .withEnv("TEST_UID", TEST_USERNAME)
-        .withEnv("TEST_PASSWORD", TEST_PASSWORD)
-        .withEnv("AWS_ACCESS_KEY_ID", ACCESS_KEY)
-        .withEnv("AWS_SECRET_ACCESS_KEY", SECRET_ACCESS_KEY)
-        .withEnv("AWS_SESSION_TOKEN", SESSION_TOKEN)
-        .withEnv("TEST_DATABASE", TEST_DATABASE)
-        .withEnv("TEST_SERVER", (StringUtils.isNullOrEmpty(dbHostCluster)) ? COMMUNITY_SERVER : dbHostCluster)
-        .withEnv("TEST_RO_SERVER", dbHostClusterRo)
-        .withEnv("TOXIPROXY_CLUSTER_NETWORK_ALIAS", "toxiproxy-instance-cluster")
-        .withEnv("TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS", "toxiproxy-ro-instance-cluster")
-        .withEnv("PROXIED_DOMAIN_NAME_SUFFIX", PROXIED_DOMAIN_NAME_SUFFIX)
-        .withEnv("PROXIED_CLUSTER_TEMPLATE", "?." + dbConnStrSuffix + PROXIED_DOMAIN_NAME_SUFFIX)
-        .withEnv("DB_CONN_STR_SUFFIX", "." + dbConnStrSuffix)
-        .withEnv("ODBCINI", "/etc/odbc.ini")
-        .withEnv("ODBCINST", "/etc/odbcinst.ini")
-        .withEnv("ODBCSYSINI", "/etc")
-        .withEnv("TEST_DRIVER", "/app/lib/libmyodbc8a.so")
-        .withCreateContainerCmdModifier(cmd -> cmd.withUser(DOCKER_UID + ":" + DOCKER_UID));
-
+    testContainer
+      .withEnv("AWS_ACCESS_KEY_ID", ACCESS_KEY)
+      .withEnv("AWS_SECRET_ACCESS_KEY", SECRET_ACCESS_KEY)
+      .withEnv("AWS_SESSION_TOKEN", SESSION_TOKEN)
+      .withEnv("TOXIPROXY_CLUSTER_NETWORK_ALIAS", "toxiproxy-instance-cluster")
+      .withEnv("TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS", "toxiproxy-ro-instance-cluster")
+      .withEnv("PROXIED_DOMAIN_NAME_SUFFIX", PROXIED_DOMAIN_NAME_SUFFIX)
+      .withEnv("TEST_SERVER", dbHostCluster)
+      .withEnv("TEST_RO_SERVER", dbHostClusterRo)
+      .withEnv("DB_CONN_STR_SUFFIX", "." + dbConnStrSuffix)
+      .withEnv("PROXIED_CLUSTER_TEMPLATE", "?." + dbConnStrSuffix + PROXIED_DOMAIN_NAME_SUFFIX);
+        
     // Add mysql instances & proxies to container env
     for (int i = 0; i < mySqlInstances.size(); i++) {
       // Add instance
-      container.addEnv(
+      testContainer.addEnv(
           "MYSQL_INSTANCE_" + (i + 1) + "_URL",
           mySqlInstances.get(i));
 
       // Add proxies
-      container.addEnv(
+      testContainer.addEnv(
           "TOXIPROXY_INSTANCE_" + (i + 1) + "_NETWORK_ALIAS",
           "toxiproxy-instance-" + (i + 1));
     }
-    container.addEnv("MYSQL_PORT", Integer.toString(MYSQL_PORT));
-    container.addEnv("PROXIED_DOMAIN_NAME_SUFFIX", PROXIED_DOMAIN_NAME_SUFFIX);
-    container.addEnv("MYSQL_PROXY_PORT", Integer.toString(mySQLProxyPort));
+    testContainer.addEnv("MYSQL_PROXY_PORT", Integer.toString(mySQLProxyPort));
+    testContainer.start();
 
     System.out.println("Toxyproxy Instances port: " + mySQLProxyPort);
-    System.out.println("Instances Proxied: " + mySqlInstances.size());
+  }
 
-    container.start();
-    return container;
+  private void setupCommunityTests(final Network network) {
+    mysqlContainer = ContainerHelper.createMysqlContainer(network);
+    mysqlContainer.start();
+
+    testContainer
+      .withEnv("TEST_SERVER", COMMUNITY_SERVER)
+      .withCreateContainerCmdModifier(cmd -> cmd.withUser(DOCKER_UID + ":" + DOCKER_UID));
+    testContainer.start();
   }
 }
