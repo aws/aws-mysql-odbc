@@ -228,7 +228,7 @@ protected:
     auto outcome = client.DescribeDBClusters(rds_req);
 
     if (!outcome.IsSuccess()) {
-      return instances;
+      throw std::runtime_error("Unable to get cluster topology using SDK.");
     }
 
     const auto result = outcome.GetResult();
