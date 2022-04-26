@@ -21,7 +21,7 @@ jobs:
     runs-on: windows-2019
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
-      MYSQL_DIR: C:/mysql-8.0.26-winx64
+      MYSQL_DIR: C:/mysql-8.0.27-winx64
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -29,7 +29,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.26-winx64.zip -o mysql.zip
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.27-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
             
       - name: Create build environment
@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
-                -DMYSQL_SQL="C:/mysql-8.0.26-winx64"
+                -DMYSQL_SQL="C:/mysql-8.0.27-winx64"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
 
