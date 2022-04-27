@@ -48,8 +48,8 @@ REM # be exported to the environment and pollute it
 SETLOCAL
 
 SET    driver_name=none
-SET    driver_lib=myodbc8
-SET    driver_lib_setup=myodbc8S
+SET    driver_lib=awsmysqlodbc
+SET    driver_lib_setup=awsmysqlodbcS
 SET    installer=myodbc-installer
 
 IF "%~1" == "" GOTO :doFindDriver
