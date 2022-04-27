@@ -144,7 +144,7 @@ public class IntegrationContainerTest {
         .withEnv("ODBCINI", "/etc/odbc.ini")
         .withEnv("ODBCINST", "/etc/odbcinst.ini")
         .withEnv("ODBCSYSINI", "/etc")
-        .withEnv("TEST_DRIVER", "/app/lib/libmyodbc8a.so");
+        .withEnv("TEST_DRIVER", "/app/lib/awsmysqlodbca.so");
   }
 
   private void setupFailoverIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
