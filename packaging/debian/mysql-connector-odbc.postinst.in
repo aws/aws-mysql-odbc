@@ -37,13 +37,13 @@ set -e
 
 echo "Registering Unicode driver from in file"
 /usr/bin/myodbc-installer -a -d \
-   -n "MySQL ODBC 8.0 Unicode Driver" \
-   -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/libmyodbc8w.so"
+   -n "AWS ODBC Unicode Driver for MySQL" \
+   -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/awsmysqlodbcw.so"
 	  
 echo "Registering ANSI driver from in file"
 /usr/bin/myodbc-installer -a -d \
-  -n "MySQL ODBC 8.0 ANSI Driver" \
-  -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/libmyodbc8a.so"
+  -n "AWS ODBC ANSI Driver for MySQL" \
+  -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/awsmysqlodbca.so"
 
 set +e
 

@@ -29,18 +29,18 @@ bit directory as well, i.e. a 64-bit package contains both 32-bit and
 
   doc/README.txt
   doc/LICENSE.txt
-  x86/myodbc8.lib
-  x86/myodbc8.dll
-  x86/myodbc8S.lib
-  x86/myodbc8S.dll
+  x86/awsmysqlodbc.lib
+  x86/awsmysqlodbc.dll
+  x86/awsmysqlodbcS.lib
+  x86/awsmysqlodbcS.dll
   x86/myodbc-installer.exe
 
 and in addition if a 64-bit package
 
-  x64/myodbc8.lib
-  x64/myodbc8.dll
-  x64/myodbc8S.lib
-  x64/myodbc8S.dll
+  x64/awsmysqlodbc.lib
+  x64/awsmysqlodbc.dll
+  x64/awsmysqlodbcS.lib
+  x64/awsmysqlodbcS.dll
   x64/myodbc-installer.exe
 
 4) CMake

@@ -33,18 +33,18 @@ DEB_HOST_MULTIARCH="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
 
  set -e
 	echo "Unregistering Unicode driver using setup"
-    myodbc-installer -r -d -n "MySQL ODBC 8.0 Unicode Driver"
+    myodbc-installer -r -d -n "AWS ODBC Unicode Driver for MySQL"
 	
     myodbc-installer -a -d \
-      -n "MySQL ODBC 8.0 Unicode Driver" \
-      -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/libmyodbc8w.so"
+      -n "AWS ODBC Unicode Driver for MySQL" \
+      -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/awsmysqlodbcw.so"
     
 	echo "Unregistering ANSI driver using setup"
-	myodbc-installer -r -d -n "MySQL ODBC 8.0 ANSI Driver"
+	myodbc-installer -r -d -n "AWS ODBC ANSI Driver for MySQL"
 	
     myodbc-installer -a -d \
-      -n "MySQL ODBC 8.0 ANSI Driver" \
-      -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/libmyodbc8a.so"
+      -n "AWS ODBC ANSI Driver for MySQL" \
+      -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/awsmysqlodbca.so"
 	
    set +e
 
