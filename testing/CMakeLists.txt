@@ -63,7 +63,7 @@ target_link_libraries(
   testing
   gtest_main
   gmock_main
-  myodbc8a
+  awsmysqlodbca
 )
 
 include(GoogleTest)

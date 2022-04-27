@@ -1,5 +1,5 @@
-usr/lib/*/odbc/libmyodbc8a.so
-usr/lib/*/odbc/libmyodbc8w.so
+usr/lib/*/odbc/awsmysqlodbca.so
+usr/lib/*/odbc/awsmysqlodbcw.so
 usr/bin/myodbc-installer
 usr/ChangeLog            usr/share/doc/mysql-connector-odbc@PRODUCT_SUFFIX@
 usr/LICENSE.txt          usr/share/doc/mysql-connector-odbc@PRODUCT_SUFFIX@

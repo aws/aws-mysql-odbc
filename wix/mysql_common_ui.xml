@@ -621,7 +621,7 @@
       <Control Id="DlgLine" Type="Line" X="0" Y="234" Width="374" Height="0" />
       <Control Id="FeatureGroup" Type="GroupBox" X="235" Y="67" Width="131" Height="120" Text="Feature Description" />
     </Dialog>
-
+    
     <!-- *****************************************************************************************
       License Agreement Dialog
     -->
