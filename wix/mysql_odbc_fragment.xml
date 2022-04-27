@@ -48,8 +48,7 @@
       <?else ?>
       <Directory Id="ProgramFilesFolder">
       <?endif?>
-        <Directory Id="MySQL" Name="MySQL">
-          <Directory Id="Connector_ODBC" Name="AWS Connector ODBC $(var.odbc_ver_short)">
+          <Directory Id="Connector_ODBC" Name="AWS ODBC Driver for MySQL">
             <Directory Id="INSTALLDIR" Name=".">
 
           <?if $(var.odbc_64bit) = 1 ?>
@@ -128,9 +127,6 @@
       <?else ?>
         </Directory>
       <?endif ?>
-      </Directory>
-
-
     </Directory>
   </Fragment>
 </Wix>
