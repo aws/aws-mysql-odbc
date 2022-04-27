@@ -47,7 +47,6 @@
       <?else ?>
       <Directory Id="ProgramFilesFolder">
       <?endif?>
-        <Directory Id="MySQL" Name="MySQL">
           <Directory Id="Connector_ODBC" Name="Connector ODBC $(var.odbc_ver_short)">
             <Directory Id="INSTALLDIR" Name=".">
 
@@ -112,9 +111,6 @@
       <?else ?>
         </Directory>
       <?endif ?>
-      </Directory>
-
-
     </Directory>
   </Fragment>
 </Wix>
