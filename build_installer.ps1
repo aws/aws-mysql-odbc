@@ -56,10 +56,10 @@ cmake --build . --config "$CONFIGURATION"
 
 # CREATE INSTALLER
 # Copy dll, installer, and info files to wix folder
-Copy-Item .\lib\$CONFIGURATION\myodbc8*.dll .\Wix\x64
-Copy-Item .\lib\$CONFIGURATION\myodbc8*.lib .\Wix\x64
-Copy-Item .\lib\$CONFIGURATION\myodbc8*.dll .\Wix\x86
-Copy-Item .\lib\$CONFIGURATION\myodbc8*.lib .\Wix\x86
+Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x64
+Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x64
+Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x86
+Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x86
 Copy-Item .\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x64
 Copy-Item .\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x86
 Copy-Item .\INFO_BIN .\Wix\doc
