@@ -62,7 +62,7 @@ jobs:
         run: |
           ./gradlew --no-parallel --no-daemon test-community --info
         env:
-          TEST_DSN: myodbc8a
+          TEST_DSN: awsmysqlodbca
           TEST_USERNAME: root
           TEST_PASSWORD: root
           DRIVER_PATH: ${{ github.workspace }}/build

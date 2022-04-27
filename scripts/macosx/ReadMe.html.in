@@ -54,9 +54,9 @@
 <p>
   The library files are;
   <ul>
-    <li><code>/usr/local/lib/libmyodbc8w.*</code> (Unicode version)</li>
-    <li><code>/usr/local/lib/libmyodbc8a.*</code> (ANSI version)</li>
-    <li><code>/usr/local/lib/libmyodbc8S.*</code></li>
+    <li><code>/usr/local/lib/awsmysqlodbcw.*</code> (Unicode version)</li>
+    <li><code>/usr/local/lib/awsmysqlodbca.*</code> (ANSI version)</li>
+    <li><code>/usr/local/lib/awsmysqlodbcS.*</code></li>
   </ul>
 </p>
 

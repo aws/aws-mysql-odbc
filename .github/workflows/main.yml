@@ -57,8 +57,8 @@ jobs:
         shell: bash
         working-directory: C:/Windows/System32
         run: |
-          ./myodbc-installer -d -a -n "MySQL ODBC 8.0 Driver" -t "DRIVER=myodbc8a.dll;SETUP=myodbc8S.dll"
-          ./myodbc-installer -s -a -c2 -n "test" -t "DRIVER=MySQL ODBC 8.0 Driver;SERVER=localhost;DATABASE=test;UID=root;PWD="
+          ./myodbc-installer -d -a -n "AWS ODBC Driver for MySQL" -t "DRIVER=awsmysqlodbca.dll;SETUP=awsmysqlodbcS.dll"
+          ./myodbc-installer -s -a -c2 -n "test" -t "DRIVER=AWS ODBC Driver for MySQL;SERVER=localhost;DATABASE=test;UID=root;PWD="
           
       - name: Start MySQL server for tests
         if: success()
@@ -79,7 +79,7 @@ jobs:
           TEST_DSN: test
           TEST_UID: root
           TEST_DATABASE: test
-          TEST_DRIVER: MySQL ODBC 8.0 Driver
+          TEST_DRIVER: AWS ODBC Driver for MySQL
 
       # Upload artifacts
       - name: Upload build artifacts - Binaries
@@ -160,10 +160,10 @@ jobs:
   #       shell: bash
   #       run: ctest
   #       env:
-  #         TEST_DSN: myodbc8a
+  #         TEST_DSN: awsmysqlodbca
   #         TEST_UID: root
   #         TEST_PASSWORD: 
-  #         TEST_DRIVER: ${{ github.workspace }}/build/lib/libmyodbc8a.dylib
+  #         TEST_DRIVER: ${{ github.workspace }}/build/lib/awsmysqlodbca.dylib
   #         ODBCINI: ${{ github.workspace }}/build/test/odbc.ini
   #         ODBCINSTINI: ${{ github.workspace }}/build/test/odbcinst.ini
 

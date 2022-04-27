@@ -34,16 +34,16 @@ DEB_HOST_MULTIARCH="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
 
 set -e
     echo "Registering Unicode driver using setup package"
-    myodbc-installer -r -d -n "MySQL ODBC 8.0 Unicode Driver"
+    myodbc-installer -r -d -n "AWS ODBC Unicode Driver for MySQL"
     myodbc-installer -a -d \
-    -n "MySQL ODBC 8.0 Unicode Driver" \
-    -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/libmyodbc8w.so;SETUP=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/libmyodbc8S.so"
+    -n "AWS ODBC Unicode Driver for MySQL" \
+    -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/awsmysqlodbcw.so;SETUP=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/awsmysqlodbcS.so"
 
     echo "Registering ANSI driver using setup"
-    myodbc-installer -r -d -n "MySQL ODBC 8.0 ANSI Driver"
+    myodbc-installer -r -d -n "AWS ODBC ANSI Driver for MySQL"
     myodbc-installer -a -d \
-    -n "MySQL ODBC 8.0 ANSI Driver" \
-    -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/libmyodbc8a.so;SETUP=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/libmyodbc8S.so"
+    -n "AWS ODBC ANSI Driver for MySQL" \
+    -t "DRIVER=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/awsmysqlodbca.so;SETUP=/usr/lib/${DEB_HOST_MULTIARCH}/odbc/awsmysqlodbcS.so"
 
 set +e
 
