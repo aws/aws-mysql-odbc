@@ -6,6 +6,8 @@ on:
       - '*'
     paths-ignore:
       - '**/*.md'
+      - '**/*.jpg'
+      - '**/README.txt'
 
 env:
   LINUX_BUILD_TYPE: Release
