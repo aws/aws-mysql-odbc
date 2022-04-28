@@ -11,6 +11,8 @@ on:
       - dev
     paths-ignore:
       - '**/*.md'
+      - '**/*.jpg'
+      - '**/README.txt'
 
 env:
   BUILD_TYPE: Release
