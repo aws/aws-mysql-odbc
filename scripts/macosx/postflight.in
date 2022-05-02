@@ -50,8 +50,8 @@
 # application.
 # ----------------------------------------------------------------------
 
-libdir=@INSTALLDIR@/lib
-bindir=@INSTALLDIR@/bin
+libdir=@CPACK_PACKAGING_INSTALL_PREFIX@/lib
+bindir=@CPACK_PACKAGING_INSTALL_PREFIX@/bin
 
 for admdir in ~/Library/ODBC /Library/ODBC
 do
@@ -105,18 +105,18 @@ for driver_type in @CONNECTOR_DRIVER_TYPE@
 do
   if [ $driver_type = "ANSI" ] ; then
     suffix=a
-    dsn=myodbca
+    dsn=awsmysqlodbca
   else
     suffix=w
-    dsn=myodbc
+    dsn=awsmysqlodbcw
   fi
 
   echo "Registering $driver_type driver..."
-  $bindir/myodbc-installer -a -d -n "MySQL ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ $driver_type Driver" -t "Driver=$libdir/awsmysqlodbc$suffix.so;"
+  $bindir/myodbc-installer -a -d -n "AWS ODBC $driver_type Driver for MySQL" -t "Driver=$libdir/awsmysqlodbc$suffix.dylib;"
 
 # ----------------------------------------------------------------------
 # CREATE A SAMPLE DSN
 # ----------------------------------------------------------------------
-  echo "Ensuring sample data source name (myodbc) exists..."
-  $bindir/myodbc-installer -a -s -c2 -n $dsn -t "Driver=MySQL ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ $driver_type Driver;SERVER=localhost;"
+  echo "Ensuring sample data source name (awsmysqlodbc) exists..."
+  $bindir/myodbc-installer -a -s -c2 -n $dsn -t "Driver=AWS ODBC $driver_type Driver for MySQL;SERVER=localhost;"
 done
