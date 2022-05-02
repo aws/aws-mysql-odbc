@@ -50,8 +50,8 @@
 # application.
 # ----------------------------------------------------------------------
 
-libdir=@INSTALLDIR@/lib
-bindir=@INSTALLDIR@/bin
+libdir=@CPACK_PACKAGING_INSTALL_PREFIX@/lib
+bindir=@CPACK_PACKAGING_INSTALL_PREFIX@/bin
 
 for admdir in ~/Library/ODBC /Library/ODBC
 do
