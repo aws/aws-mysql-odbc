@@ -33,6 +33,8 @@
 #include <functional>
 #include <thread>
 
+#include <OpenXLSX.hpp>
+
 #define SOCKET_TIMEOUT_TEST_ID 1
 #define EFM_TEST_ID 2
 
@@ -41,6 +43,8 @@ struct BASE_PERFORMANCE_DATA {
   int min_failover_time, max_failover_time, avg_failover_time;
   virtual void write_header(std::ofstream& data_stream) {}
   virtual void write_data_row(std::ofstream& data_stream) {}
+  virtual void write_header_xlsx(OpenXLSX::XLWorksheet worksheet, int row) {}
+  virtual void write_data_row_xlsx(OpenXLSX::XLWorksheet worksheet, int row) {}
 };
 
 struct SOCKET_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
@@ -48,6 +52,16 @@ struct SOCKET_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
 
   void write_header(std::ofstream& data_stream) override {
     data_stream << "Outage Delay (ms), Failover Timeout (ms), Connect Timeout (s), Network Timeout (s), Min Failover Time (ms), Max Failover Time (ms), Avg Failover Time (ms)\n";
+  }
+
+  void write_header_xlsx(const OpenXLSX::XLWorksheet worksheet, int row) {
+    worksheet.cell(row, 1).value() = "Outage Delay (ms)";
+    worksheet.cell(row, 2).value() = "Failover Timeout (ms)";
+    worksheet.cell(row, 3).value() = "Connect Timeout (s)";
+    worksheet.cell(row, 4).value() = "Network Timeout (s)";
+    worksheet.cell(row, 5).value() = "Min Failover Time (ms)";
+    worksheet.cell(row, 6).value() = "Max Failover Time (ms)";
+    worksheet.cell(row, 7).value() = "Avg Failover Time (ms)";
   }
 
   void write_data_row(std::ofstream& data_stream) override {
@@ -63,6 +77,16 @@ struct SOCKET_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
     );
     data_stream << data_row;
   }
+
+  void write_data_row_xlsx(const OpenXLSX::XLWorksheet worksheet, int row) override {
+    worksheet.cell(row, 1).value() = this->network_outage_delay;
+    worksheet.cell(row, 2).value() = this->failover_timeout;
+    worksheet.cell(row, 3).value() = this->connect_timeout;
+    worksheet.cell(row, 4).value() = this->network_timeout;
+    worksheet.cell(row, 5).value() = this->min_failover_time;
+    worksheet.cell(row, 6).value() = this->max_failover_time;
+    worksheet.cell(row, 7).value() = this->avg_failover_time;
+  }
 };
 
 struct EFM_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
@@ -70,6 +94,16 @@ struct EFM_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
 
   void write_header(std::ofstream& data_stream) override {
     data_stream << "Outage Delay (ms), Detection Grace Time (?), Detection Interval (?), Detection Count, Min Failover Time (ms), Max Failover Time (ms), Avg Failover Time (ms)\n";
+  }
+
+  void write_header_xlsx(const OpenXLSX::XLWorksheet worksheet, int row) {
+    worksheet.cell(row, 1).value() = "Outage Delay (ms)";
+    worksheet.cell(row, 2).value() = "Detection Grace Time (?)";
+    worksheet.cell(row, 3).value() = "Detection Interval (?)";
+    worksheet.cell(row, 4).value() = "Detection Count";
+    worksheet.cell(row, 5).value() = "Min Failover Time (ms)";
+    worksheet.cell(row, 6).value() = "Max Failover Time (ms)";
+    worksheet.cell(row, 7).value() = "Avg Failover Time (ms)";
   }
 
   void write_data_row(std::ofstream& data_stream) override {
@@ -84,6 +118,16 @@ struct EFM_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
       this->avg_failover_time
     );
     data_stream << data_row;
+  }
+
+  void write_data_row_xlsx(const OpenXLSX::XLWorksheet worksheet, int row) override {
+    worksheet.cell(row, 1).value() = this->network_outage_delay;
+    worksheet.cell(row, 2).value() = this->detection_grace_time;
+    worksheet.cell(row, 3).value() = this->detection_interval;
+    worksheet.cell(row, 4).value() = this->detection_count;
+    worksheet.cell(row, 5).value() = this->min_failover_time;
+    worksheet.cell(row, 6).value() = this->max_failover_time;
+    worksheet.cell(row, 7).value() = this->avg_failover_time;
   }
 };
 
@@ -109,6 +153,8 @@ protected:
   const size_t NB_OF_RUNS = 10;
   static constexpr char* OUTPUT_FILE_PATH = "./build/reports/";
 
+  const std::string XLSX_WORKSHEET_NAME = "failover_performance";
+
   static void SetUpTestSuite() {
     Aws::InitAPI(options);
   }
@@ -117,8 +163,10 @@ protected:
     Aws::ShutdownAPI(options);
 
     // Save results to spreadsheet
-    write_metrics_to_file("failover_performance.csv", socket_failover_data);
-    write_metrics_to_file("efm_performance.csv", efm_failover_data);
+    write_metrics_to_xlsx("failover_performance.xlsx", socket_failover_data);
+
+    // TODO Save results from EFM performance tests
+    // write_metrics_to_xlsx("efm_performance.xlsx", efm_failover_data);
   }
 
   void SetUp() override {
@@ -220,6 +268,33 @@ protected:
 
     data_file.close();
   }
+
+  template<typename DERIVED_PERFORMANCE_DATA, typename Enable = std::enable_if<std::is_base_of<BASE_PERFORMANCE_DATA, DERIVED_PERFORMANCE_DATA>::value>>
+  static void write_metrics_to_xlsx(const char* file_name, const std::vector<DERIVED_PERFORMANCE_DATA>& data_list) {
+    if (data_list.size() < 2) {
+      return;
+    }
+
+    const OpenXLSX::XLDocument doc;
+    doc.create(file_name);
+    doc.workbook().addWorksheet(XLSX_WORKSHEET_NAME);
+
+    const OpenXLSX::XLWorksheet worksheet = doc.workbook().worksheet(XLSX_WORKSHEET_NAME);
+
+    const DERIVED_PERFORMANCE_DATA data = data_list[0];
+
+    int row = 1;
+    data.write_header_xlsx(worksheet, row);
+
+    for (size_t i = 1; i < data_list.size(); i++) {
+      data = data_list[i];
+      row++;
+      data.write_data_row_xlsx(worksheet, row);
+    }
+
+    doc.save();
+    doc.close();
+  }
 };
 
 TEST_P(FailoverPerformanceTest, test_measure_failover) {
@@ -275,8 +350,9 @@ INSTANTIATE_TEST_CASE_P(
   )
 );
 
-INSTANTIATE_TEST_CASE_P(
-  EFNTimeoutTest,
+// TODO Enable EFM performance tests once EFM feature is ready
+/* INSTANTIATE_TEST_CASE_P(
+  EFMTimeoutTest,
   FailoverPerformanceTest,
   // Test Type, Sleep Delay, detection grace time, detection interval, detection count
   ::testing::Values(
@@ -291,4 +367,4 @@ INSTANTIATE_TEST_CASE_P(
     std::make_tuple(EFM_TEST_ID, 45000, 30000, 5000, 3),
     std::make_tuple(EFM_TEST_ID, 50000, 30000, 5000, 3)
   )
-);
+);*/

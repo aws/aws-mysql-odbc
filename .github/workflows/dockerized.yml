@@ -99,11 +99,13 @@ jobs:
 
       - name: Configure CMake
         shell: bash
+        # Performance tests are disabled by default
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=TRUE
+                -DENABLE_PERFORMANCE_TESTS=FALSE
                 -DENABLE_GTESTS=FALSE
                 -DWITH_UNIXODBC=1
 
@@ -172,10 +174,13 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         run: |
           echo "Displaying logs"
+          mkdir -p ./reports/tests
           if [[ -f myodbc.sql && -s myodbc.sql ]]; then 
             cat myodbc.sql
-            mkdir -p ./reports/tests
             cp myodbc.sql ./reports/tests/myodbc.sql
+          fi
+          if [[ -f failover_performance.xlsx && -s failover_performance.xlsx ]]; then
+            cp failover_performance.xlsx ./reports/tests/failover_performance.xlsx
           fi
 
       - name: 'Archive log results'
