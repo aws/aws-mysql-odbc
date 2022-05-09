@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.14)
 project(integration)
 
 # GoogleTest requires at least C++11
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 #-------------- unixodbc/iodbc/win -------------------
 if(WIN32)
@@ -57,6 +57,10 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/Bit-Quill/toxiproxy-cpp
   GIT_TAG main
 )
+FetchContent_Declare(
+  openxlsx
+  GIT_REPOSITORY https://github.com/troldal/OpenXLSX
+)
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -64,6 +68,12 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 # Only builds the RDS SDK
 set(BUILD_ONLY "rds" CACHE INTERNAL "")
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+
+# OpenXLSX
+set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(OPENXLSX_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(OPENXLSX_CREATE_DOCS OFF CACHE BOOL "" FORCE)
 
 set(CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
   ""
@@ -82,7 +92,7 @@ set(AWS_SDK_DEPENDENCIES aws-c-auth aws-c-cal aws-c-common aws-c-compression
   aws-c-event-stream aws-checksums aws-c-http aws-c-io aws-c-mqtt
   aws-crt-cpp aws-c-s3 aws-cpp-sdk-core aws-cpp-sdk-rds)
 
-FetchContent_MakeAvailable(googletest toxiproxy awssdk)
+FetchContent_MakeAvailable(googletest openxlsx toxiproxy awssdk)
 
 enable_testing()
 
@@ -112,6 +122,7 @@ target_link_libraries(
   ${ODBCLIB}
   gtest_main
   toxiproxy
+  OpenXLSX::OpenXLSX
   ${AWS_SDK_DEPENDENCIES}
 )
 
