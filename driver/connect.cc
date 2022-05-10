@@ -304,6 +304,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   unsigned int opt_ssl_verify_server_cert = ~0;
   const my_bool on = 1;
   unsigned int on_int = 1;
+  unsigned int off_int = 0;
   unsigned long max_long = ~0L;
   bool initstmt_executed = false;
 
@@ -648,6 +649,10 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   if (dsrc->enable_local_infile)
   {
     mysql->options(MYSQL_OPT_LOCAL_INFILE, &on_int);
+  }
+  else
+  {
+    mysql->options(MYSQL_OPT_LOCAL_INFILE, &off_int);
   }
 
   if (dsrc->load_data_local_dir && dsrc->load_data_local_dir[0])
