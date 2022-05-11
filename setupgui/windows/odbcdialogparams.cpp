@@ -453,7 +453,7 @@ void btnTest_Click (HWND hwnd)
 void btnHelp_Click (HWND hwnd)
 {
   ShellExecute(NULL, L"open",
-         L"https://dev.mysql.com/doc/connector-odbc/en/connector-odbc-configuration-dsn-windows.html",
+         L"https://awslabs.github.io/aws-mysql-odbc/",
          NULL, NULL, SW_SHOWNORMAL);
 }
 
@@ -891,7 +891,7 @@ int ShowOdbcParamsDialog(DataSource* params, HWND ParentWnd, BOOL isPrompt)
   InitStaticValues();
 
   pParams= params;
-  pCaption= L"MySQL Connector/ODBC Data Source Configuration";
+  pCaption= L"AWS ODBC Driver for MySQL Data Source Configuration";
   g_isPrompt= isPrompt;
 
   /*

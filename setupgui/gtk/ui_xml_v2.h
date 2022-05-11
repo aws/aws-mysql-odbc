@@ -45,7 +45,7 @@ static char *ui_xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
   "<object class=\"GtkWindow\" id=\"odbcdialog\">\n" \
     "<property name=\"visible\">True</property>\n" \
     "<property name=\"can_focus\">False</property>\n" \
-    "<property name=\"title\">MySQL Connector/ODBC Data Source</property>\n" \
+    "<property name=\"title\">AWS ODBC Driver for MySQL Data Source</property>\n" \
     "<property name=\"resizable\">False</property>\n" \
     "<property name=\"modal\">True</property>\n" \
     "<property name=\"window_position\">center-on-parent</property>\n" \
