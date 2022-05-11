@@ -1,4 +1,4 @@
-MySQL Connector/ODBC Build Information
+AWS ODBC Driver for MySQL Build Information
 
 build-date           :  @INFO_DATE@
 os-info              :  @CMAKE_SYSTEM_NAME@-@CMAKE_SYSTEM_VERSION@
