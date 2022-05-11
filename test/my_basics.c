@@ -1405,7 +1405,7 @@ DECLARE_TEST(t_ssl_align)
 }
 
 BEGIN_TESTS
-  // ADD_TEST(t_tls_opts) TODO: [RDS-350] investigate test failure re: supported OS configuration defaults
+  ADD_TEST(t_tls_opts)
   ADD_TEST(t_ssl_mode)
   ADD_TEST(my_basics)
   ADD_TEST(t_max_select)
