@@ -181,6 +181,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs & other dependencies
         run: |
+          brew update
           brew unlink unixodbc
           brew install libiodbc mysql-client
       
