@@ -59,7 +59,7 @@ const char usage[] =
 "|                                                                      \n"
 "| Description                                                          \n"
 "|                                                                      \n"
-"|    This program is for managing MySQL Connector/ODBC configuration   \n"
+"|    This program is for managing AWS ODBC Driver for MySQL configuration   \n"
 "|    options at the command prompt. It can be used to register or      \n"
 "|    unregister an ODBC driver, and to create, edit, or remove DSN.    \n"
 "|                                                                      \n"

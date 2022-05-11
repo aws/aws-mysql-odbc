@@ -867,7 +867,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   {
     set_error("01000", "The connection option NO_I_S is now "
                        "deprecated and will be removed in future "
-                       "releases of MySQL Connector/ODBC", 0);
+                       "releases of AWS ODBC Driver for MySQL", 0);
     rc= SQL_SUCCESS_WITH_INFO;
   }
 
