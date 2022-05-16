@@ -1,5 +1,5 @@
 <#
- * AWS JDBC Driver for MySQL
+ * AWS ODBC Driver for MySQL
  * Copyright Amazon.com Inc. or affiliates.
  *
  * Redistribution and use in source and binary forms, with or without modification,
