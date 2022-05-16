@@ -1,0 +1,184 @@
+# AWS ODBC Driver for MySQL
+# Copyright Amazon.com Inc. or affiliates.
+# 
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License, version 2.0, as published by the
+# Free Software Foundation.
+# 
+# This program is also distributed with certain software (including but not
+# limited to OpenSSL) that is licensed under separate terms, as designated in a
+# particular file or component or in included license documentation. The
+# authors of this program hereby grant you an additional permission to link the
+# program and your derivative works with the separately licensed software that
+# they have included with MySQL.
+# 
+# Without limiting anything contained in the foregoing, this file, which is
+# part of this connector, is also subject to the Universal FOSS Exception,
+# version 1.0, a copy of which can be found at
+# http://oss.oracle.com/licenses/universal-foss-exception.
+# 
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License, version 2.0,
+# for more details.
+# 
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
+
+# At least in CMake 2.8.12.2 the file "Dawin.cmake" defines
+# CMAKE_C_CREATE_SHARED_LIBRARY without honoring
+# CMAKE_SHARED_LINKER_FLAGS. I also failed to modify
+# CMAKE_C_CREATE_SHARED_LIBRARY to include it. So as a
+# work-around we add ODBC_LIB_DIR to the link directories.
+
+IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+  LINK_DIRECTORIES(${ODBC_LIB_DIR})
+  IF(ODBCINST_LIB_DIR)
+    LINK_DIRECTORIES(${ODBCINST_LIB_DIR})
+  ENDIF()
+ENDIF()
+
+SET(DRIVER_INDEX 0)
+SET(DRIVER_LOCATION2 "")
+SET(CONNECTOR_DRIVER_TYPE2 "")
+SET(CONNECTOR_DRIVER_TYPE_SHORT2 "")
+
+WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
+
+  LIST(GET IS_UNICODE_DRIVER ${DRIVER_INDEX} UNICODE)
+  LIST(GET CONNECTOR_DRIVER_TYPES_SHORT ${DRIVER_INDEX} CONNECTOR_DRIVER_TYPE_SHORT)
+  LIST(GET CONNECTOR_DRIVER_TYPE_LIST ${DRIVER_INDEX} DRIVER_TYPE)
+
+  SET(DRIVER_NAME "awsmysqlodbc${CONNECTOR_DRIVER_TYPE_SHORT}")
+
+  SET(DRIVER_SRCS
+    base_metrics_holder.cc catalog.cc catalog_no_i_s.cc cluster_topology_info.cc 
+    cluster_aware_hit_metrics_holder.cc cluster_aware_metrics_container.cc 
+    cluster_aware_metrics.cc cluster_aware_time_metrics_holder.cc  
+    connect.cc connection.cc cursor.cc desc.cc dll.cc driver.cc 
+    error.cc execute.cc failover_connection_handler.cc failover_handler.cc 
+    failover_reader_handler.cc failover_writer_handler.cc handle.cc host_info.cc info.cc
+    my_prepared_stmt.cc my_stmt.cc mylog.cc options.cc parse.cc prepare.cc query_parsing.cc
+    results.cc topology_service.cc transact.cc utility.cc)
+
+  IF(UNICODE)
+    SET(DRIVER_SRCS ${DRIVER_SRCS} unicode.cc)
+    SET(WIDECHARCALL "W")
+  ELSE(UNICODE)
+    SET(DRIVER_SRCS ${DRIVER_SRCS} ansi.cc)
+    SET(WIDECHARCALL "")
+  ENDIF(UNICODE)
+
+  INCLUDE_DIRECTORIES(../util)
+
+  IF(WIN32)
+    # Headers added for convenience of VS users
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.def.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.def @ONLY)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
+    SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc  
+                                   base_metrics_holder.h catalog.h cluster_aware_hit_metrics_holder.h cluster_aware_metrics_container.h 
+                                   cluster_aware_metrics.h cluster_aware_time_metrics_holder.h cluster_topology_info.h connection.h 
+                                   driver.h error.h failover.h host_info.h mylog.h myutil.h parse.h query_parsing.h topology_service.h
+                                   ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
+  ENDIF(WIN32)
+
+  IF(WIN32)
+    IF(ENABLE_GTESTS)
+      ADD_LIBRARY(${DRIVER_NAME} ${DRIVER_SRCS})
+    ELSE(ENABLE_GTESTS)
+      ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS})
+    ENDIF(ENABLE_GTESTS)
+  ELSE(WIN32)
+    ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS})
+  ENDIF(WIN32)
+
+  ADD_COVERAGE(${DRIVER_NAME})
+  INSTALL(TARGETS ${DRIVER_NAME} DESTINATION ${LIB_SUBDIR})
+
+  IF(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    SET_TARGET_PROPERTIES(${DRIVER_NAME} PROPERTIES
+          LINK_FLAGS "${MYSQLODBCCONN_LINK_FLAGS_ENV} ${MYSQL_LINK_FLAGS}"
+          PREFIX "")
+  ELSE(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    SET_TARGET_PROPERTIES(${DRIVER_NAME} PROPERTIES
+          LINK_FLAGS "${MYSQLODBCCONN_LINK_FLAGS_ENV} ${MYSQL_LINK_FLAGS}"
+          PREFIX "") # -flto
+  ENDIF()
+
+  IF(UNICODE)
+    SET_TARGET_PROPERTIES(${DRIVER_NAME} PROPERTIES
+      COMPILE_DEFINITIONS MYODBC_UNICODEDRIVER)
+  ENDIF(UNICODE)
+
+  IF(WIN32)
+    IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+      LINK_DIRECTORIES(${MYSQL_DIR}/lib/debug)
+      LINK_DIRECTORIES(${MYSQL_DIR}/lib)
+    ELSEIF(CMAKE_BUILD_TYPE STREQUAL "")
+      LINK_DIRECTORIES(${MYSQL_DIR}/lib/opt)
+      LINK_DIRECTORIES(${MYSQL_DIR}/lib)
+    ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+    IF (WITH_NODEFAULTLIB)
+      SET_TARGET_PROPERTIES(${DRIVER_NAME} PROPERTIES
+        LINK_FLAGS_DEBUG "/NODEFAULTLIB:${WITH_NODEFAULTLIB}"
+        LINK_FLAGS_RELWITHDEBINFO "/NODEFAULTLIB:${WITH_NODEFAULTLIB}"
+        LINK_FLAGS_RELEASE "/NODEFAULTLIB:${WITH_NODEFAULTLIB}")
+    ENDIF ()
+
+    IF(MYSQL8)
+      TARGET_LINK_LIBRARIES(${DRIVER_NAME} myodbc-util
+            ${MYSQL_CLIENT_LIBS} ws2_32 ${ODBCINSTLIB} ${SECURE32_LIB} legacy_stdio_definitions.lib)
+    ELSE(MYSQL8)
+      TARGET_LINK_LIBRARIES(${DRIVER_NAME} myodbc-util
+            ${MYSQL_CLIENT_LIBS} ws2_32 ${ODBCINSTLIB} ${SECURE32_LIB})
+    ENDIF(MYSQL8)
+
+    TARGET_LINK_LIBRARIES(${DRIVER_NAME} Dnsapi)
+
+  ELSE(WIN32)
+
+    IF(DEV_STUDIO_RUNTIME_DIR)
+      FOREACH(__runtime_dir IN LISTS DEV_STUDIO_RUNTIME_DIR)
+        SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -R${__runtime_dir}")
+      ENDFOREACH()
+    ENDIF()
+
+    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ODBC_DRIVER_LINK_FLAGS}")
+    TARGET_LINK_LIBRARIES(${DRIVER_NAME}
+                          ${MYSQL_CLIENT_LIBS} ${CMAKE_THREAD_LIBS_INIT} m)
+    TARGET_LINK_LIBRARIES(${DRIVER_NAME} myodbc-util)
+
+    IF(NOT ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+      TARGET_LINK_LIBRARIES(${DRIVER_NAME} resolv)
+    ENDIF(NOT ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+
+
+    INCLUDE_DIRECTORIES(${DL_INCLUDES})
+
+  ENDIF(WIN32)
+
+  IF (MYSQL_CXX_LINKAGE)
+    SET_TARGET_PROPERTIES(${DRIVER_NAME} PROPERTIES
+          LINKER_LANGUAGE CXX
+          COMPILE_FLAGS "${MYSQLODBCCONN_COMPILE_FLAGS_ENV} ${MYSQL_CXXFLAGS}")
+  ENDIF (MYSQL_CXX_LINKAGE)
+
+  set_property(TARGET ${DRIVER_NAME} PROPERTY BUILD_WITH_INSTALL_RPATH ON)
+
+  if(APPLE)
+    set_property(TARGET ${DRIVER_NAME} APPEND PROPERTY INSTALL_RPATH "@loader_path")
+    set_property(TARGET ${DRIVER_NAME} APPEND PROPERTY INSTALL_RPATH "@loader_path/private")
+    mangle_osx_rpaths(${DRIVER_NAME})
+  elseif(NOT WIN32)
+    set_property(TARGET ${DRIVER_NAME} APPEND PROPERTY INSTALL_RPATH "$ORIGIN")
+    set_property(TARGET ${DRIVER_NAME} APPEND PROPERTY INSTALL_RPATH "$ORIGIN/private")
+  endif()
+
+  # FIXME: RPATH not set anywhere...
+  #MESSAGE("Setting RPATH for ${DRIVER_NAME}")
+
+  MATH(EXPR DRIVER_INDEX "${DRIVER_INDEX} + 1")
+
+ENDWHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})

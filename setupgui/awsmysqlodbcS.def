@@ -1,0 +1,5 @@
+LIBRARY AWSMYSQLODBCS.DLL
+EXPORTS
+ConfigDSNW
+Driver_Prompt
+;
