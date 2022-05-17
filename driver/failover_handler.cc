@@ -423,7 +423,10 @@ bool FAILOVER_HANDLER::is_ipv6(std::string host) {
            std::regex_match(host, IPV6_COMPRESSED_PATTERN);
 }
 
-bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const char*& new_error_code) {
+// return true if failover is triggered, false if not triggered
+bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
+                                                  const char*& new_error_code,
+                                                  const char*& error_msg) {
     new_error_code = error_code;
     std::string ec(error_code ? error_code : "");
 
@@ -448,27 +451,30 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code, const 
 
         if (current_topology && current_topology->total_hosts() > 1 &&
             ds->allow_reader_connections) {  // there are readers in topology
-            failover_success = failover_to_reader(new_error_code);
+            failover_success = failover_to_reader(new_error_code, error_msg);
             elasped_time_ms =
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
             metrics_container->register_reader_failover_procedure_time(elasped_time_ms);
         } else {
-            failover_success = failover_to_writer(new_error_code);
+            failover_success = failover_to_writer(new_error_code, error_msg);
             elasped_time_ms =
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
             metrics_container->register_writer_failover_procedure_time(elasped_time_ms);
 
         }
+        metrics_container->register_failover_connects(failover_success);
+
+        if (failover_success && in_transaction) {
+            new_error_code = "08007";
+            error_msg = "Connection failure during transaction.";
+        }
+        return true;
     }
 
-    metrics_container->register_failover_connects(failover_success);
-    if (in_transaction) {
-        new_error_code = "08007";
-    }
-    return failover_success;
+    return false;
 }
 
-bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
+bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const char*& error_msg) {
     MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting reader failover procedure.");
     auto result = failover_reader_handler->failover(current_topology);
 
@@ -476,6 +482,7 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
         current_host = result.new_host;
         connection_handler->update_connection(result.new_connection, current_host->get_host());
         new_error_code = "08S02";
+        error_msg = "The active SQL connection has changed.";
         MYLOG_DBC_TRACE(dbc,
                     "[FAILOVER_HANDLER] The active SQL connection has changed "
                     "due to a connection failure. Please re-configure session "
@@ -484,18 +491,20 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code) {
     } else {
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Unable to establish SQL connection to reader node.");
         new_error_code = "08S01";
+        error_msg = "The active SQL connection was lost.";
         return false;
     }
     return false;
 }
 
-bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code) {
+bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code, const char*& error_msg) {
     MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting writer failover procedure.");
     auto result = failover_writer_handler->failover(current_topology);
 
     if (!result.connected) {
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Unable to establish SQL connection to writer node.");
         new_error_code = "08S01";
+        error_msg = "The active SQL connection was lost.";
         return false;
     }
     if (result.is_new_host) {
@@ -508,6 +517,7 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code) {
         result.new_connection, result.new_topology->get_writer()->get_host());
     
     new_error_code = "08S02";
+    error_msg = "The active SQL connection has changed.";
     MYLOG_DBC_TRACE(
         dbc,
         "[FAILOVER_HANDLER] The active SQL connection has changed due to a "
