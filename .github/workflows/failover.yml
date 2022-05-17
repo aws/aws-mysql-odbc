@@ -1,9 +1,12 @@
 name: Failover Unit Tests
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
-      - '*'
+      - main
     paths-ignore:
       - '**/*.md'
       - '**/*.jpg'
