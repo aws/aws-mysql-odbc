@@ -1,9 +1,12 @@
 name: Dockerized Tests
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
-      - '*'
+      - main
     paths-ignore:
       - '**/*.md'
       - '**/*.jpg'
