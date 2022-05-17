@@ -92,7 +92,11 @@ set(AWS_SDK_DEPENDENCIES aws-c-auth aws-c-cal aws-c-common aws-c-compression
   aws-c-event-stream aws-checksums aws-c-http aws-c-io aws-c-mqtt
   aws-crt-cpp aws-c-s3 aws-cpp-sdk-core aws-cpp-sdk-rds)
 
-FetchContent_MakeAvailable(googletest openxlsx toxiproxy awssdk)
+FetchContent_MakeAvailable(googletest toxiproxy awssdk)
+
+if(ENABLE_PERFORMANCE_TESTS)
+  FetchContent_MakeAvailable(openxlsx)
+endif()
 
 enable_testing()
 
@@ -122,8 +126,11 @@ target_link_libraries(
   ${ODBCLIB}
   gtest_main
   toxiproxy
-  OpenXLSX::OpenXLSX
   ${AWS_SDK_DEPENDENCIES}
 )
+
+if(ENABLE_PERFORMANCE_TESTS)
+  target_link_libraries(integration OpenXLSX::OpenXLSX)
+endif()
 
 set_target_properties(integration PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)

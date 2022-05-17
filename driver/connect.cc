@@ -1580,6 +1580,12 @@ SQLRETURN DBC::execute_query(const char* query,
     query_length = strlen(query);
   }
 
+  // return immediately if not connected
+  if (!this->mysql->is_connected()) 
+  {
+    return set_error(MYERR_08S01, "The active SQL connection was lost. Please discard this connection.", 0);
+  }
+
   bool server_alive = is_server_alive(this);
   if (!server_alive || this->mysql->real_query(query, query_length)) {
     const unsigned int mysql_error_code = this->mysql->error_code();
@@ -1588,26 +1594,22 @@ SQLRETURN DBC::execute_query(const char* query,
     result = set_error(MYERR_S1000, this->mysql->error(), mysql_error_code);
 
     if (!server_alive || is_connection_lost(mysql_error_code)) {
-      bool rollback = (!autocommit_on(this) && trans_supported(this)) ||
-                      this->transaction_open;
+      bool rollback = (!autocommit_on(this) && trans_supported(this)) || this->transaction_open;
       if (rollback) {
         MYLOG_DBC_TRACE(this, "Rolling back");
         this->mysql->real_query("ROLLBACK", 8);
       }
 
-      const char *error_code;
-      if (this->fh->trigger_failover_if_needed("08S01", error_code)) {
+      const char *error_code, *error_msg;
+      if (this->fh->trigger_failover_if_needed("08S01", error_code, error_msg)) {
         if (strcmp(error_code, "08007") == 0) {
-        result =
-            set_error(MYERR_08007, "Connection failure during transaction.", 0);
+          result = set_error(MYERR_08007, "Connection failure during transaction.", 0);
+        } else if (strcmp(error_code, "08S02") == 0) {
+          result = set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
         } else {
-        result =
-            set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
+          result = set_error(MYERR_08S01, "The active SQL connection was lost.", 0);
         }
-      } else {
-        result =
-            set_error(MYERR_08S01, "The active SQL connection was lost.", 0);
-      }
+      } 
 
       this->transaction_open = false;
     }
