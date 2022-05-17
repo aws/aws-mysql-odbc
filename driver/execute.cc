@@ -265,9 +265,9 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
 exit:
     if (trigger_failover_upon_error && error == SQL_ERROR) {
-      const char *error_code;
-      if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), error_code))
-        stmt->set_error(error_code, "The active SQL connection has changed.", 0);
+      const char *error_code, *error_msg;
+      if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), error_code, error_msg))
+        stmt->set_error(error_code, error_msg, 0);
     }
 
     if (query != GET_QUERY(&stmt->query))
