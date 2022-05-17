@@ -187,7 +187,7 @@ class FAILOVER_HANDLER {
         std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container);
     ~FAILOVER_HANDLER();
     SQLRETURN init_cluster_info();
-    bool trigger_failover_if_needed(const char* error_code, const char*& new_error_code);
+    bool trigger_failover_if_needed(const char* error_code, const char*& new_error_code, const char*& error_msg);
     bool is_failover_enabled();
     bool is_rds();
     bool is_rds_proxy();
@@ -221,8 +221,8 @@ class FAILOVER_HANDLER {
     std::string get_rds_instance_host_pattern(std::string host);
     bool is_ipv4(std::string host);
     bool is_ipv6(std::string host);
-    bool failover_to_reader(const char*& new_error_code);
-    bool failover_to_writer(const char*& new_error_code);
+    bool failover_to_reader(const char*& new_error_code, const char*& error_msg);
+    bool failover_to_writer(const char*& new_error_code, const char*& error_msg);
 
     void set_cluster_id(std::string host, int port);
     void set_cluster_id(std::string cluster_id);
