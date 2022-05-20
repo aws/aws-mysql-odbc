@@ -524,7 +524,7 @@ IF(ENABLE_INTEGRATION_TESTS OR ENABLE_PERFORMANCE_TESTS)
   ADD_SUBDIRECTORY(integration)
 ENDIF()
 
-IF(ENABLE_GTESTS)
+IF(ENABLE_UNIT_TESTS)
   ADD_SUBDIRECTORY(testing)
 ENDIF()
 
@@ -535,14 +535,14 @@ IF(NOT MYSQLCLIENT_STATIC_LINKING)
 ENDIF()
 
 # Set values to help generate odbc.ini and odbcinst.ini files for Dockerized tests
-IF(ENABLE_GTESTS OR ENABLE_INTEGRATION_TESTS)
+IF(ENABLE_UNIT_TESTS OR ENABLE_INTEGRATION_TESTS)
   SET(ODBC_PATH ${CMAKE_SOURCE_DIR}/testframework/src/test/resources/)
   SET(TEST_DRIVER "MyODBCa")
   SET(DRIVER_PATH "/app/lib/libmyodbc8a.so")
   SET(DRIVER_DESCRIPTION "ANSI Driver for connecting to MySQL database server")
   SET(DESCRIPTION "MySQL ODBC ${CONNECTOR_MAJOR}.${CONNECTOR_MINOR} ANSI Driver for Dockerized tests")
 
-  IF(ENABLE_GTESTS)
+  IF(ENABLE_UNIT_TESTS)
     SET(TEST_DSN "myodbc8a")
     SET(TEST_DATABASE "test")
     SET(TEST_SERVER "mysql-instance")
