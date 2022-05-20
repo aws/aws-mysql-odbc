@@ -441,20 +441,20 @@ export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl@1.1/lib/
 
 ## Testing the AWS ODBC Driver for MySQL
 ### Unit Tests
-1. Build driver binaries with `ENABLE_GTESTS` command set to `TRUE`.
+1. Build driver binaries with `ENABLE_UNIT_TESTS` command set to `TRUE`.
    - **Windows**
         ```
-        cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DENABLE_GTESTS=TRUE
+        cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DENABLE_UNIT_TESTS=TRUE
         cmake --build build --config Release
         ```
    - **MacOS**
         ```
-        cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DODBC_INCLUDES=/usr/local/Cellar/libiodbc/3.52.15/include -DENABLE_GTESTS=TRUE
+        cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DODBC_INCLUDES=/usr/local/Cellar/libiodbc/3.52.15/include -DENABLE_UNIT_TESTS=TRUE
         cmake --build build --config Release
         ```
    - **Linux**
         ```
-        cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DWITH_UNIXODBC=1 -DENABLE_GTESTS=TRUE
+        cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DWITH_UNIXODBC=1 -DENABLE_UNIT_TESTS=TRUE
         cmake --build build --config Release
         ```
 2. There are two options to run the unit tests.
