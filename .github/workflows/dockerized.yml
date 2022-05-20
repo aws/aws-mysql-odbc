@@ -48,7 +48,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
-                -DENABLE_GTESTS=TRUE
+                -DENABLE_UNIT_TESTS=TRUE
                 -DWITH_UNIXODBC=1
 
       # Build driver
@@ -109,7 +109,7 @@ jobs:
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=TRUE
                 -DENABLE_PERFORMANCE_TESTS=FALSE
-                -DENABLE_GTESTS=FALSE
+                -DENABLE_UNIT_TESTS=FALSE
                 -DWITH_UNIXODBC=1
 
       # Build driver
