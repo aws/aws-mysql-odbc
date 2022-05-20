@@ -56,7 +56,7 @@ jobs:
                 -G "$CMAKE_GENERATOR"
                 -DCMAKE_BUILD_TYPE=$WINDOWS_BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
-                -DENABLE_GTESTS=TRUE
+                -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
 
       # Configure test environment
@@ -134,7 +134,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$LINUX_BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DWITH_UNIXODBC=1
-                -DENABLE_GTESTS=TRUE
+                -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
 
       # Build driver
@@ -199,7 +199,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DODBC_INCLUDES=$ODBC_DM_INCLUDES
-                -DENABLE_GTESTS=TRUE
+                -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
 
       # Build driver
