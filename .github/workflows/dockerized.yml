@@ -192,7 +192,7 @@ jobs:
         with:
           name: 'integration-test-logs'
           path: build/reports/tests/
-          retention-days: 5
+          retention-days: 3
 
       - name: 'Delete Test Clusters if Ungraceful Cancel'
         if: cancelled()
