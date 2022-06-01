@@ -15,7 +15,7 @@ The MySQL Connector/ODBC Driver allows an application to take advantage of the f
 clustered MySQL databases.
 
 -- What is Failover?
-An Amazon Aurora DB cluster uses failover to automatically repairs the DB cluster 
+An Amazon Aurora DB cluster uses failover to automatically repair the DB cluster 
 status when a primary DB instance becomes unavailable. During failover, Aurora 
 promotes a replica to become the new primary DB instance, so that the DB cluster 
 can provide maximum availability to a primary read-write DB instance. The MySQL 
