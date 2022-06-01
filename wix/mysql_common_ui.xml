@@ -98,11 +98,11 @@
         Text="&lt; &amp;Back" />
 
       <Control Id="TextLine3" Type="Text" X="135" Y="55" Width="228" Height="45" Hidden="yes" Transparent="yes">
-        <Text>The Setup Wizard has successfully uninstalled [ProductName]. Click Finish to exit the wizard.</Text>
+        <Text>The Setup Wizard has successfully uninstalled the [ProductName]. Click Finish to exit the wizard.</Text>
         <Condition Action="show">ProgressType2="uninstalled"</Condition>
       </Control>
       <Control Id="UpdateTextLine1" Type="Text" X="135" Y="30" Width="228" Height="45" Hidden="yes" Transparent="yes">
-        <Text>Setup has finished installing [ProductName]. Click Finish to exit the wizard.</Text>
+        <Text>Setup has finished installing the [ProductName]. Click Finish to exit the wizard.</Text>
         <Condition Action="show">NOT Installed And ACTION="INSTALL"</Condition>
       </Control>
 <!--          
@@ -175,7 +175,7 @@
         <Condition Action="show">UpdateStarted</Condition>
       </Control>
       <Control Id="TextLine2" Type="Text" X="135" Y="55" Width="228" Height="25" Transparent="yes">
-        <Text>The wizard was interrupted before [ProductName] could be completely installed.</Text>
+        <Text>The wizard was interrupted before the [ProductName] could be completely installed.</Text>
       </Control>
       <Control Id="DlgLine" Type="Line" X="0" Y="234" Width="378" Height="0" />
       <Control Id="Image" Type="Bitmap" X="0" Y="0" Width="374" Height="234" Text="AdminBackground" />
@@ -231,12 +231,12 @@
         <Condition Action="show">UpdateStarted</Condition>
       </Control>
       <Control Id="TextLine2" Type="Text" X="135" Y="55" Width="228" Height="25" Transparent="yes">
-        <Text>The wizard was interrupted before [ProductName] could be completely installed.</Text>
+        <Text>The wizard was interrupted before the [ProductName] could be completely installed.</Text>
       </Control>
       <Control Id="DlgLine" Type="Line" X="0" Y="234" Width="378" Height="0" />
       <Control Id="Image" Type="Bitmap" X="0" Y="0" Width="374" Height="234" Text="AdminBackground" />
       <Control Id="TextLine1" Type="Text" X="135" Y="8" Width="225" Height="45" Transparent="yes">
-        <Text>{&amp;TahomaBold10}[ProductName] Setup Wizard ended prematurely</Text>
+        <Text>{&amp;TahomaBold10}The [ProductName] Setup Wizard ended prematurely</Text>
       </Control>
     </Dialog>
 
@@ -258,7 +258,7 @@
       </Control>
       
       <Control Id="Text" Type="Text" X="48" Y="15" Width="194" Height="30">
-        <Text>Are you sure you want to cancel [ProductName] installation?</Text>
+        <Text>Are you sure you want to cancel the [ProductName] installation?</Text>
       </Control>
       
       <Control Id="Icon" Type="Icon" X="15" Y="15" Width="24" Height="24" FixedSize="yes" IconSize="32"
@@ -295,16 +295,16 @@
         <Text>WARNING: This program is protected by copyright law.</Text>
       </Control-->
       <Control Id="TextLine2" Type="Text" X="135" Y="55" Width="228" Height="45" Transparent="yes">
-        <Text>The Setup Wizard will install [ProductName] release [ProductVersion] on your computer. To continue, click Next.</Text>
+        <Text>The Setup Wizard will install the [ProductName] release [ProductVersion] on your computer. To continue, click Next.</Text>
       </Control>
       <Control Id="DlgLine" Type="Line" X="0" Y="234" Width="378" Height="0" />
       <Control Id="Image" Type="Bitmap" X="0" Y="0" Width="374" Height="234" Text="AdminBackground" />
       <Control Id="TextLine1" Type="Text" X="135" Y="8" Width="225" Height="45" Transparent="yes">
-        <Text>{&amp;TahomaBold10}Welcome to the Setup Wizard for [ProductName]</Text>
+        <Text>{&amp;TahomaBold10}Welcome to the Setup Wizard for the [ProductName]</Text>
       </Control>
       <Control Id="PrevVersion" Type="Text" X="135" Y="124" Width="228" Height="73" Transparent="yes"
         TabSkip="no" Hidden="yes">
-        <Text>Setup has detected a previous version of [ProductName]. It will be removed during this installation.</Text>
+        <Text>Setup has detected a previous version of the [ProductName]. It will be removed during this installation.</Text>
         <Condition Action="show">PREVIOUSVERSIONINSTALLED</Condition>
       </Control>      
     </Dialog>
@@ -326,12 +326,12 @@
       <Control Id="Back" Type="PushButton" X="164" Y="243" Width="66" Height="17" Disabled="yes"
         Text="&lt; &amp;Back" />
       <Control Id="TextLine2" Type="Text" X="135" Y="55" Width="228" Height="50" Transparent="yes">
-        <Text>The Setup Wizard will allow you to modify, repair, or remove [ProductName]. To continue, click Next.</Text>
+        <Text>The Setup Wizard will allow you to modify, repair, or remove the [ProductName]. To continue, click Next.</Text>
       </Control>
       <Control Id="DlgLine" Type="Line" X="0" Y="234" Width="378" Height="0" />
       <Control Id="Image" Type="Bitmap" X="0" Y="0" Width="374" Height="234" Text="AdminBackground" />
       <Control Id="TextLine1" Type="Text" X="135" Y="8" Width="225" Height="45" Transparent="yes">
-        <Text>{&amp;TahomaBold10}Welcome to the Setup Wizard for [ProductName]</Text>
+        <Text>{&amp;TahomaBold10}Welcome to the Setup Wizard for the [ProductName]</Text>
       </Control>
     </Dialog>
 
@@ -351,12 +351,12 @@
       <Control Id="Back" Type="PushButton" X="164" Y="243" Width="66" Height="17" Disabled="yes"
         Text="&lt; &amp;Back" />
       <Control Id="TextLine2" Type="Text" X="135" Y="55" Width="228" Height="45" Transparent="yes">
-        <Text>This Wizard will create a server image of [ProductName] at a specified network location. To continue, click Next.</Text>
+        <Text>This Wizard will create a server image of the [ProductName] at a specified network location. To continue, click Next.</Text>
       </Control>
       <Control Id="DlgLine" Type="Line" X="0" Y="234" Width="378" Height="0" />
       <Control Id="Image" Type="Bitmap" X="0" Y="0" Width="374" Height="234" Text="AdminBackground" />
       <Control Id="TextLine1" Type="Text" X="135" Y="8" Width="225" Height="45" Transparent="yes">
-        <Text>{&amp;TahomaBold10}Welcome to the Setup Wizard for [ProductName]</Text>
+        <Text>{&amp;TahomaBold10}Welcome to the Setup Wizard for the [ProductName]</Text>
       </Control>
     </Dialog>
     
@@ -383,7 +383,7 @@
         TabSkip="yes" Text="&lt; &amp;Back" />
       
       <Control Id="TextLine2" Type="Text" X="135" Y="55" Width="228" Height="30" Transparent="yes">
-        <Text>[ProductName] Setup is preparing the Setup Wizard which will guide you through the program setup process.  Please wait...</Text>
+        <Text>The [ProductName] Setup is preparing the Setup Wizard which will guide you through the program setup process.  Please wait...</Text>
       </Control>
       
       <Control Id="Next" Type="PushButton" X="230" Y="243" Width="66" Height="17" Disabled="yes"
@@ -398,7 +398,7 @@
       <Control Id="Image" Type="Bitmap" X="0" Y="0" Width="374" Height="234" Text="AdminBackground" />
       
       <Control Id="TextLine1" Type="Text" X="135" Y="8" Width="225" Height="45" Transparent="yes">
-        <Text>{&amp;TahomaBold10}Welcome to the Setup Wizard for [ProductName]</Text>
+        <Text>{&amp;TahomaBold10}Welcome to the Setup Wizard for the [ProductName]</Text>
       </Control>      
     </Dialog>
 
@@ -424,19 +424,19 @@
         <Condition Action="show">ProgressType2="installed"</Condition>
       </Control>
       <Control Id="DlgTitle" Type="Text" X="13" Y="6" Width="292" Height="25" Hidden="yes" Transparent="yes">
-        <Text>{&amp;MSSansBold8}Installing [ProductName]</Text>
+        <Text>{&amp;MSSansBold8}Installing the [ProductName]</Text>
         <Condition Action="show">ProgressType1="Installing"</Condition>
       </Control>
       <Control Id="DlgText" Type="Text" X="59" Y="51" Width="275" Height="30" Hidden="yes" Transparent="yes">
-        <Text>Please wait while the Setup Wizard installs [ProductName]. This may take several minutes.</Text>
+        <Text>Please wait while the Setup Wizard installs the [ProductName]. This may take several minutes.</Text>
         <Condition Action="show">ProgressType3="installs"</Condition>
       </Control>
       <Control Id="DlgTitle2" Type="Text" X="13" Y="6" Width="292" Height="25" Hidden="yes" Transparent="yes">
-        <Text>{&amp;MSSansBold8}Uninstalling [ProductName]</Text>
+        <Text>{&amp;MSSansBold8}Uninstalling the [ProductName]</Text>
         <Condition Action="show">ProgressType1="Uninstalling"</Condition>
       </Control>
       <Control Id="DlgText2" Type="Text" X="59" Y="51" Width="275" Height="30" Hidden="yes" Transparent="yes">
-        <Text>Please wait while the Setup Wizard uninstalls [ProductName]. This may take several minutes.</Text>
+        <Text>Please wait while the Setup Wizard uninstalls the [ProductName]. This may take several minutes.</Text>
         <Condition Action="show">ProgressType3="uninstalls"</Condition>
       </Control>
       <Control Id="DlgDesc2" Type="Text" X="21" Y="23" Width="292" Height="25" Hidden="yes" Transparent="yes">
@@ -486,19 +486,19 @@
       <Control Id="Back" Type="PushButton" X="164" Y="243" Width="66" Height="17" Disabled="yes"
         Text="&lt; &amp;Back" />
       <Control Id="PreselectedText" Type="Text" X="135" Y="55" Width="228" Height="45" Transparent="yes">
-        <Text>The Setup Wizard will complete the installation of [ProductName] on your computer. To continue, click Next.</Text>
+        <Text>The Setup Wizard will complete the installation of the [ProductName] on your computer. To continue, click Next.</Text>
         <Condition Action="hide">RESUME</Condition>
         <Condition Action="show">NOT RESUME</Condition>
       </Control>
       <Control Id="ResumeText" Type="Text" X="135" Y="46" Width="228" Height="45" Transparent="yes">
-        <Text>The Setup Wizard will complete the suspended installation of [ProductName] on your computer. To continue, click Next.</Text>
+        <Text>The Setup Wizard will complete the suspended installation of the [ProductName] on your computer. To continue, click Next.</Text>
         <Condition Action="hide">NOT RESUME</Condition>
         <Condition Action="show">RESUME</Condition>
       </Control>
       <Control Id="DlgLine" Type="Line" X="0" Y="234" Width="378" Height="0" />
       <Control Id="Image" Type="Bitmap" X="0" Y="0" Width="374" Height="234" Text="AdminBackground" />
       <Control Id="TextLine1" Type="Text" X="135" Y="8" Width="225" Height="45" Transparent="yes">
-        <Text>{&amp;TahomaBold10}Resuming the Setup Wizard for [ProductName]</Text>
+        <Text>{&amp;TahomaBold10}Resuming the Setup Wizard for the [ProductName]</Text>
       </Control>
     </Dialog>
 
@@ -749,7 +749,7 @@
         <Text>{&amp;MSSansBold8}Network Location</Text>
       </Control>
       <Control Id="DlgText" Type="Text" X="21" Y="51" Width="326" Height="40">
-        <Text>Enter the network location or click Change to browse to a location.  Click Install to create a server image of [ProductName] at the specified network location or click Cancel to exit the wizard.</Text>
+        <Text>Enter the network location or click Change to browse to a location.  Click Install to create a server image of the [ProductName] at the specified network location or click Cancel to exit the wizard.</Text>
       </Control>
       <Control Id="Banner" Type="Bitmap" X="0" Y="0" Width="374" Height="44" Text="AdminHeader" />
       <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="378" Height="0" />
@@ -936,7 +936,7 @@
         <Text>Repair installation errors in the program. This option fixes missing or corrupt files, shortcuts, and registry entries.</Text>
       </Control>
       <Control Id="Text3" Type="Text" X="80" Y="192" Width="260" Height="35">
-        <Text>Remove [ProductName] from your computer.</Text>
+        <Text>Remove the [ProductName] from your computer.</Text>
       </Control>
     </Dialog>
 
@@ -1076,7 +1076,7 @@
         <Text>{&amp;MSSansBold8}Remove the Program</Text>
       </Control>
       <Control Id="DlgText" Type="Text" X="21" Y="51" Width="326" Height="24">
-        <Text>Click Remove to remove [ProductName] from your computer. After removal, this program will no longer be available for use.</Text>
+        <Text>Click Remove to remove the [ProductName] from your computer. After removal, this program will no longer be available for use.</Text>
       </Control>
       <Control Id="DlgText2" Type="Text" X="21" Y="102" Width="330" Height="24" />
       <Control Id="Banner" Type="Bitmap" X="0" Y="0" Width="374" Height="44" Text="AdminHeader" />
