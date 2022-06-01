@@ -111,6 +111,33 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
+TEST_F(NetworkFailoverIntegrationTest, use_same_connection_after_failing_failover) {
+  const std::string server = get_proxied_endpoint(writer_id);
+  connection_string = builder.withServer(server).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+  SQLHSTMT handle;
+  EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
+
+  assert_query_succeeded(dbc, SERVER_ID_QUERY);
+
+  const auto writer_proxy = get_proxy_from_map(writer_id);
+  if (writer_proxy) {
+    disable_connectivity(writer_proxy);
+  }
+  disable_connectivity(proxy_cluster);
+
+  // failover fails
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_FAILURE);
+
+  enable_connectivity(writer_proxy);
+  enable_connectivity(proxy_cluster);
+
+  // Reuse same connection after failing failover
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_FAILURE);
+  
+  EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+}
+
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
   connection_string = builder.withServer(reader_endpoint).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));

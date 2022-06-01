@@ -1,9 +1,12 @@
 name: Dockerized Tests
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
-      - '*'
+      - main
     paths-ignore:
       - '**/*.md'
       - '**/*.jpg'
@@ -45,7 +48,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
-                -DENABLE_GTESTS=TRUE
+                -DENABLE_UNIT_TESTS=TRUE
                 -DWITH_UNIXODBC=1
 
       # Build driver
@@ -106,7 +109,7 @@ jobs:
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=TRUE
                 -DENABLE_PERFORMANCE_TESTS=FALSE
-                -DENABLE_GTESTS=FALSE
+                -DENABLE_UNIT_TESTS=FALSE
                 -DWITH_UNIXODBC=1
 
       # Build driver
@@ -189,7 +192,7 @@ jobs:
         with:
           name: 'integration-test-logs'
           path: build/reports/tests/
-          retention-days: 5
+          retention-days: 3
 
       - name: 'Delete Test Clusters if Ungraceful Cancel'
         if: cancelled()
