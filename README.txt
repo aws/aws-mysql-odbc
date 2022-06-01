@@ -17,7 +17,7 @@ at <https://github.com/mysql/mysql-connector-odbc/>, and is compatible with all
 MySQL deployments.
 
 -- What is Failover?
-An Amazon Aurora DB cluster uses failover to automatically repairs the DB cluster 
+An Amazon Aurora DB cluster uses failover to automatically repair the DB cluster 
 status when a primary DB instance becomes unavailable. During failover, Aurora 
 promotes a replica to become the new primary DB instance, so that the DB cluster 
 can provide maximum availability to a primary read-write DB instance. The AWS 
@@ -35,7 +35,7 @@ topology is provided via a direct query to the Aurora database, essentially prov
 a shortcut to bypass the delays caused by DNS resolution. With this knowledge, the 
 AWS ODBC Driver can more closely monitor the Aurora DB cluster status so that a 
 connection to the new primary DB instance can be established as fast as possible. 
-Additionally, as noted above, the AWS ODBC Driver is designed to be a drop-in 
+Additionally, as noted above, the AWS ODBC Driver is designed to be drop-in 
 compatible for other MySQL ODBC drivers and can be used to interact with RDS and 
 MySQL databases as well as Aurora MySQL.
 
@@ -52,13 +52,18 @@ for MySQL is based on: <https://dev.mysql.com/doc/connector-cpp/8.0/en/>.
 CONTACT
 =======
 
-If you encounter a bug with the AWS ODBC Driver for MySQL, we would like to hear 
+If you encounter a problem with the AWS ODBC Driver for MySQL, we would like to hear 
 about it. Please search the existing issues at 
 <https://github.com/awslabs/aws-mysql-odbc/issues> and see if others are also 
-experiencing the issue before opening a new issue. When opening a new issue, we will 
-need the version of AWS ODBC Driver for MySQL, C++ language version, OS you’re using, 
-and the MySQL database version you're running against. Please include a reproduction 
-case for the issue when appropriate.
+experiencing the issue before opening a new issue. When opening a new issue, please include
+the following information: 
+
+- the version of AWS ODBC Driver for MySQL
+- C++ language version
+- the OS platform and version
+- the MySQL database version you're running against. 
+
+Please include a reproduction case for the issue when appropriate.
 
 The GitHub issues are intended for bug reports and feature requests. Keeping the list 
 of open issues lean will help us respond in a timely manner.
