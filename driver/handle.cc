@@ -123,8 +123,11 @@ DBC::~DBC()
   if (ds)
     ds_delete(ds);
 
+  if (mysqllib_proxy) 
+    delete mysqllib_proxy;
+
   if (fh)
-      delete fh;
+    delete fh;
 
   free_explicit_descriptors();
 }
