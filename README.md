@@ -52,23 +52,23 @@
 An Amazon Aurora database (DB) cluster uses failover to automatically repair the DB cluster status when a primary DB instance becomes unavailable. During failover, Aurora promotes a replica to become the new primary DB instance, so that the DB cluster can provide maximum availability to a primary read-write DB instance. The AWS ODBC Driver for MySQL is designed to coordinate with this behaviour in order to provide minimal downtime in the event of a DB instance failure.
 
 ## Benefits of the AWS ODBC Driver for MySQL
-Although Aurora is able to provide maximum availability through the use of failover, existing client drivers do not fully support this functionality. This is partially due to the time required for the DNS of the new primary DB instance to be fully resolved in order to properly direct the connection. The AWS ODBC Driver for MySQL fully utilizes failover behaviour by maintaining a cache of the Aurora cluster topology and each DB instance's role (Aurora Replica or primary DB instance). This topology is provided via a direct query to the Aurora database, essentially providing a shortcut to bypass the delays caused by DNS resolution. With this knowledge, the AWS ODBC Driver can more closely monitor the Aurora DB cluster status so that a connection to the new primary DB instance can be established as fast as possible. Additionally, as noted above, the AWS ODBC Driver is designed to be a drop-in compatible for other MySQL ODBC drivers and can be used to interact with RDS and MySQL databases as well as Aurora MySQL.
+Although Aurora is able to provide maximum availability through the use of failover, existing client drivers do not fully support this functionality. This is partially due to the time required for the DNS of the new primary DB instance to be fully resolved in order to properly direct the connection. The AWS ODBC Driver for MySQL fully utilizes failover behaviour by maintaining a cache of the Aurora cluster topology and each DB instance's role (Aurora Replica or primary DB instance). This topology is provided via a direct query to the Aurora database, essentially providing a shortcut to bypass the delays caused by DNS resolution. With this knowledge, the AWS ODBC Driver can more closely monitor the Aurora DB cluster status so that a connection to the new primary DB instance can be established as fast as possible. Additionally, as noted above, the AWS ODBC Driver is designed to be drop-in compatible for other MySQL ODBC drivers and can be used to interact with Aurora MySQL, RDS MySQL, and commercial/open-source MySQL databases.
 
 ## Getting Started
 
 ### Installing the AWS ODBC Driver for MySQL
 
 #### Windows
-Download the `.msi` Windows installer for the given system, then run the installer and follow the instructions. The default target installation location for the driver files is `C:\Program Files\AWS ODBC Driver for MySQL`. An ANSI and a Unicode driver will be installed, named `AWS ODBC ANSI Driver for MySQL` and `AWS ODBC Unicode Driver for MySQL`. To uninstall the driver, open the same installer file and follow the installer instructions to remove the driver.
+Download the `.msi` Windows installer for your system; run the installer and follow the onscreen instructions. The default target installation location for the driver files is `C:\Program Files\AWS ODBC Driver for MySQL`. An ANSI driver and a Unicode driver will be installed, named respectively `AWS ODBC ANSI Driver for MySQL` and `AWS ODBC Unicode Driver for MySQL`. To uninstall the ODBC driver, open the same installer file and follow the onscreen instructions to remove the driver.
 
 #### MacOS
-Download the `.pkg` installer, the run the installer and follow the instructions. The default target installation location for the driver folder is `/usr/local/`. Note that for a MacOS system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. This is done by the installer, as it will register two driver entries with two corresponding DSN entries. See [how to configure the driver and DSN settings](#configuring-the-driver-and-dsn-entries) for a configuration sample. There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
+Download the `.pkg` installer; run the installer and follow the onscreen instructions. The default target installation location for the driver folder is `/usr/local/`. Note that for a MacOS system, additional steps are required to configure the driver and Data Source Name (DSN) entries before you can use the driver(s). Initially, the installer will register two driver entries with two corresponding DSN entries. For information about [how to configure the driver and DSN settings](#configuring-the-driver-and-dsn-entries), review the configuration sample. There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 #### Linux
-Download the `.tar.gz` file, then extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. See [how to configure the driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
+Download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 #### Configuring the Driver and DSN Entries 
-To use the driver on MacOS or Linux systems, the two files `odbc.ini` and `odbcinst.ini` must exist and contain the correct driver and data source name (DSN) configurations. This can be done through changing the files manually, or through tools with a GUI such as the iODBC Administrator (available for MacOS). The sample odbc.ini and odbcinst.ini files show how an ANSI driver could be set up for a MacOS system. For a Linux system, the files would be similar, but the driver file would have a `.so` extension instead of the `.dylib` extension as seen in the sample. On a MacOS system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/Library/ODBC/` directory. On a Linux system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/etc` directory.
+To use the driver on MacOS or Linux systems, the two files (`odbc.ini` and `odbcinst.ini`) must exist and contain the correct driver and data source name (DSN) configurations. You can modify the files manually, or through tools with a GUI such as the iODBC Administrator (available for MacOS). The sample odbc.ini and odbcinst.ini files that follow show how an ANSI driver could be set up for a MacOS system. For a Linux system, the files would be similar, but the driver file would have a `.so` extension instead of the `.dylib` extension as shown in the sample. On a MacOS system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/Library/ODBC/` directory. On a Linux system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/etc` directory.
 
 ##### odbc.ini
 ```bash
@@ -118,7 +118,7 @@ Driver = /usr/local/aws-mysql-odbc-0.1.0-macos/lib/awsmysqlodbca.dylib
 The AWS ODBC Driver for MySQL is drop-in compatible, so usage is identical to the [MySQL Connector/ODBC driver](https://github.com/mysql/mysql-connector-odbc/). The sections below highlight driver usage specific to failover.
 
 ### Connection Strings and Configuring the Driver
-To set up a connection, the driver uses an ODBC connection string. ODBC connection strings are semicolon-delimited, and they specify a set of connection options. Typically, a connection string will either:
+To set up a connection, the driver uses an ODBC connection string. An ODBC connection string specifies a set of semicolon-delimited connection options. Typically, a connection string will either:
 
 1. specify a Data Source Name containing a preconfigured set of options (DSN=xxx;) or
 2. configure options explicitly (SERVER=xxx;PORT=xxx;...). This option will override values set inside the DSN.
@@ -132,7 +132,7 @@ In addition to the parameters that you can configure for the [MySQL Connector/OD
 | `ALLOW_READER_CONNECTIONS`         | Set to `1` to allow connections to reader instances during the failover process.                                                                                                                                                                                                                                                                                                   | bool   | No       | `0`                                      |
 | `GATHER_PERF_METRICS`              | Set to `1` to record failover-associated metrics.                                                                                                                                                                                                                                                                                                                                  | bool   | No       | `0`                                      |
 | `GATHER_PERF_METRICS_PER_INSTANCE` | Set to `1` to gather additional performance metrics per instance as well as cluster.                                                                                                                                                                                                                                                                                               | bool   | No       | `0`                                      |
-| `HOST_PATTERN`                     | This parameter is not required unless connecting to an AWS RDS cluster via an IP address or custom domain URL. In those cases, this parameter specifies the cluster instance DNS pattern that will be used to build a complete instance endpoint. A "?" character in this pattern should be used as a placeholder for the DB instance identifiers of the instances in the cluster.  <br/><br/>Example: `?.my-domain.com`, `any-subdomain.?.my-domain.com:9999`<br/><br/>Usecase Example: If your cluster instance endpoints followed this pattern:`instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc. and you wanted your initial connection to be to `customHost:1234`, then your connection string should look something like this: `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost` <br><br/> If the provided connection string is not an IP address or custom domain, the driver will automatically acquire the cluster instance host pattern from the customer-provided connection string. | char\* | If connecting using an IP address or custom domain URL: Yes <br><br> Otherwise: No <br><br> See [host pattern](#host-pattern) for more details. | `NONE`                                   |
+| `HOST_PATTERN`                     | This parameter is not required unless connecting to an AWS RDS cluster via an IP address or custom domain URL. In those cases, this parameter specifies the cluster instance DNS pattern that will be used to build a complete instance endpoint. A "?" character in this pattern should be used as a placeholder for the DB instance identifiers of the instances in the cluster.  <br/><br/>Example: `?.my-domain.com`, `any-subdomain.?.my-domain.com:9999`<br/><br/>Usecase Example: If your cluster instance endpoint follows this pattern:`instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc. and you want your initial connection to be to `customHost:1234`, then your connection string should look like this: `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost` <br><br/> If the provided connection string is not an IP address or custom domain, the driver will automatically acquire the cluster instance host pattern from the customer-provided connection string. | char\* | If connecting using an IP address or custom domain URL: Yes <br><br> Otherwise: No <br><br> See [Host Pattern](#host-pattern) for more details. | `NONE`                                   |
 | `CLUSTER_ID`                       | A unique identifier for the cluster. Connections with the same cluster ID share a cluster topology cache. This connection parameter is not required and thus should only be set if desired.                                                                                                                                                                                        | char\* | No       | Either the cluster ID or the instance ID, depending on whether the provided connection string is a cluster or instance URL. |
 | `TOPOLOGY_RR`                      | Cluster topology refresh rate in milliseconds. The cached topology for the cluster will be invalidated after the specified time, after which it will be updated during the next interaction with the connection.                                                                                                                                                                   | int    | No       | `30000`                                  |
 | `FAILOVER_T`                       | Maximum allowed time in milliseconds to attempt reconnecting to a new writer or reader instance after a cluster failover is initiated.                                                                                                                                                                                                                                             | int    | No       | `60000`                                  |
@@ -260,11 +260,11 @@ int main() {
 ```
 
 #### 08007 - Connection Failure During Transaction
-When the driver returns an error code ```08007```, the original connection failed within a transaction (while autocommit was set to false). In this scenario, when the transaction ends the driver first attempts to rollback the transaction, and then fails over to another available instance in the cluster. Note that the rollback might be unsuccessful as the initial connection may be broken at the time that the driver recognizes the problem. Note also that any session state configuration of the initial connection is now lost. In this scenario, you should:
+When the driver returns an error code ```08007```, the original connection failed within a transaction (while autocommit was set to false). In this scenario, when the transaction ends, the driver first attempts to rollback the transaction, and then fails over to another available instance in the cluster. Note that the rollback might be unsuccessful as the initial connection may be broken at the time that the driver recognizes the problem. Note also that any session state configuration of the initial connection is now lost. In this scenario, you should:
 
 1. Reconfigure and reuse the original connection (the reconfigured session state will be the same as the original connection).
 2. Re-start the transaction and repeat all queries which were executed during the transaction before the connection failed.
-3. Repeat the query that was executed when the connection failed and continue work as desired.
+3. Repeat the query that was executed when the connection failed, and continue work.
 
 ##### Sample Code
 ```cpp
@@ -378,7 +378,7 @@ int main() {
 ```
 
 >### :warning: Warnings About Proper Usage of the AWS ODBC Driver for MySQL
->It is highly recommended that you use the cluster and read-only cluster endpoints instead of the direct instance endpoints of your Aurora cluster, unless you are confident about your application's usage of instance endpoints. Although the driver will correctly failover to the new writer instance when using instance endpoints, use of these endpoints is discouraged because individual instances can spontaneously change reader/writer status when failover occurs. The driver will always connect directly to the instance specified if an instance endpoint is provided, so a write-safe connection cannot be assumed if the application uses instance endpoints.
+>It is highly recommended that you use the cluster and read-only cluster endpoints instead of the direct instance endpoints of your Aurora cluster, unless you are confident about your application's use of instance endpoints. Although the driver will correctly failover to the new writer instance when using instance endpoints, use of these endpoints is discouraged because individual instances can spontaneously change reader/writer status when failover occurs. The driver will always connect directly to the instance specified if an instance endpoint is provided, so a write-safe connection cannot be assumed if the application uses instance endpoints.
 
 ## Building the AWS ODBC Driver for MySQL
 
@@ -389,23 +389,23 @@ int main() {
     - [Visual Studio](https://visualstudio.microsoft.com/downloads/)
       > The driver has been built successfully using `Visual Studio 2019`, and it may not build correctly with other versions. When installing Visual Studio, ensure the `Visual C++ 2019` and `Visual Studio Tools for CMake` packages are also installed.
     - [MySQL Server](https://dev.mysql.com/downloads/installer/)
-2. Build the driver to the `build` directory with the following commands:
+2. Build the driver in the `build` directory with the following commands:
     ```
     cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE
     cmake --build build --config Release
     ```
 
 ### MacOS
-1. Install the following packages available on `Homebrew` or another package management system of your choice:
+1. Install the following packages available on `Homebrew` or other package management system of your choice:
      - `libiodbc`
      - `cmake`
      - `mysql-client`
      - `mysql`
-2. Set the environment variable MYSQL_DIR as the path to your `mysql-client` installation location
+2. Set the environment variable MYSQL_DIR as the path to your `mysql-client` installation location:
     ```
     export MYSQL_DIR=/usr/local/opt/mysql-client
     ```
-3. Build the driver to the `build` directory with the following commands:
+3. Build the driver in the `build` directory with the following commands:
     ```
     cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DODBC_INCLUDES=/usr/local/Cellar/libiodbc/3.52.15/include
     cmake --build build --config Release
@@ -413,12 +413,12 @@ int main() {
     Note: you may have a different `libiodbc` version. Change `3.52.15` to your respective version.
 
 #### Troubleshoot
-If you see a `ld: library not found for -lzstd` error, run the following and the rebuild the driver:
+If you encounter an `ld: library not found for -lzstd` error, run the following command, and then rebuild the driver:
 ```
 export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
 ```
 
-If you see a `ld: library not found for -lssl` error, run one of the following depending on what openssl library you have and the rebuild the driver:
+If you encounter an `ld: library not found for -lssl` error, run one of the following commands (depending on what openssl library you have) and then rebuild the driver:
 ```
 export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl/lib/
 ```
@@ -428,12 +428,12 @@ export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl@1.1/lib/
 ```
 
 ### Linux
-1. Install the following required packages on Linux.
+1. Install the following required packages:
     ```
     sudo apt-get update
     sudo apt-get install build-essential libgtk-3-dev libmysqlclient-dev unixodbc unixodbc-dev
     ```
-2. Build the driver to the `build` directory with the following commands:
+2. Build the driver in the `build` directory with the following commands:
     ```
     cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DWITH_UNIXODBC=1
     cmake --build build --config Release
@@ -441,7 +441,7 @@ export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl@1.1/lib/
 
 ## Testing the AWS ODBC Driver for MySQL
 ### Unit Tests
-1. Build driver binaries with `ENABLE_UNIT_TESTS` command set to `TRUE`.
+1. Build driver binaries with `ENABLE_UNIT_TESTS` command set to `TRUE`:
    - **Windows**
         ```
         cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DENABLE_UNIT_TESTS=TRUE
@@ -457,11 +457,11 @@ export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl@1.1/lib/
         cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DWITH_UNIXODBC=1 -DENABLE_UNIT_TESTS=TRUE
         cmake --build build --config Release
         ```
-2. There are two options to run the unit tests.
-    - Run `ctest` directly from the `testing` directory, or;
-    - Navigate to `testing/bin/Release` and run `testing.exe`. To specify a particular test or test suite, use `--gtest_filter` in the command.
+2. There are two options to run the unit tests:
+    - Run `ctest` directly from the `testing` directory.
+    - Navigate to `testing/bin/Release` and run `testing.exe`. To specify a particular test or test suite, include `--gtest_filter` in the command.
 
-The following is an example running all the tests in the `TopologyServiceTest` suite with the `.\testing.exe --gtest_filter=TopologyServiceTest.*` command:
+The following example demonstrates running all the tests in the `TopologyServiceTest` suite with the `.\testing.exe --gtest_filter=TopologyServiceTest.*` command:
 
 ```
 PS C:\Other\dev\aws-mysql-odbc\testing\bin\Release> .\testing.exe --gtest_filter=TopologyServiceTest.*
@@ -492,13 +492,13 @@ Note: Google Test filter = TopologyServiceTest.*
 ```
 
 ### Integration Tests
-There are two types of integration tests you can run. One type is the integration tests against a MySQL Server, and the other type consists of the two sets of integration tests specific to the failover functionality provided by the AWS ODBC Driver for MySQL.
+There are two types of integration tests you can run. One type is an integration test against a MySQL Server, and the other type consists of the two sets of integration tests specific to the failover functionality provided by the AWS ODBC Driver for MySQL.
 
 #### Integration Tests Against A MySQL Server
 
 ##### Prerequisites
 - Install MySQL Server. See the [build instructions for the desired system](#building-the-aws-odbc-driver-for-mysql) for instructions.
-- [**Optional**] Install [Docker](https://docs.docker.com/get-docker/)
+- [**Optional**] Install [Docker](https://docs.docker.com/get-docker/).
 
 ##### Steps
 1. Specify the following environment variables on your target platform before building the driver:
@@ -521,7 +521,7 @@ There are two types of integration tests you can run. One type is the integratio
 > **NOTE:** This set of tests can only be run on Linux at the moment.
 
 ##### Prerequisites
-- Install JDK 8
+- Install JDK 8:
   ```
   sudo apt-get install openjdk-8-jdk
   ```
@@ -530,8 +530,8 @@ There are two types of integration tests you can run. One type is the integratio
 ##### Steps
 > **NOTE:** Running these tests will automatically create an Amazon Aurora MySQL DB cluster with at least 5 instances and may induce a cost. Ensure the test cluster is cleaned up after testing on the [Amazon RDS Management Console](https://console.aws.amazon.com/rds/home).
 
-1. This set of tests runs against an Amazon Aurora MySQL DB cluster with at least 5 instances. The test will automatically generate the required AWS MySQL DB cluster and instances if proper AWS credentials are set up. Refer to this [documentation](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_SettingUp_Aurora.html) to set up a development environment for Amazon Aurora.
-2. Specify the following environment variables on Linux:
+1. This set of tests runs against an Amazon Aurora MySQL DB cluster with at least 5 instances. The test will automatically generate the required AWS MySQL DB cluster and instances if proper AWS credentials are set up. Refer to the [documentation](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_SettingUp_Aurora.html) for information about setting up a development environment for Amazon Aurora.
+2. Define the following environment variables:
     | Environment Variable       | Description                                                                                                         | Example                                    |
     |----------------------------|---------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
     | TEST_DSN                   | The DSN to use for the test.                                                                                        | AWSODBCDriverDSN                           |
@@ -564,11 +564,18 @@ There are two types of integration tests you can run. One type is the integratio
         -DWITH_UNIXODBC=1
     cmake --build build --config Release
    ```
-5. Navigate to the `testframework` directory and run `./gradlew --no-parallel --no-daemon test-failover --info`.
-6. Logs are outputted to the `build` directory as `myodbc.sql`.
+5. Navigate to the `testframework` directory and run the command: `./gradlew --no-parallel --no-daemon test-failover --info`.
+6. Log files are written to the `build` directory as `myodbc.sql`.
 
 ## Getting Help and Opening Issues
-If you encounter a bug with the AWS ODBC Driver for MySQL, we would like to hear about it. Please search the [existing issues](https://github.com/awslabs/aws-mysql-odbc/issues) and see if others are also experiencing the issue before opening a new issue. When opening a new issue, we will need the version of AWS ODBC Driver for MySQL, C++ language version, OS you’re using, and the MySQL database version you're running against. Please include a reproduction case for the issue when appropriate.
+If you encounter a bug with the AWS ODBC Driver for MySQL, we would like to hear about it. Please search the [existing issues](https://github.com/awslabs/aws-mysql-odbc/issues) and see if others are also experiencing the issue before opening a new issue. When opening a new issue, please provide: 
+
+- the version of AWS ODBC Driver for MySQL
+- C++ language version
+- the OS platform and version
+- the MySQL database version you're running against
+
+Please include a reproduction case for the issue when appropriate.
 
 The GitHub issues are intended for bug reports and feature requests. Keeping the list of open issues lean will help us respond in a timely manner.
 
@@ -578,22 +585,22 @@ If you encounter an issue with the AWS ODBC Driver for MySQL and would like to r
 #### Enabling Logs On Windows
 When connecting the AWS ODBC Driver for MySQL using a Windows system, ensure logging is enabled by following the steps below:
 
-1. Open the ODBC Data Source Administrator
-2. Add a new DSN or configure an existing DSN of your choice
-3. Open the details for the DSN
-4. Navigate to the Debug tab
-5. Ensure the box to log queries is checked
+1. Open the ODBC Data Source Administrator.
+2. Add a new DSN or configure an existing DSN of your choice.
+3. Open the details for the DSN.
+4. Navigate to the Debug tab.
+5. Ensure the box to log queries is checked.
 
 ##### Example
 ![enable-logging-windows](doc/enable-logging-windows.jpg)
 
-The log file, named `myodbc.sql`, can be found under `%temp%`.
+The resulting log file, named `myodbc.sql`, can be found under `%temp%`.
 
 #### Enabling Logs On MacOS and Linux
-When connecting the AWS ODBC Driver for MySQL using a MacOS or Linux system, use the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.sql`, can be found in the current working directory.
+When connecting the AWS ODBC Driver for MySQL using a MacOS or Linux system, include the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.sql`, can be found in the current working directory.
 
 ## Documentation
-For additional documentation on the AWS ODBC Driver for MySQL, [please refer to the documentation for the open-source mysql-connector-odbc driver that the AWS ODBC Driver for MySQL is based on](https://dev.mysql.com/doc/connector-cpp/8.0/en/).
+For additional documentation about the AWS ODBC Driver for MySQL, [please refer to the documentation for the open-source mysql-connector-odbc driver that the AWS ODBC Driver for MySQL is based on](https://dev.mysql.com/doc/connector-cpp/8.0/en/).
 
 ## License
 This software is released under version 2 of the GNU General Public License (GPLv2).
