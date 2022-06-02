@@ -30,6 +30,8 @@
 #include <memory>
 #include <mysql.h>
 
+#include "MYSQLLIB_PROXY.h"
+
 class CONNECTION_INTERFACE {
 public:
     virtual ~CONNECTION_INTERFACE() {};
@@ -44,7 +46,7 @@ public:
 
 class CONNECTION : virtual public CONNECTION_INTERFACE {
 public:
-    CONNECTION(MYSQL* conn);
+    CONNECTION(MYSQL* conn, MYSQLLIB_PROXY *mysqllib_proxy);
     virtual ~CONNECTION();
     bool is_connected() override;
 
@@ -128,6 +130,7 @@ public:
 private:
     MYSQL* connection;
     MYSQL_RES* query_result;
+    MYSQLLIB_PROXY* mysqllib_proxy;
 };
 
 #endif /* __CONNECTION_H__ */
