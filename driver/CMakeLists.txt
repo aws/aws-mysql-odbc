@@ -60,7 +60,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     error.cc execute.cc failover_connection_handler.cc failover_handler.cc
     failover_reader_handler.cc failover_writer_handler.cc handle.cc host_info.cc info.cc
     monitor.cc monitor_connection_context.cc monitor_service.cc monitor_thread_container.cc
-    my_prepared_stmt.cc my_stmt.cc mylog.cc options.cc parse.cc prepare.cc query_parsing.cc
+    my_prepared_stmt.cc my_stmt.cc mylog.cc mysql_proxy.cc options.cc parse.cc prepare.cc query_parsing.cc
     results.cc topology_service.cc transact.cc utility.cc)
 
   IF(UNICODE)
@@ -81,7 +81,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    base_metrics_holder.h catalog.h cluster_aware_hit_metrics_holder.h cluster_aware_metrics_container.h
                                    cluster_aware_metrics.h cluster_aware_time_metrics_holder.h cluster_topology_info.h connection.h
                                    driver.h error.h failover.h host_info.h monitor.h monitor_connection_context.h monitor_service.h
-                                   monitor_thread_container.h mylog.h myutil.h parse.h query_parsing.h topology_service.h
+                                   monitor_thread_container.h mylog.h mysql_proxy.h myutil.h parse.h query_parsing.h topology_service.h
                                    ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
   ENDIF(WIN32)
 
