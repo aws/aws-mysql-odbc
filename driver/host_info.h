@@ -47,7 +47,6 @@ public:
     HOST_INFO(const char* host, int port, HOST_STATE state, bool is_writer);
     ~HOST_INFO();
 
-
     int get_port();
     std::string get_host();
     std::string get_host_port_pair();
