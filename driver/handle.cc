@@ -123,8 +123,8 @@ DBC::~DBC()
   if (ds)
     ds_delete(ds);
 
-  if (mysqllib_proxy) 
-    delete mysqllib_proxy;
+  if (mysql_proxy) 
+    delete mysql_proxy;
 
   if (fh)
     delete fh;

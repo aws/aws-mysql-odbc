@@ -44,7 +44,7 @@
 #include "util/installer.h"
 #include "failover.h"
 #include "connection.h"
-#include "mysqllib_proxy.h"
+#include "mysql_proxy.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -625,7 +625,7 @@ struct DBC
   bool              transaction_open = false;     // Flag to indicate whether we have a transaction open
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
-  MYSQLLIB_PROXY *mysqllib_proxy = nullptr;
+  MYSQL_PROXY *mysql_proxy = nullptr;
 
   DBC(ENV *p_env);
   void free_explicit_descriptors();

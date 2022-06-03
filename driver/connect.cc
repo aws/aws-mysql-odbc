@@ -293,7 +293,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 
 #endif
 
-  mysql = new CONNECTION(mysql_init(nullptr), this->mysqllib_proxy);
+  mysql = new CONNECTION(mysql_init(nullptr), this->mysql_proxy);
 
   flags= get_client_flags(dsrc);
 
@@ -935,7 +935,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   if (ds->save_queries && !dbc->log_file) 
     dbc->log_file = init_log_file();
 
-  dbc->mysqllib_proxy = new MYSQLLIB_PROXY(dbc, ds);
+  dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (!dbc->ds)
@@ -1050,7 +1050,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     if (ds->save_queries && !dbc->log_file) 
       dbc->log_file = init_log_file();
 
-    dbc->mysqllib_proxy = new MYSQLLIB_PROXY(dbc, ds);
+    dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
     rc = dbc->fh->init_cluster_info();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
@@ -1232,7 +1232,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   if (ds->save_queries && !dbc->log_file) 
       dbc->log_file = init_log_file();
 
-  dbc->mysqllib_proxy = new MYSQLLIB_PROXY(dbc, ds);
+  dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)

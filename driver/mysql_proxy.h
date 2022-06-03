@@ -26,18 +26,18 @@
  *
  */
 
-#ifndef __MYSQLLIB_PROXY__
-#define __MYSQLLIB_PROXY__
+#ifndef __MYSQL_PROXY__
+#define __MYSQL_PROXY__
 
 #include <mysql.h>
 
 struct DBC;
 struct DataSource;
 
-class MYSQLLIB_PROXY {
+class MYSQL_PROXY {
 public:
-    MYSQLLIB_PROXY(DBC* dbc, DataSource* ds);
-    ~MYSQLLIB_PROXY();
+    MYSQL_PROXY(DBC* dbc, DataSource* ds);
+    ~MYSQL_PROXY();
 
     uint64_t num_rows(MYSQL_RES* res);
     unsigned int num_fields(MYSQL_RES* res);
@@ -134,4 +134,4 @@ private:
     DataSource* ds = nullptr;
 };
 
-#endif /* __MYSQLLIB_PROXY__ */
+#endif /* __MYSQL_PROXY__ */
