@@ -57,12 +57,13 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   SET(DRIVER_NAME "awsmysqlodbc${CONNECTOR_DRIVER_TYPE_SHORT}")
 
   SET(DRIVER_SRCS
-    base_metrics_holder.cc catalog.cc catalog_no_i_s.cc cluster_topology_info.cc 
-    cluster_aware_hit_metrics_holder.cc cluster_aware_metrics_container.cc 
-    cluster_aware_metrics.cc cluster_aware_time_metrics_holder.cc  
-    connect.cc connection.cc cursor.cc desc.cc dll.cc driver.cc 
-    error.cc execute.cc failover_connection_handler.cc failover_handler.cc 
+    base_metrics_holder.cc catalog.cc catalog_no_i_s.cc cluster_topology_info.cc
+    cluster_aware_hit_metrics_holder.cc cluster_aware_metrics_container.cc
+    cluster_aware_metrics.cc cluster_aware_time_metrics_holder.cc
+    connect.cc connection.cc cursor.cc desc.cc dll.cc driver.cc
+    error.cc execute.cc failover_connection_handler.cc failover_handler.cc
     failover_reader_handler.cc failover_writer_handler.cc handle.cc host_info.cc info.cc
+    monitor.cc monitor_connection_context.cc monitor_service.cc monitor_thread_container.cc
     my_prepared_stmt.cc my_stmt.cc mylog.cc options.cc parse.cc prepare.cc query_parsing.cc
     results.cc topology_service.cc transact.cc utility.cc)
 
@@ -81,9 +82,10 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.def.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.def @ONLY)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
     SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc  
-                                   base_metrics_holder.h catalog.h cluster_aware_hit_metrics_holder.h cluster_aware_metrics_container.h 
-                                   cluster_aware_metrics.h cluster_aware_time_metrics_holder.h cluster_topology_info.h connection.h 
-                                   driver.h error.h failover.h host_info.h mylog.h myutil.h parse.h query_parsing.h topology_service.h
+                                   base_metrics_holder.h catalog.h cluster_aware_hit_metrics_holder.h cluster_aware_metrics_container.h
+                                   cluster_aware_metrics.h cluster_aware_time_metrics_holder.h cluster_topology_info.h connection.h
+                                   driver.h error.h failover.h host_info.h monitor.h monitor_connection_context.h monitor_service.h
+                                   monitor_thread_container.h mylog.h myutil.h parse.h query_parsing.h topology_service.h
                                    ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
   ENDIF(WIN32)
 
