@@ -26,7 +26,7 @@
  *
  */
 
-#include "MYSQLLIB_PROXY.h"
+#include "mysqllib_proxy.h"
 
 MYSQLLIB_PROXY::MYSQLLIB_PROXY(DBC* dbc, DataSource* ds) : dbc{dbc}, ds{ds} {}
 

@@ -44,7 +44,7 @@
 #include "util/installer.h"
 #include "failover.h"
 #include "connection.h"
-#include "MYSQLLIB_PROXY.h"
+#include "mysqllib_proxy.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)

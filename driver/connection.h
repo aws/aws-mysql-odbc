@@ -30,7 +30,7 @@
 #include <memory>
 #include <mysql.h>
 
-#include "MYSQLLIB_PROXY.h"
+#include "mysqllib_proxy.h"
 
 class CONNECTION_INTERFACE {
 public:
