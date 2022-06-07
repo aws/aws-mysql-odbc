@@ -36,9 +36,17 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node)
     return nullptr;
 }
 
-std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(std::set<std::string> node_keys) {
+std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
+    std::set<std::string> node_keys,
+    std::shared_ptr<HOST_INFO> host,
+    std::chrono::milliseconds disposal_time) {
+    
     // TODO: Implement
     return nullptr;
+}
+
+void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor) {
+    // TODO: Implement
 }
 
 void MONITOR_THREAD_CONTAINER::reset_resource(std::shared_ptr<MONITOR> monitor) {
