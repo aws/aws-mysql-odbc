@@ -79,7 +79,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
     SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc  
                                    base_metrics_holder.h catalog.h cluster_aware_hit_metrics_holder.h cluster_aware_metrics_container.h
-                                   cluster_aware_metrics.h cluster_aware_time_metrics_holder.h cluster_topology_info.h mysql_proxy.h
+                                   cluster_aware_metrics.h cluster_aware_time_metrics_holder.h cluster_topology_info.hs
                                    driver.h error.h failover.h host_info.h monitor.h monitor_connection_context.h monitor_service.h
                                    monitor_thread_container.h mylog.h mysql_proxy.h myutil.h parse.h query_parsing.h topology_service.h
                                    ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
