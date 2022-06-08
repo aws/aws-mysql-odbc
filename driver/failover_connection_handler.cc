@@ -72,8 +72,8 @@ CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr
     const SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds, true);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
-        new_connection = dbc_clone->mysql;
-        dbc_clone->mysql = nullptr;
+        new_connection = dbc_clone->mysql_proxy;
+        dbc_clone->mysql_proxy = nullptr;
     }
 
     // TODO guard these from potential exceptions thrown before, make sure release happens.
@@ -91,7 +91,7 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
         // CONNECTION is the only implementation of CONNECTION_INTERFACE
         // so dynamic_cast should be safe here.
         // TODO: Is there an alternative to dynamic_cast here?
-        dbc->mysql = dynamic_cast<CONNECTION*>(new_connection);
+        dbc->mysql_proxy = dynamic_cast<MYSQL_PROXY*>(new_connection);
         
         CLEAR_DBC_ERROR(dbc);
 

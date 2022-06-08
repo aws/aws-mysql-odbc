@@ -34,7 +34,9 @@
 #include <gmock/gmock.h>
 #include <thread>
 
+using ::testing::_;
 using ::testing::Return;
+using ::testing::ReturnNew;
 using ::testing::StrEq;
 
 namespace {
@@ -68,6 +70,7 @@ protected:
 
     void SetUp() override {
         mc = new MOCK_CONNECTION();
+        EXPECT_CALL(*mc, store_result()).WillRepeatedly(ReturnNew<MYSQL_RES>());
         ts->set_refresh_rate(DEFAULT_REFRESH_RATE_IN_MILLISECONDS);
     }
 
@@ -78,9 +81,9 @@ protected:
 };
 
 TEST_F(TopologyServiceTest, TopologyQuery) {
-    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc, fetch_next_row())
+    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+        .WillRepeatedly(Return(0));
+    EXPECT_CALL(*mc, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
@@ -105,9 +108,9 @@ TEST_F(TopologyServiceTest, TopologyQuery) {
 }
 
 TEST_F(TopologyServiceTest, MultiWriter) {
-    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc, fetch_next_row())
+    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+        .WillRepeatedly(Return(0));
+    EXPECT_CALL(*mc, fetch_row(_))
         .WillOnce(Return(writer1))
         .WillOnce(Return(writer2))
         .WillOnce(Return(writer3))
@@ -132,9 +135,9 @@ TEST_F(TopologyServiceTest, MultiWriter) {
 }
 
 TEST_F(TopologyServiceTest, DuplicateInstances) {
-  EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(*mc, fetch_next_row())
+  EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+      .WillRepeatedly(Return(0));
+  EXPECT_CALL(*mc, fetch_row(_))
       .WillOnce(Return(writer1))
       .WillOnce(Return(writer1))
       .WillOnce(Return(writer1))
@@ -160,10 +163,10 @@ TEST_F(TopologyServiceTest, DuplicateInstances) {
 }
 
 TEST_F(TopologyServiceTest, CachedTopology) {
-    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+  EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(1)
-        .WillOnce(Return(true));
-    EXPECT_CALL(*mc, fetch_next_row())
+        .WillOnce(Return(0));
+  EXPECT_CALL(*mc, fetch_row(_))
         .Times(4)
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
@@ -178,8 +181,8 @@ TEST_F(TopologyServiceTest, CachedTopology) {
 }
 
 TEST_F(TopologyServiceTest, QueryFailure) {
-    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
-        .WillOnce(Return(false));
+    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+        .WillOnce(Return(1));
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
 
@@ -187,11 +190,11 @@ TEST_F(TopologyServiceTest, QueryFailure) {
 }
 
 TEST_F(TopologyServiceTest, StaleTopology) {
-    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(2)
-        .WillOnce(Return(true))
-        .WillOnce(Return(false));
-    EXPECT_CALL(*mc, fetch_next_row())
+        .WillOnce(Return(0))
+        .WillOnce(Return(1));
+    EXPECT_CALL(*mc, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
@@ -208,10 +211,10 @@ TEST_F(TopologyServiceTest, StaleTopology) {
 }
 
 TEST_F(TopologyServiceTest, RefreshTopology) {
-    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(2)
-        .WillRepeatedly(Return(true));
-    EXPECT_CALL(*mc, fetch_next_row())
+        .WillRepeatedly(Return(0));
+    EXPECT_CALL(*mc, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
@@ -225,10 +228,10 @@ TEST_F(TopologyServiceTest, RefreshTopology) {
 }
 
 TEST_F(TopologyServiceTest, SharedTopology) {
-    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
-        .WillOnce(Return(true))
+    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+        .WillOnce(Return(0))
         .WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc, fetch_next_row())
+    EXPECT_CALL(*mc, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
@@ -260,10 +263,10 @@ TEST_F(TopologyServiceTest, SharedTopology) {
 }
 
 TEST_F(TopologyServiceTest, ClearCache) {
-    EXPECT_CALL(*mc, try_execute_query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
-        .WillOnce(Return(true))
-        .WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc, fetch_next_row())
+    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+        .WillOnce(Return(0))
+        .WillRepeatedly(Return(1));
+    EXPECT_CALL(*mc, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
