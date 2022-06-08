@@ -68,6 +68,8 @@ protected:
 
         ds = ds_new();
 
+        dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
+
         metrics_container = std::make_shared<MOCK_CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds);
     }
 

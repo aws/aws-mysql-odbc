@@ -293,8 +293,6 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 
 #endif
 
-  mysql_proxy = new MYSQL_PROXY(this, this->ds);
-
   flags= get_client_flags(dsrc);
 
   /* Set other connection options */
