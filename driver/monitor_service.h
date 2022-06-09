@@ -32,6 +32,9 @@
 
 class MONITOR_SERVICE {
 public:
+    MONITOR_SERVICE();
+    MONITOR_SERVICE(std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container);
+    
     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
         DBC* dbc,
         std::set<std::string> node_keys,

@@ -26,6 +26,14 @@
 
 #include "monitor_service.h"
 
+MONITOR_SERVICE::MONITOR_SERVICE() {
+    this->thread_container = std::make_shared<MONITOR_THREAD_CONTAINER>();
+}
+
+MONITOR_SERVICE::MONITOR_SERVICE(std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container) {
+    this->thread_container = monitor_thread_container;
+}
+
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     DBC* dbc,
     std::set<std::string> node_keys,

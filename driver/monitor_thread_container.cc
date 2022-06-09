@@ -26,33 +26,95 @@
 
 #include "monitor_thread_container.h"
 
-std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
-    // TODO: Implement
-    return "";
-}
-
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node) {
-    // TODO: Implement
-    return nullptr;
+    return this->monitor_map[node];
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::set<std::string> node_keys,
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time) {
-    
-    // TODO: Implement
-    return nullptr;
+
+    std::string node = this->get_node(node_keys, *node_keys.begin());
+    std::shared_ptr<MONITOR> monitor = this->monitor_map[node];
+    if (monitor == nullptr) {
+        monitor = this->create_monitor(host, disposal_time);
+    }
+
+    this->populate_monitor_map(node_keys, monitor);
+
+    return monitor;
 }
 
 void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor) {
-    // TODO: Implement
+    if (monitor == nullptr) {
+        return;
+    }
+
+    if (this->task_map.count(monitor) == 0) {
+        // TODO: create task and add it to map
+    }
 }
 
 void MONITOR_THREAD_CONTAINER::reset_resource(std::shared_ptr<MONITOR> monitor) {
-    // TODO: Implement
+    if (monitor == nullptr) {
+        return;
+    }
+
+    this->remove_monitor_mapping(monitor);
+
+    this->available_monitors.push(monitor);
 }
 
 void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor) {
-    // TODO: Implement
+    if (monitor == nullptr) {
+        return;
+    }
+
+    this->remove_monitor_mapping(monitor);
+
+    if (this->task_map.count(monitor) > 0) {
+        std::future<void>* task = this->task_map[monitor];
+        // TODO: cancel task
+    }
+}
+
+std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
+    return this->get_node(node_keys, "");
+}
+
+std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys, std::string default_value) {
+    if (this->monitor_map.size() > 0) {
+        for (auto it = node_keys.begin(); it != node_keys.end(); it++) {
+            std::string node = *it;
+            if (this->monitor_map.count(node) > 0) {
+                return node;
+            }
+        }
+    }
+
+    return default_value;
+}
+
+void MONITOR_THREAD_CONTAINER::populate_monitor_map(
+    std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor) {
+
+    for (auto it = node_keys.begin(); it != node_keys.end(); it++) {
+        this->monitor_map[*it] = monitor;
+    }
+}
+
+void MONITOR_THREAD_CONTAINER::remove_monitor_mapping(std::shared_ptr<MONITOR> monitor) {
+    for (auto it = this->monitor_map.begin(); it != this->monitor_map.end(); it++) {
+        std::string node = (*it).first;
+        if (this->monitor_map[node] == monitor) {
+            this->monitor_map.erase(node);
+        }
+    }
+}
+
+std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
+    std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time) {
+
+    return std::make_shared<MONITOR>(host, disposal_time);
 }
