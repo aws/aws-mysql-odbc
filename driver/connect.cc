@@ -402,7 +402,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 
 #if MYSQL_VERSION_ID < 80003
   if (dsrc->sslverify)
-    mysql->options(MYSQL_OPT_SSL_VERIFY_SERVER_CERT,
+    mysql_proxy->options(MYSQL_OPT_SSL_VERIFY_SERVER_CERT,
                    (const char *)&opt_ssl_verify_server_cert);
 #endif
 
@@ -479,7 +479,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     }
 #else
     MY_CHARSET_INFO my_charset;
-    mysql->get_character_set_info(&my_charset);
+    mysql_proxy->get_character_set_info(&my_charset);
     ansi_charset_info= get_charset(my_charset.number, MYF(0));
 #endif
 }
@@ -519,7 +519,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   {
     ds_get_utf8attr(dsrc->pwd1, &dsrc->pwd18);
     int fator = 1;
-    mysql->options4(mysql, MYSQL_OPT_USER_PASSWORD,
+    mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                     &fator,
                     dsrc->pwd18);
   }
@@ -528,7 +528,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   {
     ds_get_utf8attr(dsrc->pwd2, &dsrc->pwd28);
     int fator = 2;
-    mysql->options4(MYSQL_OPT_USER_PASSWORD,
+    mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                     &fator,
                     dsrc->pwd28);
   }
@@ -537,7 +537,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   {
     ds_get_utf8attr(dsrc->pwd3, &dsrc->pwd38);
     int fator = 3;
-    mysql->options4(MYSQL_OPT_USER_PASSWORD,
+    mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                     &fator,
                     dsrc->pwd38);
   }

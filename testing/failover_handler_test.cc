@@ -72,8 +72,6 @@ class FailoverHandlerTest : public testing::Test {
         ds->disable_cluster_failover = false;
         ds->gather_perf_metrics = false;
 
-        dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
-
         mock_ts = std::make_shared<MOCK_TOPOLOGY_SERVICE>();
         mock_connection_handler = std::make_shared<MOCK_CONNECTION_HANDLER>();
         mock_metrics = std::make_shared<MOCK_CLUSTER_AWARE_METRICS_CONTAINER>();
@@ -87,6 +85,7 @@ class FailoverHandlerTest : public testing::Test {
             SQLFreeHandle(SQL_HANDLE_ENV, env);
         }
         if (nullptr != dbc) {
+            dbc->mysql_proxy = nullptr;
             dbc = nullptr;
         }
         if (nullptr != ds) {

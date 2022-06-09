@@ -35,6 +35,7 @@
 #include <thread>
 
 using ::testing::_;
+using ::testing::DeleteArg;
 using ::testing::Return;
 using ::testing::ReturnNew;
 using ::testing::StrEq;
@@ -71,6 +72,7 @@ protected:
     void SetUp() override {
         mc = new MOCK_CONNECTION();
         EXPECT_CALL(*mc, store_result()).WillRepeatedly(ReturnNew<MYSQL_RES>());
+        EXPECT_CALL(*mc, free_result(_)).WillRepeatedly(DeleteArg<0>());
         ts->set_refresh_rate(DEFAULT_REFRESH_RATE_IN_MILLISECONDS);
     }
 

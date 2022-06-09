@@ -292,6 +292,8 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
                 }
             }
         }
+        mysql_proxy->free_result(result);
+
         topology_info->is_multi_writer_cluster = writer_count > 1 ? true : false;
         if (writer_count == 0) {
             MYLOG_TRACE(log_file, dbc_id,

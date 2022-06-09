@@ -53,6 +53,7 @@ class MOCK_CONNECTION : public CONNECTION_INTERFACE {
     MOCK_METHOD(int, query, (const char*));
     MOCK_METHOD(MYSQL_RES*, store_result, ());
     MOCK_METHOD(char**, fetch_row, (MYSQL_RES*));
+    MOCK_METHOD(void, free_result, (MYSQL_RES*));
     MOCK_METHOD(void, mock_connection_destructor, ());
 
     ~MOCK_CONNECTION() override { mock_connection_destructor(); }

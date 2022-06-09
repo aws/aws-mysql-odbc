@@ -88,7 +88,7 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
     if (new_connection->is_connected()) {
         dbc->close();
 
-        // CONNECTION is the only implementation of CONNECTION_INTERFACE
+        // MYSQL_PROXY is the only implementation of CONNECTION_INTERFACE
         // so dynamic_cast should be safe here.
         // TODO: Is there an alternative to dynamic_cast here?
         dbc->mysql_proxy = dynamic_cast<MYSQL_PROXY*>(new_connection);

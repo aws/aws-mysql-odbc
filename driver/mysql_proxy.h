@@ -43,6 +43,7 @@ public:
     virtual int query(const char* q) = 0;
     virtual MYSQL_RES* store_result() = 0;
     virtual MYSQL_ROW fetch_row(MYSQL_RES* result) = 0;
+    virtual void free_result(MYSQL_RES* result) = 0;
 };
 
 class MYSQL_PROXY : virtual public CONNECTION_INTERFACE {
@@ -85,7 +86,7 @@ public:
     int options4(enum mysql_option option, const void* arg1,
                  const void* arg2);
     int get_option(enum mysql_option option, const void* arg);
-    void free_result(MYSQL_RES* result);
+    void free_result(MYSQL_RES* result) override;
     void data_seek(MYSQL_RES* result, uint64_t offset);
     MYSQL_ROW_OFFSET row_seek(MYSQL_RES* result, MYSQL_ROW_OFFSET offset);
     MYSQL_FIELD_OFFSET field_seek(MYSQL_RES* result, MYSQL_FIELD_OFFSET offset);

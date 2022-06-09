@@ -74,6 +74,7 @@ bool ENV::has_connections()
 DBC::DBC(ENV *p_env)
     : id{last_dbc_id++},
       env(p_env),
+      mysql_proxy(nullptr),
       txn_isolation(DEFAULT_TXN_ISOLATION),
       last_query_time((time_t)time((time_t *)0))
 {

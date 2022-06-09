@@ -88,16 +88,11 @@ MYSQL* MYSQL_PROXY::init() {
     return mysql_init(mysql);
 }
 
-bool MYSQL_PROXY::ssl_set(
-    const char* key, const char* cert, const char* ca,
-    const char* capath, const char* cipher) {
+bool MYSQL_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
     return mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
 }
 
-bool MYSQL_PROXY::change_user(
-    const char* user,
-    const char* passwd,
-    const char* db) {
+bool MYSQL_PROXY::change_user(const char* user, const char* passwd, const char* db) {
     return mysql_change_user(mysql, user, passwd, db);
 }
 
@@ -105,6 +100,7 @@ MYSQL* MYSQL_PROXY::real_connect(
     const char* host, const char* user, const char* passwd,
     const char* db, unsigned int port, const char* unix_socket,
     unsigned long clientflag) {
+
     return mysql_real_connect(mysql, host, user, passwd, db, port, unix_socket, clientflag);
 }
 
@@ -156,6 +152,7 @@ void MYSQL_PROXY::close() {
 MYSQL* MYSQL_PROXY::real_connect_dns_srv(
     const char* dns_srv_name, const char* user,
     const char* passwd, const char* db, unsigned long client_flag) {
+
     return mysql_real_connect_dns_srv(mysql, dns_srv_name, user, passwd, db, client_flag);
 }
 
@@ -167,22 +164,15 @@ unsigned long MYSQL_PROXY::get_client_version(void) {
     return mysql_get_client_version();
 }
 
-int MYSQL_PROXY::get_option(
-    mysql_option option,
-    const void* arg) {
+int MYSQL_PROXY::get_option(mysql_option option, const void* arg) {
     return mysql_get_option(mysql, option, arg);
 }
 
-int MYSQL_PROXY::options4(
-    mysql_option option,
-    const void* arg1,
-    const void* arg2) {
+int MYSQL_PROXY::options4(mysql_option option, const void* arg1, const void* arg2) {
     return mysql_options4(mysql, option, arg1, arg2);
 }
 
-int MYSQL_PROXY::options(
-    mysql_option option,
-    const void* arg) {
+int MYSQL_PROXY::options(mysql_option option, const void* arg) {
     return mysql_options(mysql, option, arg);
 }
 
@@ -214,20 +204,15 @@ MYSQL_FIELD* MYSQL_PROXY::fetch_field(MYSQL_RES* result) {
     return mysql_fetch_field(result);
 }
 
-MYSQL_RES* MYSQL_PROXY::list_fields(
-    const char* table, const char* wild) {
+MYSQL_RES* MYSQL_PROXY::list_fields(const char* table, const char* wild) {
     return mysql_list_fields(mysql, table, wild);
 }
 
-unsigned long MYSQL_PROXY::real_escape_string(
-    char* to, const char* from, unsigned long length) {
+unsigned long MYSQL_PROXY::real_escape_string(char* to, const char* from, unsigned long length) {
     return mysql_real_escape_string(mysql, to, from, length);
 }
 
-bool MYSQL_PROXY::bind_param(
-    unsigned n_params,
-    MYSQL_BIND* binds,
-    const char** names) {
+bool MYSQL_PROXY::bind_param(unsigned n_params, MYSQL_BIND* binds, const char** names) {
     return mysql_bind_param(mysql, n_params, binds, names);
 }
 
@@ -235,9 +220,7 @@ MYSQL_STMT* MYSQL_PROXY::stmt_init() {
     return mysql_stmt_init(mysql);
 }
 
-int MYSQL_PROXY::stmt_prepare(MYSQL_STMT* stmt,
-                              const char* query,
-                              unsigned long length) {
+int MYSQL_PROXY::stmt_prepare(MYSQL_STMT* stmt, const char* query, unsigned long length) {
     return mysql_stmt_prepare(stmt, query, length);
 }
 
@@ -249,9 +232,7 @@ int MYSQL_PROXY::stmt_fetch(MYSQL_STMT* stmt) {
     return mysql_stmt_fetch(stmt);
 }
 
-int MYSQL_PROXY::stmt_fetch_column(
-    MYSQL_STMT* stmt, MYSQL_BIND* bind_arg, unsigned int column,
-    unsigned long offset) {
+int MYSQL_PROXY::stmt_fetch_column(MYSQL_STMT* stmt, MYSQL_BIND* bind_arg, unsigned int column, unsigned long offset) {
     return mysql_stmt_fetch_column(stmt, bind_arg, column, offset);
 }
 
@@ -259,13 +240,11 @@ int MYSQL_PROXY::stmt_store_result(MYSQL_STMT* stmt) {
     return mysql_stmt_store_result(stmt);
 }
 
-bool MYSQL_PROXY::stmt_bind_param(MYSQL_STMT* stmt,
-                                  MYSQL_BIND* bnd) {
+bool MYSQL_PROXY::stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
     return mysql_stmt_bind_param(stmt, bnd);
 }
 
-bool MYSQL_PROXY::stmt_bind_result(MYSQL_STMT* stmt,
-                                   MYSQL_BIND* bnd) {
+bool MYSQL_PROXY::stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
     return mysql_stmt_bind_result(stmt, bnd);
 }
 
@@ -284,6 +263,7 @@ bool MYSQL_PROXY::stmt_free_result(MYSQL_STMT* stmt) {
 bool MYSQL_PROXY::stmt_send_long_data(
     MYSQL_STMT* stmt, unsigned int param_number, const char* data,
     unsigned long length) {
+
     return mysql_stmt_send_long_data(stmt, param_number, data, length);
 }
 
