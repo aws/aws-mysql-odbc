@@ -49,6 +49,7 @@ protected:
     std::string get_node(std::set<std::string> node_keys, std::string default_value);
     void populate_monitor_map(std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
     void remove_monitor_mapping(std::shared_ptr<MONITOR> monitor);
+    std::shared_ptr<MONITOR> get_available_monitor();
     virtual std::shared_ptr<MONITOR> create_monitor(
         std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time);
 

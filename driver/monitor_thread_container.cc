@@ -38,7 +38,10 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::string node = this->get_node(node_keys, *node_keys.begin());
     std::shared_ptr<MONITOR> monitor = this->monitor_map[node];
     if (monitor == nullptr) {
-        monitor = this->create_monitor(host, disposal_time);
+        monitor = this->get_available_monitor();
+        if (monitor == nullptr) {
+            monitor = this->create_monitor(host, disposal_time);
+        }
     }
 
     this->populate_monitor_map(node_keys, monitor);
@@ -111,6 +114,23 @@ void MONITOR_THREAD_CONTAINER::remove_monitor_mapping(std::shared_ptr<MONITOR> m
             this->monitor_map.erase(node);
         }
     }
+}
+
+std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
+    if (!this->available_monitors.empty()) {
+        std::shared_ptr<MONITOR> available_monitor = this->available_monitors.front();
+        this->available_monitors.pop();
+        
+        if (!available_monitor->is_stopped()) {
+            return available_monitor;
+        }
+
+        if (this->task_map.count(available_monitor) > 0) {
+            // TODO: Cancel task
+        }
+    }
+
+    return nullptr;
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
