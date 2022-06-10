@@ -34,12 +34,12 @@
 
 struct CONNECTION_STATUS {
     bool is_valid;
-    long elapsed_time;
+    std::chrono::milliseconds elapsed_time;
 };
 
 class MONITOR {
 public:
-    MONITOR(std::shared_ptr<HOST_INFO> host, long disposal_time);
+    MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time);
 
     void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
@@ -48,7 +48,8 @@ public:
 
 private:
     std::shared_ptr<HOST_INFO> host;
-    long disposal_time;
+    std::chrono::milliseconds connection_check_interval = std::chrono::milliseconds(INT_MAX);
+    std::chrono::milliseconds disposal_time;
     std::queue<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
 
     CONNECTION_STATUS check_connection_status(int shortest_detection_interval);
