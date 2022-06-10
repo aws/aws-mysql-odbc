@@ -34,9 +34,10 @@ void MONITOR_SERVICE::start_monitoring(
     DBC* dbc,
     std::set<std::string> node_keys,
     std::shared_ptr<HOST_INFO> host,
-    int failure_detection_time,
-    int failure_detection_interval,
-    int failure_detection_count) {
+    std::chrono::milliseconds failure_detection_time,
+    std::chrono::milliseconds failure_detection_interval,
+    int failure_detection_count,
+    std::chrono::milliseconds disposal_time) {
 
     // TODO: Implement
 }
