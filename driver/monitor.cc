@@ -26,7 +26,7 @@
 
 #include "monitor.h"
 
-MONITOR::MONITOR(std::shared_ptr<HOST_INFO> host_info, long monitor_disposal_time) {
+MONITOR::MONITOR(std::shared_ptr<HOST_INFO> host_info, std::chrono::milliseconds monitor_disposal_time) {
     this->host = host_info;
     this->disposal_time = monitor_disposal_time;
 }
@@ -50,5 +50,5 @@ void MONITOR::clear_contexts() {
 
 CONNECTION_STATUS MONITOR::check_connection_status(int shortest_detection_interval) {
     // TODO: Implement
-    return CONNECTION_STATUS{ false, 0 };
+    return CONNECTION_STATUS{ false, std::chrono::milliseconds(0) };
 }
