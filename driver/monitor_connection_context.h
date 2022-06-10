@@ -38,44 +38,50 @@ class MONITOR_CONNECTION_CONTEXT {
 public:
     MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
                                std::set<std::string> node_keys,
-                               int failure_detection_interval_ms,
-                               int failure_detection_time_ms,
+                               std::chrono::milliseconds failure_detection_time,
+                               std::chrono::milliseconds failure_detection_interval,
                                int failure_detection_count);
     ~MONITOR_CONNECTION_CONTEXT();
 
-    long get_start_monitor_time();
-    void set_start_monitor_time(long time);
+    std::chrono::steady_clock::time_point get_start_monitor_time();
+    void set_start_monitor_time(std::chrono::steady_clock::time_point time);
     std::set<std::string> get_node_keys();
-    int get_failure_detection_time_ms();
-    int get_failure_detection_interval_ms();
+    std::chrono::milliseconds get_failure_detection_time();
+    std::chrono::milliseconds get_failure_detection_interval();
     int get_failure_detection_count();
     int get_failure_count();
     void set_failure_count(int count);
     void increment_failure_count();
-    void set_invalid_node_start_time(long time_ms);
+    void set_invalid_node_start_time(std::chrono::steady_clock::time_point time);
     void reset_invalid_node_start_time();
     bool is_invalid_node_start_time_defined();
-    long get_invalid_node_start_time();
+    std::chrono::steady_clock::time_point get_invalid_node_start_time();
     bool is_node_unhealthy();
     void set_node_unhealthy(bool node);
     bool is_active_context();
     void invalidate();
     DBC* get_connection_to_abort();
 
-    void update_connection_status(long status_check_start_time, long current_time, bool is_valid);
-    void set_connection_valid(bool connection_valid, long status_check_start_time, long current_time);
+    void update_connection_status(
+        std::chrono::steady_clock::time_point status_check_start_time,
+        std::chrono::steady_clock::time_point current_time,
+        bool is_valid);
+    void set_connection_valid(
+        bool connection_valid,
+        std::chrono::steady_clock::time_point status_check_start_time,
+        std::chrono::steady_clock::time_point current_time);
     void abort_connection();
 
 private:
-    int failure_detection_interval_ms;
-    int failure_detection_time_ms;
+    std::chrono::milliseconds failure_detection_time;
+    std::chrono::milliseconds failure_detection_interval;
     int failure_detection_count;
 
     std::set<std::string> node_keys;
     DBC* connection_to_abort;
 
-    long start_monitor_time;
-    long invalid_node_start_time;
+    std::chrono::steady_clock::time_point start_monitor_time;
+    std::chrono::steady_clock::time_point invalid_node_start_time;
     int failure_count;
     bool node_unhealthy;
     bool active_context = true;
