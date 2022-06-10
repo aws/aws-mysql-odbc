@@ -85,7 +85,6 @@ class FailoverHandlerTest : public testing::Test {
             SQLFreeHandle(SQL_HANDLE_ENV, env);
         }
         if (nullptr != dbc) {
-            dbc->mysql_proxy = nullptr;
             dbc = nullptr;
         }
         if (nullptr != ds) {
