@@ -28,9 +28,7 @@
 
 #include "mysql_proxy.h"
 
-MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds) : dbc{dbc}, ds{ds} {
-    this->mysql = mysql_init(nullptr);
-}
+MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds) : dbc{dbc}, ds{ds} {}
 
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
@@ -84,8 +82,8 @@ int MYSQL_PROXY::set_character_set(const char* csname) {
     return mysql_set_character_set(mysql, csname);
 }
 
-MYSQL* MYSQL_PROXY::init() {
-    return mysql_init(mysql);
+void MYSQL_PROXY::init() {
+    this->mysql = mysql_init(nullptr);
 }
 
 bool MYSQL_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {

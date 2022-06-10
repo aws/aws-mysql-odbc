@@ -64,7 +64,7 @@ public:
     unsigned long thread_id();
     int set_character_set(const char* csname);
 
-    MYSQL* init();
+    void init();
     bool ssl_set(const char* key, const char* cert, const char* ca,
                  const char* capath, const char* cipher);
     bool change_user(const char* user, const char* passwd,
