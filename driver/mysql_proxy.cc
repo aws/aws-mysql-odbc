@@ -371,5 +371,12 @@ unsigned int MYSQL_PROXY::get_server_status() const {
 }
 
 char* MYSQL_PROXY::get_server_version() {
-    return this->mysql->server_version;
+    return this->mysql->server_version; }
+
+MYSQL* MYSQL_PROXY::get_connection() {
+    return this->mysql; }
+
+void MYSQL_PROXY::set_connection(MYSQL* mysql) {
+    close();
+    this->mysql = mysql;
 }

@@ -44,6 +44,7 @@ public:
     virtual MYSQL_RES* store_result() = 0;
     virtual MYSQL_ROW fetch_row(MYSQL_RES* result) = 0;
     virtual void free_result(MYSQL_RES* result) = 0;
+    virtual MYSQL* get_connection() = 0;
 };
 
 class MYSQL_PROXY : virtual public CONNECTION_INTERFACE {
@@ -170,6 +171,10 @@ public:
     unsigned int get_server_status() const;
 
     char* get_server_version();
+
+    MYSQL* get_connection() override;
+
+    void set_connection(MYSQL* mysql);
 
 private:
     DBC* dbc = nullptr;

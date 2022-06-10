@@ -61,7 +61,7 @@ CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr
     if (dbc == nullptr || dbc->ds == nullptr || host_info == nullptr) {
         return nullptr;
     }
-    // TODO Convert string to wstring. Note: need to revisit if support Linux
+
     const auto new_host = to_sqlwchar_string(host_info->get_host());
 
     DBC* dbc_clone = clone_dbc(dbc);
@@ -87,11 +87,7 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
 
     if (new_connection->is_connected()) {
         dbc->close();
-
-        // MYSQL_PROXY is the only implementation of CONNECTION_INTERFACE
-        // so dynamic_cast should be safe here.
-        // TODO: Is there an alternative to dynamic_cast here?
-        dbc->mysql_proxy = dynamic_cast<MYSQL_PROXY*>(new_connection);
+        dbc->mysql_proxy->set_connection(new_connection->get_connection());
         
         CLEAR_DBC_ERROR(dbc);
 
@@ -117,6 +113,7 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
             dbc_clone = static_cast<DBC*>(hdbc);
             dbc_clone->ds = ds_new();
             ds_copy(dbc_clone->ds, source_dbc->ds);
+            dbc_clone->mysql_proxy = new MYSQL_PROXY(dbc_clone, dbc_clone->ds);
         } else {
             const char* err = "Cannot allocate connection handle when cloning DBC in writer failover process";
             MYLOG_DBC_TRACE(dbc, err);
