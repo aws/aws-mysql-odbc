@@ -87,7 +87,7 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
 
     if (new_connection->is_connected()) {
         dbc->close();
-        dbc->mysql_proxy->set_connection(new_connection->get_connection());
+        dbc->mysql_proxy->set_connection(dynamic_cast<MYSQL_PROXY*>(new_connection));
         
         CLEAR_DBC_ERROR(dbc);
 
