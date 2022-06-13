@@ -25,8 +25,10 @@
  */
 
 #include "monitor_connection_context.h"
+#include "driver.h"
 
 #include <algorithm>
+#include <mutex>
 
 MONITOR_CONNECTION_CONTEXT::MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
     std::set<std::string> node_keys,
@@ -36,7 +38,9 @@ MONITOR_CONNECTION_CONTEXT::MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
                                    node_keys{node_keys},
                                    failure_detection_time{failure_detection_time},
                                    failure_detection_interval{failure_detection_interval},
-                                   failure_detection_count{failure_detection_count} {}
+                                   failure_detection_count{failure_detection_count},
+                                   failure_count{0},
+                                   node_unhealthy{false} {}
 
 MONITOR_CONNECTION_CONTEXT::~MONITOR_CONNECTION_CONTEXT() {}
 
@@ -81,11 +85,13 @@ void MONITOR_CONNECTION_CONTEXT::set_invalid_node_start_time(std::chrono::steady
 }
 
 void MONITOR_CONNECTION_CONTEXT::reset_invalid_node_start_time() {
-    invalid_node_start_time = std::chrono::steady_clock::time_point();
+    std::chrono::steady_clock::time_point timestamp_zero{};
+    invalid_node_start_time = timestamp_zero;
 }
 
 bool MONITOR_CONNECTION_CONTEXT::is_invalid_node_start_time_defined() {
-    return invalid_node_start_time > std::chrono::steady_clock::time_point();
+    std::chrono::steady_clock::time_point timestamp_zero{};
+    return invalid_node_start_time > timestamp_zero;
 }
 
 std::chrono::steady_clock::time_point MONITOR_CONNECTION_CONTEXT::get_invalid_node_start_time() {
@@ -112,15 +118,6 @@ DBC* MONITOR_CONNECTION_CONTEXT::get_connection_to_abort() {
     return connection_to_abort;
 }
 
-// TODO synchronized
-void MONITOR_CONNECTION_CONTEXT::abort_connection() {
-    if ((get_connection_to_abort()) || (!is_active_context())) {
-        return;
-    }
-
-    // TODO Equivalent of: this.connectionToAbort.abortInternal();
-}
-
 // Update whether the connection is still valid if the total elapsed time has passed the grace period.
 void MONITOR_CONNECTION_CONTEXT::update_connection_status(
     std::chrono::steady_clock::time_point status_check_start_time,
@@ -143,7 +140,7 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
     bool connection_valid,
     std::chrono::steady_clock::time_point status_check_start_time,
     std::chrono::steady_clock::time_point current_time) {
-    
+
     if (!connection_valid) {
         increment_failure_count();
 
@@ -151,22 +148,33 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
             set_invalid_node_start_time(status_check_start_time);
         }
 
-        auto invalid_node_duration = current_time - get_invalid_node_start_time();
-        auto max_invalid_node_duration = get_failure_detection_interval() * (std::max)(0, get_failure_detection_count());
+        auto invalid_node_duration_ns = current_time - get_invalid_node_start_time();
+        auto invalid_node_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(invalid_node_duration_ns);
 
-        if (invalid_node_duration >= max_invalid_node_duration) {
-            // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys);
+        auto max_invalid_node_duration = get_failure_detection_interval().count() * (std::max)(0, get_failure_detection_count());
+
+        if (invalid_node_duration_ms.count() >= max_invalid_node_duration) {
+            // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys.begin());
             set_node_unhealthy(true);
             abort_connection();
             return;
         }
 
-        // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *not responding* (%d).", node_keys, get_failure_count());
+        // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *not responding* (%d).", node_keys.begin(), get_failure_count());
         return;
     }
 
     set_failure_count(0);
     reset_invalid_node_start_time();
     set_node_unhealthy(false);
-    // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *alive*.", node_keys);
+    // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *alive*.", node_keys.begin());
+}
+
+void MONITOR_CONNECTION_CONTEXT::abort_connection() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if ((get_connection_to_abort()) || (!is_active_context())) {
+        return;
+    }
+    // TODO socket close
+    connection_to_abort->close();
 }
