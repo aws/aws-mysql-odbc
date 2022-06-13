@@ -26,6 +26,19 @@
 
 #include "monitor_thread_container.h"
 
+std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
+    if (this->monitor_map.size() > 0) {
+        for (auto it = node_keys.begin(); it != node_keys.end(); it++) {
+            std::string node = *it;
+            if (this->monitor_map.count(node) > 0) {
+                return node;
+            }
+        }
+    }
+
+    return "";
+}
+
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node) {
     return this->monitor_map[node];
 }
@@ -35,9 +48,13 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time) {
 
-    std::string node = this->get_node(node_keys, *node_keys.begin());
-    std::shared_ptr<MONITOR> monitor = this->monitor_map[node];
-    if (monitor == nullptr) {
+    std::shared_ptr<MONITOR> monitor;
+
+    std::string node = this->get_node(node_keys);
+    if (node != "") {
+        monitor = this->monitor_map[node];
+    }
+    else {
         monitor = this->get_available_monitor();
         if (monitor == nullptr) {
             monitor = this->create_monitor(host, disposal_time);
@@ -51,7 +68,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
 
 void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor) {
     if (monitor == nullptr) {
-        return;
+        throw std::invalid_argument("Parameter monitor cannot be null");
     }
 
     if (this->task_map.count(monitor) == 0) {
@@ -80,23 +97,6 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
         std::future<void>* task = this->task_map[monitor];
         // TODO: cancel task
     }
-}
-
-std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
-    return this->get_node(node_keys, "");
-}
-
-std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys, std::string default_value) {
-    if (this->monitor_map.size() > 0) {
-        for (auto it = node_keys.begin(); it != node_keys.end(); it++) {
-            std::string node = *it;
-            if (this->monitor_map.count(node) > 0) {
-                return node;
-            }
-        }
-    }
-
-    return default_value;
 }
 
 void MONITOR_THREAD_CONTAINER::populate_monitor_map(

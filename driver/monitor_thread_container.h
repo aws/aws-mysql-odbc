@@ -35,6 +35,7 @@
 
 class MONITOR_THREAD_CONTAINER {
 public:
+    std::string get_node(std::set<std::string> node_keys);
     std::shared_ptr<MONITOR> get_monitor(std::string node);
     std::shared_ptr<MONITOR> get_or_create_monitor(
         std::set<std::string> node_keys,
@@ -43,10 +44,8 @@ public:
     void add_task(std::shared_ptr<MONITOR> monitor);
     void reset_resource(std::shared_ptr<MONITOR> monitor);
     void release_resource(std::shared_ptr<MONITOR> monitor);
-    virtual std::string get_node(std::set<std::string> node_keys);
 
 protected:
-    std::string get_node(std::set<std::string> node_keys, std::string default_value);
     void populate_monitor_map(std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
     void remove_monitor_mapping(std::shared_ptr<MONITOR> monitor);
     std::shared_ptr<MONITOR> get_available_monitor();

@@ -44,7 +44,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     std::chrono::milliseconds disposal_time) {
 
     if (node_keys.empty()) {
-        throw std::invalid_argument("Empty node_key passed into MONITOR_SERVICE::start_monitoring()");
+        throw std::invalid_argument("Parameter node_keys cannot be empty");
     }
 
     std::shared_ptr<MONITOR> monitor =
