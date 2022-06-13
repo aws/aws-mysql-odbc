@@ -144,102 +144,12 @@ TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
         FAILURE_DETECTION_INTERVAL_MS,
         FAILURE_DETECTION_COUNT,
         MONITOR_DISPOSAL_TIME_MS);
-
     EXPECT_NE(nullptr, context);
 
     EXPECT_CALL(*mock_monitor, stop_monitoring(context)).Times(2);
 
     monitor_service->stop_monitoring(context);
     monitor_service->stop_monitoring(context);
-}
-
-TEST_F(MonitorServiceTest, MultipleNodeKeys) {
-    std::set<std::string> node_keys1 = { "nodeOne.domain", "nodeTwo.domain" };
-    std::set<std::string> node_keys2 = { "nodeTwo.domain" };
-
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _))
-        .WillOnce(Return(mock_monitor));
-
-    auto monitor1 = mock_thread_container->get_or_create_monitor(
-        node_keys1, host, MONITOR_DISPOSAL_TIME_MS);
-
-    EXPECT_NE(nullptr, monitor1);
-
-    // Should return the same monitor again because the first call to get_or_create_monitor()
-    // mapped the monitor to both "nodeOne.domain" and "nodeTwo.domain".
-    auto monitor2 = mock_thread_container->get_or_create_monitor(
-        node_keys2, host, MONITOR_DISPOSAL_TIME_MS);
-
-    EXPECT_NE(nullptr, monitor2);
-
-    EXPECT_TRUE(monitor1 == monitor2);
-}
-
-TEST_F(MonitorServiceTest, DifferentNodeKeys) {
-    std::set<std::string> keys = { "nodeNEW.domain" };
-
-    std::shared_ptr<MONITOR> monitorA = std::make_shared<MONITOR>(host, std::chrono::milliseconds(0));
-    std::shared_ptr<MONITOR> monitorB = std::make_shared<MONITOR>(host, std::chrono::milliseconds(1));
-
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _))
-        .WillOnce(Return(monitorA))
-        .WillOnce(Return(monitorB));
-
-    auto monitor1 = mock_thread_container->get_or_create_monitor(
-        keys, host, MONITOR_DISPOSAL_TIME_MS);
-    EXPECT_NE(nullptr, monitor1);
-
-    auto monitor2 = mock_thread_container->get_or_create_monitor(
-        keys, host, MONITOR_DISPOSAL_TIME_MS);
-    EXPECT_NE(nullptr, monitor2);
-
-    // Monitors should be the same because both calls to get_or_create_monitor()
-    // used the same node keys.
-    EXPECT_TRUE(monitor1 == monitor2);
-
-    auto monitor3 = mock_thread_container->get_or_create_monitor(
-        node_keys, host, MONITOR_DISPOSAL_TIME_MS);
-    EXPECT_NE(nullptr, monitor3);
-
-    // Last monitor should be different because it has a different node key.
-    EXPECT_TRUE(monitor1 != monitor3);
-    EXPECT_TRUE(monitor2 != monitor3);
-
-    monitorA.reset();
-    monitorB.reset();
-}
-
-TEST_F(MonitorServiceTest, SameKeysInDifferentNodeKeys) {
-    std::set<std::string> keys1 = { "nodeA" };
-    std::set<std::string> keys2 = { "nodeA", "nodeB" };
-    std::set<std::string> keys3 = { "nodeB" };
-
-    std::shared_ptr<MONITOR> monitorA = std::make_shared<MONITOR>(host, std::chrono::milliseconds(0));
-
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _))
-        .WillOnce(Return(monitorA));
-
-    auto monitor1 = mock_thread_container->get_or_create_monitor(
-        keys1, host, MONITOR_DISPOSAL_TIME_MS);
-    EXPECT_NE(nullptr, monitor1);
-
-    auto monitor2 = mock_thread_container->get_or_create_monitor(
-        keys2, host, MONITOR_DISPOSAL_TIME_MS);
-    EXPECT_NE(nullptr, monitor2);
-
-    // Monitors should be the same because both sets of keys have "nodeA".
-    EXPECT_TRUE(monitor1 == monitor2);
-
-    auto monitor3 = mock_thread_container->get_or_create_monitor(
-        keys3, host, MONITOR_DISPOSAL_TIME_MS);
-    EXPECT_NE(nullptr, monitor3);
-
-    // Last monitor should be also be the same because the 2nd call to get_or_create_monitor()
-    // mapped the monitor to "nodeB" and the 3rd call used "nodeB".
-    EXPECT_TRUE(monitor1 == monitor3);
-    EXPECT_TRUE(monitor2 == monitor3);
-
-    monitorA.reset();
 }
 
 TEST_F(MonitorServiceTest, EmptyNodeKeys) {
