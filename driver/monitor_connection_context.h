@@ -27,10 +27,12 @@
 #ifndef __MONITORCONNECTIONCONTEXT_H__
 #define __MONITORCONNECTIONCONTEXT_H__
 
-#include "failover.h"
-#include "mylog.h"
-
+#include <chrono>
+#include <mutex>
 #include <set>
+#include <string>
+
+struct DBC;
 
 // Monitoring context for each connection. This contains each connection's criteria for
 // whether a server should be considered unhealthy.
@@ -73,6 +75,8 @@ public:
     void abort_connection();
 
 private:
+    std::mutex mutex_;
+    
     std::chrono::milliseconds failure_detection_time;
     std::chrono::milliseconds failure_detection_interval;
     int failure_detection_count;
