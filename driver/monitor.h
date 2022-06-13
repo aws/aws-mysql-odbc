@@ -41,8 +41,8 @@ class MONITOR {
 public:
     MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time);
 
-    void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
-    void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
+    virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
+    virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     bool is_stopped();
     void clear_contexts();
 

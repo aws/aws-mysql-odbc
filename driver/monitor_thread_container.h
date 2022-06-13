@@ -37,13 +37,23 @@ class MONITOR_THREAD_CONTAINER {
 public:
     std::string get_node(std::set<std::string> node_keys);
     std::shared_ptr<MONITOR> get_monitor(std::string node);
-    std::shared_ptr<MONITOR> get_or_create_monitor(std::set<std::string> node_keys);
+    std::shared_ptr<MONITOR> get_or_create_monitor(
+        std::set<std::string> node_keys,
+        std::shared_ptr<HOST_INFO> host,
+        std::chrono::milliseconds disposal_time);
+    void add_task(std::shared_ptr<MONITOR> monitor);
     void reset_resource(std::shared_ptr<MONITOR> monitor);
     void release_resource(std::shared_ptr<MONITOR> monitor);
 
-private:
+protected:
+    void populate_monitor_map(std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
+    void remove_monitor_mapping(std::shared_ptr<MONITOR> monitor);
+    std::shared_ptr<MONITOR> get_available_monitor();
+    virtual std::shared_ptr<MONITOR> create_monitor(
+        std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time);
+
     std::map<std::string, std::shared_ptr<MONITOR>> monitor_map;
-    std::map<std::shared_ptr<MONITOR>, std::future<void>> task_map;
+    std::map<std::shared_ptr<MONITOR>, std::future<void>*> task_map;
     std::queue<std::shared_ptr<MONITOR>> available_monitors;
 };
 
