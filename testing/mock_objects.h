@@ -34,6 +34,7 @@
 
 #include "driver/connection.h"
 #include "driver/failover.h"
+#include "driver/monitor_thread_container.h"
 
 #ifdef WIN32
 #ifdef _DEBUG
@@ -99,6 +100,19 @@ public:
     bool is_instance_metrics_enabled() { return CLUSTER_AWARE_METRICS_CONTAINER::is_instance_metrics_enabled(); }
 
     MOCK_METHOD(std::string, get_curr_conn_url, ());
+};
+
+class MOCK_MONITOR : public MONITOR {
+public:
+    MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time) : MONITOR(host, disposal_time) {}
+    
+    MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
+    MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
+};
+
+class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {
+public:
+    MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds));
 };
 
 #endif /* __MOCKOBJECTS_H__ */
