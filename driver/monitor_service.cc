@@ -27,10 +27,14 @@
 #include "monitor_service.h"
 
 MONITOR_SERVICE::MONITOR_SERVICE() {
-    // TODO: Implement
+    this->thread_container = std::make_shared<MONITOR_THREAD_CONTAINER>();
 }
 
-void MONITOR_SERVICE::start_monitoring(
+MONITOR_SERVICE::MONITOR_SERVICE(std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container) {
+    this->thread_container = monitor_thread_container;
+}
+
+std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     DBC* dbc,
     std::set<std::string> node_keys,
     std::shared_ptr<HOST_INFO> host,
@@ -39,26 +43,59 @@ void MONITOR_SERVICE::start_monitoring(
     int failure_detection_count,
     std::chrono::milliseconds disposal_time) {
 
-    // TODO: Implement
+    if (node_keys.empty()) {
+        throw std::invalid_argument("Parameter node_keys cannot be empty");
+    }
+
+    std::shared_ptr<MONITOR> monitor =
+        this->thread_container->get_or_create_monitor(node_keys, host, disposal_time);
+
+    auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
+        dbc,
+        node_keys,
+        failure_detection_time,
+        failure_detection_interval,
+        failure_detection_count);
+
+    monitor->start_monitoring(context);
+    this->thread_container->add_task(monitor);
+
+    return context;
 }
 
 void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    // TODO: Implement
+    if (context == nullptr) {
+        // TODO: log warning
+        return;
+    }
+
+    std::string node = this->thread_container->get_node(context->get_node_keys());
+    if (node == "") {
+        // TODO: log warning
+        return;
+    }
+
+    this->thread_container->get_monitor(node)->stop_monitoring(context);
 }
 
 void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> node_keys) {
-    // TODO: Implement
+    std::string node = this->thread_container->get_node(node_keys);
+    if (node == "") {
+        // TODO: log warning
+        return;
+    }
+
+    auto monitor = this->thread_container->get_monitor(node);
+    monitor->clear_contexts();
+    this->thread_container->reset_resource(monitor);
 }
 
 void MONITOR_SERVICE::notify_unused(std::shared_ptr<MONITOR> monitor) {
-    // TODO: Implement
-}
+    if (monitor == nullptr) {
+        // TODO: log warning
+        return;
+    }
 
-void MONITOR_SERVICE::release_resources() {
-    // TODO: Implement
-}
-
-std::shared_ptr<MONITOR> MONITOR_SERVICE::get_monitor(std::set<std::string> node_keys, std::shared_ptr<HOST_INFO> host) {
-    // TODO: Implement
-    return nullptr;
+    // Remove monitor from the maps
+    this->thread_container->release_resource(monitor);
 }

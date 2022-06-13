@@ -33,8 +33,9 @@
 class MONITOR_SERVICE {
 public:
     MONITOR_SERVICE();
-
-    void start_monitoring(
+    MONITOR_SERVICE(std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container);
+    
+    std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
         DBC* dbc,
         std::set<std::string> node_keys,
         std::shared_ptr<HOST_INFO> host,
@@ -45,12 +46,9 @@ public:
     void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     void stop_monitoring_for_all_connections(std::set<std::string> node_keys);
     void notify_unused(std::shared_ptr<MONITOR> monitor);
-    void release_resources();
 
 private:
-    MONITOR_THREAD_CONTAINER thread_container;
-
-    std::shared_ptr<MONITOR> get_monitor(std::set<std::string> node_keys, std::shared_ptr<HOST_INFO> host);
+    std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
 };
 
 #endif /* __MONITORSERVICE_H__ */
