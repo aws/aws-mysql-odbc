@@ -648,7 +648,8 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
                               ds_get_utf8attr(dsrc->uid,      &dsrc->uid8),
                               ds_get_utf8attr(dsrc->pwd,      &dsrc->pwd8),
                               ds_get_utf8attr(dsrc->database, &dsrc->database8),
-                              port, ds_get_utf8attr(dsrc->socket,   &dsrc->socket8),
+                              port, 
+                              ds_get_utf8attr(dsrc->socket,   &dsrc->socket8),
                               flags);
     if (!connect_result)
     {
