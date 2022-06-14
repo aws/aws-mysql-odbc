@@ -844,7 +844,7 @@ Lengths may not be SQL_NTS.
 @param[in] wildcard       Whether the table name is a wildcard
 
 @return Result of SHOW TABLE STATUS, or NULL if there is an error
-or empty result (check mysql_errno(stmt->dbc->mysql_proxy) != 0)
+or empty result (check stmt->dbc->mysql_proxy->error_code() != 0)
 */
 MYSQL_RES *table_status_no_i_s(STMT        *stmt,
                                SQLCHAR     *catalog,
@@ -913,7 +913,7 @@ Lengths may not be SQL_NTS.
 @param[in] table_length   Length of table name
 
 @return Result of SHOW CREATE TABLE , or NULL if there is an error
-or empty result (check mysql_errno(stmt->dbc->mysql_proxy) != 0)
+or empty result (check stmt->dbc->mysql_proxy->error_code() != 0)
 */
 MYSQL_RES *server_show_create_table(STMT        *stmt,
                                     SQLCHAR     *catalog,
