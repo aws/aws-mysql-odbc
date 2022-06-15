@@ -63,7 +63,7 @@ BOOL returned_result(STMT *stmt)
   }
   else
   {
-    return stmt->dbc->mysql->field_count() > 0;
+    return stmt->dbc->mysql_proxy->field_count() > 0;
   }
 }
 
@@ -95,11 +95,11 @@ static MYSQL_RES* stmt_get_result(STMT *stmt, BOOL force_use)
   /* We can't use USE_RESULT because SQLRowCount will fail in this case! */
   if (if_forward_cache(stmt) || force_use)
   {
-    return stmt->dbc->mysql->use_result();
+    return stmt->dbc->mysql_proxy->use_result();
   }
   else
   {
-    return stmt->dbc->mysql->store_result();
+    return stmt->dbc->mysql_proxy->store_result();
   }
 }
 
@@ -157,7 +157,7 @@ size_t STMT::field_count()
   {
     return result && result->field_count > 0 ?
       result->field_count :
-      dbc->mysql->field_count();
+      dbc->mysql_proxy->field_count();
   }
 }
 
@@ -171,7 +171,7 @@ my_ulonglong affected_rows(STMT *stmt)
   else
   {
     /* In some cases in c/odbc it cannot be used instead of mysql_num_rows */
-    return stmt->dbc->mysql->call_affected_rows();
+    return stmt->dbc->mysql_proxy->call_affected_rows();
   }
 }
 
@@ -308,7 +308,7 @@ int next_result(STMT *stmt)
   }
   else
   {
-    return stmt->dbc->mysql->next_result();
+    return stmt->dbc->mysql_proxy->next_result();
   }
 }
 
@@ -435,7 +435,7 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
      actually parameter markers in it */
   if (!stmt->dbc->ds->no_ssps && (PARAM_COUNT(stmt->query) || force_prepare)
     && !IS_BATCH(&stmt->query)
-    && preparable_on_server(&stmt->query, stmt->dbc->mysql->get_server_version()))
+    && preparable_on_server(&stmt->query, stmt->dbc->mysql_proxy->get_server_version()))
   {
     MYLOG_STMT_TRACE(stmt, "Using prepared statement");
     ssps_init(stmt);
@@ -453,11 +453,11 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
 
      if (prep_res)
       {
-        MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql->error());
+        MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql_proxy->error());
 
         stmt->set_error("HY000");
         translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                        stmt->dbc->mysql->error_code());
+                        stmt->dbc->mysql_proxy->error_code());
 
         return SQL_ERROR;
       }
