@@ -142,9 +142,9 @@ std::shared_ptr<CLUSTER_AWARE_METRICS> CLUSTER_AWARE_METRICS_CONTAINER::get_inst
 
 std::string CLUSTER_AWARE_METRICS_CONTAINER::get_curr_conn_url() {
     std::string curr_url = "[Unknown Url]";
-    if (dbc && dbc->mysql) {
-        curr_url = dbc->mysql->get_host();
-        curr_url.append(":").append(std::to_string(dbc->mysql->get_port()));
+    if (dbc && dbc->mysql_proxy) {
+        curr_url = dbc->mysql_proxy->get_host();
+        curr_url.append(":").append(std::to_string(dbc->mysql_proxy->get_port()));
     }
     return curr_url;
 }

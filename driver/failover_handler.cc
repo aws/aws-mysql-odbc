@@ -384,7 +384,7 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
     }
 
     metrics_container->register_invalid_initial_connection(false);
-    current_topology = topology_service->get_topology(dbc->mysql, false);
+    current_topology = topology_service->get_topology(dbc->mysql_proxy, false);
     if (current_topology) {
         m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster;
         m_is_cluster_topology_available = current_topology->total_hosts() > 0;
@@ -409,7 +409,7 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
 }
 
 SQLRETURN FAILOVER_HANDLER::reconnect(bool failover_enabled) {
-    if (dbc->mysql != nullptr && dbc->mysql->is_connected()) {
+    if (dbc->mysql_proxy != nullptr && dbc->mysql_proxy->is_connected()) {
         dbc->close();
     }
     return connection_handler->do_connect(dbc, ds, failover_enabled);
