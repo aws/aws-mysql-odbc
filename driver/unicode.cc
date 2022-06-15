@@ -285,7 +285,7 @@ SQLDescribeColW(SQLHSTMT hstmt, SQLUSMALLINT column,
 
   if (free_value == -1)
   {
-    set_mem_error(stmt->dbc->mysql);
+    set_mem_error(stmt->dbc->mysql_proxy);
     return handle_connection_error(stmt);
   }
 
@@ -297,7 +297,7 @@ SQLDescribeColW(SQLHSTMT hstmt, SQLUSMALLINT column,
     {
       if (free_value)
         x_free(value);
-      set_mem_error(stmt->dbc->mysql);
+      set_mem_error(stmt->dbc->mysql_proxy);
       return handle_connection_error(stmt);
     }
 
@@ -1028,7 +1028,7 @@ SQLSetConnectAttrWImpl(SQLHDBC hdbc, SQLINTEGER attribute,
                   "than 0 but was not SQL_NTS " , 0);
     }
 
-    if (dbc->mysql != nullptr && dbc->mysql->is_connected())
+    if (dbc->mysql_proxy != nullptr && dbc->mysql_proxy->is_connected())
       value= sqlwchar_as_sqlchar(dbc->cxn_charset_info,
                                  (SQLWCHAR*)value, &len, &errors);
     else

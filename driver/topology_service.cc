@@ -218,7 +218,15 @@ void TOPOLOGY_SERVICE::put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topol
     lock.unlock();
 }
 
-// TODO harmonize time function accross objects so the times are comparable
+MYSQL_RES* TOPOLOGY_SERVICE::try_execute_query(CONNECTION_INTERFACE* mysql_proxy, const char* query) {
+    if (mysql_proxy != nullptr && mysql_proxy->query(query) == 0) {
+        return mysql_proxy->store_result();
+    }
+
+    return nullptr;
+}
+
+// TODO harmonize time function across objects so the times are comparable
 bool TOPOLOGY_SERVICE::refresh_needed(std::time_t last_updated) {
 
     return  time(0) - last_updated > (refresh_rate_in_ms / 1000);
@@ -261,18 +269,17 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 }
 
 // If no host information retrieved return NULL
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONNECTION_INTERFACE* connection) {
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONNECTION_INTERFACE* mysql_proxy) {
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info = nullptr;
 
     std::chrono::steady_clock::time_point start_time_ms = std::chrono::steady_clock::now();
-
-    if (connection->try_execute_query(RETRIEVE_TOPOLOGY_SQL)) {
+    if (MYSQL_RES* result = try_execute_query(mysql_proxy, RETRIEVE_TOPOLOGY_SQL)) {
         topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
         std::map<std::string, std::shared_ptr<HOST_INFO>> instances;
         MYSQL_ROW row;
         int writer_count = 0;
-        while ((row = connection->fetch_next_row())) {
+        while ((row = mysql_proxy->fetch_row(result))) {
             std::shared_ptr<HOST_INFO> host_info = create_host(row);
             if (host_info) {
                 // Only mark the first/latest writer as true writer
@@ -288,6 +295,8 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
                 }
             }
         }
+        mysql_proxy->free_result(result);
+
         topology_info->is_multi_writer_cluster = writer_count > 1 ? true : false;
         if (writer_count == 0) {
             MYLOG_TRACE(log_file, dbc_id,
