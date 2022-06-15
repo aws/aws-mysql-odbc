@@ -1607,7 +1607,7 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hstmt )
   /* call to next_result() failed */
   if (nRetVal > 0)
   {
-    nRetVal= stmt->dbc->mysql->error_code();
+    nRetVal= stmt->dbc->mysql_proxy->error_code();
 
     switch ( nRetVal )
     {
@@ -1620,7 +1620,7 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hstmt )
         if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
           nReturn = stmt->set_error(error_code, error_msg, 0);
         else
-          nReturn = stmt->set_error(error_code, stmt->dbc->mysql->error(), nRetVal);
+          nReturn = stmt->set_error(error_code, stmt->dbc->mysql_proxy->error(), nRetVal);
         goto exitSQLMoreResults;
       case CR_COMMANDS_OUT_OF_SYNC:
       case CR_UNKNOWN_ERROR:
@@ -2039,7 +2039,7 @@ SQLRETURN SQL_API myodbc_single_fetch( SQLHSTMT             hstmt,
             stmt->set_error("01S07", "One or more row has error.", 0);
             return SQL_SUCCESS_WITH_INFO; //SQL_NO_DATA_FOUND
           case SQL_ERROR:   return stmt->set_error(MYERR_S1000,
-                                            stmt->dbc->mysql->error(), 0);
+                                            stmt->dbc->mysql_proxy->error(), 0);
         }
       }
       else
@@ -2183,7 +2183,7 @@ exitSQLSingleFetch:
     stmt->rows_found_in_set= 1;
     *pcrow= cur_row;
 
-    disconnected= is_connection_lost(stmt->dbc->mysql->error_code())
+    disconnected= is_connection_lost(stmt->dbc->mysql_proxy->error_code())
       && handle_connection_error(stmt);
 
     if ( upd_status && stmt->ird->rows_processed_ptr )
@@ -2468,7 +2468,7 @@ SQLRETURN SQL_API my_SQLExtendedFetch( SQLHSTMT             hstmt,
     stmt->rows_found_in_set= i;
     *pcrow= i;
 
-    disconnected= is_connection_lost(stmt->dbc->mysql->error_code())
+    disconnected= is_connection_lost(stmt->dbc->mysql_proxy->error_code())
       && handle_connection_error(stmt);
 
     if ( upd_status && stmt->ird->rows_processed_ptr )

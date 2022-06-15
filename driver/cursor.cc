@@ -51,7 +51,7 @@
 /* Sets affected rows everewhere where SQLRowCOunt could look for */
 void global_set_affected_rows(STMT * stmt, my_ulonglong rows)
 {
-  stmt->dbc->mysql->set_affected_rows(rows);
+  stmt->dbc->mysql_proxy->set_affected_rows(rows);
   stmt->affected_rows = rows;
 
   /* Dirty hack. But not dirtier than the one above */
@@ -227,7 +227,7 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
 
   /* Use SHOW KEYS FROM table to check for keys. */
   pos= myodbc_stpmov(buff, "SHOW KEYS FROM `");
-  pos+= stmt->dbc->mysql->real_escape_string(pos, table, strlen(table));
+  pos+= stmt->dbc->mysql_proxy->real_escape_string(pos, table, strlen(table));
   pos= myodbc_stpmov(pos, "`");
 
   MYLOG_STMT_TRACE(stmt, buff);
@@ -235,7 +235,7 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
   assert(stmt);
   LOCK_DBC(stmt->dbc);
   if (exec_stmt_query(stmt, buff, strlen(buff), FALSE) ||
-      !(res = stmt->dbc->mysql->store_result()))
+      !(res = stmt->dbc->mysql_proxy->store_result()))
   {
     stmt->set_error(MYERR_S1000);
     return FALSE;
@@ -578,7 +578,7 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
   MYLOG_STMT_TRACE(stmt, select.c_str());
   LOCK_STMT(stmt);
   if (exec_stmt_query_std(stmt, select, false) ||
-      !(presultAllColumns = stmt->dbc->mysql->store_result()))
+      !(presultAllColumns = stmt->dbc->mysql_proxy->store_result()))
   {
     stmt->set_error(MYERR_S1000);
     return SQL_ERROR;
@@ -839,7 +839,7 @@ SQLRETURN my_pos_delete_std(STMT *stmt, STMT *stmtParam,
     nReturn= exec_stmt_query_std(stmt, str, false);
     if ( nReturn == SQL_SUCCESS || nReturn == SQL_SUCCESS_WITH_INFO )
     {
-        stmtParam->affected_rows= stmt->dbc->mysql->call_affected_rows();
+        stmtParam->affected_rows= stmt->dbc->mysql_proxy->call_affected_rows();
         nReturn= update_status(stmtParam,SQL_ROW_DELETED);
     }
     return nReturn;
@@ -896,7 +896,7 @@ SQLRETURN my_pos_update_std( STMT *             pStmtCursor,
     rc = my_SQLExecute( pStmtTemp );
     if ( SQL_SUCCEEDED( rc ) )
     {
-        pStmt->affected_rows = pStmtTemp->dbc->mysql->call_affected_rows();
+        pStmt->affected_rows = pStmtTemp->dbc->mysql_proxy->call_affected_rows();
         rc = update_status( pStmt, SQL_ROW_UPDATED );
     }
     else if (rc == SQL_NEED_DATA)
@@ -1053,7 +1053,7 @@ static SQLRETURN setpos_delete_bookmark_std(STMT *stmt, std::string &query)
     /* execute our DELETE statement */
     if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
     {
-      affected_rows+= stmt->dbc->mysql->get_affected_rows();
+      affected_rows+= stmt->dbc->mysql_proxy->get_affected_rows();
     }
     if (stmt->stmt_options.rowStatusPtr_ex)
     {
@@ -1127,7 +1127,7 @@ static SQLRETURN setpos_delete_std(STMT *stmt, SQLUSMALLINT irow,
     /* execute our DELETE statement */
     if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
     {
-      affected_rows+= stmt->dbc->mysql->get_affected_rows();
+      affected_rows+= stmt->dbc->mysql_proxy->get_affected_rows();
     }
 
   } while ( ++rowset_pos <= rowset_end );
@@ -1222,7 +1222,7 @@ static SQLRETURN setpos_update_bookmark_std(STMT *stmt, std::string &query)
 
     if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
     {
-      affected+= stmt->dbc->mysql->call_affected_rows();
+      affected+= stmt->dbc->mysql_proxy->call_affected_rows();
     }
     if (stmt->stmt_options.rowStatusPtr_ex)
     {
@@ -1305,7 +1305,7 @@ static SQLRETURN setpos_update_std(STMT *stmt, SQLUSMALLINT irow,
 
       if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
       {
-        affected+= stmt->dbc->mysql->call_affected_rows();
+        affected+= stmt->dbc->mysql_proxy->call_affected_rows();
       }
       else if (!SQL_SUCCEEDED(nReturn))
       {

@@ -87,11 +87,11 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
     if ( !is_server_alive( stmt->dbc ) )
     {
       stmt->set_error("08S01" /* "HYT00" */,
-                      stmt->dbc->mysql->error(),
-                      stmt->dbc->mysql->error_code());
+                      stmt->dbc->mysql_proxy->error(),
+                      stmt->dbc->mysql_proxy->error_code());
 
       translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_08S01 /* S1000 */,
-                      stmt->dbc->mysql->error_code());
+                      stmt->dbc->mysql_proxy->error_code());
       goto exit;
     }
 
@@ -199,10 +199,10 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     if (native_error)
     {
-      const auto error_code = stmt->dbc->mysql->error_code();
+      const auto error_code = stmt->dbc->mysql_proxy->error_code();
       if (error_code)
       {
-          MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql->error());
+          MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql_proxy->error());
           stmt->set_error("HY000");
 
           // For some errors - translating to more appropriate status
@@ -579,7 +579,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
 
 
         if (has_utf8_maxlen4 &&
-            !is_minimum_version(stmt->dbc->mysql->get_server_version(), "5.5.3"))
+            !is_minimum_version(stmt->dbc->mysql_proxy->get_server_version(), "5.5.3"))
         {
           return stmt->set_error("HY000",
                                 "Server does not support 4-byte encoded "
@@ -1289,7 +1289,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
           goto memerror;
         }
 
-        size_t added = dbc->mysql->real_escape_string(stmt->endbuf(), data, length);
+        size_t added = dbc->mysql_proxy->real_escape_string(stmt->endbuf(), data, length);
         stmt->buf_add_pos(added);
         stmt->add_to_buffer("'", 1);
       }
@@ -1980,7 +1980,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
   {
     char buff[40];
     /* buff is always big enough because max length of %lu is 15 */
-    sprintf(buff, "KILL /*!50000 QUERY */ %lu", dbc->mysql->thread_id());
+    sprintf(buff, "KILL /*!50000 QUERY */ %lu", dbc->mysql_proxy->thread_id());
     if (mysql_real_query(second, buff, strlen(buff)))
     {
       mysql_close(second);
