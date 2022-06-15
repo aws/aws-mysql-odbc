@@ -109,18 +109,18 @@ SQLRETURN odbc_stmt(DBC *dbc, const char *query,
   }
   
   // return immediately if not connected
-  if (!dbc->mysql->is_connected()) 
+  if (!dbc->mysql_proxy->is_connected()) 
   {
     return set_conn_error(dbc, MYERR_08S01, "The active SQL connection was lost. Please discard this connection.", 0);
   }
 
   bool server_alive = is_server_alive(dbc);
-  if (!server_alive || dbc->mysql->real_query(query, query_length))
+  if (!server_alive || dbc->mysql_proxy->real_query(query, query_length))
   {
-      const unsigned int mysql_error_code = dbc->mysql->error_code();
+      const unsigned int mysql_error_code = dbc->mysql_proxy->error_code();
 
-      MYLOG_DBC_TRACE(dbc, dbc->mysql->error());
-      result = set_conn_error(dbc, MYERR_S1000, dbc->mysql->error(), mysql_error_code);
+      MYLOG_DBC_TRACE(dbc, dbc->mysql_proxy->error());
+      result = set_conn_error(dbc, MYERR_S1000, dbc->mysql_proxy->error(), mysql_error_code);
 
       if (!server_alive || is_connection_lost(mysql_error_code))
       {
@@ -128,7 +128,7 @@ SQLRETURN odbc_stmt(DBC *dbc, const char *query,
           if (rollback)
           {
               MYLOG_DBC_TRACE(dbc, "Rolling back");
-              dbc->mysql->real_query("ROLLBACK", 8);
+              dbc->mysql_proxy->real_query("ROLLBACK", 8);
           }
 
           const char *error_code, *error_msg;
@@ -2521,7 +2521,7 @@ bool is_server_alive( DBC *dbc )
 
     if ( (ulong)(seconds - dbc->last_query_time) >= CHECK_IF_ALIVE )
     {
-        if ( dbc->mysql->ping() )
+        if ( dbc->mysql_proxy->ping() )
         {
             /*  BUG: 14639
 
@@ -2538,7 +2538,7 @@ bool is_server_alive( DBC *dbc )
                 PAH - 9.MAR.06
             */
 
-            if (is_connection_lost(dbc->mysql->error_code()))
+            if (is_connection_lost(dbc->mysql_proxy->error_code()))
                 server_alive = false;
         }
     }
@@ -2580,7 +2580,7 @@ int reget_current_catalog(DBC *dbc)
         MYSQL_RES *res;
         MYSQL_ROW row;
 
-        if ( (res= dbc->mysql->store_result()) &&
+        if ( (res= dbc->mysql_proxy->store_result()) &&
              (row= mysql_fetch_row(res)) )
         {
 /*            if (cmp_database(row[0], dbc->database)) */
@@ -3816,7 +3816,7 @@ void set_row_count(STMT *stmt, my_ulonglong rows)
   if (stmt != NULL && stmt->result != NULL)
   {
     stmt->result->row_count= rows;
-    stmt->dbc->mysql->set_affected_rows(rows);
+    stmt->dbc->mysql_proxy->set_affected_rows(rows);
   }
 }
 
@@ -4313,7 +4313,7 @@ int get_session_variable(STMT *stmt, const char *var, char *result)
       return 0;
     }
 
-    res = stmt->dbc->mysql->store_result();
+    res = stmt->dbc->mysql_proxy->store_result();
     if (!res)
       return 0;
 
@@ -4346,7 +4346,7 @@ SQLRETURN set_query_timeout(STMT *stmt, SQLULEN new_value)
   SQLRETURN rc= SQL_SUCCESS;
 
   if (new_value == stmt->stmt_options.query_timeout ||
-      !is_minimum_version(stmt->dbc->mysql->get_server_version(), "5.7.8"))
+      !is_minimum_version(stmt->dbc->mysql_proxy->get_server_version(), "5.7.8"))
   {
     /* Do nothing if setting same timeout or MySQL server older than 5.7.8 */
     return SQL_SUCCESS;
@@ -4376,7 +4376,7 @@ SQLULEN get_query_timeout(STMT *stmt)
 {
   SQLULEN query_timeout= SQL_QUERY_TIMEOUT_DEFAULT; /* 0 */
 
-  if (is_minimum_version(stmt->dbc->mysql->get_server_version(), "5.7.8"))
+  if (is_minimum_version(stmt->dbc->mysql_proxy->get_server_version(), "5.7.8"))
   {
     /* Be cautious with very long values even if they don't make sense */
     char query_timeout_char[32]= {0};
@@ -4395,7 +4395,7 @@ const char get_identifier_quote(STMT *stmt)
 {
   const char tick= '`', quote= '"', empty= ' ';
 
-  if (is_minimum_version(stmt->dbc->mysql->get_server_version(), "3.23.06"))
+  if (is_minimum_version(stmt->dbc->mysql_proxy->get_server_version(), "3.23.06"))
   {
     /*
       The full list of all SQL modes takes over 512 symbols, so we reserve

@@ -67,7 +67,7 @@ static char * my_f_to_a(char * buf, size_t buf_size, double a)
 /* {{{ ssps_init() -I- */
 void ssps_init(STMT *stmt)
 {
-  stmt->ssps= stmt->dbc->mysql->stmt_init();
+  stmt->ssps= stmt->dbc->mysql_proxy->stmt_init();
 
   stmt->result_bind = 0;
 }
@@ -767,7 +767,7 @@ SQLRETURN STMT::set_error(myodbc_errid errid, const char *errtext,
 
 SQLRETURN STMT::set_error(myodbc_errid errid)
 {
-  return set_error(errid, dbc->mysql->error(), dbc->mysql->error_code());
+  return set_error(errid, dbc->mysql_proxy->error(), dbc->mysql_proxy->error_code());
 }
 
 SQLRETURN STMT::set_error(const char *sqlstate, const char *msg,
@@ -779,7 +779,7 @@ SQLRETURN STMT::set_error(const char *sqlstate, const char *msg,
 
 SQLRETURN STMT::set_error(const char *state)
 {
-  return set_error(state, dbc->mysql->error(), dbc->mysql->error_code());
+  return set_error(state, dbc->mysql_proxy->error(), dbc->mysql_proxy->error_code());
 }
 
 
@@ -864,7 +864,7 @@ long STMT::compute_cur_row(unsigned fFetchType, SQLLEN irow)
       case SQL_NO_DATA:
         throw MYERROR(SQL_NO_DATA_FOUND);
       case SQL_ERROR:
-        set_error(MYERR_S1000, dbc->mysql->error(), 0);
+        set_error(MYERR_S1000, dbc->mysql_proxy->error(), 0);
         throw error;
       }
     }
@@ -1026,7 +1026,7 @@ SQLRETURN STMT::bind_query_attrs(bool use_ssps)
   MYSQL_BIND *bind = query_attr_bind.data();
   const char** names = (const char**)query_attr_names.data();
 
-  if (dbc->mysql->bind_param(rcount - param_count,
+  if (dbc->mysql_proxy->bind_param(rcount - param_count,
                              query_attr_bind.data(),
                              (const char**)query_attr_names.data()))
   {
