@@ -29,7 +29,7 @@
 
 #include "cluster_aware_metrics_container.h"
 #include "cluster_topology_info.h"
-#include "connection.h"
+#include "mysql_proxy.h"
 #include "mylog.h"
 
 #include <map>
@@ -123,6 +123,8 @@ protected:
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_from_cache();
     void put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info);
+
+    MYSQL_RES* try_execute_query(CONNECTION_INTERFACE* mysql_proxy, const char* query);
 };
 
 #endif /* __TOPOLOGYSERVICE_H__ */
