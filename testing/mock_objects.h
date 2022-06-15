@@ -32,7 +32,7 @@
 
 #include <gmock/gmock.h>
 
-#include "driver/connection.h"
+#include "driver/mysql_proxy.h"
 #include "driver/failover.h"
 #include "driver/monitor_thread_container.h"
 
@@ -50,11 +50,13 @@ class MOCK_CONNECTION : public CONNECTION_INTERFACE {
  public:
     MOCK_METHOD(bool, is_null, ());
     MOCK_METHOD(bool, is_connected, ());
-    MOCK_METHOD(bool, try_execute_query, (const char*));
-    MOCK_METHOD(char**, fetch_next_row, ());
-    MOCK_METHOD(void, mock_connection_destructor, ());
     MOCK_METHOD(char*, get_host, ());
     MOCK_METHOD(unsigned int, get_port, ());
+    MOCK_METHOD(int, query, (const char*));
+    MOCK_METHOD(MYSQL_RES*, store_result, ());
+    MOCK_METHOD(char**, fetch_row, (MYSQL_RES*));
+    MOCK_METHOD(void, free_result, (MYSQL_RES*));
+    MOCK_METHOD(void, mock_connection_destructor, ());
 
     ~MOCK_CONNECTION() override { mock_connection_destructor(); }
 };
