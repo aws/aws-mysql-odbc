@@ -30,7 +30,7 @@
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
-    std::shared_ptr<MONITOR_SERVICE> service) {
+    MONITOR_SERVICE* service) {
     
     this->host = host_info;
     this->disposal_time = monitor_disposal_time;

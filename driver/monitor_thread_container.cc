@@ -47,7 +47,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::set<std::string> node_keys,
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
-    std::shared_ptr<MONITOR_SERVICE> monitor_service) {
+    MONITOR_SERVICE* monitor_service) {
 
     std::shared_ptr<MONITOR> monitor;
 
@@ -142,7 +142,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
-    std::shared_ptr<MONITOR_SERVICE> monitor_service) {
+    MONITOR_SERVICE* monitor_service) {
 
     return std::make_shared<MONITOR>(host, disposal_time, monitor_service);
 }

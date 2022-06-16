@@ -49,13 +49,11 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         throw std::invalid_argument("Parameter node_keys cannot be empty");
     }
 
-    auto service = std::shared_ptr<MONITOR_SERVICE>(this);
-
     std::shared_ptr<MONITOR> monitor = this->thread_container->get_or_create_monitor(
         node_keys,
         host,
         disposal_time,
-        service);
+        this);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         dbc,

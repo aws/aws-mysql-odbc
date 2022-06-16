@@ -44,7 +44,7 @@ public:
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
         std::chrono::milliseconds monitor_disposal_time,
-        std::shared_ptr<MONITOR_SERVICE> service);
+        MONITOR_SERVICE* service);
 
     virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
@@ -59,7 +59,7 @@ private:
     std::chrono::milliseconds disposal_time;
     std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
     std::chrono::steady_clock::time_point last_context_timestamp;
-    std::shared_ptr<MONITOR_SERVICE> monitor_service;
+    MONITOR_SERVICE* monitor_service;
 
     CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);
     std::chrono::milliseconds find_shortest_interval();

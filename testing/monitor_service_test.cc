@@ -50,7 +50,7 @@ protected:
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MOCK_MONITOR> mock_monitor;
     std::shared_ptr<MOCK_MONITOR_THREAD_CONTAINER> mock_thread_container;
-    std::shared_ptr<MONITOR_SERVICE> monitor_service;
+    MONITOR_SERVICE* monitor_service;
     
     static void SetUpTestSuite() {}
 
@@ -59,7 +59,7 @@ protected:
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
-        monitor_service = std::make_shared<MONITOR_SERVICE>(mock_thread_container);
+        monitor_service = new MONITOR_SERVICE(mock_thread_container);
         mock_monitor = std::make_shared<MOCK_MONITOR>(host, MONITOR_DISPOSAL_TIME_MS, monitor_service);
     }
 
@@ -67,7 +67,7 @@ protected:
         host.reset();
         mock_thread_container.reset();
         mock_monitor.reset();
-        monitor_service.reset();
+        delete monitor_service;
     }
 };
 

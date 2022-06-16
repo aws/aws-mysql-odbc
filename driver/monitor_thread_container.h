@@ -42,7 +42,7 @@ public:
         std::set<std::string> node_keys,
         std::shared_ptr<HOST_INFO> host,
         std::chrono::milliseconds disposal_time,
-        std::shared_ptr<MONITOR_SERVICE> monitor_service);
+        MONITOR_SERVICE* monitor_service);
     void add_task(std::shared_ptr<MONITOR> monitor);
     void reset_resource(std::shared_ptr<MONITOR> monitor);
     void release_resource(std::shared_ptr<MONITOR> monitor);
@@ -54,7 +54,7 @@ protected:
     virtual std::shared_ptr<MONITOR> create_monitor(
         std::shared_ptr<HOST_INFO> host,
         std::chrono::milliseconds disposal_time,
-        std::shared_ptr<MONITOR_SERVICE> monitor_service);
+        MONITOR_SERVICE* monitor_service);
 
     std::map<std::string, std::shared_ptr<MONITOR>> monitor_map;
     std::map<std::shared_ptr<MONITOR>, std::future<void>*> task_map;
