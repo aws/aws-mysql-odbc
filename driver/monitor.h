@@ -30,17 +30,21 @@
 #include "host_info.h"
 #include "monitor_connection_context.h"
 
-#include <climits>
-#include <queue>
+#include <list>
 
 struct CONNECTION_STATUS {
     bool is_valid;
     std::chrono::milliseconds elapsed_time;
 };
 
+class MONITOR_SERVICE;
+
 class MONITOR {
 public:
-    MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time);
+    MONITOR(
+        std::shared_ptr<HOST_INFO> host_info,
+        std::chrono::milliseconds monitor_disposal_time,
+        std::shared_ptr<MONITOR_SERVICE> service);
 
     virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
@@ -49,12 +53,16 @@ public:
     void run();
 
 private:
+    bool stopped = true;
     std::shared_ptr<HOST_INFO> host;
-    std::chrono::milliseconds connection_check_interval = std::chrono::milliseconds(INT_MAX);
+    std::chrono::milliseconds connection_check_interval;
     std::chrono::milliseconds disposal_time;
-    std::queue<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
+    std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
+    std::chrono::steady_clock::time_point last_context_timestamp;
+    std::shared_ptr<MONITOR_SERVICE> monitor_service;
 
-    CONNECTION_STATUS check_connection_status(int shortest_detection_interval);
+    CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);
+    std::chrono::milliseconds find_shortest_interval();
 };
 
 #endif /* __MONITOR_H__ */

@@ -105,7 +105,7 @@ public:
 
 class MOCK_MONITOR : public MONITOR {
 public:
-    MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time) : MONITOR(host, disposal_time) {}
+    MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time, std::shared_ptr<MONITOR_SERVICE> service) : MONITOR(host, disposal_time, service) {}
     
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
@@ -113,7 +113,7 @@ public:
 
 class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {
 public:
-    MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds));
+    MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, std::shared_ptr<MONITOR_SERVICE>));
 };
 
 #endif /* __MOCKOBJECTS_H__ */
