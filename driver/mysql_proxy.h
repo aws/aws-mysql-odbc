@@ -29,6 +29,8 @@
 
 #include <mysql.h>
 
+#include "monitor_service.h"
+
 struct DBC;
 struct DataSource;
 
@@ -151,8 +153,6 @@ public:
 
     char* get_server_version() const;
 
-    uint64_t call_affected_rows();
-
     uint64_t get_affected_rows() const;
 
     void set_affected_rows(uint64_t num_rows);
@@ -169,14 +169,18 @@ public:
 
     unsigned int get_server_status() const;
 
-    char* get_server_version();
-
     void set_connection(MYSQL_PROXY* mysql_proxy);
 
 private:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     MYSQL* mysql = nullptr;
+    std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
+    std::set<std::string> node_keys;
+
+    std::shared_ptr<HOST_INFO> get_host_info_from_ds();
+    std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring();
+    void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
 };
 
 #endif /* __MYSQL_PROXY__ */
