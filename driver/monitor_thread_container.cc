@@ -108,10 +108,13 @@ void MONITOR_THREAD_CONTAINER::populate_monitor_map(
 }
 
 void MONITOR_THREAD_CONTAINER::remove_monitor_mapping(std::shared_ptr<MONITOR> monitor) {
-    for (auto it = this->monitor_map.begin(); it != this->monitor_map.end(); it++) {
+    for (auto it = this->monitor_map.begin(); it != this->monitor_map.end();) {
         std::string node = (*it).first;
         if (this->monitor_map[node] == monitor) {
-            this->monitor_map.erase(node);
+            it = this->monitor_map.erase(it);
+        }
+        else {
+            it++;
         }
     }
 }
