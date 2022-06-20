@@ -27,6 +27,8 @@
 #include "monitor.h"
 #include "monitor_service.h"
 
+#define THREAD_SLEEP_WHEN_INACTIVE std::chrono::milliseconds(100)
+
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
@@ -39,7 +41,7 @@ MONITOR::MONITOR(
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    auto detection_interval = context->get_failure_detection_interval();
+    std::chrono::milliseconds detection_interval = context->get_failure_detection_interval();
     if (detection_interval < this->connection_check_interval) {
         this->connection_check_interval = detection_interval;
     }
@@ -71,6 +73,7 @@ void MONITOR::clear_contexts() {
     this->connection_check_interval = std::chrono::milliseconds::max();
 }
 
+// Periodically ping the server and update the contexts' connection status.
 void MONITOR::run() {
     try {
         this->stopped = false;
@@ -100,7 +103,7 @@ void MONITOR::run() {
                     this->monitor_service->notify_unused(std::shared_ptr<MONITOR>(this));
                     break;
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(THREAD_SLEEP_WHEN_INACTIVE);
             }
         }
     }
