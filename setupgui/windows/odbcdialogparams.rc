@@ -224,6 +224,22 @@ IDD_TAB4 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
+    CONTROL         "&Enable failure detection",IDC_CHECK_enable_failure_detection,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 12, 100, 10
+    RTEXT           "Failure detection time (ms):",IDC_STATIC,12,27,116,8
+    EDITTEXT        IDC_EDIT_failure_detection_time,132,25,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Failure detection interval (ms):",IDC_STATIC,12,42,116,8
+    EDITTEXT        IDC_EDIT_failure_detection_interval,132,40,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Failure detection count:",IDC_STATIC,12,57,116,8
+    EDITTEXT        IDC_EDIT_failure_detection_count,132,55,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Monitor disposal time (ms):",IDC_STATIC,12,72,116,8
+    EDITTEXT        IDC_EDIT_monitor_disposal_time,132,70,64,12,ES_AUTOHSCROLL | ES_NUMBER
+END
+
+IDD_TAB5 DIALOGEX 0, 0, 209, 181
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
     CONTROL         "&Treat BIGINT columns as INT columns",IDC_CHECK_change_bigint_columns_to_int,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,135,10
     CONTROL         "&Always handle binary function results as character data",IDC_CHECK_handle_binary_as_char,
@@ -239,7 +255,7 @@ BEGIN
 
 END
 
-IDD_TAB5 DIALOGEX 0, 0, 209, 181
+IDD_TAB6 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -266,7 +282,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,125,138,10
 END
 
-IDD_TAB6 DIALOGEX 0, 0, 209, 181
+IDD_TAB7 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -274,7 +290,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,148,10
 END
 
-IDD_TAB7 DIALOGEX 0, 0, 509, 181
+IDD_TAB8 DIALOGEX 0, 0, 509, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -311,7 +327,7 @@ BEGIN
 END
 
 
-IDD_TAB8 DIALOGEX 0, 0, 209, 181
+IDD_TAB9 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -388,9 +404,9 @@ IDB_LOGO                BITMAP                  "aws_connector_odbc_header.bmp"
 GUIDELINES DESIGNINFO
 BEGIN
 #if MFA_ENABLED
-    IDD_TAB7, DIALOG
+    IDD_TAB8, DIALOG
 #else
-    IDD_TAB6, DIALOG
+    IDD_TAB7, DIALOG
 #endif
     BEGIN
         VERTGUIDE, 85
