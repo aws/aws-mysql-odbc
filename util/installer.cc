@@ -814,6 +814,7 @@ DataSource *ds_new()
   ds->failover_writer_reconnect_interval = get_failover_writer_reconnect_interval(0);
   ds->connect_timeout = get_failover_connect_timeout(0);
   ds->network_timeout = get_failover_network_timeout(0);
+  ds->disable_failure_detection = true;
 
   ds->enable_failure_detection = ds->enable_cluster_failover;
   ds->failure_detection_time = get_failure_detection_time(0);
@@ -2082,7 +2083,7 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
         ds_source->failover_reader_connect_timeout;
     ds->connect_timeout = ds_source->connect_timeout;
     ds->network_timeout = ds_source->network_timeout;
-
+    
     ds->enable_failure_detection = ds_source->enable_failure_detection;
     ds->failure_detection_time = ds_source->failure_detection_time;
     ds->failure_detection_interval = ds_source->failure_detection_interval;

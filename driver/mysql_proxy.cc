@@ -490,19 +490,24 @@ std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() {
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
-
-    // TODO Use value from ds once available
+    if (ds->disable_failure_detection) {
+        return nullptr;
+    }
+    // TODO Populate node keys
     return monitor_service->start_monitoring(
         dbc,
         node_keys,
         get_host_info_from_ds(),
-        std::chrono::milliseconds{0},
-        std::chrono::milliseconds{0},
-        0,
-        std::chrono::milliseconds{0});
+        std::chrono::milliseconds{ds->failure_detection_time},
+        std::chrono::milliseconds{ds->failure_detection_interval},
+        ds->failure_detection_count,
+        std::chrono::milliseconds{ds->monitor_disposal_time});
 }
 
 void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
+    if (ds->disable_failure_detection) {
+        return;
+    }
     monitor_service->stop_monitoring(context);
     if (context->is_node_unhealthy() && is_connected()) {
         // TODO Close socket connection
