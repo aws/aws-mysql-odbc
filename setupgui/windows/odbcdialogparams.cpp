@@ -381,6 +381,7 @@ void btnDetails_Click (HWND hwnd)
       L"MFA",
 #endif
       L"Cluster Failover",
+      L"Monitoring",
       L"Metadata",
       L"Cursors/Results",
       L"Debug",
@@ -395,8 +396,9 @@ void btnDetails_Click (HWND hwnd)
                     MAKEINTRESOURCE(IDD_TAB5),
                     MAKEINTRESOURCE(IDD_TAB6),
                     MAKEINTRESOURCE(IDD_TAB7),
-#if MFA_ENABLED
                     MAKEINTRESOURCE(IDD_TAB8),
+#if MFA_ENABLED
+                    MAKEINTRESOURCE(IDD_TAB9),
 #endif
                     0};
 
