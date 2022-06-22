@@ -146,7 +146,7 @@
 #define IDC_EDIT_pwd3                   10070
 #define IDC_EDIT_oci_config_file        10071
 #define IDC_CHOOSER_oci_config_file     10072
-#define IDC_CHECK_disable_cluster_failover 10073
+#define IDC_CHECK_enable_cluster_failover 10073
 #define IDC_CHECK_gather_perf_metrics   10074
 #define IDC_CHECK_gather_metrics_per_instance 10075
 #define IDC_EDIT_host_pattern           10076

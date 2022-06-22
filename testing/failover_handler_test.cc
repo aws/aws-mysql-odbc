@@ -69,7 +69,7 @@ class FailoverHandlerTest : public testing::Test {
         SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
         dbc = static_cast<DBC*>(hdbc);
         ds = ds_new();
-        ds->disable_cluster_failover = false;
+        ds->enable_cluster_failover = true;
         ds->gather_perf_metrics = false;
 
         mock_ts = std::make_shared<MOCK_TOPOLOGY_SERVICE>();
@@ -134,7 +134,7 @@ TEST_F(FailoverHandlerTest, CustomDomain) {
 }
 
 TEST_F(FailoverHandlerTest, FailoverDisabled) {
-    ds->disable_cluster_failover = true;
+    ds->enable_cluster_failover = false;
 
     EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, false)).Times(1);
 
@@ -356,7 +356,7 @@ TEST_F(FailoverHandlerTest, RDS_MultiWriterCluster) {
 
     ds_setattr_from_utf8(&ds->server, server);
     ds->port = 1234;
-    ds->disable_cluster_failover = false;
+    ds->enable_cluster_failover = true;
 
     EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, false)).WillOnce(Return(SQL_SUCCESS));
 
