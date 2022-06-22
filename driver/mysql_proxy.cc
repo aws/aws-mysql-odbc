@@ -33,8 +33,7 @@
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
     : dbc{dbc},
       ds{ds},
-      monitor_service{std::make_shared<MONITOR_SERVICE>()},
-      host{get_host_info_from_ds()} {}
+      monitor_service{std::make_shared<MONITOR_SERVICE>()}{}
 
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
@@ -500,7 +499,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
     return monitor_service->start_monitoring(
         dbc,
         node_keys,
-        host,
+        get_host_info_from_ds(),
         std::chrono::milliseconds{ds->failure_detection_time},
         std::chrono::milliseconds{ds->failure_detection_interval},
         ds->failure_detection_count,

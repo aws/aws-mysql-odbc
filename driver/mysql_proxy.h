@@ -175,7 +175,6 @@ private:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     MYSQL* mysql = nullptr;
-    std::shared_ptr<HOST_INFO> host = nullptr;
     std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
     std::set<std::string> node_keys;
 
