@@ -155,7 +155,7 @@
 #define IDC_EDIT_tls_versions           10073
 #define IDC_EDIT_ssl_crl                10074
 #define IDC_EDIT_ssl_crlpath            10075
-#define IDC_CHECK_disable_cluster_failover 10076
+#define IDC_CHECK_enable_cluster_failover 10076
 #define IDC_CHECK_gather_perf_metrics   10077
 #define IDC_CHECK_gather_metrics_per_instance 10078
 #define IDC_EDIT_host_pattern           10079
