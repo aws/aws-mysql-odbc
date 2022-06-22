@@ -157,7 +157,7 @@
 #define IDC_EDIT_ssl_crlpath            10075
 #define IDC_EDIT_authentication_kerberos_mode 10076
 #define IDC_EDIT_oci_config_profile     10077
-#define IDC_CHECK_disable_cluster_failover 10078
+#define IDC_CHECK_enable_cluster_failover 10078
 #define IDC_CHECK_gather_perf_metrics   10079
 #define IDC_CHECK_gather_metrics_per_instance 10080
 #define IDC_EDIT_host_pattern           10081

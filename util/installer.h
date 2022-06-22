@@ -223,7 +223,7 @@ typedef struct DataSource {
   BOOL multi_host;
 
   /* Failover */
-  BOOL disable_cluster_failover;
+  BOOL enable_cluster_failover;
   BOOL allow_reader_connections;
   BOOL gather_perf_metrics;
   BOOL gather_metrics_per_instance;
