@@ -235,7 +235,7 @@ static SQLWCHAR W_SSL_CRLPATH[] =
 { 'S', 'S', 'L', '-', 'C', 'R', 'L', 'P', 'A', 'T', 'H', 0};
 
 /* Failover */
-static SQLWCHAR W_DISABLE_CLUSTER_FAILOVER[] = { 'D', 'I', 'S', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
+static SQLWCHAR W_ENABLE_CLUSTER_FAILOVER[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
 static SQLWCHAR W_ALLOW_READER_CONNECTIONS[] = { 'A', 'L', 'L', 'O', 'W', '_', 'R', 'E', 'A', 'D', 'E', 'R', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', 'I', 'O', 'N', 'S', 0 };
 static SQLWCHAR W_GATHER_PERF_METRICS[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', 0 };
 static SQLWCHAR W_GATHER_PERF_METRICS_PER_INSTANCE[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', '_','P','E','R','_','I','N','S','T','A','N', 'C', 'E', 0 };
@@ -297,7 +297,7 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         W_OCI_CONFIG_FILE, W_OCI_CONFIG_PROFILE, W_AUTHENTICATION_KERBEROS_MODE,
                         W_TLS_VERSIONS, W_SSL_CRL, W_SSL_CRLPATH,
                         /* Failover */
-                        W_DISABLE_CLUSTER_FAILOVER, W_ALLOW_READER_CONNECTIONS, 
+                        W_ENABLE_CLUSTER_FAILOVER, W_ALLOW_READER_CONNECTIONS, 
                         W_GATHER_PERF_METRICS, W_GATHER_PERF_METRICS_PER_INSTANCE,
                         W_HOST_PATTERN, W_CLUSTER_ID, W_TOPOLOGY_REFRESH_RATE,
                         W_FAILOVER_TIMEOUT, W_FAILOVER_TOPOLOGY_REFRESH_RATE,
@@ -817,7 +817,7 @@ DataSource *ds_new()
   ds->port = 3306;
   ds->has_port = false;
   ds->no_schema = 1;
-  ds->disable_cluster_failover = false;
+  ds->enable_cluster_failover = true;
   ds->allow_reader_connections = false;
   ds->gather_perf_metrics = false;
   ds->topology_refresh_rate = get_topology_refresh_rate(0);
@@ -828,7 +828,7 @@ DataSource *ds_new()
   ds->connect_timeout = get_failover_connect_timeout(0);
   ds->network_timeout = get_failover_network_timeout(0);
 
-  ds->enable_failure_detection = !(ds->disable_cluster_failover);
+  ds->enable_failure_detection = ds->enable_cluster_failover;
   ds->failure_detection_time = get_failure_detection_time(0);
   ds->failure_detection_interval = get_failure_detection_interval(0);
   ds->failure_detection_count = get_failure_detection_count(0);
@@ -1206,8 +1206,8 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
   else if (!sqlwcharcasecmp(W_SSL_CRLPATH, param))
   *strdest = &ds->ssl_crlpath;
   /* Failover*/
-  else if (!sqlwcharcasecmp(W_DISABLE_CLUSTER_FAILOVER, param))
-    *booldest = &ds->disable_cluster_failover;
+  else if (!sqlwcharcasecmp(W_ENABLE_CLUSTER_FAILOVER, param))
+    *booldest = &ds->enable_cluster_failover;
   else if (!sqlwcharcasecmp(W_ALLOW_READER_CONNECTIONS, param))
     *booldest = &ds->allow_reader_connections;  
   else if (!sqlwcharcasecmp(W_GATHER_PERF_METRICS, param))
@@ -1787,7 +1787,7 @@ int ds_add(DataSource *ds)
   if (ds_add_strprop(ds->name, W_SSL_CRL, ds->ssl_crl)) goto error;
   if (ds_add_strprop(ds->name, W_SSL_CRLPATH, ds->ssl_crlpath)) goto error;
   /* Failover */
-  if (ds_add_intprop(ds->name, W_DISABLE_CLUSTER_FAILOVER, ds->disable_cluster_failover)) goto error;
+  if (ds_add_intprop(ds->name, W_ENABLE_CLUSTER_FAILOVER, ds->enable_cluster_failover)) goto error;
   if (ds_add_intprop(ds->name, W_ALLOW_READER_CONNECTIONS, ds->allow_reader_connections)) goto error;
   if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS, ds->gather_perf_metrics)) goto error;
   if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS_PER_INSTANCE, ds->gather_metrics_per_instance)) goto error;
@@ -2133,7 +2133,7 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
                          sqlwcharlen(ds_source->cluster_id));
     }
 
-    ds->disable_cluster_failover = ds_source->disable_cluster_failover;
+    ds->enable_cluster_failover = ds_source->enable_cluster_failover;
     ds->allow_reader_connections = ds_source->allow_reader_connections;
     ds->gather_perf_metrics = ds_source->gather_perf_metrics;
     ds->gather_metrics_per_instance = ds_source->gather_metrics_per_instance;

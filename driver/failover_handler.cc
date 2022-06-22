@@ -97,7 +97,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         return rc;
     }
     
-    if (ds->disable_cluster_failover) {
+    if (!ds->enable_cluster_failover) {
         // Use a standard default connection - no further initialization required
         rc = connection_handler->do_connect(dbc, ds, false);
         initialized = true;
@@ -362,7 +362,7 @@ std::string FAILOVER_HANDLER::get_rds_instance_host_pattern(std::string host) {
 
 bool FAILOVER_HANDLER::is_failover_enabled() {
     return (dbc != nullptr && ds != nullptr &&
-            !ds->disable_cluster_failover &&
+            ds->enable_cluster_failover &&
             m_is_cluster_topology_available &&
             !m_is_rds_proxy &&
             !m_is_multi_writer_cluster);
