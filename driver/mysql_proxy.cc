@@ -31,7 +31,10 @@
 #include "driver.h"
 
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
-    : dbc{dbc}, ds{ds}, monitor_service{std::make_shared<MONITOR_SERVICE>()} {}
+    : dbc{dbc},
+      ds{ds},
+      monitor_service{std::make_shared<MONITOR_SERVICE>()},
+      host{get_host_info_from_ds()} {}
 
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
@@ -490,14 +493,14 @@ std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() {
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
-    if (ds->disable_failure_detection) {
+    if (!ds->enable_failure_detection) {
         return nullptr;
     }
     // TODO Populate node keys
     return monitor_service->start_monitoring(
         dbc,
         node_keys,
-        get_host_info_from_ds(),
+        host,
         std::chrono::milliseconds{ds->failure_detection_time},
         std::chrono::milliseconds{ds->failure_detection_interval},
         ds->failure_detection_count,
@@ -505,7 +508,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
 }
 
 void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    if (ds->disable_failure_detection) {
+    if (!ds->enable_failure_detection) {
         return;
     }
     monitor_service->stop_monitoring(context);

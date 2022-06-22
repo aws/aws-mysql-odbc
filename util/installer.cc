@@ -814,7 +814,6 @@ DataSource *ds_new()
   ds->failover_writer_reconnect_interval = get_failover_writer_reconnect_interval(0);
   ds->connect_timeout = get_failover_connect_timeout(0);
   ds->network_timeout = get_failover_network_timeout(0);
-  ds->disable_failure_detection = true;
 
   ds->enable_failure_detection = ds->enable_cluster_failover;
   ds->failure_detection_time = get_failure_detection_time(0);
