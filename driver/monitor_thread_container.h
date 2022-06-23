@@ -29,6 +29,7 @@
 
 #include "monitor.h"
 
+#include <ctpl_stl.h>
 #include <future>
 #include <map>
 #include <set>
@@ -55,6 +56,7 @@ protected:
     std::map<std::string, std::shared_ptr<MONITOR>> monitor_map;
     std::map<std::shared_ptr<MONITOR>, std::future<void>*> task_map;
     std::queue<std::shared_ptr<MONITOR>> available_monitors;
+    ctpl::thread_pool thread_pool;
 };
 
 #endif /* __MONITORTHREADCONTAINER_H__ */
