@@ -482,7 +482,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
 }
 
 void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    if (!ds->enable_failure_detection) {
+    if (!ds->enable_failure_detection || context == nullptr) {
         return;
     }
     monitor_service->stop_monitoring(context);

@@ -2084,7 +2084,6 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
         ds_source->failover_reader_connect_timeout;
     ds->connect_timeout = ds_source->connect_timeout;
     ds->network_timeout = ds_source->network_timeout;
-    
     ds->enable_failure_detection = ds_source->enable_failure_detection;
     ds->failure_detection_time = ds_source->failure_detection_time;
     ds->failure_detection_interval = ds_source->failure_detection_interval;
