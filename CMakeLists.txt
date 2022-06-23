@@ -85,6 +85,16 @@ endif()
 
 #-----------------------------------------------------
 
+include(FetchContent)
+FetchContent_Declare(
+  ctpl
+  URL https://github.com/vit-vit/CTPL/archive/refs/tags/ctpl_v.0.0.2.zip
+)
+
+FetchContent_MakeAvailable(ctpl)
+
+#-----------------------------------------------------
+
 FIND_PACKAGE(Threads)
 
 INCLUDE(version.cmake)
@@ -512,6 +522,8 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/ssl_setup.cmake)
 setup_ssl_libs()
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
+
+INCLUDE_DIRECTORIES(${ctpl_SOURCE_DIR})
 
 ADD_SUBDIRECTORY(util)
 ADD_SUBDIRECTORY(driver)
