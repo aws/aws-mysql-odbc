@@ -30,7 +30,6 @@
 
 #include "setupgui.h"
 
-#include "driver.h"
 #include "stringutil.h"
 
 
