@@ -177,8 +177,7 @@ private:
     MYSQL* mysql = nullptr;
     std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
     std::set<std::string> node_keys;
-
-    std::shared_ptr<HOST_INFO> get_host_info_from_ds();
+    
     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring();
     void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
 };

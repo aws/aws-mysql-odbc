@@ -466,31 +466,6 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     mysql_proxy->mysql = nullptr;
 }
 
-std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() {
-    std::vector<Srv_host_detail> hosts;
-    std::stringstream err;
-    try {
-        hosts =
-            parse_host_list(ds_get_utf8attr(ds->server, &ds->server8), ds->port);
-    }
-    catch (std::string&) {
-        err << "Invalid server '" << ds->server8 << "'.";
-        MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw std::runtime_error(err.str());
-    }
-
-    if (hosts.size() == 0) {
-        err << "Empty server host.";
-        MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw std::runtime_error(err.str());
-    }
-
-    std::string main_host(hosts[0].name);
-    unsigned int main_port = hosts[0].port;
-
-    return std::make_shared<HOST_INFO>(main_host, main_port);
-}
-
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
     if (!ds->enable_failure_detection) {
         return nullptr;
@@ -499,7 +474,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
     return monitor_service->start_monitoring(
         dbc,
         node_keys,
-        get_host_info_from_ds(),
+        std::make_shared<HOST_INFO>(get_host(), get_port()),
         std::chrono::milliseconds{ds->failure_detection_time},
         std::chrono::milliseconds{ds->failure_detection_interval},
         ds->failure_detection_count,
