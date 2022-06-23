@@ -72,7 +72,9 @@ void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor) {
     }
 
     if (this->task_map.count(monitor) == 0) {
-        // TODO: create task and add it to map
+        std::future<void> future = 
+            this->thread_pool.push([&monitor](int id) { monitor->run(); });
+        this->task_map[monitor] = &future;
     }
 }
 
