@@ -48,6 +48,10 @@ void MONITOR::clear_contexts() {
     // TODO: Implement
 }
 
+void MONITOR::run() {
+    // TODO: Implement
+}
+
 CONNECTION_STATUS MONITOR::check_connection_status(int shortest_detection_interval) {
     // TODO: Implement
     return CONNECTION_STATUS{ false, std::chrono::milliseconds(0) };
