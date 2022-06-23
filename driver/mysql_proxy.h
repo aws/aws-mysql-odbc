@@ -133,7 +133,7 @@ public:
     int stmt_next_result(MYSQL_STMT* stmt);
     void close();
 
-    MYSQL* real_connect_dns_srv(const char* dns_srv_name,
+    bool real_connect_dns_srv(const char* dns_srv_name,
                                 const char* user, const char* passwd,
                                 const char* db, unsigned long client_flag);
     struct st_mysql_client_plugin* client_find_plugin(
