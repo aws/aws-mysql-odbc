@@ -43,6 +43,14 @@ IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
   ENDIF()
 ENDIF()
 
+include(FetchContent)
+FetchContent_Declare(
+  ctpl
+  URL https://github.com/vit-vit/CTPL/archive/refs/tags/ctpl_v.0.0.2.zip
+)
+
+FetchContent_MakeAvailable(ctpl)
+
 SET(DRIVER_INDEX 0)
 SET(DRIVER_LOCATION2 "")
 SET(CONNECTOR_DRIVER_TYPE2 "")
@@ -180,6 +188,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     INCLUDE_DIRECTORIES(${DL_INCLUDES})
 
   ENDIF(WIN32)
+
+  TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME} PUBLIC "${ctpl_SOURCE_DIR}")
 
   IF (MYSQL_CXX_LINKAGE)
     SET_TARGET_PROPERTIES(${DRIVER_NAME} PROPERTIES
