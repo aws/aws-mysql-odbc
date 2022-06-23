@@ -91,11 +91,16 @@ int MYSQL_PROXY::set_character_set(const char* csname) {
 }
 
 void MYSQL_PROXY::init() {
+    const auto context = start_monitoring();
     this->mysql = mysql_init(nullptr);
+    stop_monitoring(context);
 }
 
 bool MYSQL_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    return mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
+    const auto context = start_monitoring();
+    const bool ret = mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
+    stop_monitoring(context);
+    return ret;
 }
 
 bool MYSQL_PROXY::change_user(const char* user, const char* passwd, const char* db) {
@@ -105,12 +110,15 @@ bool MYSQL_PROXY::change_user(const char* user, const char* passwd, const char* 
     return ret;
 }
 
-MYSQL* MYSQL_PROXY::real_connect(
+bool MYSQL_PROXY::real_connect(
     const char* host, const char* user, const char* passwd,
     const char* db, unsigned int port, const char* unix_socket,
     unsigned long clientflag) {
 
-    return mysql_real_connect(mysql, host, user, passwd, db, port, unix_socket, clientflag);
+    const auto context = start_monitoring();
+    const MYSQL* new_mysql = mysql_real_connect(mysql, host, user, passwd, db, port, unix_socket, clientflag);
+    stop_monitoring(context);
+    return new_mysql != nullptr;
 }
 
 int MYSQL_PROXY::select_db(const char* db) {
@@ -182,15 +190,21 @@ void MYSQL_PROXY::close() {
     mysql = nullptr;
 }
 
-MYSQL* MYSQL_PROXY::real_connect_dns_srv(
+bool MYSQL_PROXY::real_connect_dns_srv(
     const char* dns_srv_name, const char* user,
     const char* passwd, const char* db, unsigned long client_flag) {
 
-    return mysql_real_connect_dns_srv(mysql, dns_srv_name, user, passwd, db, client_flag);
+    const auto context = start_monitoring();
+    const MYSQL* new_mysql = mysql_real_connect_dns_srv(mysql, dns_srv_name, user, passwd, db, client_flag);
+    stop_monitoring(context);
+    return new_mysql != nullptr;
 }
 
 int MYSQL_PROXY::ping() {
-    return mysql_ping(mysql);
+    const auto context = start_monitoring();
+    const int ret = mysql_ping(mysql);
+    stop_monitoring(context);
+    return ret;
 }
 
 unsigned long MYSQL_PROXY::get_client_version(void) {

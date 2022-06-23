@@ -71,7 +71,7 @@ public:
                  const char* capath, const char* cipher);
     bool change_user(const char* user, const char* passwd,
                      const char* db);
-    MYSQL* real_connect(const char* host, const char* user,
+    bool real_connect(const char* host, const char* user,
                         const char* passwd, const char* db, unsigned int port,
                         const char* unix_socket, unsigned long clientflag);
     int select_db(const char* db);
