@@ -174,7 +174,7 @@ create_fake_resultset(STMT *stmt, MYSQL_ROW rowval, size_t rowsize,
   else
   {
     if (stmt->result)
-      mysql_free_result(stmt->result);
+      stmt->dbc->mysql_proxy->free_result(stmt->result);
   }
 
   /* Free if result data was not in row storage */
@@ -884,7 +884,7 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
     is_access = true;
 #endif
 
-  size_t rows = mysql_stmt_num_rows(local_stmt);
+  size_t rows = stmt->dbc->mysql_proxy->stmt_num_rows(local_stmt);
   stmt->m_row_storage.set_size(rows, SQLCOLUMNS_FIELDS);
   if (rows == 0)
   {
@@ -897,7 +897,7 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
   std::string db = get_database_name(stmt, catalog, catalog_len,
     schema, schema_len, false);
   size_t rnum = 1;
-  while(!mysql_stmt_fetch(local_stmt))
+  while(!stmt->dbc->mysql_proxy->stmt_fetch(local_stmt))
   {
     CAT_SCHEMA_SET(data[0], data[1], db);
     /* TABLE_NAME */
