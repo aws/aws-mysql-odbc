@@ -171,7 +171,7 @@ my_ulonglong affected_rows(STMT *stmt)
   else
   {
     /* In some cases in c/odbc it cannot be used instead of mysql_num_rows */
-    return stmt->dbc->mysql_proxy->call_affected_rows();
+    return stmt->dbc->mysql_proxy->affected_rows();
   }
 }
 
