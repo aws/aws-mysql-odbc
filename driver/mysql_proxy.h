@@ -83,7 +83,7 @@ public:
     void get_character_set_info(MY_CHARSET_INFO* charset);
 
     int ping();
-    unsigned long get_client_version(void);
+    static unsigned long get_client_version(void);
     int options(enum mysql_option option, const void* arg);
     int options4(enum mysql_option option, const void* arg1,
                  const void* arg2);

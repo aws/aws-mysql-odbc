@@ -228,7 +228,7 @@ server_list_dbcolumns(STMT *stmt,
     if (mysql_proxy->select_db(dbc->database.c_str()))
     {
       /* Well, probably have to return error here */
-      mysql_free_result(result);
+      mysql_proxy->free_result(result);
       return NULL;
     }
   }
@@ -296,14 +296,14 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
   stmt->result= res;
   alloc= &stmt->alloc_root;
 
-  while ((table_row= mysql_fetch_row(res)))
+  while ((table_row= stmt->dbc->mysql_proxy->fetch_row(res)))
   {
     MYSQL_FIELD *field;
     MYSQL_RES *table_res;
     int count= 0;
 
     /* Get list of columns matching column for each table. */
-    lengths= mysql_fetch_lengths(res);
+    lengths= stmt->dbc->mysql_proxy->fetch_lengths(res);
     table_res= server_list_dbcolumns(stmt, (SQLCHAR*)db.c_str(), db.length(),
                                      (SQLCHAR *)table_row[0],
                                      (SQLSMALLINT)lengths[0],
@@ -314,7 +314,7 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
       return handle_connection_error(stmt);
     }
 
-    rows+= mysql_num_fields(table_res);
+    rows += stmt->dbc->mysql_proxy->num_fields(table_res);
 
     if (!stmt->m_row_storage.is_valid())
       x_free(stmt->result_array);
@@ -323,7 +323,7 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
     stmt->m_row_storage.set_size(rows, SQLCOLUMNS_FIELDS);
     auto &data = stmt->m_row_storage;
 
-    while (field = mysql_fetch_field(table_res))
+    while (field = stmt->dbc->mysql_proxy->fetch_field(table_res))
     {
       SQLSMALLINT type;
       char buff[255]; /* @todo justify the size of this buffer */
@@ -472,7 +472,7 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
     }
     stmt->result_array = (MYSQL_ROW)data.data();
 
-    mysql_free_result(table_res);
+    stmt->dbc->mysql_proxy->free_result(table_res);
   }
 
   set_row_count(stmt, rows);
@@ -629,7 +629,7 @@ list_table_priv_no_i_s(SQLHSTMT hstmt,
 
     row_count= 0;
 
-    while ( (row= mysql_fetch_row(stmt->result)) )
+    while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
     {
       const char  *grants= row[4];
       char  token[NAME_LEN+1];
@@ -795,7 +795,7 @@ list_column_priv_no_i_s(SQLHSTMT hstmt,
   auto &data = stmt->m_row_storage;
 
   row_count= 0;
-  while ( (row= mysql_fetch_row(stmt->result)) )
+  while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
   {
     const char  *grants = row[5];
     char  token[NAME_LEN+1];
@@ -1148,11 +1148,11 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
   }
   free_internal_result_buffers(stmt);
 
-  while ((table_row = mysql_fetch_row(local_res)))
+  while ((table_row = stmt->dbc->mysql_proxy->fetch_row(local_res)))
   {
-    lengths = mysql_fetch_lengths(local_res);
+    lengths = stmt->dbc->mysql_proxy->fetch_lengths(local_res);
     if (stmt->result)
-      mysql_free_result(stmt->result);
+      stmt->dbc->mysql_proxy->free_result(stmt->result);
     stmt->result= server_show_create_table(stmt,
                                            (SQLCHAR*)pk_db.c_str(), pk_db.length(),
                                            (SQLCHAR*)table_row[0],
@@ -1171,9 +1171,9 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
     /* Convert mysql fields to data that odbc wants */
     alloc= &stmt->alloc_root;
 
-    while (row= mysql_fetch_row(stmt->result))
+    while (row = stmt->dbc->mysql_proxy->fetch_row(stmt->result))
     {
-      lengths= mysql_fetch_lengths(stmt->result);
+      lengths = stmt->dbc->mysql_proxy->fetch_lengths(stmt->result);
       if (lengths[1])
       {
         const char Fk_keywords[2][12]= {"FOREIGN KEY", "REFERENCES"};
@@ -1467,7 +1467,7 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
     ++index;
   }
   delete_dynamic(&records);
-  mysql_free_result(local_res);
+  stmt->dbc->mysql_proxy->free_result(local_res);
 
   stmt->result_array = (MYSQL_ROW)data.data();
 
@@ -1488,11 +1488,11 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
     {
       case EXCEPTION_TYPE::EMPTY_SET:
       delete_dynamic(&records);
-      mysql_free_result(local_res);
+      stmt->dbc->mysql_proxy->free_result(local_res);
       free_internal_result_buffers(stmt);
       if (stmt->result)
       {
-        mysql_free_result(stmt->result);
+        stmt->dbc->mysql_proxy->free_result(stmt->result);
         stmt->result = nullptr;
       }
       return create_empty_fake_resultset(stmt, SQLFORE_KEYS_values,
@@ -1501,20 +1501,20 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
                                          SQLFORE_KEYS_FIELDS);
 
     case EXCEPTION_TYPE::CONN_ERR:
-      mysql_free_result(local_res);
+      stmt->dbc->mysql_proxy->free_result(local_res);
       local_res = nullptr;
       delete_dynamic(&records);
       free_internal_result_buffers(stmt);
       if (stmt->result)
       {
-        mysql_free_result(stmt->result);
+        stmt->dbc->mysql_proxy->free_result(stmt->result);
         stmt->result = nullptr;
       }
     }
   }
 
   if (local_res)
-    mysql_free_result(local_res);
+    stmt->dbc->mysql_proxy->free_result(local_res);
 
   return rc;
 }
@@ -1590,7 +1590,7 @@ primary_keys_no_i_s(SQLHSTMT hstmt,
     }
 
     row_count= 0;
-    while ( (row= mysql_fetch_row(stmt->result)) )
+    while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
     {
         if ( row[1][0] == '0' )     /* If unique index */
         {
@@ -1799,7 +1799,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
                                SQLPROCEDURECOLUMNS_FIELDS);
   auto &data = stmt->m_row_storage;
 
-  while ((row= mysql_fetch_row(proc_list_res)))
+  while ((row = stmt->dbc->mysql_proxy->fetch_row(proc_list_res)))
   {
     char *token;
     char *param_str;
@@ -1952,7 +1952,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
             SQLPROCEDURECOLUMNS_fields,
             SQLPROCEDURECOLUMNS_FIELDS);
         free_internal_result_buffers(stmt);
-        mysql_free_result(proc_list_res);
+        stmt->dbc->mysql_proxy->free_result(proc_list_res);
       case EXCEPTION_TYPE::GENERAL:
         break;
     }
@@ -2038,8 +2038,8 @@ special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
                             (SQLSMALLINT colType)
     {
       uint f_count = 0;
-      mysql_field_seek(result,0);
-      while(field = mysql_fetch_field(result))
+      stmt->dbc->mysql_proxy->field_seek(result, 0);
+      while (field = stmt->dbc->mysql_proxy->fetch_field(result))
       {
         if(colType == SQL_ROWVER)
         {
@@ -2122,7 +2122,7 @@ special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
 
     /* Check if there is a primary (unique) key */
     primary_key= 0;
-    while ( (field= mysql_fetch_field(result)) )
+    while ((field = stmt->dbc->mysql_proxy->fetch_field(result)))
     {
         if ( field->flags & PRI_KEY_FLAG )
         {
@@ -2232,7 +2232,7 @@ statistics_no_i_s(SQLHSTMT hstmt,
             }
         }
         (*prev)= 0;
-        mysql_data_seek(stmt->result,0);  /* Restore pointer */
+        stmt->dbc->mysql_proxy->data_seek(stmt->result,0);  /* Restore pointer */
     }
 
     set_row_count(stmt, stmt->result->row_count);
@@ -2385,7 +2385,7 @@ tables_no_i_s(SQLHSTMT hstmt,
         through all database to fetch table list inside database
       */
       while (is_info_schema ||
-             (db_res && (db_row = mysql_fetch_row(db_res))))
+             (db_res && (db_row = stmt->dbc->mysql_proxy->fetch_row(db_res))))
       {
 
         if ((is_info_schema || all_dbs) && db_res)
@@ -2430,7 +2430,7 @@ tables_no_i_s(SQLHSTMT hstmt,
             free_internal_result_buffers(stmt);
             if (stmt->result)
             {
-              mysql_free_result(stmt->result);
+              stmt->dbc->mysql_proxy->free_result(stmt->result);
               stmt->result = nullptr;
             }
 
@@ -2444,7 +2444,7 @@ tables_no_i_s(SQLHSTMT hstmt,
           stmt->m_row_storage.set_size(row_count, SQLTABLES_FIELDS);
 
           int name_index = 0;
-          while ((row= mysql_fetch_row(stmt->result)))
+          while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
           {
             int type_index = 2;
             int comment_index = 1;
