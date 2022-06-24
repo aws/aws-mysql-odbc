@@ -26,6 +26,8 @@
 
 #include "monitor_service.h"
 
+#include "driver.h"
+
 MONITOR_SERVICE::MONITOR_SERVICE() {
     this->thread_container = std::make_shared<MONITOR_THREAD_CONTAINER>();
 }
