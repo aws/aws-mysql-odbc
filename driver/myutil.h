@@ -422,7 +422,7 @@ void stmt_result_free(STMT * stmt)
     x_free(stmt->result);
   }
   else
-    mysql_free_result(stmt->result);
+    stmt->dbc->mysql_proxy->free_result(stmt->result);
 
   stmt->result = NULL;
 }
