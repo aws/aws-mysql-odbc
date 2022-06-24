@@ -160,7 +160,7 @@ create_fake_resultset(STMT *stmt, MYSQL_ROW rowval, size_t rowsize,
   else
   {
     if (stmt->result)
-      mysql_free_result(stmt->result);
+      stmt->dbc->mysql_proxy->free_result(stmt->result);
   }
 
   /* Free if result data was not in row storage */
@@ -808,8 +808,7 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
     if (no_ssps)
     {
       query.append("'");
-      auto cnt = mysql_real_escape_string(stmt->dbc->mysql,
-        temp.buf, (char*)data, len);
+      auto cnt = stmt->dbc->real_escape_string(temp.buf, (char*)data, len);
       query.append(temp.buf, cnt);
       query.append("'");
     }
@@ -921,8 +920,8 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
     is_access = true;
 #endif
 
-  size_t rows = no_ssps ? mysql_num_rows(mysql_res) :
-    mysql_stmt_num_rows(local_stmt);
+  size_t rows = no_ssps ? stmt->dbc->mysql_proxy->stmt_num_rows(mysql_res) :
+    stmt->dbc->mysql_proxy->stmt_num_rows(local_stmt);
   stmt->m_row_storage.set_size(rows, SQLCOLUMNS_FIELDS);
   if (rows == 0)
   {
@@ -944,18 +943,18 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
       );
   };
 
-  auto _fetch_row = [&no_ssps, &mysql_res, &local_stmt, &ccount,
+  auto _fetch_row = [&stmt, &no_ssps, &mysql_res, &local_stmt, &ccount,
     &mysql_stmt_row, &ssps_res]()
   {
     if (no_ssps == false)
     {
-      if (mysql_stmt_fetch(local_stmt))
+      if (stmt->dbc->stmt_fetch(local_stmt))
         return (MYSQL_ROW)nullptr;
       for (int i = 0; i < ccount; ++i)
         mysql_stmt_row[i] = (char*)ssps_res[i].buffer;
       return (MYSQL_ROW)mysql_stmt_row;
     }
-    return mysql_fetch_row(mysql_res);
+    return stmt->dbc->fetch_row(mysql_res);
   };
 
   while(mysql_row = _fetch_row())

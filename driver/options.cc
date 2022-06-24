@@ -577,7 +577,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
         MYSQL_ROW  row;
 
         if ((res= dbc->mysql_proxy->store_result()) &&
-            (row= mysql_fetch_row(res)))
+            (row = dbc->mysql_proxy->fetch_row(res)))
         {
           if (strncmp(row[0], "READ-UNCOMMITTED", 16) == 0) {
             dbc->txn_isolation= SQL_TRANSACTION_READ_UNCOMMITTED;
@@ -592,7 +592,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
             dbc->txn_isolation= SQL_TRANSACTION_SERIALIZABLE;
           }
         }
-        mysql_free_result(res);
+        dbc->mysql_proxy->free_result(res);
       }
     }
 

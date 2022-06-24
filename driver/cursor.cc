@@ -241,7 +241,7 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
     return FALSE;
   }
 
-  while ((row= mysql_fetch_row(res)) &&
+  while ((row = stmt->dbc->mysql_proxy->fetch_row(res)) &&
          stmt->cursor.pk_count < MY_MAX_PK_PARTS)
   {
     int seq= atoi(row[3]);
@@ -269,7 +269,7 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
       /* Forget about any key we had in progress, we didn't have it all. */
       stmt->cursor.pk_count= seq_in_index= 0;
   }
-  mysql_free_result(res);
+  stmt->dbc->mysql_proxy->free_result(res);
 
   /* Remember that we've figured this out already. */
   stmt->cursor.pk_validated= 1;
@@ -450,7 +450,7 @@ static bool insert_field_std(STMT *stmt, MYSQL_RES *result,
           iprec_(DESC_PARAM, DESC_IMP);
   DESCREC *aprec= &aprec_, *iprec= &iprec_;
 
-  MYSQL_FIELD *field= mysql_fetch_field_direct(result,nSrcCol);
+  MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(result,nSrcCol);
   MYSQL_ROW   row_data;
   SQLLEN      length;
   char as_string[50], *dummy;
@@ -588,9 +588,10 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
     If the number of fields in the underlying table is not the same as
     our result set, we bail out -- we need them all!
   */
-  if (mysql_num_fields(presultAllColumns) != mysql_num_fields(result))
+  if (stmt->dbc->mysql_proxy->num_fields(presultAllColumns) !=
+      stmt->dbc->mysql_proxy->num_fields(result))
   {
-    mysql_free_result(presultAllColumns);
+    stmt->dbc->mysql_proxy->free_result(presultAllColumns);
     return SQL_ERROR;
   }
 
@@ -613,7 +614,7 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
     {
       stmt->set_error(MYERR_S1000,
                 "Invalid use of floating point comparision in positioned operations",0);
-      mysql_free_result(presultAllColumns);
+      stmt->dbc->mysql_proxy->free_result(presultAllColumns);
       return SQL_ERROR;
     }
 
@@ -628,7 +629,7 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
         str.append("=");
         if (insert_field_std(stmt, result, str, j))
         {
-          mysql_free_result(presultAllColumns);
+          stmt->dbc->mysql_proxy->free_result(presultAllColumns);
           return SQL_ERROR;
         }
         found_field= TRUE;
@@ -641,12 +642,12 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
     */
     if (!found_field)
     {
-      mysql_free_result(presultAllColumns);
+      stmt->dbc->mysql_proxy->free_result(presultAllColumns);
       return SQL_ERROR;
     }
   }
 
-  mysql_free_result(presultAllColumns);
+  stmt->dbc->mysql_proxy->free_result(presultAllColumns);
   return SQL_SUCCESS;
 }
 
@@ -731,7 +732,7 @@ static SQLRETURN build_set_clause_std(STMT *stmt, SQLULEN irow,
     {
         SQLLEN *pcbValue;
 
-        field= mysql_fetch_field_direct(result,ncol);
+        field= stmt->dbc->mysql_proxy->fetch_field_direct(result,ncol);
         arrec= desc_get_rec(stmt->ard, ncol, FALSE);
         irrec= desc_get_rec(stmt->ird, ncol, FALSE);
 
@@ -1386,7 +1387,7 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
             query.append("(");
             for ( ncol= 0; ncol < result->field_count; ++ncol )
             {
-                MYSQL_FIELD *field= mysql_fetch_field_direct(result, ncol);
+                MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(result, ncol);
                 DESCREC     *arrec;
                 SQLLEN       ind_or_len= 0;
 
@@ -1777,7 +1778,7 @@ SQLRETURN SQL_API my_SQLSetPos(SQLHSTMT hstmt, SQLSETPOSIROW irow,
                 /* build list of column names */
                 for (nCol= 0; nCol < result->field_count; ++nCol)
                 {
-                    MYSQL_FIELD *field= mysql_fetch_field_direct(result, nCol);
+                    MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(result, nCol);
                     myodbc_append_quoted_name_std(ins_query, field->org_name);
                     if (nCol < result->field_count - 1)
                       ins_query.append(",");

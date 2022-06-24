@@ -785,7 +785,7 @@ struct ODBC_RESULTSET
   {}
 
   void reset(MYSQL_RES *r = nullptr)
-  { if (res) mysql_free_result(res); res = r; }
+  { if (res) mysql_free_result(res); res = r; } // TODO Replace with proxy call
 
   MYSQL_RES *release()
   {
@@ -977,7 +977,7 @@ struct ODBC_STMT
 
   ODBC_STMT(MYSQL_PROXY *mysql_proxy) { m_stmt = mysql_proxy->stmt_init(); }
   operator MYSQL_STMT*() { return m_stmt; }
-  ~ODBC_STMT() { mysql_stmt_close(m_stmt); }
+  ~ODBC_STMT() { mysql_stmt_close(m_stmt); } // TODO Replace with proxy call
 };
 
 

@@ -37,9 +37,7 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
 
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
-        // this->mysql is deallocated in mysql_close()
-        mysql_close(this->mysql);
-        this->mysql = nullptr;
+        close();
     }
 }
 

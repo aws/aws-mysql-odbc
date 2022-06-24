@@ -135,21 +135,21 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
     {
       native_error = 0;
       if (stmt->param_bind.size() && stmt->param_count)
-        native_error = mysql_stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
+        native_error = stmt->dbc->mysql_proxy->stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
 
       if (native_error == 0)
       {
-        native_error= mysql_stmt_execute(stmt->ssps);
+        native_error = stmt->dbc->mysql_proxy->stmt_execute(stmt->ssps);
       }
       else
       {
         stmt->set_error("HY000",
-                       mysql_stmt_error(stmt->ssps),
-                       mysql_stmt_errno(stmt->ssps));
+                       stmt->dbc->mysql_proxy->stmt_error(stmt->ssps),
+                       stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps));
 
         /* For some errors - translating to more appropriate status */
         translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                        mysql_stmt_errno(stmt->ssps));
+                        stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps));
         goto exit;
       }
       MYLOG_STMT_TRACE(stmt, "ssps has been executed");
@@ -1796,7 +1796,7 @@ static SQLRETURN find_next_out_stream(STMT *stmt, SQLPOINTER *token)
   else
   {
     /* Magical out params fetch */
-    mysql_stmt_fetch(stmt->ssps);
+    stmt->dbc->mysql_proxy->stmt_fetch(stmt->ssps);
     stmt->out_params_state = OPS_PREFETCHED;
 
     return SQL_SUCCESS;
