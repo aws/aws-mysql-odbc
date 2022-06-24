@@ -1546,10 +1546,10 @@ void DBC::execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
   MYSQL_BIND *param_bind, MYSQL_BIND *result_bind)
 {
   if (
-    mysql_stmt_prepare(pstmt, query.c_str(), query.length()) ||
-    (param_bind && mysql_stmt_bind_param(pstmt, param_bind)) ||
-    mysql_stmt_execute(pstmt) ||
-    (result_bind && mysql_stmt_bind_result(pstmt, result_bind))
+    mysql_proxy->stmt_prepare(pstmt, query.c_str(), query.length()) ||
+    (param_bind && mysql_proxy->stmt_bind_param(pstmt, param_bind)) ||
+    mysql_proxy->stmt_execute(pstmt) ||
+    (result_bind && mysql_proxy->stmt_bind_result(pstmt, result_bind))
   )
   {
     set_error("HY000");
@@ -1558,7 +1558,7 @@ void DBC::execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
 
   if (
 
-    (result_bind && mysql_stmt_store_result(pstmt))
+    (result_bind && mysql_proxy->stmt_store_result(pstmt))
   )
   {
     set_error("HY000");

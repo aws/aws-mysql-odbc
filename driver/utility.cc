@@ -126,7 +126,7 @@ void fix_row_lengths(STMT *stmt, const long* fix_rules, uint row, uint field_cou
     return;
 
   row_lengths =  stmt->lengths.get() + row * field_count;
-  orig_lengths= mysql_fetch_lengths(stmt->result);
+  orig_lengths = stmt->dbc->mysql_proxy->fetch_lengths(stmt->result);
 
   for (i= 0; i < field_count; ++i)
   {
@@ -2517,7 +2517,7 @@ int reget_current_catalog(DBC *dbc)
         MYSQL_ROW row;
 
         if ( (res= dbc->mysql_proxy->store_result()) &&
-             (row= mysql_fetch_row(res)) )
+            (row = dbc->mysql_proxy->fetch_row(res)))
         {
 /*            if (cmp_database(row[0], dbc->database)) */
             {
@@ -2527,7 +2527,7 @@ int reget_current_catalog(DBC *dbc)
                 }
             }
         }
-        mysql_free_result(res);
+        dbc->mysql_proxy->free_result(res);
     }
 
     return 0;
@@ -4205,15 +4205,15 @@ int get_session_variable(STMT *stmt, const char *var, char *result)
     if (!res)
       return 0;
 
-    row= mysql_fetch_row(res);
+    row = stmt->dbc->mysql_proxy->fetch_row(res);
     if (row)
     {
       strcpy(result, row[1]);
-      mysql_free_result(res);
+      stmt->dbc->mysql_proxy->free_result(res);
       return strlen(result);
     }
 
-    mysql_free_result(res);
+    stmt->dbc->mysql_proxy->free_result(res);
   }
 
   return 0;

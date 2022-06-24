@@ -488,7 +488,7 @@ MySQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle, SQLSMALLINT record,
     if (!stmt->result)
       *(SQLLEN *)num_value= 0;
     else
-      *(SQLLEN *)num_value= (SQLLEN) mysql_num_rows(stmt->result);
+      *(SQLLEN *)num_value= (SQLLEN) dbc->mysql_proxy->num_rows(stmt->result);
     return SQL_SUCCESS;
 
   case SQL_DIAG_DYNAMIC_FUNCTION:

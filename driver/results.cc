@@ -382,7 +382,7 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
              SQLPOINTER rgbValue, SQLLEN cbValueMax, SQLLEN *pcbValue,
              char *value, ulong length, DESCREC *arrec)
 {
-  MYSQL_FIELD *field= mysql_fetch_field_direct(stmt->result, column_number);
+  MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(stmt->result, column_number);
   SQLLEN    temp;
   long long numeric_value = 0;
   unsigned long long u_numeric_value = 0;
@@ -2273,7 +2273,7 @@ SQLRETURN SQL_API my_SQLExtendedFetch( SQLHSTMT             hstmt,
         return SQL_NO_DATA_FOUND;
       case OPS_STREAMS_PENDING:
         /* Magical out params fetch */
-        mysql_stmt_fetch(stmt->ssps);
+        stmt->dbc->mysql_proxy->stmt_fetch(stmt->ssps);
       default:
         /* TODO: Need to remember real fetch' result */
         /* just in case... */

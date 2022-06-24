@@ -228,7 +228,7 @@ server_list_dbcolumns(STMT *stmt,
     if (mysql_proxy->select_db(dbc->database.c_str()))
     {
       /* Well, probably have to return error here */
-      mysql_free_result(result);
+      mysql_proxy->free_result(result);
       return NULL;
     }
   }
@@ -606,7 +606,7 @@ primary_keys_no_i_s(SQLHSTMT hstmt,
     }
 
     row_count= 0;
-    while ( (row= mysql_fetch_row(stmt->result)) )
+    while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
     {
         if ( row[1][0] == '0' )     /* If unique index */
         {
@@ -815,7 +815,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
                                SQLPROCEDURECOLUMNS_FIELDS);
   auto &data = stmt->m_row_storage;
 
-  while ((row= mysql_fetch_row(proc_list_res)))
+  while ((row = stmt->dbc->mysql_proxy->fetch_row(proc_list_res)))
   {
     char *token;
     char *param_str;
@@ -968,7 +968,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
             SQLPROCEDURECOLUMNS_fields,
             SQLPROCEDURECOLUMNS_FIELDS);
         free_internal_result_buffers(stmt);
-        mysql_free_result(proc_list_res);
+        stmt->dbc->mysql_proxy->free_result(proc_list_res);
       case EXCEPTION_TYPE::GENERAL:
         break;
     }
@@ -1054,8 +1054,8 @@ special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
                             (SQLSMALLINT colType)
     {
       uint f_count = 0;
-      mysql_field_seek(result,0);
-      while(field = mysql_fetch_field(result))
+      stmt->dbc->mysql_proxy->field_seek(result, 0);
+      while (field = stmt->dbc->mysql_proxy->fetch_field(result))
       {
         if(colType == SQL_ROWVER)
         {
@@ -1138,7 +1138,7 @@ special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
 
     /* Check if there is a primary (unique) key */
     primary_key= 0;
-    while ( (field= mysql_fetch_field(result)) )
+    while ((field = stmt->dbc->mysql_proxy->fetch_field(result)))
     {
         if ( field->flags & PRI_KEY_FLAG )
         {
@@ -1248,7 +1248,7 @@ statistics_no_i_s(SQLHSTMT hstmt,
             }
         }
         (*prev)= 0;
-        mysql_data_seek(stmt->result,0);  /* Restore pointer */
+        stmt->dbc->mysql_proxy->data_seek(stmt->result,0);  /* Restore pointer */
     }
 
     set_row_count(stmt, stmt->result->row_count);
@@ -1436,7 +1436,7 @@ tables_no_i_s(SQLHSTMT hstmt,
             free_internal_result_buffers(stmt);
             if (stmt->result)
             {
-              mysql_free_result(stmt->result);
+              stmt->dbc->mysql_proxy->free_result(stmt->result);
               stmt->result = nullptr;
             }
 
@@ -1448,7 +1448,7 @@ tables_no_i_s(SQLHSTMT hstmt,
           stmt->m_row_storage.set_size(row_count, SQLTABLES_FIELDS);
 
           int name_index = 0;
-          while ((row= mysql_fetch_row(stmt->result)))
+          while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
           {
             int type_index = 2;
             int comment_index = 1;
