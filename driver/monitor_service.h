@@ -27,7 +27,6 @@
 #ifndef __MONITORSERVICE_H__
 #define __MONITORSERVICE_H__
 
-#include "driver.h"
 #include "monitor_thread_container.h"
 
 class MONITOR_SERVICE {
