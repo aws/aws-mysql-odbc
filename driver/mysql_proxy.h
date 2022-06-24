@@ -29,6 +29,8 @@
 
 #include <mysql.h>
 
+#include "monitor_service.h"
+
 struct DBC;
 struct DataSource;
 
@@ -49,7 +51,7 @@ public:
 class MYSQL_PROXY : virtual public CONNECTION_INTERFACE {
 public:
     MYSQL_PROXY(DBC* dbc, DataSource* ds);
-    virtual ~MYSQL_PROXY() override;
+    ~MYSQL_PROXY() override;
 
     uint64_t num_rows(MYSQL_RES* res);
     unsigned int num_fields(MYSQL_RES* res);
@@ -69,9 +71,9 @@ public:
                  const char* capath, const char* cipher);
     bool change_user(const char* user, const char* passwd,
                      const char* db);
-    MYSQL* real_connect(const char* host, const char* user,
-                        const char* passwd, const char* db, unsigned int port,
-                        const char* unix_socket, unsigned long clientflag);
+    bool real_connect(const char* host, const char* user,
+                      const char* passwd, const char* db, unsigned int port,
+                      const char* unix_socket, unsigned long clientflag);
     int select_db(const char* db);
     int query(const char* q) override;
     int real_query(const char* q, unsigned long length);
@@ -131,9 +133,9 @@ public:
     int stmt_next_result(MYSQL_STMT* stmt);
     void close();
 
-    MYSQL* real_connect_dns_srv(const char* dns_srv_name,
-                                const char* user, const char* passwd,
-                                const char* db, unsigned long client_flag);
+    bool real_connect_dns_srv(const char* dns_srv_name,
+                              const char* user, const char* passwd,
+                              const char* db, unsigned long client_flag);
     struct st_mysql_client_plugin* client_find_plugin(
         const char* name, int type);
 
@@ -151,8 +153,6 @@ public:
 
     char* get_server_version() const;
 
-    uint64_t call_affected_rows();
-
     uint64_t get_affected_rows() const;
 
     void set_affected_rows(uint64_t num_rows);
@@ -169,14 +169,17 @@ public:
 
     unsigned int get_server_status() const;
 
-    char* get_server_version();
-
     void set_connection(MYSQL_PROXY* mysql_proxy);
 
 private:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     MYSQL* mysql = nullptr;
+    std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
+    std::set<std::string> node_keys;
+
+    std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring();
+    void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
 };
 
 #endif /* __MYSQL_PROXY__ */

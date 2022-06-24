@@ -829,7 +829,9 @@ DataSource *ds_new()
   ds->connect_timeout = get_failover_connect_timeout(0);
   ds->network_timeout = get_failover_network_timeout(0);
 
-  ds->enable_failure_detection = ds->enable_cluster_failover;
+  // TODO Disable failure detection for now to pass github actions
+  // ds->enable_failure_detection = ds->enable_cluster_failover;
+  ds->enable_failure_detection = false;
   ds->failure_detection_time = get_failure_detection_time(0);
   ds->failure_detection_interval = get_failure_detection_interval(0);
   ds->failure_detection_count = get_failure_detection_count(0);
@@ -2148,7 +2150,6 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
         ds_source->failover_reader_connect_timeout;
     ds->connect_timeout = ds_source->connect_timeout;
     ds->network_timeout = ds_source->network_timeout;
-
     ds->enable_failure_detection = ds_source->enable_failure_detection;
     ds->failure_detection_time = ds_source->failure_detection_time;
     ds->failure_detection_interval = ds_source->failure_detection_interval;

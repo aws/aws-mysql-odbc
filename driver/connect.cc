@@ -800,7 +800,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     ds_set_strnattr(&dsrc->server8, (SQLCHAR*)host, strlen(host));
     dsrc->port = port;
 
-    MYSQL *connect_result = dsrc->enable_dns_srv ?
+    const bool connect_result = dsrc->enable_dns_srv ?
                             mysql_proxy->real_connect_dns_srv(host,
                               ds_get_utf8attr(dsrc->uid,      &dsrc->uid8),
                               ds_get_utf8attr(dsrc->pwd,      &dsrc->pwd8),
