@@ -109,6 +109,7 @@ public:
     
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
+    MOCK_METHOD(bool, is_stopped, ());
 };
 
 class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {

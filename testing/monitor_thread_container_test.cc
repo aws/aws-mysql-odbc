@@ -165,11 +165,15 @@ TEST_F(MonitorThreadContainerTest, RemoveMonitorMapping) {
 
 TEST_F(MonitorThreadContainerTest, AvailableMonitorsQueue) {
     std::set<std::string> keys = { "nodeA", "nodeB", "nodeC", "nodeD" };
+    auto mock_monitor = std::make_shared<MOCK_MONITOR>(host, MONITOR_DISPOSAL_TIME_MS, monitor_service);
     auto mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
+
+    EXPECT_CALL(*mock_monitor, is_stopped())
+        .WillRepeatedly(Return(false));
 
     // While we have two get_or_create_monitor() calls, we only call create_monitor() once.
     EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _))
-        .WillOnce(Return(std::make_shared<MONITOR>(host, MONITOR_DISPOSAL_TIME_MS, monitor_service)));
+        .WillOnce(Return(mock_monitor));
     
     // This first call should create the monitor.
     auto monitor1 = mock_thread_container->get_or_create_monitor(keys, host, MONITOR_DISPOSAL_TIME_MS, monitor_service);
