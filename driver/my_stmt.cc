@@ -267,8 +267,7 @@ MYSQL_ROW_OFFSET row_seek(STMT *stmt, MYSQL_ROW_OFFSET offset)
   }
   else
   {
-    return stmt->dbc->mysql_proxy->row_seek(stmt->result,
-                                                           offset);
+    return stmt->dbc->mysql_proxy->row_seek(stmt->result, offset);
   }
 }
 
