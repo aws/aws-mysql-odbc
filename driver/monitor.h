@@ -38,6 +38,9 @@ struct CONNECTION_STATUS {
 };
 
 class MONITOR_SERVICE;
+class MYSQL_MONITOR_PROXY;
+
+static auto max_ms = std::chrono::milliseconds::max;
 
 class MONITOR {
 public:
@@ -59,9 +62,11 @@ private:
     std::chrono::milliseconds disposal_time;
     std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
     std::chrono::steady_clock::time_point last_context_timestamp;
+    MYSQL_MONITOR_PROXY* mysql_proxy;
     MONITOR_SERVICE* monitor_service;
 
     CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);
+    bool connect(std::chrono::milliseconds timeout);
     std::chrono::milliseconds find_shortest_interval();
 };
 

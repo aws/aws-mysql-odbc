@@ -26,6 +26,7 @@
 
 #include "monitor.h"
 #include "monitor_service.h"
+#include "mysql_proxy.h"
 
 #define THREAD_SLEEP_WHEN_INACTIVE std::chrono::milliseconds(100)
 
@@ -37,7 +38,7 @@ MONITOR::MONITOR(
     this->host = host_info;
     this->disposal_time = monitor_disposal_time;
     this->monitor_service = service;
-    this->connection_check_interval = std::chrono::milliseconds::max();
+    this->connection_check_interval = max_ms();
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
@@ -70,7 +71,7 @@ bool MONITOR::is_stopped() {
 
 void MONITOR::clear_contexts() {
     this->contexts.clear();
-    this->connection_check_interval = std::chrono::milliseconds::max();
+    this->connection_check_interval = max_ms();
 }
 
 // Periodically ping the server and update the contexts' connection status.
@@ -114,12 +115,42 @@ void MONITOR::run() {
 }
 
 CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
-    // TODO: Implement
-    return CONNECTION_STATUS{ false, std::chrono::milliseconds(0) };
+    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {
+        auto start = std::chrono::steady_clock::now();
+        if (!this->connect(shortest_detection_interval)) {
+            auto duration = std::chrono::steady_clock::now() - start;
+            return CONNECTION_STATUS {
+                false,
+                std::chrono::duration_cast<std::chrono::milliseconds>(duration)
+            };
+        }
+    }
+
+    auto start = std::chrono::steady_clock::now();
+    bool is_connection_active = this->mysql_proxy->ping() == 0;
+    auto duration = std::chrono::steady_clock::now() - start;
+    
+    return CONNECTION_STATUS{
+        is_connection_active,
+        std::chrono::duration_cast<std::chrono::milliseconds>(duration)
+    };
+}
+
+bool MONITOR::connect(std::chrono::milliseconds timeout) {
+    this->mysql_proxy->init();
+
+    this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&timeout);
+
+    if (!this->mysql_proxy->connect()) {
+        fprintf(stderr, "%s\n", this->mysql_proxy->error());
+        return false;
+    }
+
+    return true;
 }
 
 std::chrono::milliseconds MONITOR::find_shortest_interval() {
-    auto min = std::chrono::milliseconds::max();
+    auto min = max_ms();
     if (this->contexts.empty()) {
         return min;
     }
