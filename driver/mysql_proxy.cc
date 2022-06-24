@@ -33,7 +33,7 @@
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
     : dbc{dbc},
       ds{ds},
-      monitor_service{std::make_shared<MONITOR_SERVICE>()}{}
+      monitor_service{std::make_shared<MONITOR_SERVICE>()} {}
 
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
@@ -360,7 +360,9 @@ bool MYSQL_PROXY::stmt_free_result(MYSQL_STMT* stmt) {
     return ret;
 }
 
-bool MYSQL_PROXY::stmt_send_long_data(MYSQL_STMT* stmt, unsigned int param_number, const char* data, unsigned long length) {
+bool MYSQL_PROXY::stmt_send_long_data(MYSQL_STMT* stmt, unsigned int param_number, const char* data,
+                                      unsigned long length) {
+
     const auto context = start_monitoring();
     const bool ret = mysql_stmt_send_long_data(stmt, param_number, data, length);
     stop_monitoring(context);
@@ -504,5 +506,3 @@ void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> co
         // TODO Close socket connection
     }
 }
-
-

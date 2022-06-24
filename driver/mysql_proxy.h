@@ -51,7 +51,7 @@ public:
 class MYSQL_PROXY : virtual public CONNECTION_INTERFACE {
 public:
     MYSQL_PROXY(DBC* dbc, DataSource* ds);
-    virtual ~MYSQL_PROXY() override;
+    ~MYSQL_PROXY() override;
 
     uint64_t num_rows(MYSQL_RES* res);
     unsigned int num_fields(MYSQL_RES* res);
@@ -72,8 +72,8 @@ public:
     bool change_user(const char* user, const char* passwd,
                      const char* db);
     bool real_connect(const char* host, const char* user,
-                        const char* passwd, const char* db, unsigned int port,
-                        const char* unix_socket, unsigned long clientflag);
+                      const char* passwd, const char* db, unsigned int port,
+                      const char* unix_socket, unsigned long clientflag);
     int select_db(const char* db);
     int query(const char* q) override;
     int real_query(const char* q, unsigned long length);
@@ -134,8 +134,8 @@ public:
     void close();
 
     bool real_connect_dns_srv(const char* dns_srv_name,
-                                const char* user, const char* passwd,
-                                const char* db, unsigned long client_flag);
+                              const char* user, const char* passwd,
+                              const char* db, unsigned long client_flag);
     struct st_mysql_client_plugin* client_find_plugin(
         const char* name, int type);
 
@@ -177,7 +177,7 @@ private:
     MYSQL* mysql = nullptr;
     std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
     std::set<std::string> node_keys;
-    
+
     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring();
     void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
 };
