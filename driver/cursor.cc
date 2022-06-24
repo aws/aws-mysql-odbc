@@ -839,7 +839,7 @@ SQLRETURN my_pos_delete_std(STMT *stmt, STMT *stmtParam,
     nReturn= exec_stmt_query_std(stmt, str, false);
     if ( nReturn == SQL_SUCCESS || nReturn == SQL_SUCCESS_WITH_INFO )
     {
-        stmtParam->affected_rows= stmt->dbc->mysql_proxy->call_affected_rows();
+        stmtParam->affected_rows= stmt->dbc->mysql_proxy->affected_rows();
         nReturn= update_status(stmtParam,SQL_ROW_DELETED);
     }
     return nReturn;
@@ -896,7 +896,7 @@ SQLRETURN my_pos_update_std( STMT *             pStmtCursor,
     rc = my_SQLExecute( pStmtTemp );
     if ( SQL_SUCCEEDED( rc ) )
     {
-        pStmt->affected_rows = pStmtTemp->dbc->mysql_proxy->call_affected_rows();
+        pStmt->affected_rows = pStmtTemp->dbc->mysql_proxy->affected_rows();
         rc = update_status( pStmt, SQL_ROW_UPDATED );
     }
     else if (rc == SQL_NEED_DATA)
@@ -1222,7 +1222,7 @@ static SQLRETURN setpos_update_bookmark_std(STMT *stmt, std::string &query)
 
     if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
     {
-      affected+= stmt->dbc->mysql_proxy->call_affected_rows();
+      affected+= stmt->dbc->mysql_proxy->affected_rows();
     }
     if (stmt->stmt_options.rowStatusPtr_ex)
     {
@@ -1305,7 +1305,7 @@ static SQLRETURN setpos_update_std(STMT *stmt, SQLUSMALLINT irow,
 
       if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
       {
-        affected+= stmt->dbc->mysql_proxy->call_affected_rows();
+        affected+= stmt->dbc->mysql_proxy->affected_rows();
       }
       else if (!SQL_SUCCEEDED(nReturn))
       {
