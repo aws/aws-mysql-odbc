@@ -134,7 +134,7 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
     }
 
     auto start = std::chrono::steady_clock::now();
-    bool is_connection_active = this->ping_server();
+    bool is_connection_active = this->mysql_proxy->ping() == 0;
     auto duration = std::chrono::steady_clock::now() - start;
     
     return CONNECTION_STATUS{
@@ -154,10 +154,6 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
     }
 
     return true;
-}
-
-inline bool MONITOR::ping_server() {
-    return this->mysql_proxy->ping() == 0;
 }
 
 std::chrono::milliseconds MONITOR::find_shortest_interval() {

@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 
 using ::testing::_;
+using ::testing::AtLeast;
 using ::testing::Return;
 
 namespace {
@@ -53,6 +54,7 @@ class MonitorTest : public testing::Test {
 protected:
     std::shared_ptr<HOST_INFO> host;
     MONITOR* monitor;
+    MOCK_MYSQL_MONITOR_PROXY* mock_proxy;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_short_interval;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_long_interval;
 
@@ -63,6 +65,9 @@ protected:
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
         monitor = new MONITOR(host, monitor_disposal_time, nullptr);
+
+        mock_proxy = new MOCK_MYSQL_MONITOR_PROXY();
+        monitor->mysql_proxy = mock_proxy;
         
         mock_context_short_interval = std::make_shared<MOCK_MONITOR_CONNECTION_CONTEXT>(
             node_keys,
@@ -80,6 +85,7 @@ protected:
     void TearDown() override {
         mock_context_short_interval.reset();
         mock_context_long_interval.reset();
+        delete mock_proxy;
         delete monitor;
         host.reset();
     }
@@ -90,9 +96,7 @@ protected:
     }
 
     // Defined so we can use private method check_connection_status() in tests.
-    CONNECTION_STATUS check_connection_status(
-        MONITOR* monitor, std::chrono::milliseconds shortest_detection_interval) {
-
+    CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
         return monitor->check_connection_status(shortest_detection_interval);
     }
 };
@@ -144,49 +148,49 @@ TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
-    auto mock_monitor = new MOCK_MONITOR(host, monitor_disposal_time, nullptr);
-
-    EXPECT_CALL(*mock_monitor, connect(_))
+    EXPECT_CALL(*mock_proxy, init()).Times(1);
+    EXPECT_CALL(*mock_proxy, options(_, _)).Times(1);
+    
+    EXPECT_CALL(*mock_proxy, connect())
         .WillOnce(Return(true));
 
-    EXPECT_CALL(*mock_monitor, ping_server())
-        .WillOnce(Return(true));
+    EXPECT_CALL(*mock_proxy, ping())
+        .WillOnce(Return(0));
 
-    CONNECTION_STATUS status = check_connection_status(mock_monitor, failure_detection_short_interval);
+    CONNECTION_STATUS status = check_connection_status(failure_detection_short_interval);
     EXPECT_TRUE(status.is_valid);
     EXPECT_TRUE(status.elapsed_time >= std::chrono::milliseconds(0));
-
-    delete mock_monitor;
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
-    auto mock_monitor = new MOCK_MONITOR(host, monitor_disposal_time, nullptr);
+    EXPECT_CALL(*mock_proxy, init()).Times(AtLeast(1));
+    EXPECT_CALL(*mock_proxy, options(_, _)).Times(AtLeast(1));
 
-    EXPECT_CALL(*mock_monitor, connect(_))
+    EXPECT_CALL(*mock_proxy, connect())
         .WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_monitor, ping_server())
-        .WillOnce(Return(true))
-        .WillOnce(Return(false));
+    EXPECT_CALL(*mock_proxy, ping())
+        .WillOnce(Return(0))
+        .WillOnce(Return(1));
 
-    CONNECTION_STATUS status1 = check_connection_status(mock_monitor, failure_detection_short_interval);
+    CONNECTION_STATUS status1 = check_connection_status(failure_detection_short_interval);
     EXPECT_TRUE(status1.is_valid);
 
-    CONNECTION_STATUS status2 = check_connection_status(mock_monitor, failure_detection_short_interval);
+    CONNECTION_STATUS status2 = check_connection_status(failure_detection_short_interval);
     EXPECT_FALSE(status2.is_valid);
-
-    delete mock_monitor;
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
-    auto mock_monitor = new MOCK_MONITOR(host, monitor_disposal_time, nullptr);
+    EXPECT_CALL(*mock_proxy, init()).Times(AtLeast(1));
+    EXPECT_CALL(*mock_proxy, options(_, _)).Times(AtLeast(1));
+    
+    EXPECT_CALL(*mock_proxy, connect())
+        .WillOnce(Return(true));
 
-    EXPECT_CALL(*mock_monitor, connect(_))
-        .WillRepeatedly(Return(false));
+    EXPECT_CALL(*mock_proxy, ping())
+        .WillOnce(Return(1));
 
-    CONNECTION_STATUS status = check_connection_status(mock_monitor, failure_detection_short_interval);
+    CONNECTION_STATUS status = check_connection_status(failure_detection_short_interval);
     EXPECT_FALSE(status.is_valid);
     EXPECT_TRUE(status.elapsed_time >= std::chrono::milliseconds(0));
-
-    delete mock_monitor;
 }

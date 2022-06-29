@@ -505,6 +505,10 @@ void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> co
     }
 }
 
+void MYSQL_MONITOR_PROXY::init() {
+    this->mysql = mysql_init(nullptr);
+}
+
 int MYSQL_MONITOR_PROXY::ping() {
     return mysql_ping(mysql);
 }

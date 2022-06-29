@@ -110,8 +110,6 @@ public:
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(bool, is_stopped, ());
-    MOCK_METHOD(bool, connect, (std::chrono::milliseconds));
-    MOCK_METHOD(bool, ping_server, ());
 };
 
 class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {
@@ -130,6 +128,16 @@ public:
                 nullptr, node_keys, failure_detection_time, failure_detection_interval, failure_detection_count) {}
 
     MOCK_METHOD(void, set_start_monitor_time, (std::chrono::steady_clock::time_point time));
+};
+
+class MOCK_MYSQL_MONITOR_PROXY : public MYSQL_MONITOR_PROXY {
+public:
+    MOCK_MYSQL_MONITOR_PROXY() : MYSQL_MONITOR_PROXY(nullptr, nullptr) {};
+
+    MOCK_METHOD(void, init, ());
+    MOCK_METHOD(int, ping, ());
+    MOCK_METHOD(int, options, (enum mysql_option, const void*));
+    MOCK_METHOD(bool, connect, ());
 };
 
 #endif /* __MOCKOBJECTS_H__ */

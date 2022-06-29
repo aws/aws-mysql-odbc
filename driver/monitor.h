@@ -68,8 +68,7 @@ private:
 
     std::chrono::milliseconds get_connection_check_interval();
     CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);
-    virtual bool connect(std::chrono::milliseconds timeout);
-    virtual inline bool ping_server();
+    bool connect(std::chrono::milliseconds timeout);
     std::chrono::milliseconds find_shortest_interval();
 
     friend class MonitorTest; // Allows for testing private methods

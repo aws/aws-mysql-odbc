@@ -184,9 +184,12 @@ protected:
 
 class MYSQL_MONITOR_PROXY : public MYSQL_PROXY {
 public:
+    MYSQL_MONITOR_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {};
+
+    virtual void init();
     int ping();
     int options(enum mysql_option option, const void* arg);
-    bool connect();
+    virtual bool connect();
 };
 
 #endif /* __MYSQL_PROXY__ */
