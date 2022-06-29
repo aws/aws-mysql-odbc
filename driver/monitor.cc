@@ -28,8 +28,6 @@
 #include "monitor_service.h"
 #include "mysql_proxy.h"
 
-#define THREAD_SLEEP_WHEN_INACTIVE std::chrono::milliseconds(100)
-
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
@@ -105,7 +103,7 @@ void MONITOR::run() {
                     this->monitor_service->notify_unused(std::shared_ptr<MONITOR>(this));
                     break;
                 }
-                std::this_thread::sleep_for(THREAD_SLEEP_WHEN_INACTIVE);
+                std::this_thread::sleep_for(thread_sleep_when_inactive);
             }
         }
     }

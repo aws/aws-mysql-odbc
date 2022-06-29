@@ -41,6 +41,7 @@ class MONITOR_SERVICE;
 class MYSQL_MONITOR_PROXY;
 
 static auto max_ms = std::chrono::milliseconds::max;
+static const std::chrono::milliseconds thread_sleep_when_inactive = std::chrono::milliseconds(100);
 
 class MONITOR {
 public:
