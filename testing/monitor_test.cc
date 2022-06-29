@@ -38,15 +38,14 @@
 using ::testing::_;
 using ::testing::Return;
 
-#define FAILURE_DETECTION_TIME_MS std::chrono::milliseconds(10)
-#define FAILURE_DETECTION_SHORT_INTERVAL_MS std::chrono::milliseconds(30)
-#define FAILURE_DETECTION_LONG_INTERVAL_MS std::chrono::milliseconds(300)
-#define FAILURE_DETECTION_COUNT 3
-#define VALIDATION_INTERVAL_MS std::chrono::milliseconds(50)
-#define MONITOR_DISPOSAL_TIME_MS std::chrono::milliseconds(200)
-
 namespace {
-    std::set<std::string> node_keys = { "any.node.domain" };
+    const std::set<std::string> node_keys = { "any.node.domain" };
+    const std::chrono::milliseconds failure_detection_time = std::chrono::milliseconds(10);
+    const std::chrono::milliseconds failure_detection_short_interval = std::chrono::milliseconds(30);
+    const std::chrono::milliseconds failure_detection_long_interval = std::chrono::milliseconds(300);
+    const int failure_detection_count = 3;
+    const std::chrono::milliseconds validation_interval = std::chrono::milliseconds(50);
+    const std::chrono::milliseconds monitor_disposal_time = std::chrono::milliseconds(200);
 }
 
 
@@ -63,19 +62,19 @@ protected:
 
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
-        monitor = new MONITOR(host, MONITOR_DISPOSAL_TIME_MS, nullptr);
+        monitor = new MONITOR(host, monitor_disposal_time, nullptr);
         
         mock_context_short_interval = std::make_shared<MOCK_MONITOR_CONNECTION_CONTEXT>(
             node_keys,
-            FAILURE_DETECTION_TIME_MS,
-            FAILURE_DETECTION_SHORT_INTERVAL_MS,
-            FAILURE_DETECTION_COUNT);
+            failure_detection_time,
+            failure_detection_short_interval,
+            failure_detection_count);
 
         mock_context_long_interval = std::make_shared<MOCK_MONITOR_CONNECTION_CONTEXT>(
             node_keys,
-            FAILURE_DETECTION_TIME_MS,
-            FAILURE_DETECTION_LONG_INTERVAL_MS,
-            FAILURE_DETECTION_COUNT);
+            failure_detection_time,
+            failure_detection_long_interval,
+            failure_detection_count);
     }
 
     void TearDown() override {
@@ -105,7 +104,7 @@ TEST_F(MonitorTest, StartMonitoringWithDifferentContexts) {
     monitor->start_monitoring(mock_context_short_interval);
     monitor->start_monitoring(mock_context_long_interval);
 
-    EXPECT_EQ(FAILURE_DETECTION_SHORT_INTERVAL_MS, get_connection_check_interval());
+    EXPECT_EQ(failure_detection_short_interval, get_connection_check_interval());
 }
 
 TEST_F(MonitorTest, StopMonitoringWithContextRemaining) {
@@ -117,7 +116,7 @@ TEST_F(MonitorTest, StopMonitoringWithContextRemaining) {
 
     monitor->stop_monitoring(mock_context_short_interval);
 
-    EXPECT_EQ(FAILURE_DETECTION_LONG_INTERVAL_MS, get_connection_check_interval());
+    EXPECT_EQ(failure_detection_long_interval, get_connection_check_interval());
 }
 
 TEST_F(MonitorTest, StopMonitoringWithNoMatchingContexts) {
@@ -130,7 +129,7 @@ TEST_F(MonitorTest, StopMonitoringWithNoMatchingContexts) {
     monitor->start_monitoring(mock_context_short_interval);
     monitor->stop_monitoring(mock_context_long_interval);
 
-    EXPECT_EQ(FAILURE_DETECTION_SHORT_INTERVAL_MS, get_connection_check_interval());
+    EXPECT_EQ(failure_detection_short_interval, get_connection_check_interval());
 }
 
 TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
@@ -145,7 +144,7 @@ TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
-    auto mock_monitor = new MOCK_MONITOR(host, MONITOR_DISPOSAL_TIME_MS, nullptr);
+    auto mock_monitor = new MOCK_MONITOR(host, monitor_disposal_time, nullptr);
 
     EXPECT_CALL(*mock_monitor, connect(_))
         .WillOnce(Return(true));
@@ -153,7 +152,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
     EXPECT_CALL(*mock_monitor, ping_server())
         .WillOnce(Return(true));
 
-    CONNECTION_STATUS status = check_connection_status(mock_monitor, FAILURE_DETECTION_SHORT_INTERVAL_MS);
+    CONNECTION_STATUS status = check_connection_status(mock_monitor, failure_detection_short_interval);
     EXPECT_TRUE(status.is_valid);
     EXPECT_TRUE(status.elapsed_time >= std::chrono::milliseconds(0));
 
@@ -161,7 +160,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
-    auto mock_monitor = new MOCK_MONITOR(host, MONITOR_DISPOSAL_TIME_MS, nullptr);
+    auto mock_monitor = new MOCK_MONITOR(host, monitor_disposal_time, nullptr);
 
     EXPECT_CALL(*mock_monitor, connect(_))
         .WillRepeatedly(Return(true));
@@ -170,22 +169,22 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
         .WillOnce(Return(true))
         .WillOnce(Return(false));
 
-    CONNECTION_STATUS status1 = check_connection_status(mock_monitor, FAILURE_DETECTION_SHORT_INTERVAL_MS);
+    CONNECTION_STATUS status1 = check_connection_status(mock_monitor, failure_detection_short_interval);
     EXPECT_TRUE(status1.is_valid);
 
-    CONNECTION_STATUS status2 = check_connection_status(mock_monitor, FAILURE_DETECTION_SHORT_INTERVAL_MS);
+    CONNECTION_STATUS status2 = check_connection_status(mock_monitor, failure_detection_short_interval);
     EXPECT_FALSE(status2.is_valid);
 
     delete mock_monitor;
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
-    auto mock_monitor = new MOCK_MONITOR(host, MONITOR_DISPOSAL_TIME_MS, nullptr);
+    auto mock_monitor = new MOCK_MONITOR(host, monitor_disposal_time, nullptr);
 
     EXPECT_CALL(*mock_monitor, connect(_))
         .WillRepeatedly(Return(false));
 
-    CONNECTION_STATUS status = check_connection_status(mock_monitor, FAILURE_DETECTION_SHORT_INTERVAL_MS);
+    CONNECTION_STATUS status = check_connection_status(mock_monitor, failure_detection_short_interval);
     EXPECT_FALSE(status.is_valid);
     EXPECT_TRUE(status.elapsed_time >= std::chrono::milliseconds(0));
 
