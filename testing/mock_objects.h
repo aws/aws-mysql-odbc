@@ -110,11 +110,26 @@ public:
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(bool, is_stopped, ());
+    MOCK_METHOD(bool, connect, (std::chrono::milliseconds));
+    MOCK_METHOD(bool, ping_server, ());
 };
 
 class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {
 public:
     MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, MONITOR_SERVICE*));
+};
+
+class MOCK_MONITOR_CONNECTION_CONTEXT : public MONITOR_CONNECTION_CONTEXT {
+public:
+    MOCK_MONITOR_CONNECTION_CONTEXT(
+        std::set<std::string> node_keys,
+        std::chrono::milliseconds failure_detection_time,
+        std::chrono::milliseconds failure_detection_interval,
+        int failure_detection_count) : 
+            MONITOR_CONNECTION_CONTEXT(
+                nullptr, node_keys, failure_detection_time, failure_detection_interval, failure_detection_count) {}
+
+    MOCK_METHOD(void, set_start_monitor_time, (std::chrono::steady_clock::time_point time));
 };
 
 #endif /* __MOCKOBJECTS_H__ */

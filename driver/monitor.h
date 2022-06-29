@@ -62,12 +62,16 @@ private:
     std::chrono::milliseconds disposal_time;
     std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
     std::chrono::steady_clock::time_point last_context_timestamp;
-    MYSQL_MONITOR_PROXY* mysql_proxy;
-    MONITOR_SERVICE* monitor_service;
+    MYSQL_MONITOR_PROXY* mysql_proxy = nullptr;
+    MONITOR_SERVICE* monitor_service = nullptr;
 
+    std::chrono::milliseconds get_connection_check_interval();
     CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);
-    bool connect(std::chrono::milliseconds timeout);
+    virtual bool connect(std::chrono::milliseconds timeout);
+    virtual inline bool ping_server();
     std::chrono::milliseconds find_shortest_interval();
+
+    friend class MonitorTest; // Allows for testing private methods
 };
 
 #endif /* __MONITOR_H__ */
