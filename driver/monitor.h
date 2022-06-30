@@ -30,31 +30,47 @@
 #include "host_info.h"
 #include "monitor_connection_context.h"
 
-#include <climits>
-#include <queue>
+#include <list>
 
 struct CONNECTION_STATUS {
     bool is_valid;
     std::chrono::milliseconds elapsed_time;
 };
 
+class MONITOR_SERVICE;
+class MYSQL_MONITOR_PROXY;
+
+static const std::chrono::milliseconds thread_sleep_when_inactive = std::chrono::milliseconds(100);
+
 class MONITOR {
 public:
-    MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time);
+    MONITOR(
+        std::shared_ptr<HOST_INFO> host_info,
+        std::chrono::milliseconds monitor_disposal_time,
+        MONITOR_SERVICE* service);
 
     virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
-    bool is_stopped();
+    virtual bool is_stopped();
     void clear_contexts();
     void run();
 
 private:
+    bool stopped = true;
     std::shared_ptr<HOST_INFO> host;
-    std::chrono::milliseconds connection_check_interval = std::chrono::milliseconds(INT_MAX);
+    std::chrono::milliseconds connection_check_interval;
     std::chrono::milliseconds disposal_time;
-    std::queue<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
+    std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
+    std::chrono::steady_clock::time_point last_context_timestamp;
+    MYSQL_MONITOR_PROXY* mysql_proxy = nullptr;
+    MONITOR_SERVICE* monitor_service = nullptr;
 
-    CONNECTION_STATUS check_connection_status(int shortest_detection_interval);
+    std::chrono::milliseconds get_connection_check_interval();
+    CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);
+    bool connect(std::chrono::milliseconds timeout);
+    std::chrono::milliseconds find_shortest_interval();
+
+    friend class MonitorTest; // Allows for testing private methods
 };
 
 #endif /* __MONITOR_H__ */
