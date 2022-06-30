@@ -36,16 +36,16 @@
 using ::testing::_;
 using ::testing::Return;
 
-#define MONITOR_DISPOSAL_TIME_MS std::chrono::milliseconds(200)
-
 namespace {
     std::set<std::string> node_keys = { "any.node.domain" };
+    const std::chrono::milliseconds monitor_disposal_time = std::chrono::milliseconds(200);
 }
 
 class MonitorThreadContainerTest : public testing::Test {
 protected:
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
+    MONITOR_SERVICE* monitor_service;
 
     static void SetUpTestSuite() {}
 
@@ -66,12 +66,12 @@ TEST_F(MonitorThreadContainerTest, MultipleNodeKeys) {
     std::set<std::string> node_keys1 = { "nodeOne.domain", "nodeTwo.domain" };
     std::set<std::string> node_keys2 = { "nodeTwo.domain" };
 
-    auto monitor1 = thread_container->get_or_create_monitor(node_keys1, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor1 = thread_container->get_or_create_monitor(node_keys1, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor1);
 
     // Should return the same monitor again because the first call to get_or_create_monitor()
     // mapped the monitor to both "nodeOne.domain" and "nodeTwo.domain".
-    auto monitor2 = thread_container->get_or_create_monitor(node_keys2, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor2 = thread_container->get_or_create_monitor(node_keys2, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor2);
 
     EXPECT_TRUE(monitor1 == monitor2);
@@ -80,17 +80,17 @@ TEST_F(MonitorThreadContainerTest, MultipleNodeKeys) {
 TEST_F(MonitorThreadContainerTest, DifferentNodeKeys) {
     std::set<std::string> keys = { "nodeNEW.domain" };
 
-    auto monitor1 = thread_container->get_or_create_monitor(keys, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor1 = thread_container->get_or_create_monitor(keys, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor1);
 
-    auto monitor2 = thread_container->get_or_create_monitor(keys, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor2 = thread_container->get_or_create_monitor(keys, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor2);
 
     // Monitors should be the same because both calls to get_or_create_monitor()
     // used the same node keys.
     EXPECT_TRUE(monitor1 == monitor2);
 
-    auto monitor3 = thread_container->get_or_create_monitor(node_keys, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor3 = thread_container->get_or_create_monitor(node_keys, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor3);
 
     // Last monitor should be different because it has a different node key.
@@ -103,16 +103,16 @@ TEST_F(MonitorThreadContainerTest, SameKeysInDifferentNodeKeys) {
     std::set<std::string> keys2 = { "nodeA", "nodeB" };
     std::set<std::string> keys3 = { "nodeB" };
 
-    auto monitor1 = thread_container->get_or_create_monitor(keys1, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor1 = thread_container->get_or_create_monitor(keys1, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor1);
 
-    auto monitor2 = thread_container->get_or_create_monitor(keys2, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor2 = thread_container->get_or_create_monitor(keys2, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor2);
 
     // Monitors should be the same because both sets of keys have "nodeA".
     EXPECT_TRUE(monitor1 == monitor2);
 
-    auto monitor3 = thread_container->get_or_create_monitor(keys3, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor3 = thread_container->get_or_create_monitor(keys3, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor3);
 
     // Last monitor should be also be the same because the 2nd call to get_or_create_monitor()
@@ -123,7 +123,7 @@ TEST_F(MonitorThreadContainerTest, SameKeysInDifferentNodeKeys) {
 
 TEST_F(MonitorThreadContainerTest, PopulateMonitorMap) {
     std::set<std::string> keys = { "nodeA", "nodeB", "nodeC", "nodeD" };
-    auto monitor = thread_container->get_or_create_monitor(keys, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor = thread_container->get_or_create_monitor(keys, host, monitor_disposal_time, monitor_service);
 
     // Check that we now have mappings for all the keys.
     for (auto it = keys.begin(); it != keys.end(); it++) {
@@ -137,10 +137,10 @@ TEST_F(MonitorThreadContainerTest, PopulateMonitorMap) {
 
 TEST_F(MonitorThreadContainerTest, RemoveMonitorMapping) {
     std::set<std::string> keys1 = { "nodeA", "nodeB", "nodeC", "nodeD" };
-    auto monitor1 = thread_container->get_or_create_monitor(keys1, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor1 = thread_container->get_or_create_monitor(keys1, host, monitor_disposal_time, monitor_service);
 
     std::set<std::string> keys2 = { "nodeE", "nodeF", "nodeG", "nodeH" };
-    auto monitor2 = thread_container->get_or_create_monitor(keys2, host, std::chrono::milliseconds(100));
+    auto monitor2 = thread_container->get_or_create_monitor(keys2, host, std::chrono::milliseconds(100), monitor_service);
 
     // This should remove the mappings for keys1 but not keys2.
     thread_container->reset_resource(monitor1);
@@ -164,21 +164,25 @@ TEST_F(MonitorThreadContainerTest, RemoveMonitorMapping) {
 
 TEST_F(MonitorThreadContainerTest, AvailableMonitorsQueue) {
     std::set<std::string> keys = { "nodeA", "nodeB", "nodeC", "nodeD" };
+    auto mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, monitor_service);
     auto mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
 
+    EXPECT_CALL(*mock_monitor, is_stopped())
+        .WillRepeatedly(Return(false));
+
     // While we have two get_or_create_monitor() calls, we only call create_monitor() once.
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _))
-        .WillOnce(Return(std::make_shared<MONITOR>(host, MONITOR_DISPOSAL_TIME_MS)));
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _))
+        .WillOnce(Return(mock_monitor));
     
     // This first call should create the monitor.
-    auto monitor1 = mock_thread_container->get_or_create_monitor(keys, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor1 = mock_thread_container->get_or_create_monitor(keys, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor1);
 
     // This should remove the node key mappings and add the monitor to the available monitors queue.
     mock_thread_container->reset_resource(monitor1);
 
     // This second call should get the monitor from the available monitors queue.
-    auto monitor2 = mock_thread_container->get_or_create_monitor(keys, host, MONITOR_DISPOSAL_TIME_MS);
+    auto monitor2 = mock_thread_container->get_or_create_monitor(keys, host, monitor_disposal_time, monitor_service);
     EXPECT_NE(nullptr, monitor2);
 
     EXPECT_TRUE(monitor1 == monitor2);
