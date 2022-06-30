@@ -521,8 +521,13 @@ void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> co
 void MYSQL_PROXY::generate_node_keys() {
     node_keys.clear();
     node_keys.insert(std::string(get_host()) + ":" + std::to_string(get_port()));
-    if (this->mysql) {
-        auto error = query(RETRIEVE_HOST_PORT_SQL);
+
+    if (is_connected()) {
+        // Temporarily turn off failure detection if on
+        const auto is_monitoring = ds->enable_failure_detection;
+        ds->enable_failure_detection = false;
+
+        const auto error = query(RETRIEVE_HOST_PORT_SQL);
         if (error == 0) {
             MYSQL_RES* result = store_result();
             MYSQL_ROW row;
@@ -530,6 +535,8 @@ void MYSQL_PROXY::generate_node_keys() {
                 node_keys.insert(std::string(row[0]));
             }
         }
+
+        ds->enable_failure_detection = is_monitoring;
     }
 }
 
@@ -547,7 +554,7 @@ std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() {
     }
 
     if (hosts.size() == 0) {
-        err << "Empty server host.";
+        err << "No host was found.";
         MYLOG_DBC_TRACE(dbc, err.str().c_str());
         throw std::runtime_error(err.str());
     }
