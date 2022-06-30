@@ -37,13 +37,12 @@
 using ::testing::_;
 using ::testing::Return;
 
-#define FAILURE_DETECTION_TIME_MS std::chrono::milliseconds(10)
-#define FAILURE_DETECTION_INTERVAL_MS std::chrono::milliseconds(100)
-#define FAILURE_DETECTION_COUNT 3
-#define VALIDATION_INTERVAL_MS std::chrono::milliseconds(50)
-
 namespace {
-    std::set<std::string> node_keys = { "any.node.domain" };
+    const std::set<std::string> node_keys = { "any.node.domain" };
+    const std::chrono::milliseconds failure_detection_time = std::chrono::milliseconds(10);
+    const std::chrono::milliseconds failure_detection_interval = std::chrono::milliseconds(100);
+    const int failure_detection_count = 3;
+    const std::chrono::milliseconds validation_interval = std::chrono::milliseconds(50);
 }
 
 class MonitorConnectionContextTest : public testing::Test {
@@ -62,9 +61,9 @@ class MonitorConnectionContextTest : public testing::Test {
         connection_to_abort = new DBC(env);
         context = new MONITOR_CONNECTION_CONTEXT(connection_to_abort,
                                                  node_keys,
-                                                 FAILURE_DETECTION_TIME_MS,
-                                                 FAILURE_DETECTION_INTERVAL_MS,
-                                                 FAILURE_DETECTION_COUNT);
+                                                 failure_detection_time,
+                                                 failure_detection_interval,
+                                                 failure_detection_count);
     }
 
     void TearDown() override {
@@ -89,8 +88,8 @@ TEST_F(MonitorConnectionContextTest, IsNodeUnhealthyWithInvalidConnection_Return
 }
 
 TEST_F(MonitorConnectionContextTest, IsNodeUnhealthyExceedsFailureDetectionCount_ReturnTrue) {
-    const int expected_failure_count = FAILURE_DETECTION_COUNT + 1;
-    context->set_failure_count(FAILURE_DETECTION_COUNT);
+    const int expected_failure_count = failure_detection_count + 1;
+    context->set_failure_count(failure_detection_count);
     context->reset_invalid_node_start_time();
 
     std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
@@ -109,12 +108,12 @@ TEST_F(MonitorConnectionContextTest, IsNodeUnhealthyExceedsFailureDetectionCount
     // Simulate monitor loop that reports invalid connection for 5 times with interval 50 msec to wait 250 msec in total
     for (int i = 0; i < 5; i++) {
       std::chrono::steady_clock::time_point status_check_start_time = current_time;
-      std::chrono::steady_clock::time_point status_check_end_time = current_time + VALIDATION_INTERVAL_MS;
+      std::chrono::steady_clock::time_point status_check_end_time = current_time + validation_interval;
 
       context->set_connection_valid(false, status_check_start_time, status_check_end_time);
       EXPECT_FALSE(context->is_node_unhealthy());
 
-      current_time += VALIDATION_INTERVAL_MS;
+      current_time += validation_interval;
     }
 
     // Simulate waiting another 50 msec that makes total waiting time to 300 msec
@@ -122,7 +121,7 @@ TEST_F(MonitorConnectionContextTest, IsNodeUnhealthyExceedsFailureDetectionCount
     // So it's expected that this run turns node status to "unhealthy" since we reached max allowed waiting time.
 
     std::chrono::steady_clock::time_point status_check_start_time = current_time;
-    std::chrono::steady_clock::time_point status_check_end_time = current_time + VALIDATION_INTERVAL_MS;
+    std::chrono::steady_clock::time_point status_check_end_time = current_time + validation_interval;
 
     context->set_connection_valid(false, status_check_start_time, status_check_end_time);
     EXPECT_TRUE(context->is_node_unhealthy());
