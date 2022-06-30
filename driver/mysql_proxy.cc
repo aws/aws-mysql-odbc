@@ -504,3 +504,25 @@ void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> co
         // TODO Close socket connection
     }
 }
+
+void MYSQL_MONITOR_PROXY::init() {
+    this->mysql = mysql_init(nullptr);
+}
+
+int MYSQL_MONITOR_PROXY::ping() {
+    return mysql_ping(mysql);
+}
+
+int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
+    return mysql_options(mysql, option, arg);
+}
+
+bool MYSQL_MONITOR_PROXY::connect() {
+    auto server = (const char*)ds->server8;
+    auto uid = (const char*)ds->uid8;
+    auto pwd = (const char*)ds->pwd8;
+    auto port = ds->port;
+    auto socket = (const char*)dbc->ds->socket8;
+
+    return mysql_real_connect(mysql, server, uid, pwd, NULL, port, socket, 0);
+}
