@@ -36,7 +36,7 @@ MONITOR::MONITOR(
     this->host = host_info;
     this->disposal_time = monitor_disposal_time;
     this->monitor_service = service;
-    this->connection_check_interval = max_ms();
+    this->connection_check_interval = (std::chrono::milliseconds::max)();
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
@@ -69,7 +69,7 @@ bool MONITOR::is_stopped() {
 
 void MONITOR::clear_contexts() {
     this->contexts.clear();
-    this->connection_check_interval = max_ms();
+    this->connection_check_interval = (std::chrono::milliseconds::max)();
 }
 
 // Periodically ping the server and update the contexts' connection status.
@@ -157,7 +157,7 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
 }
 
 std::chrono::milliseconds MONITOR::find_shortest_interval() {
-    auto min = max_ms();
+    auto min = (std::chrono::milliseconds::max)();
     if (this->contexts.empty()) {
         return min;
     }
