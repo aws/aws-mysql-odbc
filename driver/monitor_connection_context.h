@@ -46,7 +46,7 @@ public:
     ~MONITOR_CONNECTION_CONTEXT();
 
     std::chrono::steady_clock::time_point get_start_monitor_time();
-    void set_start_monitor_time(std::chrono::steady_clock::time_point time);
+    virtual void set_start_monitor_time(std::chrono::steady_clock::time_point time);
     std::set<std::string> get_node_keys();
     std::chrono::milliseconds get_failure_detection_time();
     std::chrono::milliseconds get_failure_detection_interval();
