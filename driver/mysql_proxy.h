@@ -82,9 +82,9 @@ public:
     struct CHARSET_INFO* get_character_set() const;
     void get_character_set_info(MY_CHARSET_INFO* charset);
 
-    int ping();
+    virtual int ping();
     static unsigned long get_client_version(void);
-    int options(enum mysql_option option, const void* arg);
+    virtual int options(enum mysql_option option, const void* arg);
     int options4(enum mysql_option option, const void* arg1,
                  const void* arg2);
     int get_option(enum mysql_option option, const void* arg);
@@ -171,7 +171,7 @@ public:
 
     void set_connection(MYSQL_PROXY* mysql_proxy);
 
-private:
+protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     MYSQL* mysql = nullptr;
@@ -180,6 +180,16 @@ private:
 
     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring();
     void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
+};
+
+class MYSQL_MONITOR_PROXY : public MYSQL_PROXY {
+public:
+    MYSQL_MONITOR_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {};
+
+    virtual void init();
+    int ping();
+    int options(enum mysql_option option, const void* arg);
+    virtual bool connect();
 };
 
 #endif /* __MYSQL_PROXY__ */

@@ -25,34 +25,149 @@
  */
 
 #include "monitor.h"
+#include "monitor_service.h"
+#include "mysql_proxy.h"
 
-MONITOR::MONITOR(std::shared_ptr<HOST_INFO> host_info, std::chrono::milliseconds monitor_disposal_time) {
+MONITOR::MONITOR(
+    std::shared_ptr<HOST_INFO> host_info,
+    std::chrono::milliseconds monitor_disposal_time,
+    MONITOR_SERVICE* service) {
+    
     this->host = host_info;
     this->disposal_time = monitor_disposal_time;
+    this->monitor_service = service;
+    this->connection_check_interval = (std::chrono::milliseconds::max)();
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    // TODO: Implement
+    std::chrono::milliseconds detection_interval = context->get_failure_detection_interval();
+    if (detection_interval < this->connection_check_interval) {
+        this->connection_check_interval = detection_interval;
+    }
+
+    auto current_time = std::chrono::steady_clock::now();
+    context->set_start_monitor_time(current_time);
+    this->last_context_timestamp = current_time;
+    this->contexts.push_back(context);
 }
 
 void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    // TODO: Implement
+    if (context == nullptr) {
+        // TODO: Log Warning
+        return;
+    }
+
+    this->contexts.remove(context);
+    context->invalidate();
+
+    this->connection_check_interval = this->find_shortest_interval();
 }
 
 bool MONITOR::is_stopped() {
-    // TODO: Implement
-    return false;
+    return this->stopped;
 }
 
 void MONITOR::clear_contexts() {
-    // TODO: Implement
+    this->contexts.clear();
+    this->connection_check_interval = (std::chrono::milliseconds::max)();
 }
 
+// Periodically ping the server and update the contexts' connection status.
 void MONITOR::run() {
-    // TODO: Implement
+    try {
+        this->stopped = false;
+        while (true) {
+            if (!this->contexts.empty()) {
+                auto status_check_start_time = std::chrono::steady_clock::now();
+                this->last_context_timestamp = status_check_start_time;
+
+                std::chrono::milliseconds check_interval = this->get_connection_check_interval();
+                CONNECTION_STATUS status = this->check_connection_status(check_interval);
+
+                for (auto it = this->contexts.begin(); it != this->contexts.end(); it++) {
+                    std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context = *it;
+                    context->update_connection_status(
+                        status_check_start_time,
+                        status_check_start_time + status.elapsed_time,
+                        status.is_valid);
+                }
+
+                auto sleep_time = check_interval - status.elapsed_time;
+                if (sleep_time > std::chrono::milliseconds(0)) {
+                    std::this_thread::sleep_for(sleep_time);
+                }
+            }
+            else {
+                auto current_time = std::chrono::steady_clock::now();
+                if ((current_time - this->last_context_timestamp) >= this->disposal_time) {
+                    this->monitor_service->notify_unused(std::shared_ptr<MONITOR>(this));
+                    break;
+                }
+                std::this_thread::sleep_for(thread_sleep_when_inactive);
+            }
+        }
+    }
+    catch (...) {
+        // TODO: close connection if needed
+        this->stopped = true;
+    }
 }
 
-CONNECTION_STATUS MONITOR::check_connection_status(int shortest_detection_interval) {
-    // TODO: Implement
-    return CONNECTION_STATUS{ false, std::chrono::milliseconds(0) };
+std::chrono::milliseconds MONITOR::get_connection_check_interval() {
+    if (this->contexts.empty()) {
+        return std::chrono::milliseconds(0);
+    }
+
+    return this->connection_check_interval;
+}
+
+CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
+    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {
+        auto start = std::chrono::steady_clock::now();
+        if (!this->connect(shortest_detection_interval)) {
+            auto duration = std::chrono::steady_clock::now() - start;
+            return CONNECTION_STATUS {
+                false,
+                std::chrono::duration_cast<std::chrono::milliseconds>(duration)
+            };
+        }
+    }
+
+    auto start = std::chrono::steady_clock::now();
+    bool is_connection_active = this->mysql_proxy->ping() == 0;
+    auto duration = std::chrono::steady_clock::now() - start;
+    
+    return CONNECTION_STATUS{
+        is_connection_active,
+        std::chrono::duration_cast<std::chrono::milliseconds>(duration)
+    };
+}
+
+bool MONITOR::connect(std::chrono::milliseconds timeout) {
+    this->mysql_proxy->init();
+
+    this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, (char*)&timeout);
+
+    if (!this->mysql_proxy->connect()) {
+        fprintf(stderr, "%s\n", this->mysql_proxy->error());
+        return false;
+    }
+
+    return true;
+}
+
+std::chrono::milliseconds MONITOR::find_shortest_interval() {
+    auto min = (std::chrono::milliseconds::max)();
+    if (this->contexts.empty()) {
+        return min;
+    }
+
+    for (auto it = this->contexts.begin(); it != this->contexts.end(); it++) {
+        auto failure_detection_interval = (*it)->get_failure_detection_interval();
+        if (failure_detection_interval < min) {
+            min = failure_detection_interval;
+        }
+    }
+
+    return min;
 }
