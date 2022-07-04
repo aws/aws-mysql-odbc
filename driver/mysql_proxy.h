@@ -184,7 +184,7 @@ protected:
 
 class MYSQL_MONITOR_PROXY : public MYSQL_PROXY {
 public:
-    MYSQL_MONITOR_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {};
+    MYSQL_MONITOR_PROXY(DataSource* ds) : MYSQL_PROXY(nullptr, ds) {};
 
     virtual void init();
     int ping();

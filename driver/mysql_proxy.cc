@@ -518,11 +518,14 @@ int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
 }
 
 bool MYSQL_MONITOR_PROXY::connect() {
+    if (!ds)
+        return false;
+    
     auto server = (const char*)ds->server8;
     auto uid = (const char*)ds->uid8;
     auto pwd = (const char*)ds->pwd8;
     auto port = ds->port;
     auto socket = (const char*)dbc->ds->socket8;
 
-    return mysql_real_connect(mysql, server, uid, pwd, NULL, port, socket, 0);
+    return mysql_real_connect(mysql, server, uid, pwd, NULL, port, socket, 0) != nullptr;
 }
