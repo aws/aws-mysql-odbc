@@ -565,6 +565,15 @@ std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() {
     return std::make_shared<HOST_INFO>(main_host, main_port);
 }
 
+MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) : ds{ds} {}
+
+MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
+    if (this->mysql) {
+        mysql_close(this->mysql);
+        this->mysql = nullptr;
+    }
+}
+
 void MYSQL_MONITOR_PROXY::init() {
     this->mysql = mysql_init(nullptr);
 }
@@ -585,7 +594,15 @@ bool MYSQL_MONITOR_PROXY::connect() {
     auto uid = (const char*)ds->uid8;
     auto pwd = (const char*)ds->pwd8;
     auto port = ds->port;
-    auto socket = (const char*)dbc->ds->socket8;
+    auto socket = (const char*)ds->socket8;
 
     return mysql_real_connect(mysql, server, uid, pwd, NULL, port, socket, 0) != nullptr;
+}
+
+bool MYSQL_MONITOR_PROXY::is_connected() {
+    return this->mysql != nullptr && this->mysql->net.vio;
+}
+
+const char* MYSQL_MONITOR_PROXY::error() {
+    return mysql_error(mysql);
 }
