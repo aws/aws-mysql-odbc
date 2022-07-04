@@ -55,10 +55,11 @@ public:
     TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
     ~TOPOLOGY_SERVICE();
 
-    void set_cluster_id(std::string cluster_id);
-    void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
+    virtual void set_cluster_id(std::string cluster_id);
+    virtual void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(MYSQL_PROXY* connection, bool force_update = false);
+    virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(
+        MYSQL_PROXY* connection, bool force_update = false);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();
