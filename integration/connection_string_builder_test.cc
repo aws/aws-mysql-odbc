@@ -80,9 +80,14 @@ TEST_F(ConnectionStringBuilderTest, test_complete_string) {
                                    .withConnectTimeout(20)
                                    .withNetworkTimeout(20)
                                    .withHostPattern("?.testDomain")
+                                   .withEnableFailureDetection(true)
+                                   .withFailureDetectionTime(10000)
+                                   .withFailureDetectionInterval(100)
+                                   .withFailureDetectionCount(4)
+                                   .withMonitorDisposalTime(300)
                                    .build();
 
-  const std::string expected = "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;DATABASE=testDb;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;MULTI_STATEMENTS=0;FAILOVER_T=120000;CONNECT_TIMEOUT=20;NETWORK_TIMEOUT=20;HOST_PATTERN=?.testDomain;";
+  const std::string expected = "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;DATABASE=testDb;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;MULTI_STATEMENTS=0;FAILOVER_T=120000;CONNECT_TIMEOUT=20;NETWORK_TIMEOUT=20;HOST_PATTERN=?.testDomain;ENABLE_FAILURE_DETECTION=1;FAILURE_DETECTION_TIME=10000;FAILURE_DETECTION_INTERVAL=100;FAILURE_DETECTION_COUNT=4;MONITOR_DISPOSAL_TIME=300;";
   EXPECT_EQ(0, expected.compare(connection_string));
 }
 
@@ -124,9 +129,10 @@ TEST_F(ConnectionStringBuilderTest, test_setting_boolean_fields) {
                                    .withLogQuery(false)
                                    .withAllowReaderConnections(true)
                                    .withMultiStatements(true)
+                                   .withEnableFailureDetection(true)
                                    .build();
 
-  const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;MULTI_STATEMENTS=1;");
+  const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;MULTI_STATEMENTS=1;ENABLE_FAILURE_DETECTION=1;");
   EXPECT_EQ(0, expected.compare(connection_string));
 }
 
