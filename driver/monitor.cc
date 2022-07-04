@@ -42,7 +42,10 @@ MONITOR::MONITOR(
 }
 
 MONITOR::~MONITOR() {
-    delete this->mysql_proxy;
+    if (this->mysql_proxy) {
+        delete this->mysql_proxy;
+        this->mysql_proxy = nullptr;
+    }
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
