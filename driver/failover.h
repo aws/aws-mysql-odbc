@@ -52,7 +52,7 @@ class FAILOVER_CONNECTION_HANDLER {
         virtual ~FAILOVER_CONNECTION_HANDLER();
 
         virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled);
-        MYSQL_PROXY* connect(const std::shared_ptr<HOST_INFO>& host_info);
+        virtual MYSQL_PROXY* connect(const std::shared_ptr<HOST_INFO>& host_info);
         void update_connection(MYSQL_PROXY* new_connection, const std::string& new_host_name);
 
     private:
