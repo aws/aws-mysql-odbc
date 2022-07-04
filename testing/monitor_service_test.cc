@@ -71,7 +71,7 @@ protected:
 };
 
 TEST_F(MonitorServiceTest, StartMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_,_, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
