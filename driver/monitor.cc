@@ -31,12 +31,21 @@
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
+    DataSource* ds,
     MONITOR_SERVICE* service) {
     
     this->host = host_info;
     this->disposal_time = monitor_disposal_time;
+    this->mysql_proxy = new MYSQL_MONITOR_PROXY(ds);
     this->monitor_service = service;
     this->connection_check_interval = (std::chrono::milliseconds::max)();
+}
+
+MONITOR::~MONITOR() {
+    if (this->mysql_proxy) {
+        delete this->mysql_proxy;
+        this->mysql_proxy = nullptr;
+    }
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
