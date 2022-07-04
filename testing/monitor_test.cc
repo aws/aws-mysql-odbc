@@ -64,8 +64,9 @@ protected:
 
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
-        monitor = new MONITOR(host, monitor_disposal_time, nullptr);
+        monitor = new MONITOR(host, monitor_disposal_time, nullptr, nullptr);
 
+        delete monitor->mysql_proxy;
         mock_proxy = new MOCK_MYSQL_MONITOR_PROXY();
         monitor->mysql_proxy = mock_proxy;
         
@@ -85,7 +86,6 @@ protected:
     void TearDown() override {
         mock_context_short_interval.reset();
         mock_context_long_interval.reset();
-        delete mock_proxy;
         delete monitor;
         host.reset();
     }
