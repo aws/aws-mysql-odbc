@@ -126,7 +126,7 @@ public:
     struct st_mysql_client_plugin* client_find_plugin(
         const char* name, int type);
 
-    bool is_connected();
+    virtual bool is_connected();
 
     void set_last_error_code(unsigned int error_code);
 
