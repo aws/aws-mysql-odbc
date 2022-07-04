@@ -37,6 +37,7 @@ struct CONNECTION_STATUS {
     std::chrono::milliseconds elapsed_time;
 };
 
+struct DataSource;
 class MONITOR_SERVICE;
 class MYSQL_MONITOR_PROXY;
 
@@ -47,7 +48,9 @@ public:
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
         std::chrono::milliseconds monitor_disposal_time,
+        DataSource* ds,
         MONITOR_SERVICE* service);
+    ~MONITOR();
 
     virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
