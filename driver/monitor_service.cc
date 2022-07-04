@@ -53,6 +53,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         node_keys,
         host,
         disposal_time,
+        dbc ? dbc->ds : nullptr,
         this);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
