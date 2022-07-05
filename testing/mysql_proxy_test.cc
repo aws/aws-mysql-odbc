@@ -46,7 +46,9 @@ protected:
 
     static void SetUpTestSuite() {}
 
-    static void TearDownTestSuite() {}
+    static void TearDownTestSuite() {
+        mysql_library_end();
+    }
 
     void SetUp() override {
         env = nullptr;
