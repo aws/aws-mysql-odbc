@@ -53,7 +53,7 @@ class TOPOLOGY_SERVICE {
 public:
     TOPOLOGY_SERVICE(FILE* log_file, unsigned long dbc_id);
     TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
-    ~TOPOLOGY_SERVICE();
+    virtual ~TOPOLOGY_SERVICE();
 
     virtual void set_cluster_id(std::string cluster_id);
     virtual void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
