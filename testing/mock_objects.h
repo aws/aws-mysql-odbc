@@ -50,10 +50,7 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
     MOCK_MYSQL_PROXY() : MYSQL_PROXY(nullptr, nullptr) {};
     ~MOCK_MYSQL_PROXY() { mock_mysql_proxy_destructor(); }
 
-    MOCK_METHOD(bool, is_null, ());
     MOCK_METHOD(bool, is_connected, ());
-    MOCK_METHOD(char*, get_host, ());
-    MOCK_METHOD(unsigned int, get_port, ());
     MOCK_METHOD(int, query, (const char*));
     MOCK_METHOD(MYSQL_RES*, store_result, ());
     MOCK_METHOD(char**, fetch_row, (MYSQL_RES*));
@@ -70,8 +67,6 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
     MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (MYSQL_PROXY*, bool));
     MOCK_METHOD(void, mark_host_down, (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(void, mark_host_up, (std::shared_ptr<HOST_INFO>));
-    MOCK_METHOD(void, set_refresh_rate, (int));
-    MOCK_METHOD(void, set_gather_metric, (bool can_gather));
 };
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {

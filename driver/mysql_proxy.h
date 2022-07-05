@@ -62,9 +62,9 @@ public:
                       const char* passwd, const char* db, unsigned int port,
                       const char* unix_socket, unsigned long clientflag);
     int select_db(const char* db);
-    int query(const char* q);
+    virtual int query(const char* q);
     int real_query(const char* q, unsigned long length);
-    MYSQL_RES* store_result();
+    virtual MYSQL_RES* store_result();
     MYSQL_RES* use_result();
     struct CHARSET_INFO* get_character_set() const;
     void get_character_set_info(MY_CHARSET_INFO* charset);
@@ -75,11 +75,11 @@ public:
     int options4(enum mysql_option option, const void* arg1,
                  const void* arg2);
     int get_option(enum mysql_option option, const void* arg);
-    void free_result(MYSQL_RES* result);
+    virtual void free_result(MYSQL_RES* result);
     void data_seek(MYSQL_RES* result, uint64_t offset);
     MYSQL_ROW_OFFSET row_seek(MYSQL_RES* result, MYSQL_ROW_OFFSET offset);
     MYSQL_FIELD_OFFSET field_seek(MYSQL_RES* result, MYSQL_FIELD_OFFSET offset);
-    MYSQL_ROW fetch_row(MYSQL_RES* result);
+    virtual MYSQL_ROW fetch_row(MYSQL_RES* result);
 
     unsigned long* fetch_lengths(MYSQL_RES* result);
     MYSQL_FIELD* fetch_field(MYSQL_RES* result);
