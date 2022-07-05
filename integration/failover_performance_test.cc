@@ -39,7 +39,8 @@
 #include <OpenXLSX.hpp>
 
 #define SOCKET_TIMEOUT_TEST_ID 1
-#define EFM_TEST_ID 2
+#define EFM_FAILOVER_TEST_ID 2
+#define EFM_DETECTION_TEST_ID 3
 
 struct BASE_PERFORMANCE_DATA {
   int network_outage_delay;
@@ -93,15 +94,15 @@ struct SOCKET_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
 };
 
 struct EFM_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
-  int detection_grace_time, detection_interval, detection_count;
+  int detection_time, detection_interval, detection_count;
 
   void write_header(std::ofstream& data_stream) override {
-    data_stream << "Outage Delay (ms), Detection Grace Time (?), Detection Interval (?), Detection Count, Min Failover Time (ms), Max Failover Time (ms), Avg Failover Time (ms)\n";
+    data_stream << "Outage Delay (ms), Detection Time (?), Detection Interval (?), Detection Count, Min Failover Time (ms), Max Failover Time (ms), Avg Failover Time (ms)\n";
   }
 
   void write_header_xlsx(const OpenXLSX::XLWorksheet worksheet, int row) {
     worksheet.cell(row, 1).value() = "Outage Delay (ms)";
-    worksheet.cell(row, 2).value() = "Detection Grace Time (?)";
+    worksheet.cell(row, 2).value() = "Detection Time (?)";
     worksheet.cell(row, 3).value() = "Detection Interval (?)";
     worksheet.cell(row, 4).value() = "Detection Count";
     worksheet.cell(row, 5).value() = "Min Failover Time (ms)";
@@ -113,7 +114,7 @@ struct EFM_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
     char data_row[4096];
     sprintf(data_row, "%d, %d, %d, %d, %d, %d, %d\n",
       this->network_outage_delay,
-      this->detection_grace_time,
+      this->detection_time,
       this->detection_interval,
       this->detection_count,
       this->min_failover_time,
@@ -125,7 +126,7 @@ struct EFM_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
 
   void write_data_row_xlsx(const OpenXLSX::XLWorksheet worksheet, int row) override {
     worksheet.cell(row, 1).value() = this->network_outage_delay;
-    worksheet.cell(row, 2).value() = this->detection_grace_time;
+    worksheet.cell(row, 2).value() = this->detection_time;
     worksheet.cell(row, 3).value() = this->detection_interval;
     worksheet.cell(row, 4).value() = this->detection_count;
     worksheet.cell(row, 5).value() = this->min_failover_time;
@@ -136,6 +137,7 @@ struct EFM_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
 
 static std::vector<SOCKET_PERFORMANCE_DATA> socket_failover_data;
 static std::vector<EFM_PERFORMANCE_DATA> efm_failover_data;
+static std::vector<EFM_PERFORMANCE_DATA> efm_detection_data;
 
 class FailoverPerformanceTest :
   public ::testing::WithParamInterface<std::tuple<int, int, int, int, int>>,
@@ -153,10 +155,8 @@ protected:
   SQLHDBC dbc = nullptr;
 
   SQLCHAR* LONG_QUERY = AS_SQLCHAR("SELECT SLEEP(600)"); // 600s -> 10m
-  const size_t NB_OF_RUNS = 10;
+  const size_t NB_OF_RUNS = 6;
   static constexpr char* OUTPUT_FILE_PATH = "./build/reports/";
-
-  const std::string XLSX_WORKSHEET_NAME = "failover_performance";
 
   static void SetUpTestSuite() {
     Aws::InitAPI(options);
@@ -168,8 +168,11 @@ protected:
     // Save results to spreadsheet
     write_metrics_to_xlsx("failover_performance.xlsx", socket_failover_data);
 
-    // TODO Save results from EFM performance tests
-    // write_metrics_to_xlsx("efm_performance.xlsx", efm_failover_data);
+    // Save results from EFM performance tests
+    write_metrics_to_xlsx("efm_performance.xlsx", efm_failover_data);
+
+    // Save results from EFM without performance tests
+    write_metrics_to_xlsx("efm_detection_performance.xlsx", efm_detection_data);
   }
 
   void SetUp() override {
@@ -252,7 +255,6 @@ protected:
     return true;
   }
 
-  // TODO: Rewrite to use Workbook / XML Format
   // Only run if passed in parameter: data_list contents, are a type of BASE_PERFORMANCE_DATA
   template<typename DERIVED_PERFORMANCE_DATA, typename Enable = std::enable_if<std::is_base_of<BASE_PERFORMANCE_DATA, DERIVED_PERFORMANCE_DATA>::value>>
   static void write_metrics_to_file(const char* file_name, const std::vector<DERIVED_PERFORMANCE_DATA>& data_list) {
@@ -278,13 +280,14 @@ protected:
       return;
     }
 
-    const OpenXLSX::XLDocument doc;
+    OpenXLSX::XLDocument doc;
     doc.create(file_name);
+
+    std::string XLSX_WORKSHEET_NAME = "failover_performance";
     doc.workbook().addWorksheet(XLSX_WORKSHEET_NAME);
+    OpenXLSX::XLWorksheet worksheet = doc.workbook().worksheet(XLSX_WORKSHEET_NAME);
 
-    const OpenXLSX::XLWorksheet worksheet = doc.workbook().worksheet(XLSX_WORKSHEET_NAME);
-
-    const DERIVED_PERFORMANCE_DATA data = data_list[0];
+    DERIVED_PERFORMANCE_DATA data = data_list[0];
 
     int row = 1;
     data.write_header_xlsx(worksheet, row);
@@ -304,6 +307,7 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
   const int test_type = std::get<0>(GetParam());
   const int sleep_delay = std::get<1>(GetParam());
   const std::string server = get_proxied_endpoint(writer_id);
+  
   builder.withDSN(dsn).withServer(server).withPort(MYSQL_PROXY_PORT)
     .withDatabase(db).withUID(user).withPWD(pwd).withHostPattern(PROXIED_CLUSTER_TEMPLATE)
     .withAllowReaderConnections(true);
@@ -314,8 +318,12 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       const int connect_timeout = std::get<3>(GetParam());
       const int network_timeout = std::get<4>(GetParam());
 
-      const std::string conn_str = builder.withFailoverT(failover_timeout).withConnectTimeout(connect_timeout)
-        .withNetworkTimeout(network_timeout).build();
+      const std::string conn_str = builder.withEnableFailureDetection(false)
+                                          .withEnableClusterFailover(true)
+                                          .withFailoverT(failover_timeout)
+                                          .withConnectTimeout(connect_timeout)
+                                          .withNetworkTimeout(network_timeout)
+                                          .withLogQuery(true).build();
 
       SOCKET_PERFORMANCE_DATA data;
       data.network_outage_delay = sleep_delay;
@@ -329,8 +337,49 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       break;
     }
 
-    case EFM_TEST_ID: {
-      // TODO - Add connection string builder for EFM & run tests
+    case EFM_FAILOVER_TEST_ID: {
+      const int detection_time = std::get<2>(GetParam());
+      const int detection_interval = std::get<3>(GetParam());
+      const int detection_count = std::get<4>(GetParam());
+
+      const std::string conn_str = builder.withEnableFailureDetection(true)
+                                          .withEnableClusterFailover(true)
+                                          .withFailureDetectionTime(detection_time)
+                                          .withFailureDetectionInterval(detection_interval)
+                                          .withFailureDetectionCount(detection_count).build();
+
+      EFM_PERFORMANCE_DATA data;
+      data.network_outage_delay = sleep_delay;
+      data.detection_time = detection_time;
+      data.detection_interval = detection_interval;
+      data.detection_count = detection_count;
+
+      if (measure_performance(conn_str, sleep_delay, data)) {
+        efm_failover_data.push_back(data);
+      }
+      break;
+    }
+
+    case EFM_DETECTION_TEST_ID: {
+      const int detection_time = std::get<2>(GetParam());
+      const int detection_interval = std::get<3>(GetParam());
+      const int detection_count = std::get<4>(GetParam());
+
+      const std::string conn_str = builder.withEnableFailureDetection(true)
+                                          .withEnableClusterFailover(false)
+                                          .withFailureDetectionTime(detection_time)
+                                          .withFailureDetectionInterval(detection_interval)
+                                          .withFailureDetectionCount(detection_count).build();
+
+      EFM_PERFORMANCE_DATA data;
+      data.network_outage_delay = sleep_delay;
+      data.detection_time = detection_time;
+      data.detection_interval = detection_interval;
+      data.detection_count = detection_count;
+
+      if (measure_performance(conn_str, sleep_delay, data)) {
+        efm_failover_data.push_back(data);
+      }
       break;
     }
 
@@ -353,21 +402,38 @@ INSTANTIATE_TEST_CASE_P(
   )
 );
 
-// TODO Enable EFM performance tests once EFM feature is ready
-/* INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_CASE_P(
   EFMTimeoutTest,
   FailoverPerformanceTest,
   // Test Type, Sleep Delay, detection grace time, detection interval, detection count
   ::testing::Values(
-    std::make_tuple(EFM_TEST_ID, 5000,  30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 10000, 30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 15000, 30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 20000, 30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 25000, 30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 30000, 30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 35000, 30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 40000, 30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 45000, 30000, 5000, 3),
-    std::make_tuple(EFM_TEST_ID, 50000, 30000, 5000, 3)
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 5000,  30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 10000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 15000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 20000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 25000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 30000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 35000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 40000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 45000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 50000, 30000, 5000, 3)
   )
-);*/
+);
+
+INSTANTIATE_TEST_CASE_P(
+  EFMDetectionTimeoutTest,
+  FailoverPerformanceTest,
+  // Test Type, Sleep Delay, detection grace time, detection interval, detection count
+  ::testing::Values(
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 5000,  30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 10000, 30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 15000, 30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 20000, 30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 25000, 30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 30000, 30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 35000, 30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 40000, 30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 45000, 30000, 5000, 3),
+    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 50000, 30000, 5000, 3)
+  )
+);

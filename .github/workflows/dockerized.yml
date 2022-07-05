@@ -48,6 +48,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
+                -DENABLE_PERFORMANCE_TESTS=FALSE
                 -DENABLE_UNIT_TESTS=TRUE
                 -DWITH_UNIXODBC=1
 
