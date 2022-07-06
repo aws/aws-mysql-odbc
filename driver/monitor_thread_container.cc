@@ -34,7 +34,7 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
 }
 
 std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
-    if (this->monitor_map.size() > 0) {
+    if (!this->monitor_map.empty()) {
         for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
             std::string node = *it;
             if (this->monitor_map.count(node) > 0) {
