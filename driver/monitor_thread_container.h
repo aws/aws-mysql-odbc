@@ -36,6 +36,9 @@
 
 class MONITOR_THREAD_CONTAINER {
 public:
+    MONITOR_THREAD_CONTAINER(MONITOR_THREAD_CONTAINER const&) = delete;
+    MONITOR_THREAD_CONTAINER& operator=(MONITOR_THREAD_CONTAINER const&) = delete;
+    static std::shared_ptr<MONITOR_THREAD_CONTAINER> get_instance();
     std::string get_node(std::set<std::string> node_keys);
     std::shared_ptr<MONITOR> get_monitor(std::string node);
     std::shared_ptr<MONITOR> get_or_create_monitor(
@@ -62,6 +65,7 @@ protected:
     std::map<std::shared_ptr<MONITOR>, std::future<void>*> task_map;
     std::queue<std::shared_ptr<MONITOR>> available_monitors;
     ctpl::thread_pool thread_pool;
+    MONITOR_THREAD_CONTAINER() = default;
 };
 
 #endif /* __MONITORTHREADCONTAINER_H__ */

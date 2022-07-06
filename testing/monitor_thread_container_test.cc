@@ -53,7 +53,7 @@ protected:
 
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
-        thread_container = std::make_shared<MONITOR_THREAD_CONTAINER>();
+        thread_container = MONITOR_THREAD_CONTAINER::get_instance();
     }
 
     void TearDown() override {
@@ -135,7 +135,7 @@ TEST_F(MonitorThreadContainerTest, PopulateMonitorMap) {
         keys, host, monitor_disposal_time, nullptr, monitor_service);
 
     // Check that we now have mappings for all the keys.
-    for (auto it = keys.begin(); it != keys.end(); it++) {
+    for (auto it = keys.begin(); it != keys.end(); ++it) {
         std::string node = *it;
         auto get_monitor = thread_container->get_monitor(node);
         EXPECT_NE(nullptr, get_monitor);
@@ -157,14 +157,14 @@ TEST_F(MonitorThreadContainerTest, RemoveMonitorMapping) {
     thread_container->reset_resource(monitor1);
 
     // Check that we no longer have any mappings for keys1.
-    for (auto it = keys1.begin(); it != keys1.end(); it++) {
+    for (auto it = keys1.begin(); it != keys1.end(); ++it) {
         std::string node = *it;
         auto get_monitor = thread_container->get_monitor(node);
         EXPECT_EQ(nullptr, get_monitor);
     }
 
     // Check that we still have all the mapping for keys2.
-    for (auto it = keys2.begin(); it != keys2.end(); it++) {
+    for (auto it = keys2.begin(); it != keys2.end(); ++it) {
         std::string node = *it;
         auto get_monitor = thread_container->get_monitor(node);
         EXPECT_NE(nullptr, get_monitor);
