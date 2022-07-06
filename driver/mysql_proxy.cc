@@ -26,14 +26,22 @@
  *
  */
 
+#include "driver.h"
+
 #include <sstream>
 
-#include "driver.h"
+namespace {
+    const char* RETRIEVE_HOST_PORT_SQL = "SELECT CONCAT(@@hostname, ':', @@port)";
+}
 
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
     : dbc{dbc},
       ds{ds},
-      monitor_service{std::make_shared<MONITOR_SERVICE>()} {}
+      monitor_service{std::make_shared<MONITOR_SERVICE>()} {
+
+    host = get_host_info_from_ds();
+    generate_node_keys();
+}
 
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
@@ -455,11 +463,11 @@ char* MYSQL_PROXY::get_host_info() const {
 }
 
 char* MYSQL_PROXY::get_host() {
-    return this->mysql->host;
+    return (this->mysql && this->mysql->host) ? this->mysql->host : (char*)this->host->get_host().c_str();
 }
 
 unsigned int MYSQL_PROXY::get_port() {
-    return this->mysql->port;
+    return (this->mysql) ? this->mysql->port : this->host->get_port();
 }
 
 unsigned long MYSQL_PROXY::get_max_packet() const {
@@ -478,13 +486,18 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     close();
     this->mysql = mysql_proxy->mysql;
     mysql_proxy->mysql = nullptr;
+
+    if (!node_keys.empty()) {
+        monitor_service->stop_monitoring_for_all_connections(node_keys);
+    }
+    generate_node_keys();
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
     if (!ds->enable_failure_detection) {
         return nullptr;
     }
-    // TODO Populate node keys
+
     return monitor_service->start_monitoring(
         dbc,
         node_keys,
@@ -502,6 +515,62 @@ void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> co
     monitor_service->stop_monitoring(context);
     if (context->is_node_unhealthy() && is_connected()) {
         // TODO Close socket connection
+    }
+}
+
+void MYSQL_PROXY::generate_node_keys() {
+    node_keys.clear();
+    node_keys.insert(std::string(get_host()) + ":" + std::to_string(get_port()));
+
+    if (is_connected()) {
+        // Temporarily turn off failure detection if on
+        const auto is_monitoring = ds->enable_failure_detection;
+        ds->enable_failure_detection = false;
+
+        const auto error = query(RETRIEVE_HOST_PORT_SQL);
+        if (error == 0) {
+            MYSQL_RES* result = store_result();
+            MYSQL_ROW row;
+            while ((row = fetch_row(result))) {
+                node_keys.insert(std::string(row[0]));
+            }
+        }
+
+        ds->enable_failure_detection = is_monitoring;
+    }
+}
+
+std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() {
+    std::vector<Srv_host_detail> hosts;
+    std::stringstream err;
+    try {
+        hosts =
+            parse_host_list(ds_get_utf8attr(ds->server, &ds->server8), ds->port);
+    }
+    catch (std::string&) {
+        err << "Invalid server '" << ds->server8 << "'.";
+        MYLOG_DBC_TRACE(dbc, err.str().c_str());
+        throw std::runtime_error(err.str());
+    }
+
+    if (hosts.size() == 0) {
+        err << "No host was found.";
+        MYLOG_DBC_TRACE(dbc, err.str().c_str());
+        throw std::runtime_error(err.str());
+    }
+
+    std::string main_host(hosts[0].name);
+    unsigned int main_port = hosts[0].port;
+
+    return std::make_shared<HOST_INFO>(main_host, main_port);
+}
+
+MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) : ds{ds} {}
+
+MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
+    if (this->mysql) {
+        mysql_close(this->mysql);
+        this->mysql = nullptr;
     }
 }
 
@@ -525,7 +594,15 @@ bool MYSQL_MONITOR_PROXY::connect() {
     auto uid = (const char*)ds->uid8;
     auto pwd = (const char*)ds->pwd8;
     auto port = ds->port;
-    auto socket = (const char*)dbc->ds->socket8;
+    auto socket = (const char*)ds->socket8;
 
     return mysql_real_connect(mysql, server, uid, pwd, NULL, port, socket, 0) != nullptr;
+}
+
+bool MYSQL_MONITOR_PROXY::is_connected() {
+    return this->mysql != nullptr && this->mysql->net.vio;
+}
+
+const char* MYSQL_MONITOR_PROXY::error() {
+    return mysql_error(mysql);
 }

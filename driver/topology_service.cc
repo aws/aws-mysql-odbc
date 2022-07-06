@@ -254,7 +254,7 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
         host_endpoint, cluster_instance_host->get_port());
 
     //TODO do case-insensitive comparison
-    // side note: how stable this is on the server side? If it changes there we will not detect a writter.
+    // side note: how stable this is on the server side? If it changes there we will not detect a writer.
     if (strcmp(row[SESSION], WRITER_SESSION_ID) == 0)
     {
         host_info->mark_as_writer(true);

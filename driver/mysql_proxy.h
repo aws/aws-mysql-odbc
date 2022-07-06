@@ -171,25 +171,35 @@ public:
 
     void set_connection(MYSQL_PROXY* mysql_proxy);
 
-protected:
+private:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     MYSQL* mysql = nullptr;
     std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
+    std::shared_ptr<HOST_INFO> host = nullptr;
     std::set<std::string> node_keys;
 
     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring();
     void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
+    void generate_node_keys();
+    std::shared_ptr<HOST_INFO> get_host_info_from_ds();
 };
 
-class MYSQL_MONITOR_PROXY : public MYSQL_PROXY {
+class MYSQL_MONITOR_PROXY {
 public:
-    MYSQL_MONITOR_PROXY(DataSource* ds) : MYSQL_PROXY(nullptr, ds) {};
+    MYSQL_MONITOR_PROXY(DataSource* ds);
+    virtual ~MYSQL_MONITOR_PROXY();
 
     virtual void init();
-    int ping();
-    int options(enum mysql_option option, const void* arg);
+    virtual int ping();
+    virtual int options(enum mysql_option option, const void* arg);
     virtual bool connect();
+    virtual bool is_connected();
+    virtual const char* error();
+
+private:
+    DataSource* ds = nullptr;
+    MYSQL* mysql = nullptr;
 };
 
 #endif /* __MYSQL_PROXY__ */
