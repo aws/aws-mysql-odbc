@@ -38,7 +38,7 @@ using ::testing::Return;
 
 namespace {
     std::set<std::string> node_keys = { "any.node.domain" };
-    const std::chrono::milliseconds monitor_disposal_time = std::chrono::milliseconds(200);
+    const std::chrono::milliseconds monitor_disposal_time(200);
 }
 
 class MonitorThreadContainerTest : public testing::Test {
