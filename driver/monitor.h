@@ -50,7 +50,7 @@ public:
         std::chrono::milliseconds monitor_disposal_time,
         DataSource* ds,
         MONITOR_SERVICE* service);
-    ~MONITOR();
+    virtual ~MONITOR();
 
     virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
