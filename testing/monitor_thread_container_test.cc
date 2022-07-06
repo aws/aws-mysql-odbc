@@ -62,6 +62,11 @@ protected:
     }
 };
 
+TEST_F(MonitorThreadContainerTest, GetInstance) {
+    const auto thread_container_same = MONITOR_THREAD_CONTAINER::get_instance();
+    EXPECT_TRUE(thread_container_same == thread_container);
+}
+
 TEST_F(MonitorThreadContainerTest, MultipleNodeKeys) {
     std::set<std::string> node_keys1 = { "nodeOne.domain", "nodeTwo.domain" };
     std::set<std::string> node_keys2 = { "nodeTwo.domain" };
