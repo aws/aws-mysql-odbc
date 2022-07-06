@@ -40,8 +40,12 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service)
     : dbc{dbc}, ds{ds}, monitor_service{std::move(monitor_service)} {
 
-    if (!dbc || !ds) {
-        throw std::runtime_error("DBC or DataSource cannot be null.");
+    if (!dbc) {
+        throw std::runtime_error("DBC cannot be null.");
+    }
+
+    if (!ds) {
+        throw std::runtime_error("DataSource cannot be null.");
     }
 
     host = get_host_info_from_ds();
