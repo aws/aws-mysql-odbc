@@ -377,7 +377,7 @@ END
 // Bitmap
 //
 
-IDB_LOGO                BITMAP                  "connector_odbc_header.bmp"
+IDB_LOGO                BITMAP                  "aws_connector_odbc_header.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
