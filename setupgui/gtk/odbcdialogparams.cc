@@ -35,7 +35,7 @@
 
 #include <stdio.h>
 #include "../setupgui.h"
-#include "pixmaps/connector_odbc_header.xpm"
+#include "pixmaps/aws_connector_odbc_header.xpm"
 
 #if GTK_MAJOR_VERSION >= 3
 #include "ui_xml.h"
@@ -671,7 +671,7 @@ int ShowOdbcParamsDialog(DataSource* params, HWND ParentWnd, BOOL isPrompt)
     return 0;
   }
 
-  pixbuf= gdk_pixbuf_new_from_xpm_data((const char **)connector_odbc_header_xpm);
+  pixbuf= gdk_pixbuf_new_from_xpm_data((const char **)aws_connector_odbc_header_xpm);
   dummy= GTK_WIDGET (gtk_builder_get_object (builder, "header"));
   g_object_set(dummy, "pixbuf", pixbuf, NULL);
 

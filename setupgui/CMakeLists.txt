@@ -54,7 +54,7 @@ if(WIN32)
     windows/TabCtrl.cpp
     windows/TabCtrl.h
     windows/tooltip.cpp
-    windows/connector_odbc_header.bmp
+    windows/aws_connector_odbc_header.bmp
   )
 
   set(PLATFORM_LIBS comctl32 legacy_stdio_definitions.lib)
