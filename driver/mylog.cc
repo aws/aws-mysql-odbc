@@ -86,9 +86,9 @@ std::shared_ptr<FILE> init_log_file() {
   getenv_s(&buffsize, filename, sizeof(filename), "TEMP");
 
   if (buffsize) {
-    sprintf(filename + buffsize - 1, "\\%s", DRIVER_LOG_FILE);
+    snprintf(filename + buffsize - 1, sizeof(filename) - buffsize + 1, "\\%s", DRIVER_LOG_FILE);
   } else {
-    sprintf(filename, "c:\\%s", DRIVER_LOG_FILE);
+    snprintf(filename, sizeof(filename), "c:\\%s", DRIVER_LOG_FILE);
   }
 
   if (file = fopen(filename, "a+"))
