@@ -367,7 +367,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_TRANSLATE_OPTION:
       {
         char buff[100];
-        sprintf(buff,"Suppose to set this attribute '%d' through driver manager, not by the driver",(int) Attribute);
+        snprintf(buff, sizeof(buff), "Suppose to set this attribute '%d' through driver manager, not by the driver", (int)Attribute);
         return set_conn_error((DBC*)hdbc,MYERR_01S02,buff,0);
       }
 
@@ -397,8 +397,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
         if (level)
         {
           SQLRETURN rc;
-          sprintf(buff,"SET SESSION TRANSACTION ISOLATION LEVEL %s",
-                  level);
+          snprintf(buff, sizeof(buff), "SET SESSION TRANSACTION ISOLATION LEVEL %s", level);
           if (SQL_SUCCEEDED(rc = odbc_stmt(dbc, buff, SQL_NTS, TRUE)))
           {
             dbc->txn_isolation= (size_t)ValuePtr;

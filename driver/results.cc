@@ -945,7 +945,7 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
                If it couldn't happen we have to scale/unscale number - we would
                just reverse binary data */
             char _value[21]; /* max string length of 64bit number */
-            sprintf(_value, "%llu", numericValue);
+            snprintf(_value, sizeof(_value), "%llu", numericValue);
 
             sqlnum_from_str(_value, sqlnum, &overflow);
             *pcbValue = sizeof(ulonglong);
