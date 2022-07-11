@@ -38,7 +38,7 @@ using ::testing::Return;
 
 namespace {
     std::set<std::string> node_keys = { "any.node.domain" };
-    const std::chrono::milliseconds monitor_disposal_time = std::chrono::milliseconds(200);
+    const std::chrono::milliseconds monitor_disposal_time(200);
 }
 
 class MonitorThreadContainerTest : public testing::Test {
@@ -53,7 +53,7 @@ protected:
 
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
-        thread_container = std::make_shared<MONITOR_THREAD_CONTAINER>();
+        thread_container = MONITOR_THREAD_CONTAINER::get_instance();
     }
 
     void TearDown() override {
@@ -61,6 +61,11 @@ protected:
         thread_container.reset();
     }
 };
+
+TEST_F(MonitorThreadContainerTest, GetInstance) {
+    const auto thread_container_same = MONITOR_THREAD_CONTAINER::get_instance();
+    EXPECT_TRUE(thread_container_same == thread_container);
+}
 
 TEST_F(MonitorThreadContainerTest, MultipleNodeKeys) {
     std::set<std::string> node_keys1 = { "nodeOne.domain", "nodeTwo.domain" };
@@ -135,7 +140,7 @@ TEST_F(MonitorThreadContainerTest, PopulateMonitorMap) {
         keys, host, monitor_disposal_time, nullptr, monitor_service);
 
     // Check that we now have mappings for all the keys.
-    for (auto it = keys.begin(); it != keys.end(); it++) {
+    for (auto it = keys.begin(); it != keys.end(); ++it) {
         std::string node = *it;
         auto get_monitor = thread_container->get_monitor(node);
         EXPECT_NE(nullptr, get_monitor);
@@ -157,14 +162,14 @@ TEST_F(MonitorThreadContainerTest, RemoveMonitorMapping) {
     thread_container->reset_resource(monitor1);
 
     // Check that we no longer have any mappings for keys1.
-    for (auto it = keys1.begin(); it != keys1.end(); it++) {
+    for (auto it = keys1.begin(); it != keys1.end(); ++it) {
         std::string node = *it;
         auto get_monitor = thread_container->get_monitor(node);
         EXPECT_EQ(nullptr, get_monitor);
     }
 
     // Check that we still have all the mapping for keys2.
-    for (auto it = keys2.begin(); it != keys2.end(); it++) {
+    for (auto it = keys2.begin(); it != keys2.end(); ++it) {
         std::string node = *it;
         auto get_monitor = thread_container->get_monitor(node);
         EXPECT_NE(nullptr, get_monitor);
