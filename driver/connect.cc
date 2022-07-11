@@ -1021,7 +1021,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 
     if (transactions_supported())
     {
-      sprintf(buff, "SET SESSION TRANSACTION ISOLATION LEVEL %s", level);
+      snprintf(buff, sizeof(buff), "SET SESSION TRANSACTION ISOLATION LEVEL %s", level);
       if (execute_query(buff, SQL_NTS, true) != SQL_SUCCESS)
       {
         goto error;
@@ -1264,10 +1264,11 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     if (!ds->driver)
     {
       char szError[1024];
-      sprintf(szError,
-              "Could not determine the driver name; "
-              "could not lookup setup library. DSN=(%s)\n",
-              ds_get_utf8attr(ds->name, &ds->name8));
+      snprintf(szError,
+               sizeof(szError),
+               "Could not determine the driver name; "
+               "could not lookup setup library. DSN=(%s)\n",
+               ds_get_utf8attr(ds->name, &ds->name8));
       rc= dbc->set_error("HY000", szError, 0);
       goto error;
     }
@@ -1290,8 +1291,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     if (driver_lookup(pDriver))
     {
       char sz[1024];
-      sprintf(sz, "Could not find driver '%s' in system information.",
-              ds_get_utf8attr(ds->driver, &ds->driver8));
+      snprintf(sz, sizeof(sz), "Could not find driver '%s' in system information.",
+               ds_get_utf8attr(ds->driver, &ds->driver8));
 
       rc= dbc->set_error("IM003", sz, 0);
       goto error;
@@ -1320,8 +1321,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
                                                &pDriver->setup_lib8))))
     {
       char sz[1024];
-      sprintf(sz, "Could not load the setup library '%s'.",
-              ds_get_utf8attr(pDriver->setup_lib, &pDriver->setup_lib8));
+      snprintf(sz, sizeof(sz), "Could not load the setup library '%s'.",
+               ds_get_utf8attr(pDriver->setup_lib, &pDriver->setup_lib8));
       rc= dbc->set_error("HY000", sz, 0);
       goto error;
     }

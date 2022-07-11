@@ -191,12 +191,12 @@ SQLSMALLINT compute_sql_data_type(STMT *stmt, SQLSMALLINT sql_type,
 SQLSMALLINT get_sql_data_type           (STMT *stmt, MYSQL_FIELD *field, char *buff);
 SQLULEN     get_column_size             (STMT *stmt, MYSQL_FIELD *field);
 SQLULEN     get_column_size_from_str    (STMT *stmt, const char *size_str);
-SQLULEN     fill_column_size_buff       (char *buff, STMT *stmt, MYSQL_FIELD *field);
+SQLULEN     fill_column_size_buff       (char *buff, size_t buff_size, STMT *stmt, MYSQL_FIELD *field);
 SQLSMALLINT get_decimal_digits          (STMT *stmt, MYSQL_FIELD *field);
 SQLLEN      get_transfer_octet_length   (STMT *stmt, MYSQL_FIELD *field);
 SQLLEN      fill_transfer_oct_len_buff  (char *buff, STMT *stmt, MYSQL_FIELD *field);
 SQLLEN      get_display_size            (STMT *stmt, MYSQL_FIELD *field);
-SQLLEN      fill_display_size_buff      (char *buff, STMT *stmt, MYSQL_FIELD *field);
+SQLLEN      fill_display_size_buff      (char *buff, size_t buff_size, STMT *stmt, MYSQL_FIELD *field);
 SQLSMALLINT get_dticode_from_concise_type       (SQLSMALLINT concise_type);
 SQLSMALLINT get_concise_type_from_datetime_code (SQLSMALLINT dticode);
 SQLSMALLINT get_concise_type_from_interval_code (SQLSMALLINT dticode);
@@ -325,10 +325,10 @@ SQLUINTEGER proc_get_param_size   (SQLCHAR *ptype, int len, int sql_type_index,
                                   SQLSMALLINT *dec);
 SQLLEN      proc_get_param_octet_len  (STMT *stmt, int sql_type_index,
                                       SQLULEN col_size, SQLSMALLINT decimal_digits,
-                                      unsigned int flags, char * str_buff);
+                                      unsigned int flags, char * str_buff, size_t buff_size);
 SQLLEN      proc_get_param_col_len    (STMT *stmt, int sql_type_index, SQLULEN col_size,
                                       SQLSMALLINT decimal_digits, unsigned int flags,
-                                      char * str_buff);
+                                      char * str_buff, size_t buff_size);
 int         proc_get_param_sql_type_index (const char*ptype, int len);
 SQLTypeMap *proc_get_param_map_by_index   (int index);
 char *      proc_param_next_token         (char *str, char *str_end);
