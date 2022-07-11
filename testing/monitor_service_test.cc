@@ -38,10 +38,10 @@ using ::testing::Return;
 
 namespace {
     const std::set<std::string> node_keys = { "any.node.domain" };
-    const std::chrono::milliseconds failure_detection_time = std::chrono::milliseconds(10);
-    const std::chrono::milliseconds failure_detection_interval = std::chrono::milliseconds(100);
+    const std::chrono::milliseconds failure_detection_time(10);
+    const std::chrono::milliseconds failure_detection_interval(100);
     const int failure_detection_count = 3;
-    const std::chrono::milliseconds monitor_disposal_time = std::chrono::milliseconds(200);
+    const std::chrono::milliseconds monitor_disposal_time(200);
 }
 
 class MonitorServiceTest : public testing::Test {

@@ -41,12 +41,12 @@ using ::testing::Return;
 
 namespace {
     const std::set<std::string> node_keys = { "any.node.domain" };
-    const std::chrono::milliseconds failure_detection_time = std::chrono::milliseconds(10);
-    const std::chrono::milliseconds failure_detection_short_interval = std::chrono::milliseconds(30);
-    const std::chrono::milliseconds failure_detection_long_interval = std::chrono::milliseconds(300);
+    const std::chrono::milliseconds failure_detection_time(10);
+    const std::chrono::milliseconds failure_detection_short_interval(30);
+    const std::chrono::milliseconds failure_detection_long_interval(300);
     const int failure_detection_count = 3;
-    const std::chrono::milliseconds validation_interval = std::chrono::milliseconds(50);
-    const std::chrono::milliseconds monitor_disposal_time = std::chrono::milliseconds(200);
+    const std::chrono::milliseconds validation_interval(50);
+    const std::chrono::milliseconds monitor_disposal_time(200);
 }
 
 
