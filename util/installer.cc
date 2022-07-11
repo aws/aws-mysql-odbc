@@ -1294,9 +1294,9 @@ int ds_lookup(DataSource *ds)
   OutputDebugString("Dumping SQLGetPrivateProfileStringW result");
   for (i= 0; i < size; ++i)
   {
-    sprintf(dbuf, "[%d] = %wc - 0x%x\n", i,
-            (entries[i] < 0x7f && isalpha(entries[i]) ? entries[i] : 'X'),
-            entries[i]);
+    snprintf(dbuf, sizeof(dbuf), "[%d] = %wc - 0x%x\n", i,
+             (entries[i] < 0x7f && isalpha(entries[i]) ? entries[i] : 'X'),
+             entries[i]);
     OutputDebugString(dbuf);
   }
   }

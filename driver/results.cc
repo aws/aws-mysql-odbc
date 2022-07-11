@@ -911,9 +911,9 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
                just reverse binary data */
             char _value[21]; /* max string length of 64bit number */
             if (numeric_value)
-              sprintf(_value, "%ll", numeric_value);
+              snprintf(_value, sizeof(_value), "%ll", numeric_value);
             else
-              sprintf(_value, "%llu", u_numeric_value);
+              snprintf(_value, sizeof(_value), "%llu", u_numeric_value);
 
 
             sqlnum_from_str(_value, sqlnum, &overflow);

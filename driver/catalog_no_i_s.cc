@@ -96,8 +96,8 @@ static my_bool check_table_type(const SQLCHAR *TableType,
     */
 
     type= strstr(table_type,",");
-    sprintf(req_type_quoted,"'%s'",req_type);
-    sprintf(req_type_quoted1,"`%s`",req_type);
+    snprintf(req_type_quoted, sizeof(req_type_quoted), "'%s'", req_type);
+    snprintf(req_type_quoted1, sizeof(req_type_quoted1), "`%s`", req_type);
     while ( type )
     {
         while ( isspace(*(table_type)) ) ++table_type;
@@ -866,7 +866,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
 
       param_size= proc_get_param_size(param_dbtype, (int)strlen((const char*)param_dbtype), sql_type_index, &dec);
 
-      proc_get_param_octet_len(stmt, sql_type_index, param_size, dec, flags, (char*)param_buffer_len);
+      proc_get_param_octet_len(stmt, sql_type_index, param_size, dec, flags, (char*)param_buffer_len, sizeof(param_buffer_len));
 
       /* PROCEDURE_CAT and PROCEDURE_SCHEMA */
       CAT_SCHEMA_SET(data[mypcPROCEDURE_CAT], data[mypcPROCEDURE_SCHEM], row[2]);
@@ -897,7 +897,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
         data[mypcTYPE_NAME]= (const char*)type_map->type_name;
       }
 
-      proc_get_param_col_len(stmt, sql_type_index, param_size, dec, flags, (char*)param_size_buf);
+      proc_get_param_col_len(stmt, sql_type_index, param_size, dec, flags, (char*)param_size_buf, sizeof(param_size_buf));
       data[mypcCOLUMN_SIZE] = (const char*)param_size_buf;
       data[mypcBUFFER_LENGTH] = (const char*)param_buffer_len;
 
@@ -1090,7 +1090,7 @@ special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
         data[3] = buff;
 
         /* COLUMN_SIZE */
-        fill_column_size_buff(buff, stmt, field);
+        fill_column_size_buff(buff, sizeof(buff), stmt, field);
         data[4] = buff;
 
         /* BUFFER_LENGTH */

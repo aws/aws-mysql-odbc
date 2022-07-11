@@ -628,12 +628,12 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
     case SQL_C_FLOAT:
       if ( iprec->concise_type != SQL_NUMERIC && iprec->concise_type != SQL_DECIMAL )
       {
-        sprintf(buff, "%.17e", *((float*) *res));
+        snprintf(buff, buff_max, "%.17e", *((float*) *res));
       }
       else
       {
         /* We should perpare this data for string comparison */
-        sprintf(buff, "%.15e", *((float*) *res));
+        snprintf(buff, buff_max, "%.15e", *((float*) *res));
       }
       delocalize_radix(buff);
       *length= strlen(*res= buff);
@@ -641,12 +641,12 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
     case SQL_C_DOUBLE:
       if ( iprec->concise_type != SQL_NUMERIC && iprec->concise_type != SQL_DECIMAL )
       {
-        sprintf(buff,"%.17e",*((double*) *res));
+        snprintf(buff, buff_max, "%.17e", *((double*) *res));
       }
       else
       {
         /* We should perpare this data for string comparison */
-        sprintf(buff,"%.15e",*((double*) *res));
+        snprintf(buff, buff_max, "%.15e",*((double*) *res));
       }
       delocalize_radix(buff);
       *length= strlen(*res= buff);
@@ -658,11 +658,11 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
         if (stmt->dbc->ds->min_date_to_zero && !date->year
           && (date->month == date->day == 1))
         {
-          *length= sprintf(buff, "0000-00-00");
+          *length= snprintf(buff, buff_max, "0000-00-00");
         }
         else
         {
-          *length= sprintf(buff, "%04d-%02d-%02d", date->year, date->month, date->day);
+          *length= snprintf(buff, buff_max, "%04d-%02d-%02d", date->year, date->month, date->day);
         }
         *res= buff;
         break;
@@ -677,8 +677,8 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
           return stmt->set_error("22008", "Not a valid time value supplied", 0);
         }
 
-        *length= sprintf(buff, "%02d:%02d:%02d",
-                                time->hour, time->minute, time->second);
+        *length = snprintf(buff, buff_max, "%02d:%02d:%02d",
+                           time->hour, time->minute, time->second);
         *res= buff;
         break;
       }
@@ -690,14 +690,14 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
         if (stmt->dbc->ds->min_date_to_zero &&
             !time->year && (time->month == time->day == 1))
         {
-          *length= sprintf(buff, "0000-00-00 %02d:%02d:%02d", time->hour,
-                  time->minute, time->second);
+          *length= snprintf(buff, buff_max, "0000-00-00 %02d:%02d:%02d", time->hour,
+                            time->minute, time->second);
         }
         else
         {
-          *length= sprintf(buff, "%04d-%02d-%02d %02d:%02d:%02d",
-                    time->year, time->month, time->day,
-                    time->hour, time->minute, time->second);
+          *length= snprintf(buff, buff_max, "%04d-%02d-%02d %02d:%02d:%02d",
+                            time->year, time->month, time->day,
+                            time->hour, time->minute, time->second);
         }
 
         if (time->fraction)
@@ -707,7 +707,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
           /* Start cleaning from the end */
           int tmp_pos= 9;
 
-          sprintf(tmp_buf, ".%09d", time->fraction);
+          snprintf(tmp_buf, buff_max - *length, ".%09d", time->fraction);
 
           /*
             ODBC specification defines nanoseconds granularity for
@@ -1980,7 +1980,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
   {
     char buff[40];
     /* buff is always big enough because max length of %lu is 15 */
-    sprintf(buff, "KILL /*!50000 QUERY */ %lu", dbc->mysql_proxy->thread_id());
+    snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->mysql_proxy->thread_id());
     if (mysql_real_query(second, buff, strlen(buff)))
     {
       mysql_close(second);
