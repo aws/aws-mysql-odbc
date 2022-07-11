@@ -65,10 +65,12 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
                                    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
                                    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
                                    std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container) {
-    std::stringstream err;
-    if (!dbc || !ds) {
-        err << "Internal error.";
-        throw std::runtime_error(err.str());
+    if (!dbc) {
+        throw std::runtime_error("DBC cannot be null.");
+    }
+
+    if (!ds) {
+        throw std::runtime_error("DataSource cannot be null.");
     }
 
     this->dbc = dbc;
