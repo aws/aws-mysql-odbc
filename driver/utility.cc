@@ -1458,11 +1458,11 @@ void sqlulen_to_str(char *buff, SQLULEN value)
 
   @return  void
 */
-SQLLEN fill_display_size_buff(char *buff, STMT *stmt, MYSQL_FIELD *field)
+SQLLEN fill_display_size_buff(char *buff, size_t buff_size, STMT *stmt, MYSQL_FIELD *field)
 {
   /* See comment for fill_transfer_oct_len_buff()*/
   SQLLEN size= get_display_size(stmt, field);
-  sprintf(buff,size == SQL_NO_TOTAL ? "%d" : (sizeof(SQLLEN) == 4 ? "%lu" : "%lld"), size);
+  snprintf(buff, buff_size, size == SQL_NO_TOTAL ? "%d" : (sizeof(SQLLEN) == 4 ? "%lu" : "%lld"), size);
 
   return size;
 }
@@ -1476,7 +1476,7 @@ SQLLEN fill_display_size_buff(char *buff, STMT *stmt, MYSQL_FIELD *field)
 
   @return  void
 */
-SQLLEN fill_transfer_oct_len_buff(char *buff, STMT *stmt, MYSQL_FIELD *field)
+SQLLEN fill_transfer_oct_len_buff(char *buff, size_t buff_size, STMT *stmt, MYSQL_FIELD *field)
 {
   /* The only possible negative value get_transfer_octet_length can return is SQL_NO_TOTAL
      But it can return value which is greater that biggest signed integer(%ld).
@@ -1485,7 +1485,7 @@ SQLLEN fill_transfer_oct_len_buff(char *buff, STMT *stmt, MYSQL_FIELD *field)
   */
   SQLLEN len= get_transfer_octet_length(stmt, field);
 
-  sprintf(buff, len == SQL_NO_TOTAL ? "%d" : (sizeof(SQLLEN) == 4 ? "%lu" : "%lld"), len );
+  snprintf(buff, buff_size, len == SQL_NO_TOTAL ? "%d" : (sizeof(SQLLEN) == 4 ? "%lu" : "%lld"), len);
 
   return len;
 }
@@ -1499,11 +1499,11 @@ SQLLEN fill_transfer_oct_len_buff(char *buff, STMT *stmt, MYSQL_FIELD *field)
 
   @return  void
 */
-SQLULEN fill_column_size_buff(char *buff, STMT *stmt, MYSQL_FIELD *field)
+SQLULEN fill_column_size_buff(char *buff, size_t buff_size, STMT *stmt, MYSQL_FIELD *field)
 {
   SQLULEN size= get_column_size(stmt, field);
-  sprintf(buff, (size== SQL_NO_TOTAL ? "%d" :
-      (sizeof(SQLULEN) == 4 ? "%lu" : "%llu")), size);
+  snprintf(buff, buff_size, (size== SQL_NO_TOTAL ? "%d" :
+                            (sizeof(SQLULEN) == 4 ? "%lu" : "%llu")), size);
   return size;
 }
 
@@ -3210,10 +3210,10 @@ SQLRETURN set_sql_select_limit(DBC *dbc, SQLULEN lim_value, my_bool req_lock)
     return SQL_SUCCESS;
 
   if (lim_value > 0 && lim_value < sql_select_unlimited)
-    sprintf(query, "set @@sql_select_limit=%lu", (unsigned long)lim_value);
+    snprintf(query, sizeof(query), "set @@sql_select_limit=%lu", (unsigned long)lim_value);
   else
   {
-    strcpy(query, "set @@sql_select_limit=DEFAULT");
+    strncpy(query, "set @@sql_select_limit=DEFAULT", sizeof(query));
     lim_value= 0;
   }
 
@@ -3637,7 +3637,8 @@ Gets parameter columns size
 Returns parameter octet length
 */
 SQLLEN proc_get_param_col_len(STMT *stmt, int sql_type_index, SQLULEN col_size,
-                              SQLSMALLINT decimal_digits, unsigned int flags, char * str_buff)
+                              SQLSMALLINT decimal_digits, unsigned int flags,
+                              char * str_buff, size_t buff_size)
 {
   MYSQL_FIELD temp_fld;
 
@@ -3653,7 +3654,7 @@ SQLLEN proc_get_param_col_len(STMT *stmt, int sql_type_index, SQLULEN col_size,
 
   if (str_buff != NULL)
   {
-    return fill_column_size_buff(str_buff, stmt, &temp_fld);
+    return fill_column_size_buff(str_buff, buff_size, stmt, &temp_fld);
   }
   else
   {
@@ -3674,7 +3675,8 @@ SQLLEN proc_get_param_col_len(STMT *stmt, int sql_type_index, SQLULEN col_size,
   Returns parameter octet length
 */
 SQLLEN proc_get_param_octet_len(STMT *stmt, int sql_type_index, SQLULEN col_size,
-                                SQLSMALLINT decimal_digits, unsigned int flags, char * str_buff)
+                                SQLSMALLINT decimal_digits, unsigned int flags,
+                                char * str_buff, size_t buff_size)
 {
   MYSQL_FIELD temp_fld;
 
@@ -3690,7 +3692,7 @@ SQLLEN proc_get_param_octet_len(STMT *stmt, int sql_type_index, SQLULEN col_size
 
   if (str_buff != NULL)
   {
-    return fill_transfer_oct_len_buff(str_buff, stmt, &temp_fld);
+    return fill_transfer_oct_len_buff(str_buff, buff_size, stmt, &temp_fld);
   }
   else
   {
@@ -4292,7 +4294,7 @@ int got_out_parameters(STMT *stmt)
 }
 
 
-int get_session_variable(STMT *stmt, const char *var, char *result)
+int get_session_variable(STMT *stmt, const char *var, char *result, size_t result_size)
 {
   char buff[255+4*NAME_CHAR_LEN], *to;
   MYSQL_RES *res;
@@ -4317,7 +4319,7 @@ int get_session_variable(STMT *stmt, const char *var, char *result)
     row = stmt->dbc->mysql_proxy->fetch_row(res);
     if (row)
     {
-      strcpy(result, row[1]);
+      strncpy(result, row[1], result_size);
       stmt->dbc->mysql_proxy->free_result(res);
       return strlen(result);
     }
@@ -4352,11 +4354,11 @@ SQLRETURN set_query_timeout(STMT *stmt, SQLULEN new_value)
   if (new_value > 0)
   {
     unsigned long long msec_value= (unsigned long long)new_value * 1000;
-    sprintf(query, "set @@max_execution_time=%llu", msec_value);
+    snprintf(query, sizeof(query), "set @@max_execution_time=%llu", msec_value);
   }
   else
   {
-    strcpy(query, "set @@max_execution_time=DEFAULT");
+    strncpy(query, "set @@max_execution_time=DEFAULT", sizeof(query));
     new_value= 0;
   }
 
@@ -4378,7 +4380,7 @@ SQLULEN get_query_timeout(STMT *stmt)
     /* Be cautious with very long values even if they don't make sense */
     char query_timeout_char[32]= {0};
     uint length= get_session_variable(stmt, "MAX_EXECUTION_TIME",
-                                      (char*)query_timeout_char);
+                                      (char*)query_timeout_char, sizeof(query_timeout_char));
     /* Terminate the string just in case */
     query_timeout_char[length]= 0;
     /* convert */
@@ -4403,7 +4405,7 @@ const char get_identifier_quote(STMT *stmt)
       The token finder skips the leading space and starts
       with the first non-space value. Thus (sql_mode+1).
     */
-    uint length= get_session_variable(stmt, "SQL_MODE", (char*)(sql_mode+1));
+    uint length= get_session_variable(stmt, "SQL_MODE", (char*)(sql_mode+1), sizeof(sql_mode)-1);
 
     const char *end=  sql_mode + length;
     if (find_first_token(stmt->dbc->ansi_charset_info, sql_mode, end, "ANSI_QUOTES"))
