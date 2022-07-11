@@ -36,6 +36,9 @@
 
 class MONITOR_THREAD_CONTAINER {
 public:
+    MONITOR_THREAD_CONTAINER(MONITOR_THREAD_CONTAINER const&) = delete;
+    MONITOR_THREAD_CONTAINER& operator=(MONITOR_THREAD_CONTAINER const&) = delete;
+    static std::shared_ptr<MONITOR_THREAD_CONTAINER> get_instance();
     std::string get_node(std::set<std::string> node_keys);
     std::shared_ptr<MONITOR> get_monitor(std::string node);
     std::shared_ptr<MONITOR> get_or_create_monitor(
@@ -44,11 +47,12 @@ public:
         std::chrono::milliseconds disposal_time,
         DataSource* ds,
         MONITOR_SERVICE* monitor_service);
-    void add_task(std::shared_ptr<MONITOR> monitor);
+    virtual void add_task(std::shared_ptr<MONITOR> monitor);
     void reset_resource(std::shared_ptr<MONITOR> monitor);
     void release_resource(std::shared_ptr<MONITOR> monitor);
 
 protected:
+    MONITOR_THREAD_CONTAINER();
     void populate_monitor_map(std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
     void remove_monitor_mapping(std::shared_ptr<MONITOR> monitor);
     std::shared_ptr<MONITOR> get_available_monitor();
