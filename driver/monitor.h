@@ -43,8 +43,8 @@ class MYSQL_MONITOR_PROXY;
 
 static const std::chrono::milliseconds thread_sleep_when_inactive = std::chrono::milliseconds(100);
 
-class MONITOR {
-public:
+class MONITOR : public std::enable_shared_from_this<MONITOR> {
+ public:
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
         std::chrono::milliseconds monitor_disposal_time,

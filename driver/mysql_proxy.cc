@@ -48,7 +48,7 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVI
         throw std::runtime_error("DataSource cannot be null.");
     }
 
-    host = get_host_info_from_ds();
+    this->host = get_host_info_from_ds();
     generate_node_keys();
 }
 
@@ -435,8 +435,7 @@ bool MYSQL_PROXY::is_connected() {
 }
 
 void MYSQL_PROXY::set_last_error_code(unsigned int error_code) {
-    auto net = this->mysql->net;
-    net.last_errno = error_code;
+    this->mysql->net.last_errno = error_code;
 }
 
 char* MYSQL_PROXY::get_last_error() const {
@@ -467,8 +466,8 @@ char* MYSQL_PROXY::get_host_info() const {
     return this->mysql->host_info;
 }
 
-char* MYSQL_PROXY::get_host() {
-    return (this->mysql && this->mysql->host) ? this->mysql->host : (char*)this->host->get_host().c_str();
+std::string MYSQL_PROXY::get_host() {
+    return (this->mysql && this->mysql->host) ? this->mysql->host : this->host->get_host();
 }
 
 unsigned int MYSQL_PROXY::get_port() {
@@ -545,7 +544,7 @@ void MYSQL_PROXY::generate_node_keys() {
     }
 }
 
-std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() {
+std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() const {
     std::vector<Srv_host_detail> hosts;
     std::stringstream err;
     try {
