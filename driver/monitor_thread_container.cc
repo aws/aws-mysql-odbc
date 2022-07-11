@@ -26,9 +26,16 @@
 
 #include "monitor_thread_container.h"
 
+MONITOR_THREAD_CONTAINER::MONITOR_THREAD_CONTAINER() : thread_pool{2} {}
+
+std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
+    static std::shared_ptr<MONITOR_THREAD_CONTAINER> instance{new MONITOR_THREAD_CONTAINER};
+    return instance;
+}
+
 std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
-    if (this->monitor_map.size() > 0) {
-        for (auto it = node_keys.begin(); it != node_keys.end(); it++) {
+    if (!this->monitor_map.empty()) {
+        for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
             std::string node = *it;
             if (this->monitor_map.count(node) > 0) {
                 return node;
@@ -106,7 +113,7 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
 void MONITOR_THREAD_CONTAINER::populate_monitor_map(
     std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor) {
 
-    for (auto it = node_keys.begin(); it != node_keys.end(); it++) {
+    for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
         this->monitor_map[*it] = monitor;
     }
 }
@@ -118,7 +125,7 @@ void MONITOR_THREAD_CONTAINER::remove_monitor_mapping(std::shared_ptr<MONITOR> m
             it = this->monitor_map.erase(it);
         }
         else {
-            it++;
+            ++it;
         }
     }
 }

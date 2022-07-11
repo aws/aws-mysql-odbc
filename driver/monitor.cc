@@ -93,7 +93,7 @@ void MONITOR::run() {
                 std::chrono::milliseconds check_interval = this->get_connection_check_interval();
                 CONNECTION_STATUS status = this->check_connection_status(check_interval);
 
-                for (auto it = this->contexts.begin(); it != this->contexts.end(); it++) {
+                for (auto it = this->contexts.begin(); it != this->contexts.end(); ++it) {
                     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context = *it;
                     context->update_connection_status(
                         status_check_start_time,
@@ -171,7 +171,7 @@ std::chrono::milliseconds MONITOR::find_shortest_interval() {
         return min;
     }
 
-    for (auto it = this->contexts.begin(); it != this->contexts.end(); it++) {
+    for (auto it = this->contexts.begin(); it != this->contexts.end(); ++it) {
         auto failure_detection_interval = (*it)->get_failure_detection_interval();
         if (failure_detection_interval < min) {
             min = failure_detection_interval;
