@@ -52,6 +52,7 @@ public:
     void release_resource(std::shared_ptr<MONITOR> monitor);
 
 protected:
+    MONITOR_THREAD_CONTAINER();
     void populate_monitor_map(std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
     void remove_monitor_mapping(std::shared_ptr<MONITOR> monitor);
     std::shared_ptr<MONITOR> get_available_monitor();
@@ -65,7 +66,6 @@ protected:
     std::map<std::shared_ptr<MONITOR>, std::future<void>*> task_map;
     std::queue<std::shared_ptr<MONITOR>> available_monitors;
     ctpl::thread_pool thread_pool;
-    MONITOR_THREAD_CONTAINER();
 };
 
 #endif /* __MONITORTHREADCONTAINER_H__ */
