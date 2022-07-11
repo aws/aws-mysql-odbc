@@ -47,7 +47,7 @@
 
 class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
  public:
-    MOCK_MYSQL_PROXY() : MYSQL_PROXY(nullptr, nullptr) {};
+    MOCK_MYSQL_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {};
     ~MOCK_MYSQL_PROXY() { mock_mysql_proxy_destructor(); }
 
     MOCK_METHOD(bool, is_connected, ());

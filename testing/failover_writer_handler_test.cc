@@ -32,6 +32,7 @@
 #include <chrono>
 #include <thread>
 
+#include "driver/driver.h"
 #include "mock_objects.h"
 
 using ::testing::_;
@@ -50,6 +51,10 @@ namespace {
 
 class FailoverWriterHandlerTest : public testing::Test {
  protected:
+    SQLHENV env;
+    SQLHDBC hdbc;
+    DBC* dbc;
+    DataSource* ds;
     std::string writer_instance_name;
     std::string new_writer_instance_name;
     std::shared_ptr<HOST_INFO> writer_host;
@@ -70,6 +75,15 @@ class FailoverWriterHandlerTest : public testing::Test {
     static void TearDownTestSuite() {}
 
     void SetUp() override {
+        env = nullptr;
+        hdbc = nullptr;
+        dbc = nullptr;
+
+        SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+        SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
+        dbc = static_cast<DBC*>(hdbc);
+        ds = ds_new();
+        
         writer_instance_name = "writer-host";
         new_writer_instance_name = "new-writer-host";
 
@@ -95,7 +109,21 @@ class FailoverWriterHandlerTest : public testing::Test {
         mock_connection_handler = std::make_shared<MOCK_CONNECTION_HANDLER>();
     }
 
-    void TearDown() override {}
+    void TearDown() override {
+        if (nullptr != hdbc) {
+            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+        }
+        if (nullptr != env) {
+            SQLFreeHandle(SQL_HANDLE_ENV, env);
+        }
+        if (nullptr != dbc) {
+            dbc = nullptr;
+        }
+        if (nullptr != ds) {
+            ds_delete(ds);
+            ds = nullptr;
+        }
+    }
 };
 
 // Verify that writer failover handler can re-connect to a current writer node.
@@ -104,7 +132,7 @@ class FailoverWriterHandlerTest : public testing::Test {
 // taskB: fail to connect to any reader due to exception
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY();
+    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
     EXPECT_CALL(*mock_writer_proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_ts, get_topology(_, true))
@@ -144,8 +172,8 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
 // time than taskA
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
+    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
@@ -203,8 +231,8 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
 // writer is not new (defer to taskA)
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
+    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
     EXPECT_CALL(*mock_writer_proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
@@ -249,9 +277,9 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
 // taskB: successfully connect to readerA and then to new-writer
 // expected test result: new connection to writer by taskB
 TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY();
-    mock_new_writer_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
+    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_new_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
@@ -312,9 +340,9 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
 // taskB: successfully connect to readerA and then to new-writer 
 // expected test result: new connection to writer by taskB
 TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY();
-    mock_new_writer_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
+    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_new_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -371,10 +399,10 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
 // taskB: successfully connect to readerA and then fail to connect to writer due to failover timeout
 // expected test result: no connection
 TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY();
-    mock_new_writer_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY();
+    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_new_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -437,8 +465,8 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
 // taskB: successfully connect to readerA and then fail to connect to writer
 // expected test result: no connection
 TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY();
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);

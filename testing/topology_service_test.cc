@@ -26,13 +26,14 @@
  *
  */
 
-#include "mock_objects.h"
-
-#include "driver/topology_service.h"
-
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <thread>
+
+#include "driver/driver.h"
+#include "driver/topology_service.h"
+
+#include "mock_objects.h"
 
 using ::testing::_;
 using ::testing::DeleteArg;
@@ -57,6 +58,11 @@ namespace {
 
 class TopologyServiceTest : public testing::Test {
 protected:
+    SQLHENV env;
+    SQLHDBC hdbc;
+    DBC* dbc;
+    DataSource* ds;
+    
     static void SetUpTestSuite() {
         ts = new TOPOLOGY_SERVICE(nullptr, 0);
         cluster_instance = std::make_shared<HOST_INFO>("?.XYZ.us-east-2.rds.amazonaws.com", 1234);
@@ -70,13 +76,36 @@ protected:
     }
 
     void SetUp() override {
-        mock_proxy = new MOCK_MYSQL_PROXY();
+        env = nullptr;
+        hdbc = nullptr;
+        dbc = nullptr;
+
+        SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+        SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
+        dbc = static_cast<DBC*>(hdbc);
+        ds = ds_new();
+        
+        mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
         EXPECT_CALL(*mock_proxy, store_result()).WillRepeatedly(ReturnNew<MYSQL_RES>());
         EXPECT_CALL(*mock_proxy, free_result(_)).WillRepeatedly(DeleteArg<0>());
         ts->set_refresh_rate(DEFAULT_REFRESH_RATE_IN_MILLISECONDS);
     }
 
     void TearDown() override {
+        if (nullptr != hdbc) {
+            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+        }
+        if (nullptr != env) {
+            SQLFreeHandle(SQL_HANDLE_ENV, env);
+        }
+        if (nullptr != dbc) {
+            dbc = nullptr;
+        }
+        if (nullptr != ds) {
+            ds_delete(ds);
+            ds = nullptr;
+        }
+        
         ts->clear_all();
         delete mock_proxy;
     }

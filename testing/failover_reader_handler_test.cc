@@ -32,6 +32,7 @@
 #include <chrono>
 #include <thread>
 
+#include "driver/driver.h"
 #include "mock_objects.h"
 
 using ::testing::_;
@@ -46,6 +47,11 @@ namespace {
 
 class FailoverReaderHandlerTest : public testing::Test {
 protected:
+    SQLHENV env;
+    SQLHDBC hdbc;
+    DBC* dbc;
+    DataSource* ds;
+
     static std::shared_ptr<HOST_INFO> reader_a_host;
     static std::shared_ptr<HOST_INFO> reader_b_host;
     static std::shared_ptr<HOST_INFO> reader_c_host;
@@ -79,7 +85,6 @@ protected:
         topology->add_host(reader_a_host);
         topology->add_host(reader_b_host);
         topology->add_host(reader_c_host);
-    
     }
 
     static void TearDownTestSuite() { 
@@ -92,6 +97,15 @@ protected:
     }
 
     void SetUp() override {
+        env = nullptr;
+        hdbc = nullptr;
+        dbc = nullptr;
+
+        SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+        SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
+        dbc = static_cast<DBC*>(hdbc);
+        ds = ds_new();
+        
         reader_a_host->set_host_state(UP);
         reader_b_host->set_host_state(UP);
         reader_c_host->set_host_state(DOWN);
@@ -103,6 +117,20 @@ protected:
     }
 
     void TearDown() override {
+        if (nullptr != hdbc) {
+            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+        }
+        if (nullptr != env) {
+            SQLFreeHandle(SQL_HANDLE_ENV, env);
+        }
+        if (nullptr != dbc) {
+            dbc = nullptr;
+        }
+        if (nullptr != ds) {
+            ds_delete(ds);
+            ds = nullptr;
+        }
+
         mock_ts.reset();
         mock_connection_handler.reset();
     }
@@ -239,7 +267,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Failure) {
 // Verify that reader failover handler connects to a reader node that is marked up.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Reader) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -266,7 +294,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Reader) {
 // Verify that reader failover handler connects to a writer node.
 // Expected result: new connection to writer
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Writer) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY();
+    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -292,8 +320,8 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Writer) {
 // Verify that reader failover handler connects to the fastest reader node available that is marked up.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(); // Will be free'd during failover as it is slower
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds); // Will be free'd during failover as it is slower
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
@@ -329,8 +357,8 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
 // Expected result: no connection
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Timeout) {
     // Connections should automatically free inside failover
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(); 
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY();
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -382,8 +410,8 @@ TEST_F(FailoverReaderHandlerTest, Failover_Failure) {
 // Verify that reader failover handler connects to a faster reader node.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY();
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(); // Will be free'd during failover to timeout / too slow
+    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds); // Will be free'd during failover to timeout / too slow
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
