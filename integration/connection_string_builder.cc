@@ -101,7 +101,7 @@ class ConnectionString {
       if (is_set_monitor_disposal_time) {
         length += sprintf(conn_in + length, "MONITOR_DISPOSAL_TIME=%d;", m_monitor_disposal_time);
       }
-      sprintf(conn_in + length, "\0");
+      snprintf(conn_in + length, sizeof(conn_in) - length, "\0");
 
       std::string connection_string(conn_in);
       return connection_string;
