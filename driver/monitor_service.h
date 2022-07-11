@@ -34,7 +34,7 @@ public:
     MONITOR_SERVICE();
     MONITOR_SERVICE(std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container);
     
-    std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
+    virtual std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
         DBC* dbc,
         std::set<std::string> node_keys,
         std::shared_ptr<HOST_INFO> host,
@@ -42,8 +42,8 @@ public:
         std::chrono::milliseconds failure_detection_interval,
         int failure_detection_count,
         std::chrono::milliseconds disposal_time);
-    void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
-    void stop_monitoring_for_all_connections(std::set<std::string> node_keys);
+    virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
+    virtual void stop_monitoring_for_all_connections(std::set<std::string> node_keys);
     void notify_unused(std::shared_ptr<MONITOR> monitor);
 
 private:

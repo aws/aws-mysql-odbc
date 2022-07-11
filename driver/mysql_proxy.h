@@ -51,6 +51,7 @@ public:
 class MYSQL_PROXY : virtual public CONNECTION_INTERFACE {
 public:
     MYSQL_PROXY(DBC* dbc, DataSource* ds);
+    MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service);
     ~MYSQL_PROXY() override;
 
     uint64_t num_rows(MYSQL_RES* res);
