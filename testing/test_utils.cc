@@ -44,6 +44,10 @@ void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds) {
     }
     if (nullptr != env) {
         SQLFreeHandle(SQL_HANDLE_ENV, env);
+#ifndef _UNIX_
+        // Needed to free memory on Windows
+        myodbc_end();
+#endif
     }
     if (nullptr != dbc) {
         dbc = nullptr;
