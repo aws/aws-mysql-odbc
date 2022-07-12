@@ -27,13 +27,14 @@
 // along with this program. If not, see 
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "mock_objects.h"
-
-#include "driver/topology_service.h"
-
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <thread>
+
+#include "driver/driver.h"
+#include "driver/topology_service.h"
+
+#include "mock_objects.h"
 
 using ::testing::_;
 using ::testing::DeleteArg;
@@ -42,7 +43,7 @@ using ::testing::ReturnNew;
 using ::testing::StrEq;
 
 namespace {
-    MOCK_CONNECTION* mc;
+    MOCK_MYSQL_PROXY* mock_proxy;
     TOPOLOGY_SERVICE* ts;
     std::shared_ptr<HOST_INFO> cluster_instance;
 
@@ -58,6 +59,11 @@ namespace {
 
 class TopologyServiceTest : public testing::Test {
 protected:
+    SQLHENV env;
+    SQLHDBC hdbc;
+    DBC* dbc;
+    DataSource* ds;
+    
     static void SetUpTestSuite() {
         ts = new TOPOLOGY_SERVICE(nullptr, 0);
         cluster_instance = std::make_shared<HOST_INFO>("?.XYZ.us-east-2.rds.amazonaws.com", 1234);
@@ -71,28 +77,51 @@ protected:
     }
 
     void SetUp() override {
-        mc = new MOCK_CONNECTION();
-        EXPECT_CALL(*mc, store_result()).WillRepeatedly(ReturnNew<MYSQL_RES>());
-        EXPECT_CALL(*mc, free_result(_)).WillRepeatedly(DeleteArg<0>());
+        env = nullptr;
+        hdbc = nullptr;
+        dbc = nullptr;
+
+        SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+        SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
+        dbc = static_cast<DBC*>(hdbc);
+        ds = ds_new();
+        
+        mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+        EXPECT_CALL(*mock_proxy, store_result()).WillRepeatedly(ReturnNew<MYSQL_RES>());
+        EXPECT_CALL(*mock_proxy, free_result(_)).WillRepeatedly(DeleteArg<0>());
         ts->set_refresh_rate(DEFAULT_REFRESH_RATE_IN_MILLISECONDS);
     }
 
     void TearDown() override {
+        if (nullptr != hdbc) {
+            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+        }
+        if (nullptr != env) {
+            SQLFreeHandle(SQL_HANDLE_ENV, env);
+        }
+        if (nullptr != dbc) {
+            dbc = nullptr;
+        }
+        if (nullptr != ds) {
+            ds_delete(ds);
+            ds = nullptr;
+        }
+        
         ts->clear_all();
-        delete mc;
+        delete mock_proxy;
     }
 };
 
 TEST_F(TopologyServiceTest, TopologyQuery) {
-    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillRepeatedly(Return(0));
-    EXPECT_CALL(*mc, fetch_row(_))
+    EXPECT_CALL(*mock_proxy, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mock_proxy);
     ASSERT_NE(nullptr, topology);
 
     EXPECT_FALSE(topology->is_multi_writer_cluster);
@@ -111,15 +140,15 @@ TEST_F(TopologyServiceTest, TopologyQuery) {
 }
 
 TEST_F(TopologyServiceTest, MultiWriter) {
-    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillRepeatedly(Return(0));
-    EXPECT_CALL(*mc, fetch_row(_))
+    EXPECT_CALL(*mock_proxy, fetch_row(_))
         .WillOnce(Return(writer1))
         .WillOnce(Return(writer2))
         .WillOnce(Return(writer3))
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mock_proxy);
     ASSERT_NE(nullptr, topology);
 
     EXPECT_TRUE(topology->is_multi_writer_cluster);
@@ -138,15 +167,15 @@ TEST_F(TopologyServiceTest, MultiWriter) {
 }
 
 TEST_F(TopologyServiceTest, DuplicateInstances) {
-  EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+  EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
       .WillRepeatedly(Return(0));
-  EXPECT_CALL(*mc, fetch_row(_))
+  EXPECT_CALL(*mock_proxy, fetch_row(_))
       .WillOnce(Return(writer1))
       .WillOnce(Return(writer1))
       .WillOnce(Return(writer1))
       .WillRepeatedly(Return(MYSQL_ROW{}));
 
-  std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
+  std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mock_proxy);
   ASSERT_NE(nullptr, topology);
 
   EXPECT_TRUE(topology->is_multi_writer_cluster);
@@ -166,38 +195,38 @@ TEST_F(TopologyServiceTest, DuplicateInstances) {
 }
 
 TEST_F(TopologyServiceTest, CachedTopology) {
-  EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+  EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(1)
         .WillOnce(Return(0));
-  EXPECT_CALL(*mc, fetch_row(_))
+  EXPECT_CALL(*mock_proxy, fetch_row(_))
         .Times(4)
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
         .WillOnce(Return(MYSQL_ROW{}));
 
-    ts->get_topology(mc);
+    ts->get_topology(mock_proxy);
 
     // 2nd call to get_topology() should retrieve from cache instead of executing another query
     // which is why we expect try_execute_query to be called only once
-    ts->get_topology(mc);
+    ts->get_topology(mock_proxy);
 }
 
 TEST_F(TopologyServiceTest, QueryFailure) {
-    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillOnce(Return(1));
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mc);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mock_proxy);
 
     EXPECT_EQ(nullptr, topology);
 }
 
 TEST_F(TopologyServiceTest, StaleTopology) {
-    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(2)
         .WillOnce(Return(0))
         .WillOnce(Return(1));
-    EXPECT_CALL(*mc, fetch_row(_))
+    EXPECT_CALL(*mock_proxy, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
@@ -205,19 +234,19 @@ TEST_F(TopologyServiceTest, StaleTopology) {
 
     ts->set_refresh_rate(1);
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> hosts = ts->get_topology(mc);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> hosts = ts->get_topology(mock_proxy);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> stale_hosts = ts->get_topology(mc);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> stale_hosts = ts->get_topology(mock_proxy);
 
     EXPECT_EQ(3, stale_hosts->total_hosts());
     EXPECT_EQ(hosts, stale_hosts);
 }
 
 TEST_F(TopologyServiceTest, RefreshTopology) {
-    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .Times(2)
         .WillRepeatedly(Return(0));
-    EXPECT_CALL(*mc, fetch_row(_))
+    EXPECT_CALL(*mock_proxy, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
@@ -225,16 +254,16 @@ TEST_F(TopologyServiceTest, RefreshTopology) {
 
     ts->set_refresh_rate(1);
 
-    ts->get_topology(mc);
+    ts->get_topology(mock_proxy);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    ts->get_topology(mc);
+    ts->get_topology(mock_proxy);
 }
 
 TEST_F(TopologyServiceTest, SharedTopology) {
-    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillOnce(Return(0))
         .WillRepeatedly(Return(false));
-    EXPECT_CALL(*mc, fetch_row(_))
+    EXPECT_CALL(*mock_proxy, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
@@ -243,7 +272,7 @@ TEST_F(TopologyServiceTest, SharedTopology) {
     TOPOLOGY_SERVICE* ts2 = new TOPOLOGY_SERVICE(nullptr, 0);
     ts2->set_cluster_id(cluster_id);
 
-    auto topology1 = ts->get_topology(mc);
+    auto topology1 = ts->get_topology(mock_proxy);
     auto topology2 = ts2->get_cached_topology();
     
     // Both topologies should come from 
@@ -266,21 +295,21 @@ TEST_F(TopologyServiceTest, SharedTopology) {
 }
 
 TEST_F(TopologyServiceTest, ClearCache) {
-    EXPECT_CALL(*mc, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
+    EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillOnce(Return(0))
         .WillRepeatedly(Return(1));
-    EXPECT_CALL(*mc, fetch_row(_))
+    EXPECT_CALL(*mock_proxy, fetch_row(_))
         .WillOnce(Return(reader1))
         .WillOnce(Return(writer))
         .WillOnce(Return(reader2))
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
-    auto topology = ts->get_topology(mc);
+    auto topology = ts->get_topology(mock_proxy);
     EXPECT_NE(nullptr, topology);
 
     ts->clear_all();
 
     // topology should now be null after above clear_all()
-    topology = ts->get_topology(mc);
+    topology = ts->get_topology(mock_proxy);
     EXPECT_EQ(nullptr, topology);
 }

@@ -63,7 +63,7 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
                                    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-                                   std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+                                   std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
                                    std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container) {
     if (!dbc) {
         throw std::runtime_error("DBC cannot be null.");

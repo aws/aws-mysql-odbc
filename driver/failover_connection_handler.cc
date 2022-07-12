@@ -59,7 +59,7 @@ SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, 
     return dbc_ptr->connect(ds, failover_enabled);
 }
 
-CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info) {
+MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info) {
 
     if (dbc == nullptr || dbc->ds == nullptr || host_info == nullptr) {
         return nullptr;
@@ -70,7 +70,7 @@ CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr
     DBC* dbc_clone = clone_dbc(dbc);
     ds_set_wstrnattr(&dbc_clone->ds->server, (SQLWCHAR*)new_host.c_str(), new_host.size());
 
-    CONNECTION_INTERFACE* new_connection = nullptr;
+    MYSQL_PROXY* new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
     const SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds, true);
 
@@ -86,11 +86,11 @@ CONNECTION_INTERFACE* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr
 }
 
 void FAILOVER_CONNECTION_HANDLER::update_connection(
-    CONNECTION_INTERFACE* new_connection, const std::string& new_host_name) {
+    MYSQL_PROXY* new_connection, const std::string& new_host_name) {
 
     if (new_connection->is_connected()) {
         dbc->close();
-        dbc->mysql_proxy->set_connection(dynamic_cast<MYSQL_PROXY*>(new_connection));
+        dbc->mysql_proxy->set_connection(new_connection);
         
         CLEAR_DBC_ERROR(dbc);
 
