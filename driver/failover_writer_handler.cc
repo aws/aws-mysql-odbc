@@ -71,7 +71,7 @@ bool FAILOVER_SYNC::is_completed() {
 // Base class of two writer failover task handlers
 FAILOVER::FAILOVER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     FILE* log_file, unsigned long dbc_id)
     : connection_handler{connection_handler},
       topology_service{topology_service},
@@ -106,7 +106,7 @@ void FAILOVER::release_new_connection() {
 // handler reconnecting to a given host, e.g. reconnect to a current writer
 RECONNECT_TO_WRITER_HANDLER::RECONNECT_TO_WRITER_HANDLER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     int connection_interval, FILE* log_file, unsigned long dbc_id)
     : FAILOVER{connection_handler, topology_service, log_file, dbc_id},
       reconnect_interval_ms{connection_interval} {}
@@ -167,7 +167,7 @@ bool RECONNECT_TO_WRITER_HANDLER::is_current_host_writer(
 // writer
 WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
     int connection_interval, FILE* log_file, unsigned long dbc_id)
@@ -269,7 +269,7 @@ void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
 // ************************** FAILOVER_WRITER_HANDLER  **************************
 
 FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     int writer_failover_timeout_ms, int read_topology_interval_ms,

@@ -52,38 +52,26 @@
 static std::map<std::string, std::shared_ptr<CLUSTER_TOPOLOGY_INFO>> topology_cache;
 static std::mutex topology_cache_mutex;
 
-class TOPOLOGY_SERVICE_INTERFACE {
-public:
-    virtual ~TOPOLOGY_SERVICE_INTERFACE() {};
-
-    virtual void set_cluster_id(std::string cluster_id) = 0;
-    virtual void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template) = 0;
-    virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(CONNECTION_INTERFACE* connection, bool force_update = false) = 0;
-    virtual void mark_host_down(std::shared_ptr<HOST_INFO> host) = 0;
-    virtual void mark_host_up(std::shared_ptr<HOST_INFO> host) = 0;
-    virtual void set_refresh_rate(int refresh_rate) = 0;
-    virtual void set_gather_metric(bool can_gather) = 0;
-};
-
-class TOPOLOGY_SERVICE : virtual public TOPOLOGY_SERVICE_INTERFACE {
+class TOPOLOGY_SERVICE {
 public:
     TOPOLOGY_SERVICE(FILE* log_file, unsigned long dbc_id);
     TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
-    ~TOPOLOGY_SERVICE() override;
+    virtual ~TOPOLOGY_SERVICE();
 
-    void set_cluster_id(std::string cluster_id) override;
-    void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template) override;  //is this equivalent to setcluster_instance_host
+    virtual void set_cluster_id(std::string cluster_id);
+    virtual void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
 
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(CONNECTION_INTERFACE* connection, bool force_update = false) override;
+    virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(
+        MYSQL_PROXY* connection, bool force_update = false);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();
     void set_last_used_reader(std::shared_ptr<HOST_INFO> reader);
     std::set<std::string> get_down_hosts();
-    void mark_host_down(std::shared_ptr<HOST_INFO> host) override;
-    void mark_host_up(std::shared_ptr<HOST_INFO> host) override;
-    void set_refresh_rate(int refresh_rate) override;
-    void set_gather_metric(bool can_gather) override;
+    virtual void mark_host_down(std::shared_ptr<HOST_INFO> host);
+    virtual void mark_host_up(std::shared_ptr<HOST_INFO> host);
+    void set_refresh_rate(int refresh_rate);
+    void set_gather_metric(bool can_gather);
     void clear_all();
     void clear();
 
@@ -117,7 +105,7 @@ protected:
     std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container;
 
     bool refresh_needed(std::time_t last_updated);
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(CONNECTION_INTERFACE* connection);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(MYSQL_PROXY* connection);
     std::shared_ptr<HOST_INFO> create_host(MYSQL_ROW& row);
     std::string get_host_endpoint(const char* node_name);
     static bool does_instance_exist(
@@ -127,7 +115,7 @@ protected:
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_from_cache();
     void put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info);
 
-    MYSQL_RES* try_execute_query(CONNECTION_INTERFACE* mysql_proxy, const char* query);
+    MYSQL_RES* try_execute_query(MYSQL_PROXY* mysql_proxy, const char* query);
 };
 
 #endif /* __TOPOLOGYSERVICE_H__ */

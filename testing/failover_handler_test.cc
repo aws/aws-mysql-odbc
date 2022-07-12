@@ -368,6 +368,11 @@ TEST_F(FailoverHandlerTest, RDS_MultiWriterCluster) {
 
     EXPECT_CALL(*mock_ts, get_topology(_, false))
         .WillOnce(Return(multi_writer_topology));
+    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
+    EXPECT_CALL(*mock_ts,
+        set_cluster_id(StrEq(
+            "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com:1234")))
+        .Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_cluster_info();
