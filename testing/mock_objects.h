@@ -46,30 +46,28 @@
 #endif
 #endif
 
-class MOCK_CONNECTION : public CONNECTION_INTERFACE {
+class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
  public:
-    MOCK_METHOD(bool, is_null, ());
+    MOCK_MYSQL_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {};
+    ~MOCK_MYSQL_PROXY() { mock_mysql_proxy_destructor(); }
+
     MOCK_METHOD(bool, is_connected, ());
-    MOCK_METHOD(char*, get_host, ());
-    MOCK_METHOD(unsigned int, get_port, ());
     MOCK_METHOD(int, query, (const char*));
     MOCK_METHOD(MYSQL_RES*, store_result, ());
     MOCK_METHOD(char**, fetch_row, (MYSQL_RES*));
     MOCK_METHOD(void, free_result, (MYSQL_RES*));
-    MOCK_METHOD(void, mock_connection_destructor, ());
-
-    ~MOCK_CONNECTION() override { mock_connection_destructor(); }
+    MOCK_METHOD(void, mock_mysql_proxy_destructor, ());
 };
 
-class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE_INTERFACE {
+class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
  public:
+    MOCK_TOPOLOGY_SERVICE() : TOPOLOGY_SERVICE(nullptr, 0) {};
+
     MOCK_METHOD(void, set_cluster_id, (std::string));
     MOCK_METHOD(void, set_cluster_instance_template, (std::shared_ptr<HOST_INFO>));
-    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (CONNECTION_INTERFACE*, bool));
+    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (MYSQL_PROXY*, bool));
     MOCK_METHOD(void, mark_host_down, (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(void, mark_host_up, (std::shared_ptr<HOST_INFO>));
-    MOCK_METHOD(void, set_refresh_rate, (int));
-    MOCK_METHOD(void, set_gather_metric, (bool can_gather));
 };
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
@@ -82,7 +80,7 @@ class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
 class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
  public:
     MOCK_CONNECTION_HANDLER() : FAILOVER_CONNECTION_HANDLER(nullptr) {}
-    MOCK_METHOD(CONNECTION_INTERFACE*, connect, (const std::shared_ptr<HOST_INFO>&));
+    MOCK_METHOD(MYSQL_PROXY*, connect, (const std::shared_ptr<HOST_INFO>&));
     MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*, bool));
 };
 

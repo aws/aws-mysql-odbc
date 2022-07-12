@@ -434,10 +434,6 @@ bool MYSQL_PROXY::is_connected() {
     return this->mysql != nullptr && this->mysql->net.vio;
 }
 
-bool MYSQL_PROXY::is_null() {
-    return this->mysql == nullptr;
-}
-
 void MYSQL_PROXY::set_last_error_code(unsigned int error_code) {
     auto net = this->mysql->net;
     net.last_errno = error_code;

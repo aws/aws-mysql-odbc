@@ -55,8 +55,8 @@ class FAILOVER_CONNECTION_HANDLER {
         virtual ~FAILOVER_CONNECTION_HANDLER();
 
         virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled);
-        virtual CONNECTION_INTERFACE* connect(const std::shared_ptr<HOST_INFO>& host_info);
-        void update_connection(CONNECTION_INTERFACE* new_connection, const std::string& new_host_name);
+        virtual MYSQL_PROXY* connect(const std::shared_ptr<HOST_INFO>& host_info);
+        void update_connection(MYSQL_PROXY* new_connection, const std::string& new_host_name);
 
     private:
         DBC* dbc;
@@ -68,13 +68,13 @@ class FAILOVER_CONNECTION_HANDLER {
 struct READER_FAILOVER_RESULT {
     bool connected = false;
     std::shared_ptr<HOST_INFO> new_host;
-    CONNECTION_INTERFACE* new_connection;
+    MYSQL_PROXY* new_connection;
 
     READER_FAILOVER_RESULT()
         : connected{false}, new_host{nullptr}, new_connection{nullptr} {}
         
     READER_FAILOVER_RESULT(bool connected, std::shared_ptr<HOST_INFO> new_host,
-                           CONNECTION_INTERFACE* new_connection)
+                           MYSQL_PROXY* new_connection)
         : connected{connected},
           new_host{new_host},
           new_connection{new_connection} {}
@@ -98,7 +98,7 @@ class FAILOVER_SYNC {
 class FAILOVER_READER_HANDLER {
    public:
     FAILOVER_READER_HANDLER(
-        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         int failover_timeout_ms, int failover_reader_connect_timeout,
         FILE* log_file, unsigned long dbc_id);
@@ -125,7 +125,7 @@ class FAILOVER_READER_HANDLER {
         int max_failover_timeout_ms = 60000;  // 60 sec
 
     private:
-        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler; 
         const int READER_CONNECT_INTERVAL_SEC = 1;  // 1 sec
         FILE* log_file = nullptr;
@@ -138,7 +138,7 @@ struct WRITER_FAILOVER_RESULT {
     bool is_new_host = false;  // True if process connected to a new host. False if
                                // process re-connected to the same host
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology;
-    CONNECTION_INTERFACE* new_connection;
+    MYSQL_PROXY* new_connection;
 
     WRITER_FAILOVER_RESULT()
         : connected{false},
@@ -148,7 +148,7 @@ struct WRITER_FAILOVER_RESULT {
 
     WRITER_FAILOVER_RESULT(bool connected, bool is_new_host,
                            std::shared_ptr<CLUSTER_TOPOLOGY_INFO> new_topology,
-                           CONNECTION_INTERFACE* new_connection)
+                           MYSQL_PROXY* new_connection)
         : connected{connected},
           is_new_host{is_new_host},
           new_topology{new_topology},
@@ -158,7 +158,7 @@ struct WRITER_FAILOVER_RESULT {
 class FAILOVER_WRITER_HANDLER {
    public:
     FAILOVER_WRITER_HANDLER(
-        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         int writer_failover_timeout_ms, int read_topology_interval_ms,
@@ -173,7 +173,7 @@ class FAILOVER_WRITER_HANDLER {
     int writer_failover_timeout_ms = 60000;   // 60 sec
 
    private:
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
     FILE* log_file = nullptr;
@@ -186,7 +186,7 @@ class FAILOVER_HANDLER {
     FAILOVER_HANDLER(
         DBC* dbc, DataSource* ds,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container);
     ~FAILOVER_HANDLER();
     SQLRETURN init_cluster_info();
@@ -201,7 +201,7 @@ class FAILOVER_HANDLER {
    private:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
     std::shared_ptr<FAILOVER_READER_HANDLER> failover_reader_handler;
     std::shared_ptr<FAILOVER_WRITER_HANDLER> failover_writer_handler;
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
@@ -242,7 +242,7 @@ class FAILOVER_HANDLER {
 class FAILOVER {
    public:
     FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-             std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+             std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
              FILE* log_file, unsigned long dbc_id);
     virtual ~FAILOVER();
     bool is_writer_connected();
@@ -252,8 +252,8 @@ class FAILOVER {
     void sleep(int miliseconds);
     void release_new_connection();
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler;
-    std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service;
-    CONNECTION_INTERFACE* new_connection;
+    std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
+    MYSQL_PROXY* new_connection;
     FILE* log_file = nullptr;
     unsigned long dbc_id = 0;
 };
@@ -262,7 +262,7 @@ class CONNECT_TO_READER_HANDLER : public FAILOVER {
 public:
     CONNECT_TO_READER_HANDLER(
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-     std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
      FILE* log_file, unsigned long dbc_id);
     ~CONNECT_TO_READER_HANDLER();
 
@@ -276,7 +276,7 @@ class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
    public:
     RECONNECT_TO_WRITER_HANDLER(
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_servicets,
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_servicets,
         int connection_interval, FILE* log_file, unsigned long dbc_id);
     ~RECONNECT_TO_WRITER_HANDLER();
 
@@ -297,7 +297,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
    public:
     WAIT_NEW_WRITER_HANDLER(
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-        std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
         std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
         int connection_interval, FILE* log_file, unsigned long dbc_id);
@@ -313,7 +313,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
     int read_topology_interval_ms = 5000;
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
-    CONNECTION_INTERFACE* reader_connection = nullptr;  // To retrieve latest topology
+    MYSQL_PROXY* reader_connection = nullptr;  // To retrieve latest topology
     std::shared_ptr<HOST_INFO> current_reader_host;
 
     void refresh_topology_and_connect_to_new_writer(

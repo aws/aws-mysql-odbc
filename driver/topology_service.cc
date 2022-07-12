@@ -166,7 +166,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
 //TODO consider the return value
 //Note to determine whether or not force_update succeeded one would compare
 // CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION_INTERFACE* connection, bool force_update)
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(MYSQL_PROXY* connection, bool force_update)
 {
     //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
@@ -218,7 +218,7 @@ void TOPOLOGY_SERVICE::put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topol
     lock.unlock();
 }
 
-MYSQL_RES* TOPOLOGY_SERVICE::try_execute_query(CONNECTION_INTERFACE* mysql_proxy, const char* query) {
+MYSQL_RES* TOPOLOGY_SERVICE::try_execute_query(MYSQL_PROXY* mysql_proxy, const char* query) {
     if (mysql_proxy != nullptr && mysql_proxy->query(query) == 0) {
         return mysql_proxy->store_result();
     }
@@ -269,7 +269,7 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 }
 
 // If no host information retrieved return NULL
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONNECTION_INTERFACE* mysql_proxy) {
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(MYSQL_PROXY* mysql_proxy) {
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info = nullptr;
 

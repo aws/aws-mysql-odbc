@@ -34,25 +34,11 @@
 struct DBC;
 struct DataSource;
 
-class CONNECTION_INTERFACE {
-public:
-    virtual ~CONNECTION_INTERFACE() {};
-
-    virtual bool is_null() = 0;
-    virtual bool is_connected() = 0;
-    virtual char* get_host() = 0;
-    virtual unsigned int get_port() = 0;
-    virtual int query(const char* q) = 0;
-    virtual MYSQL_RES* store_result() = 0;
-    virtual MYSQL_ROW fetch_row(MYSQL_RES* result) = 0;
-    virtual void free_result(MYSQL_RES* result) = 0;
-};
-
-class MYSQL_PROXY : virtual public CONNECTION_INTERFACE {
+class MYSQL_PROXY {
 public:
     MYSQL_PROXY(DBC* dbc, DataSource* ds);
     MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service);
-    ~MYSQL_PROXY() override;
+    virtual ~MYSQL_PROXY();
 
     uint64_t num_rows(MYSQL_RES* res);
     unsigned int num_fields(MYSQL_RES* res);
@@ -76,9 +62,9 @@ public:
                       const char* passwd, const char* db, unsigned int port,
                       const char* unix_socket, unsigned long clientflag);
     int select_db(const char* db);
-    int query(const char* q) override;
+    virtual int query(const char* q);
     int real_query(const char* q, unsigned long length);
-    MYSQL_RES* store_result() override;
+    virtual MYSQL_RES* store_result();
     MYSQL_RES* use_result();
     struct CHARSET_INFO* get_character_set() const;
     void get_character_set_info(MY_CHARSET_INFO* charset);
@@ -89,11 +75,11 @@ public:
     int options4(enum mysql_option option, const void* arg1,
                  const void* arg2);
     int get_option(enum mysql_option option, const void* arg);
-    void free_result(MYSQL_RES* result) override;
+    virtual void free_result(MYSQL_RES* result);
     void data_seek(MYSQL_RES* result, uint64_t offset);
     MYSQL_ROW_OFFSET row_seek(MYSQL_RES* result, MYSQL_ROW_OFFSET offset);
     MYSQL_FIELD_OFFSET field_seek(MYSQL_RES* result, MYSQL_FIELD_OFFSET offset);
-    MYSQL_ROW fetch_row(MYSQL_RES* result) override;
+    virtual MYSQL_ROW fetch_row(MYSQL_RES* result);
 
     unsigned long* fetch_lengths(MYSQL_RES* result);
     MYSQL_FIELD* fetch_field(MYSQL_RES* result);
@@ -140,9 +126,7 @@ public:
     struct st_mysql_client_plugin* client_find_plugin(
         const char* name, int type);
 
-    bool is_connected() override;
-
-    bool is_null() override;
+    virtual bool is_connected();
 
     void set_last_error_code(unsigned int error_code);
 
@@ -160,9 +144,9 @@ public:
 
     char* get_host_info() const;
 
-    char* get_host() override;
+    char* get_host();
 
-    unsigned int get_port() override;
+    unsigned int get_port();
 
     unsigned long get_max_packet() const;
 
