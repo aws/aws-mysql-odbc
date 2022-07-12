@@ -37,7 +37,7 @@ void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds) {
     ds = ds_new();
 }
 
-void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds) {
+void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end) {
     SQLHDBC hdbc = static_cast<SQLHDBC>(dbc);
     if (nullptr != hdbc) {
         SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
@@ -46,7 +46,8 @@ void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds) {
         SQLFreeHandle(SQL_HANDLE_ENV, env);
 #ifndef _UNIX_
         // Needed to free memory on Windows
-        myodbc_end();
+        if (call_myodbc_end)
+            myodbc_end();
 #endif
     }
     if (nullptr != dbc) {

@@ -62,7 +62,7 @@ protected:
     }
 
     void TearDown() override {
-        cleanup_odbc_handles(env, dbc, ds);
+        cleanup_odbc_handles(env, dbc, ds, true);
     }
 };
 

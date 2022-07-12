@@ -32,6 +32,6 @@
 #include "driver/driver.h"
 
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds);
-void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds);
+void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);
 
 #endif /* __TESTUTILS_H__ */
