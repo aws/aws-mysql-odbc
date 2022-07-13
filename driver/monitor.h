@@ -67,6 +67,7 @@ private:
     std::chrono::steady_clock::time_point last_context_timestamp;
     MYSQL_MONITOR_PROXY* mysql_proxy = nullptr;
     MONITOR_SERVICE* monitor_service = nullptr;
+    std::shared_ptr<FILE> logger;
 
     std::chrono::milliseconds get_connection_check_interval();
     CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);

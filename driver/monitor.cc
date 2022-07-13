@@ -26,6 +26,7 @@
 
 #include "monitor.h"
 #include "monitor_service.h"
+#include "mylog.h"
 #include "mysql_proxy.h"
 
 MONITOR::MONITOR(
@@ -39,6 +40,7 @@ MONITOR::MONITOR(
     this->mysql_proxy = new MYSQL_MONITOR_PROXY(ds);
     this->monitor_service = service;
     this->connection_check_interval = (std::chrono::milliseconds::max)();
+    this->logger = init_log_file();
 }
 
 MONITOR::~MONITOR() {
@@ -62,7 +64,9 @@ void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> conte
 
 void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
     if (context == nullptr) {
-        // TODO: Log Warning
+        MYLOG_TRACE(
+            this->logger.get(), 0,
+            "[MONITOR_SERVICE] Invalid context passed into stop_monitoring()");
         return;
     }
 

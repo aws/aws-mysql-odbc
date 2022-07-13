@@ -48,6 +48,7 @@ public:
 
 private:
     std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
+    std::shared_ptr<FILE> logger;
 };
 
 #endif /* __MONITORSERVICE_H__ */

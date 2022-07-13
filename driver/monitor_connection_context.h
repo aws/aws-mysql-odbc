@@ -89,6 +89,7 @@ private:
     int failure_count;
     bool node_unhealthy;
     bool active_context = true;
+    std::shared_ptr<FILE> logger;
 };
 
 #endif /* __MONITORCONNECTIONCONTEXT_H__ */
