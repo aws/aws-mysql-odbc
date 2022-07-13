@@ -33,7 +33,7 @@
 #include <fstream>
 #include <stdio.h>
 
-#include "driver/driver.h"
+#include "test_utils.h"
 #include "mock_objects.h"
 
 using ::testing::_;
@@ -43,10 +43,9 @@ using ::testing::StrEq;
 
 class ClusterAwareMetricsContainerTest : public testing::Test {
 protected:
-    SQLHENV env = SQL_NULL_HENV;
-    SQLHDBC hdbc = SQL_NULL_HDBC;
-    DBC* dbc = nullptr;
-    DataSource* ds = nullptr;
+    SQLHENV env;
+    DBC* dbc;
+    DataSource* ds;
 
     std::shared_ptr<MOCK_CLUSTER_AWARE_METRICS_CONTAINER> metrics_container;
 
@@ -58,38 +57,13 @@ protected:
     static void TearDownTestSuite() {}
 
     void SetUp() override {
-        env = SQL_NULL_HENV;
-        hdbc = SQL_NULL_HDBC;
-        dbc = nullptr;
-        ds = nullptr;
-
-        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
-        dbc = static_cast<DBC*>(hdbc);
-
-        ds = ds_new();
+        allocate_odbc_handles(env, dbc, ds);
 
         metrics_container = std::make_shared<MOCK_CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds);
     }
 
     void TearDown() override {
-        if (SQL_NULL_HDBC != hdbc) {
-            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
-        }
-        if (SQL_NULL_HENV != env) {
-            SQLFreeHandle(SQL_HANDLE_ENV, env);
-            #ifndef _UNIX_
-                // Needed to free memory on Windows
-                myodbc_end();
-            #endif
-        }
-        if (nullptr != dbc) {
-            dbc = nullptr;
-        }
-        if (nullptr != ds) {
-            ds_delete(ds);
-            ds = nullptr;
-        }
+        cleanup_odbc_handles(env, dbc, ds, true);
     }
 };
 

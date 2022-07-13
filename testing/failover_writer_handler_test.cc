@@ -33,7 +33,7 @@
 #include <chrono>
 #include <thread>
 
-#include "driver/driver.h"
+#include "test_utils.h"
 #include "mock_objects.h"
 
 using ::testing::_;
@@ -53,7 +53,6 @@ namespace {
 class FailoverWriterHandlerTest : public testing::Test {
  protected:
     SQLHENV env;
-    SQLHDBC hdbc;
     DBC* dbc;
     DataSource* ds;
     std::string writer_instance_name;
@@ -76,14 +75,7 @@ class FailoverWriterHandlerTest : public testing::Test {
     static void TearDownTestSuite() {}
 
     void SetUp() override {
-        env = nullptr;
-        hdbc = nullptr;
-        dbc = nullptr;
-
-        SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
-        dbc = static_cast<DBC*>(hdbc);
-        ds = ds_new();
+        allocate_odbc_handles(env, dbc, ds);
         
         writer_instance_name = "writer-host";
         new_writer_instance_name = "new-writer-host";
@@ -111,19 +103,7 @@ class FailoverWriterHandlerTest : public testing::Test {
     }
 
     void TearDown() override {
-        if (nullptr != hdbc) {
-            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
-        }
-        if (nullptr != env) {
-            SQLFreeHandle(SQL_HANDLE_ENV, env);
-        }
-        if (nullptr != dbc) {
-            dbc = nullptr;
-        }
-        if (nullptr != ds) {
-            ds_delete(ds);
-            ds = nullptr;
-        }
+        cleanup_odbc_handles(env, dbc, ds);
     }
 };
 
