@@ -52,6 +52,8 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
     ~MOCK_MYSQL_PROXY() { mock_mysql_proxy_destructor(); }
 
     MOCK_METHOD(bool, is_connected, ());
+    MOCK_METHOD(std::string, get_host, ());
+    MOCK_METHOD(unsigned int, get_port, ());
     MOCK_METHOD(int, query, (const char*));
     MOCK_METHOD(MYSQL_RES*, store_result, ());
     MOCK_METHOD(char**, fetch_row, (MYSQL_RES*));
