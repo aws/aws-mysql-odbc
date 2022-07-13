@@ -28,6 +28,7 @@
 #define __MONITORCONNECTIONCONTEXT_H__
 
 #include <chrono>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
