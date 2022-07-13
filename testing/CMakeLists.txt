@@ -48,7 +48,11 @@ enable_testing()
 
 add_executable(
   testing
+
   mock_objects.h
+  test_utils.h
+  test_utils.cc
+
   cluster_aware_metrics_test.cc
   failover_handler_test.cc
   failover_reader_handler_test.cc
