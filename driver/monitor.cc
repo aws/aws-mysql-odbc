@@ -109,7 +109,7 @@ void MONITOR::run() {
             else {
                 auto current_time = std::chrono::steady_clock::now();
                 if ((current_time - this->last_context_timestamp) >= this->disposal_time) {
-                    this->monitor_service->notify_unused(std::shared_ptr<MONITOR>(this));
+                    this->monitor_service->notify_unused(shared_from_this());
                     break;
                 }
                 std::this_thread::sleep_for(thread_sleep_when_inactive);
