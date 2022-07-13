@@ -30,7 +30,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "driver/driver.h"
+#include "test_utils.h"
 #include "mock_objects.h"
 
 using testing::_;
@@ -38,10 +38,9 @@ using testing::Return;
 
 class MySQLProxyTest : public testing::Test {
 protected:
-    SQLHENV env = nullptr;
-    SQLHDBC hdbc = nullptr;
-    DBC* dbc = nullptr;
-    DataSource* ds = nullptr;
+    SQLHENV env;
+    DBC* dbc;
+    DataSource* ds;
     std::shared_ptr<MOCK_MONITOR_SERVICE> mock_monitor_service;
 
     static void SetUpTestSuite() {}
@@ -51,14 +50,7 @@ protected:
     }
 
     void SetUp() override {
-        env = nullptr;
-        hdbc = nullptr;
-        dbc = nullptr;
-
-        SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
-        dbc = static_cast<DBC*>(hdbc);
-        ds = ds_new();
+        allocate_odbc_handles(env, dbc, ds);
 
         ds->enable_failure_detection = true;
 
@@ -66,19 +58,7 @@ protected:
     }
 
     void TearDown() override {
-        if (nullptr != hdbc) {
-            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
-        }
-        if (nullptr != env) {
-            SQLFreeHandle(SQL_HANDLE_ENV, env);
-        }
-        if (nullptr != dbc) {
-            dbc = nullptr;
-        }
-        if (nullptr != ds) {
-            ds_delete(ds);
-            ds = nullptr;
-        }
+        cleanup_odbc_handles(env, dbc, ds);
     }
 };
 
