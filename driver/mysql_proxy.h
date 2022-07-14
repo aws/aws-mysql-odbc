@@ -156,6 +156,8 @@ public:
 
     void set_connection(MYSQL_PROXY* mysql_proxy);
 
+    void close_socket() const;
+
 private:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;

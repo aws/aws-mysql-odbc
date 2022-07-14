@@ -126,3 +126,75 @@ TEST_F(MonitorConnectionContextTest, IsNodeUnhealthyExceedsFailureDetectionCount
     context->set_connection_valid(false, status_check_start_time, status_check_end_time);
     EXPECT_TRUE(context->is_node_unhealthy());
 }
+
+TEST_F(MonitorConnectionContextTest, EfmSimpleTest2) {
+  char* dsn = "test";              // std::getenv("TEST_DSN");
+  char* db = "employees";          // std::getenv("TEST_DATABASE");
+  char* user = "admin";            // std::getenv("TEST_UID");
+  char* pwd = "my_password_2020";  // std::getenv("TEST_PASSWORD");
+  char* server =
+      "mysql-instance-4.czygpppufgy4.us-east-2.rds.amazonaws.com";  // std::getenv("TEST_SERVER");
+  char* sql = "select sleep(30)";
+  int rc = 0;
+  MYSQL* conn;
+  MYSQL_RES* res;
+  MYSQL_ROW row;
+  //myodbc_init();
+  conn = mysql_init(NULL);
+  /* Connect to database */
+  if (!mysql_real_connect(conn, server, user, pwd, db, 0, NULL, 0)) {
+    EXPECT_TRUE(false) << mysql_error(conn) << "\n";
+    //printf(stderr, "%s\n", mysql_error(conn));
+    return;
+  }
+  auto close_connection_future = std::async(std::launch::async, [&conn]() {
+    mysql_thread_init();
+    time_t my_time = time(NULL);
+    EXPECT_TRUE(false) << std::ctime(&my_time) << ": begin of thread\n";
+    //printf("%s: begin of thread\n\n", std::ctime(&my_time));
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    my_time = time(NULL);
+    EXPECT_TRUE(false) << std::ctime(&my_time) << ": before kill\n";
+    //printf("%s: before kill\n\n", std::ctime(&my_time));
+    /* kill connection here */
+    // mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, "1");
+    // mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, "1");
+    //
+    // mysql_close(conn);
+    //
+    //close(conn->net.fd);
+    closesocket(conn->net.fd);
+    //
+    // mysql_reset_connection(conn);
+    //
+    // mysql_refresh(conn, REFRESH_THREADS);
+    my_time = time(NULL);
+    EXPECT_TRUE(false) << std::ctime(&my_time) << ": after kill\n";
+    //printf("%s: after kill\n\n", std::ctime(&my_time));
+    mysql_thread_end();
+  });
+  /* send SQL query */
+  time_t my_time = time(NULL);
+  EXPECT_TRUE(false) << std::ctime(&my_time) << ": before query\n";
+  //printf("%s: before query\n\n", std::ctime(&my_time));
+  rc = mysql_send_query(conn, sql, strlen(sql));
+  EXPECT_TRUE(false) << rc << ": " << mysql_error(conn) << "\n";
+  //printf("%u: %s\n", rc, mysql_error(conn));
+  // net_async_status async_status = mysql_real_query_nonblocking(conn, sql,
+  // strlen(sql)); while (async_status == NET_ASYNC_NOT_READY) {
+  //    std::this_thread::sleep_for(std::chrono::seconds(1));
+  //    my_time = time(NULL);
+  //    printf("%s: wait, status=%u\n", std::ctime(&my_time), async_status);
+  //    async_status = mysql_real_query_nonblocking(conn, sql, strlen(sql));
+  //}
+  my_time = time(NULL);
+  EXPECT_TRUE(false) << std::ctime(&my_time) << ": after query\n";
+  //printf("%s: after query\n\n", std::ctime(&my_time));
+  rc = mysql_read_query_result(conn);
+  EXPECT_TRUE(false) << rc << ": " << mysql_error(conn) << "\n";
+  //printf("%u: %s\n", rc, mysql_error(conn));
+  /* close connection */
+  mysql_close(conn);
+  mysql_library_end();
+}
+
