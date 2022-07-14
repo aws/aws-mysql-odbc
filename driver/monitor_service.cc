@@ -47,7 +47,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
 
     if (node_keys.empty()) {
         auto msg = "[MONITOR_SERVICE] Parameter node_keys cannot be empty";
-        MYLOG_TRACE(this->logger.get(), 0, msg);
+        MYLOG_TRACE(this->logger.get(), dbc ? dbc->id : 0, msg);
         throw std::invalid_argument(msg);
     }
 
@@ -82,7 +82,7 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
     std::string node = this->thread_container->get_node(context->get_node_keys());
     if (node == "") {
         MYLOG_TRACE(
-            this->logger.get(), 0,
+            this->logger.get(), context->get_dbc_id(),
             "[MONITOR_SERVICE] Can not find node key from context");
         return;
     }

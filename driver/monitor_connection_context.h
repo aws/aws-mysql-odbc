@@ -64,6 +64,7 @@ public:
     bool is_active_context();
     void invalidate();
     DBC* get_connection_to_abort();
+    unsigned long get_dbc_id();
 
     void update_connection_status(
         std::chrono::steady_clock::time_point status_check_start_time,
