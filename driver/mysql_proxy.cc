@@ -498,7 +498,7 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
 }
 
 void MYSQL_PROXY::close_socket() {
-    closesocket(mysql->net.fd);
+    ::closesocket(mysql->net.fd);
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
