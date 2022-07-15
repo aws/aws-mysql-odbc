@@ -41,7 +41,8 @@ MONITOR_CONNECTION_CONTEXT::MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
                                    failure_detection_count{failure_detection_count},
                                    failure_count{0},
                                    node_unhealthy{false} {
-    this->logger = init_log_file();
+    if (connection_to_abort && connection_to_abort->ds && connection_to_abort->ds->save_queries)
+        this->logger = init_log_file();
 }
 
 MONITOR_CONNECTION_CONTEXT::~MONITOR_CONNECTION_CONTEXT() {}

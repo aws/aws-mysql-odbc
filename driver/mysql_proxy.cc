@@ -35,7 +35,7 @@ namespace {
 }
 
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
-    : MYSQL_PROXY(dbc, ds, std::make_shared<MONITOR_SERVICE>()) {}
+    : MYSQL_PROXY(dbc, ds, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries ? true : false)) {}
 
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service)
     : dbc{dbc}, ds{ds}, monitor_service{std::move(monitor_service)} {

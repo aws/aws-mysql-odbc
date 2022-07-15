@@ -28,13 +28,19 @@
 
 #include "driver.h"
 
-MONITOR_SERVICE::MONITOR_SERVICE() {
+MONITOR_SERVICE::MONITOR_SERVICE(bool enable_logging) {
     this->thread_container = MONITOR_THREAD_CONTAINER::get_instance();
-    this->logger = init_log_file();
+    if (enable_logging)
+        this->logger = init_log_file();
 }
 
-MONITOR_SERVICE::MONITOR_SERVICE(std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container)
-    : thread_container{std::move(monitor_thread_container)} {}
+MONITOR_SERVICE::MONITOR_SERVICE(
+    std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container, bool enable_logging)
+    : thread_container{std::move(monitor_thread_container)} {
+ 
+    if (enable_logging)
+        this->logger = init_log_file();
+}
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     DBC* dbc,
@@ -56,7 +62,8 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         host,
         disposal_time,
         dbc ? dbc->ds : nullptr,
-        this);
+        this,
+        dbc && dbc->ds && dbc->ds->save_queries ? true : false);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         dbc,

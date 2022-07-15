@@ -33,14 +33,16 @@ MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
     DataSource* ds,
-    MONITOR_SERVICE* service) {
+    MONITOR_SERVICE* service,
+    bool enable_logging) {
     
     this->host = host_info;
     this->disposal_time = monitor_disposal_time;
     this->mysql_proxy = new MYSQL_MONITOR_PROXY(ds);
     this->monitor_service = service;
     this->connection_check_interval = (std::chrono::milliseconds::max)();
-    this->logger = init_log_file();
+    if (enable_logging)
+        this->logger = init_log_file();
 }
 
 MONITOR::~MONITOR() {

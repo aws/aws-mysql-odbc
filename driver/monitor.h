@@ -49,7 +49,8 @@ public:
         std::shared_ptr<HOST_INFO> host_info,
         std::chrono::milliseconds monitor_disposal_time,
         DataSource* ds,
-        MONITOR_SERVICE* service);
+        MONITOR_SERVICE* service,
+        bool enable_logging = false);
     virtual ~MONITOR();
 
     virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
