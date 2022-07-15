@@ -497,7 +497,7 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     generate_node_keys();
 }
 
-void MYSQL_PROXY::close_socket() const {
+void MYSQL_PROXY::close_socket() {
     closesocket(mysql->net.fd);
 }
 
