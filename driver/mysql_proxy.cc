@@ -498,11 +498,7 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
 }
 
 void MYSQL_PROXY::close_socket() const {
-#if defined(__APPLE__) || defined(__linux__)
-    close(mysql->net.fd);
-#else
     closesocket(mysql->net.fd);
-#endif
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
