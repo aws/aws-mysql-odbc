@@ -69,13 +69,14 @@ bool FAILOVER_SYNC::is_completed() {
 FAILOVER::FAILOVER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
-    unsigned long dbc_id)
+    unsigned long dbc_id, bool enable_logging)
     : connection_handler{connection_handler},
       topology_service{topology_service},
       dbc_id{dbc_id},
       new_connection{nullptr} {
 
-    logger = init_log_file();
+    if (enable_logging)
+        logger = init_log_file();
 }
 
 FAILOVER::~FAILOVER() {}
@@ -106,8 +107,8 @@ void FAILOVER::release_new_connection() {
 RECONNECT_TO_WRITER_HANDLER::RECONNECT_TO_WRITER_HANDLER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
-    int connection_interval, unsigned long dbc_id)
-    : FAILOVER{connection_handler, topology_service, dbc_id},
+    int connection_interval, unsigned long dbc_id, bool enable_logging)
+    : FAILOVER{connection_handler, topology_service, dbc_id, enable_logging},
       reconnect_interval_ms{connection_interval} {}
 
 RECONNECT_TO_WRITER_HANDLER::~RECONNECT_TO_WRITER_HANDLER() {}
@@ -169,8 +170,8 @@ WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
-    int connection_interval, unsigned long dbc_id)
-    : FAILOVER{connection_handler, topology_service, dbc_id},
+    int connection_interval, unsigned long dbc_id, bool enable_logging)
+    : FAILOVER{connection_handler, topology_service, dbc_id, enable_logging},
       current_topology{current_topology},
       reader_handler{reader_handler},
       read_topology_interval_ms{connection_interval} {}
@@ -272,7 +273,7 @@ FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     int writer_failover_timeout_ms, int read_topology_interval_ms,
-    int reconnect_writer_interval_ms, unsigned long dbc_id)
+    int reconnect_writer_interval_ms, unsigned long dbc_id, bool enable_logging)
     : connection_handler{connection_handler},
       topology_service{topology_service},
       reader_handler{reader_handler},
@@ -281,7 +282,8 @@ FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
       reconnect_writer_interval_ms{reconnect_writer_interval_ms},
       dbc_id{dbc_id} {
 
-    logger = init_log_file();
+    if (enable_logging)
+        logger = init_log_file();
 }
 
 FAILOVER_WRITER_HANDLER::~FAILOVER_WRITER_HANDLER() {}
@@ -299,10 +301,10 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
     FAILOVER_SYNC failover_sync(2);
     // Constructing the function objects
     RECONNECT_TO_WRITER_HANDLER reconnect_handler(
-        connection_handler, topology_service, reconnect_writer_interval_ms, dbc_id);
+        connection_handler, topology_service, reconnect_writer_interval_ms, dbc_id, logger != nullptr);
     WAIT_NEW_WRITER_HANDLER new_writer_handler(
         connection_handler, topology_service, current_topology, reader_handler,
-        read_topology_interval_ms, dbc_id);
+        read_topology_interval_ms, dbc_id, logger != nullptr);
 
     auto original_writer = current_topology->get_writer();
     topology_service->mark_host_down(original_writer);

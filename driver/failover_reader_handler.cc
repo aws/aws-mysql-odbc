@@ -37,14 +37,15 @@ FAILOVER_READER_HANDLER::FAILOVER_READER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     int failover_timeout_ms, int failover_reader_connect_timeout,
-    unsigned long dbc_id)
+    unsigned long dbc_id, bool enable_logging)
     : topology_service{topology_service},
       connection_handler{connection_handler},
       max_failover_timeout_ms{failover_timeout_ms},
       reader_connect_timeout_ms{failover_reader_connect_timeout},
       dbc_id{dbc_id} {
 
-    logger = init_log_file();
+    if (enable_logging)
+        logger = init_log_file();
 }
 
 FAILOVER_READER_HANDLER::~FAILOVER_READER_HANDLER() {}
@@ -165,11 +166,11 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
             local_sync.increment_task();
         }
 
-        CONNECT_TO_READER_HANDLER first_connection_handler(connection_handler, topology_service, dbc_id);
+        CONNECT_TO_READER_HANDLER first_connection_handler(connection_handler, topology_service, dbc_id, logger != nullptr);
         std::future<void> first_connection_future;
         READER_FAILOVER_RESULT first_connection_result(false, nullptr, nullptr);
 
-        CONNECT_TO_READER_HANDLER second_connection_handler(connection_handler, topology_service, dbc_id);
+        CONNECT_TO_READER_HANDLER second_connection_handler(connection_handler, topology_service, dbc_id, logger != nullptr);
         std::future<void> second_connection_future;
         READER_FAILOVER_RESULT second_connection_result(false, nullptr, nullptr);
         
@@ -223,8 +224,8 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
 CONNECT_TO_READER_HANDLER::CONNECT_TO_READER_HANDLER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
-    unsigned long dbc_id)
-    : FAILOVER{connection_handler, topology_service, dbc_id} {}
+    unsigned long dbc_id, bool enable_logging)
+    : FAILOVER{connection_handler, topology_service, dbc_id, enable_logging} {}
 
 CONNECT_TO_READER_HANDLER::~CONNECT_TO_READER_HANDLER() {}
 

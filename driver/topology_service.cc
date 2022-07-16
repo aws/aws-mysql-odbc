@@ -27,7 +27,7 @@
 #include "cluster_aware_metrics_container.h"
 #include "topology_service.h"
 
-TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id)
+TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging)
     : dbc_id{dbc_id},
       cluster_instance_host{nullptr},
       refresh_rate_in_ms{DEFAULT_REFRESH_RATE_IN_MILLISECONDS},
@@ -36,7 +36,8 @@ TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id)
   // TODO get better initial cluster id
   time_t now = time(0);
   cluster_id = std::to_string(now) + ctime(&now);
-  logger = init_log_file();
+  if (enable_logging)
+    logger = init_log_file();
 }
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE& ts) {

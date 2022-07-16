@@ -98,7 +98,7 @@ class FAILOVER_READER_HANDLER {
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         int failover_timeout_ms, int failover_reader_connect_timeout,
-        unsigned long dbc_id);
+        unsigned long dbc_id, bool enable_logging = false);
     
         ~FAILOVER_READER_HANDLER();
     
@@ -159,7 +159,7 @@ class FAILOVER_WRITER_HANDLER {
         std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
         int writer_failover_timeout_ms, int read_topology_interval_ms,
-        int reconnect_writer_interval_ms, unsigned long dbc_id);
+        int reconnect_writer_interval_ms, unsigned long dbc_id, bool enable_logging = false);
     ~FAILOVER_WRITER_HANDLER();
     WRITER_FAILOVER_RESULT failover(
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology);
@@ -240,7 +240,7 @@ class FAILOVER {
    public:
     FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
              std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
-             unsigned long dbc_id);
+             unsigned long dbc_id, bool enable_logging = false);
     virtual ~FAILOVER();
     bool is_writer_connected();
 
@@ -260,7 +260,7 @@ public:
     CONNECT_TO_READER_HANDLER(
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
      std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
-     unsigned long dbc_id);
+     unsigned long dbc_id, bool enable_logging = false);
     ~CONNECT_TO_READER_HANDLER();
 
     void operator()(
@@ -273,8 +273,8 @@ class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
    public:
     RECONNECT_TO_WRITER_HANDLER(
         std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-        std::shared_ptr<TOPOLOGY_SERVICE> topology_servicets,
-        int connection_interval, unsigned long dbc_id);
+        std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
+        int connection_interval, unsigned long dbc_id, bool enable_logging = false);
     ~RECONNECT_TO_WRITER_HANDLER();
 
     void operator()(
@@ -297,7 +297,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
         std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
-        int connection_interval, unsigned long dbc_id);
+        int connection_interval, unsigned long dbc_id, bool enable_logging = false);
     ~WAIT_NEW_WRITER_HANDLER();
 
     void operator()(
