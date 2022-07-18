@@ -497,6 +497,10 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     generate_node_keys();
 }
 
+void MYSQL_PROXY::close_socket() {
+    ::closesocket(mysql->net.fd);
+}
+
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
     if (!ds->enable_failure_detection) {
         return nullptr;
@@ -518,7 +522,7 @@ void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> co
     }
     monitor_service->stop_monitoring(context);
     if (context->is_node_unhealthy() && is_connected()) {
-        // TODO Close socket connection
+        close_socket();
     }
 }
 
