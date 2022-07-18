@@ -28,12 +28,19 @@
 
 #include "driver.h"
 
-MONITOR_SERVICE::MONITOR_SERVICE() {
+MONITOR_SERVICE::MONITOR_SERVICE(bool enable_logging) {
     this->thread_container = MONITOR_THREAD_CONTAINER::get_instance();
+    if (enable_logging)
+        this->logger = init_log_file();
 }
 
-MONITOR_SERVICE::MONITOR_SERVICE(std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container)
-    : thread_container{std::move(monitor_thread_container)} {}
+MONITOR_SERVICE::MONITOR_SERVICE(
+    std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container, bool enable_logging)
+    : thread_container{std::move(monitor_thread_container)} {
+ 
+    if (enable_logging)
+        this->logger = init_log_file();
+}
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     DBC* dbc,
@@ -45,7 +52,9 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     std::chrono::milliseconds disposal_time) {
 
     if (node_keys.empty()) {
-        throw std::invalid_argument("Parameter node_keys cannot be empty");
+        auto msg = "[MONITOR_SERVICE] Parameter node_keys cannot be empty";
+        MYLOG_TRACE(this->logger.get(), dbc ? dbc->id : 0, msg);
+        throw std::invalid_argument(msg);
     }
 
     std::shared_ptr<MONITOR> monitor = this->thread_container->get_or_create_monitor(
@@ -53,7 +62,8 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         host,
         disposal_time,
         dbc ? dbc->ds : nullptr,
-        this);
+        this,
+        dbc && dbc->ds && dbc->ds->save_queries ? true : false);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         dbc,
@@ -70,13 +80,17 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
 
 void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
     if (context == nullptr) {
-        // TODO: log warning
+        MYLOG_TRACE(
+            this->logger.get(), 0,
+            "[MONITOR_SERVICE] Invalid context passed into stop_monitoring()");
         return;
     }
 
     std::string node = this->thread_container->get_node(context->get_node_keys());
     if (node == "") {
-        // TODO: log warning
+        MYLOG_TRACE(
+            this->logger.get(), context->get_dbc_id(),
+            "[MONITOR_SERVICE] Can not find node key from context");
         return;
     }
 
@@ -86,7 +100,10 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
 void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> node_keys) {
     std::string node = this->thread_container->get_node(node_keys);
     if (node == "") {
-        // TODO: log warning
+        MYLOG_TRACE(
+            this->logger.get(), 0,
+            "[MONITOR_SERVICE] Invalid node keys passed into stop_monitoring_for_all_connections(). "
+            "No existing monitor for the given set of node keys");
         return;
     }
 
@@ -97,7 +114,9 @@ void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> 
 
 void MONITOR_SERVICE::notify_unused(std::shared_ptr<MONITOR> monitor) {
     if (monitor == nullptr) {
-        // TODO: log warning
+        MYLOG_TRACE(
+            this->logger.get(), 0,
+            "[MONITOR_SERVICE] Invalid monitor passed into notify_unused()");
         return;
     }
 
