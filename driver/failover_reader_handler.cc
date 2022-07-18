@@ -40,13 +40,16 @@ FAILOVER_READER_HANDLER::FAILOVER_READER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     int failover_timeout_ms, int failover_reader_connect_timeout,
-    FILE* log_file, unsigned long dbc_id)
+    unsigned long dbc_id, bool enable_logging)
     : topology_service{topology_service},
       connection_handler{connection_handler},
       max_failover_timeout_ms{failover_timeout_ms},
       reader_connect_timeout_ms{failover_reader_connect_timeout},
-      log_file{log_file},
-      dbc_id{dbc_id} {}
+      dbc_id{dbc_id} {
+
+    if (enable_logging)
+        logger = init_log_file();
+}
 
 FAILOVER_READER_HANDLER::~FAILOVER_READER_HANDLER() {}
 
@@ -166,11 +169,11 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
             local_sync.increment_task();
         }
 
-        CONNECT_TO_READER_HANDLER first_connection_handler(connection_handler, topology_service, log_file, dbc_id);
+        CONNECT_TO_READER_HANDLER first_connection_handler(connection_handler, topology_service, dbc_id, logger != nullptr);
         std::future<void> first_connection_future;
         READER_FAILOVER_RESULT first_connection_result(false, nullptr, nullptr);
 
-        CONNECT_TO_READER_HANDLER second_connection_handler(connection_handler, topology_service, log_file, dbc_id);
+        CONNECT_TO_READER_HANDLER second_connection_handler(connection_handler, topology_service, dbc_id, logger != nullptr);
         std::future<void> second_connection_future;
         READER_FAILOVER_RESULT second_connection_result(false, nullptr, nullptr);
         
@@ -200,14 +203,14 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
         }
 
         if (first_connection_result.connected) {
-            MYLOG_TRACE(log_file, dbc_id,
-                      "[FAILOVER_READER_HANDLER] Connected to reader: %s",
-                      first_connection_result.new_host->get_host_port_pair().c_str());
+            MYLOG_TRACE(logger.get(), dbc_id,
+                        "[FAILOVER_READER_HANDLER] Connected to reader: %s",
+                        first_connection_result.new_host->get_host_port_pair().c_str());
             return first_connection_result;
         } else if (!odd_hosts_number && second_connection_result.connected) {
-            MYLOG_TRACE(log_file, dbc_id,
-                      "[FAILOVER_READER_HANDLER] Connected to reader: %s",
-                      second_connection_result.new_host->get_host_port_pair().c_str());
+            MYLOG_TRACE(logger.get(), dbc_id,
+                        "[FAILOVER_READER_HANDLER] Connected to reader: %s",
+                        second_connection_result.new_host->get_host_port_pair().c_str());
             return second_connection_result;
         }
         // None has connected. We move on and try new hosts.
@@ -224,8 +227,8 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
 CONNECT_TO_READER_HANDLER::CONNECT_TO_READER_HANDLER(
     std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
-    FILE* log_file, unsigned long dbc_id)
-    : FAILOVER{connection_handler, topology_service, log_file, dbc_id} {}
+    unsigned long dbc_id, bool enable_logging)
+    : FAILOVER{connection_handler, topology_service, dbc_id, enable_logging} {}
 
 CONNECT_TO_READER_HANDLER::~CONNECT_TO_READER_HANDLER() {}
 
@@ -236,9 +239,9 @@ void CONNECT_TO_READER_HANDLER::operator()(
     
     if (reader && !f_sync.is_completed()) {
 
-        MYLOG_TRACE(log_file, dbc_id,
-                  "[CONNECT_TO_READER_HANDLER] Trying to connect to reader: %s",
-                  reader->get_host_port_pair().c_str());
+        MYLOG_TRACE(logger.get(), dbc_id,
+                    "[CONNECT_TO_READER_HANDLER] Trying to connect to reader: %s",
+                    reader->get_host_port_pair().c_str());
 
         if (connect(reader)) {
             topology_service->mark_host_up(reader);
@@ -249,7 +252,7 @@ void CONNECT_TO_READER_HANDLER::operator()(
                 result = READER_FAILOVER_RESULT(true, reader, new_connection);
                 f_sync.mark_as_complete(true);
                 MYLOG_TRACE(
-                    log_file, dbc_id,
+                    logger.get(), dbc_id,
                     "[CONNECT_TO_READER_HANDLER] Connected to reader: %s",
                     reader->get_host_port_pair().c_str());
                 return;
@@ -257,7 +260,7 @@ void CONNECT_TO_READER_HANDLER::operator()(
         } else {
             topology_service->mark_host_down(reader);
             MYLOG_TRACE(
-                log_file, dbc_id,
+                logger.get(), dbc_id,
                 "[CONNECT_TO_READER_HANDLER] Failed to connect to reader: %s",
                 reader->get_host_port_pair().c_str());
             if (!f_sync.is_completed()) {
