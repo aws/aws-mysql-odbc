@@ -29,6 +29,7 @@
 #include "driver/monitor_connection_context.h"
 #include "driver/driver.h"
 
+#include "test_utils.h"
 #include "mock_objects.h"
 
 #include <gmock/gmock.h>
@@ -49,16 +50,15 @@ class MonitorConnectionContextTest : public testing::Test {
  protected:
     MONITOR_CONNECTION_CONTEXT* context;
     DBC* connection_to_abort;
-    ENV* env;
-    
+    SQLHENV env;
+    DataSource* ds;
 
     static void SetUpTestSuite() {}
 
     static void TearDownTestSuite() {}
 
     void SetUp() override {
-        env = new ENV(SQL_OV_ODBC2);
-        connection_to_abort = new DBC(env);
+        allocate_odbc_handles(env, connection_to_abort, ds);
         context = new MONITOR_CONNECTION_CONTEXT(connection_to_abort,
                                                  node_keys,
                                                  failure_detection_time,
@@ -67,9 +67,8 @@ class MonitorConnectionContextTest : public testing::Test {
     }
 
     void TearDown() override {
+        cleanup_odbc_handles(env, connection_to_abort, ds);
         delete context;
-        delete connection_to_abort;
-        delete env;
     }
 };
 
