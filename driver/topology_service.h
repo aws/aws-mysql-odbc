@@ -54,7 +54,7 @@ static std::mutex topology_cache_mutex;
 
 class TOPOLOGY_SERVICE {
 public:
-    TOPOLOGY_SERVICE(FILE* log_file, unsigned long dbc_id);
+    TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging = false);
     TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
     virtual ~TOPOLOGY_SERVICE();
 
@@ -92,7 +92,7 @@ private:
     const std::string FIELD_LAST_UPDATED = "LAST_UPDATE_TIMESTAMP";
     const std::string FIELD_REPLICA_LAG = "REPLICA_LAG_IN_MILLISECONDS";
 
-    FILE* log_file = nullptr;
+    std::shared_ptr<FILE> logger = nullptr;
     unsigned long dbc_id = 0;
 
 protected:
