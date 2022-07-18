@@ -28,6 +28,7 @@
 #define __MONITORCONNECTIONCONTEXT_H__
 
 #include <chrono>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -63,6 +64,7 @@ public:
     bool is_active_context();
     void invalidate();
     DBC* get_connection_to_abort();
+    unsigned long get_dbc_id();
 
     void update_connection_status(
         std::chrono::steady_clock::time_point status_check_start_time,
@@ -89,6 +91,9 @@ private:
     int failure_count;
     bool node_unhealthy;
     bool active_context = true;
+    std::shared_ptr<FILE> logger;
+
+    std::string build_node_keys_str();
 };
 
 #endif /* __MONITORCONNECTIONCONTEXT_H__ */

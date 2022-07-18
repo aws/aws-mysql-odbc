@@ -55,7 +55,8 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
     DataSource* ds,
-    MONITOR_SERVICE* monitor_service) {
+    MONITOR_SERVICE* monitor_service,
+    bool enable_logging) {
 
     std::shared_ptr<MONITOR> monitor;
 
@@ -66,7 +67,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     else {
         monitor = this->get_available_monitor();
         if (monitor == nullptr) {
-            monitor = this->create_monitor(host, disposal_time, ds, monitor_service);
+            monitor = this->create_monitor(host, disposal_time, ds, monitor_service, enable_logging);
         }
     }
 
@@ -151,7 +152,8 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
     DataSource* ds,
-    MONITOR_SERVICE* monitor_service) {
+    MONITOR_SERVICE* monitor_service,
+    bool enable_logging) {
 
-    return std::make_shared<MONITOR>(host, disposal_time, ds, monitor_service);
+    return std::make_shared<MONITOR>(host, disposal_time, ds, monitor_service, enable_logging);
 }
