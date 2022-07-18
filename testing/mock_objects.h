@@ -118,7 +118,8 @@ public:
 class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {
 public:
     MOCK_MONITOR_THREAD_CONTAINER() : MONITOR_THREAD_CONTAINER() {}
-    MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, DataSource*, MONITOR_SERVICE*));
+    MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, 
+        (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, DataSource*, MONITOR_SERVICE*, bool));
     MOCK_METHOD(void, add_task, (std::shared_ptr<MONITOR>));
 };
 
