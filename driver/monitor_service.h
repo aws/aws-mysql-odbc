@@ -31,8 +31,10 @@
 
 class MONITOR_SERVICE {
 public:
-    MONITOR_SERVICE();
-    MONITOR_SERVICE(std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container);
+    MONITOR_SERVICE(bool enable_logging = false);
+    MONITOR_SERVICE(
+        std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container,
+        bool enable_logging = false);
     
     virtual std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
         DBC* dbc,
@@ -48,6 +50,7 @@ public:
 
 private:
     std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
+    std::shared_ptr<FILE> logger;
 };
 
 #endif /* __MONITORSERVICE_H__ */
