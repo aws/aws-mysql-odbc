@@ -175,6 +175,5 @@ void MONITOR_CONNECTION_CONTEXT::abort_connection() {
     if ((get_connection_to_abort()) || (!is_active_context())) {
         return;
     }
-    // TODO socket close
-    connection_to_abort->close();
+    connection_to_abort->mysql_proxy->close_socket();
 }
