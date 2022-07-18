@@ -63,7 +63,7 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
 
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
  public:
-    MOCK_TOPOLOGY_SERVICE() : TOPOLOGY_SERVICE(nullptr, 0) {};
+    MOCK_TOPOLOGY_SERVICE() : TOPOLOGY_SERVICE(0) {};
 
     MOCK_METHOD(void, set_cluster_id, (std::string));
     MOCK_METHOD(void, set_cluster_instance_template, (std::shared_ptr<HOST_INFO>));
@@ -74,7 +74,7 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
  public:
-    MOCK_READER_HANDLER() : FAILOVER_READER_HANDLER(nullptr, nullptr, 0, 0, nullptr, 0) {}
+    MOCK_READER_HANDLER() : FAILOVER_READER_HANDLER(nullptr, nullptr, 0, 0, 0) {}
     MOCK_METHOD(READER_FAILOVER_RESULT, get_reader_connection,
                 (std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, FAILOVER_SYNC&));
 };

@@ -62,7 +62,7 @@ protected:
     DataSource* ds;
     
     static void SetUpTestSuite() {
-        ts = new TOPOLOGY_SERVICE(nullptr, 0);
+        ts = new TOPOLOGY_SERVICE(0);
         cluster_instance = std::make_shared<HOST_INFO>("?.XYZ.us-east-2.rds.amazonaws.com", 1234);
         ts->set_cluster_instance_template(cluster_instance);
         ts->set_cluster_id(cluster_id);
@@ -247,7 +247,7 @@ TEST_F(TopologyServiceTest, SharedTopology) {
         .WillOnce(Return(reader2))
         .WillRepeatedly(Return(MYSQL_ROW{}));
 
-    TOPOLOGY_SERVICE* ts2 = new TOPOLOGY_SERVICE(nullptr, 0);
+    TOPOLOGY_SERVICE* ts2 = new TOPOLOGY_SERVICE(0);
     ts2->set_cluster_id(cluster_id);
 
     auto topology1 = ts->get_topology(mock_proxy);
