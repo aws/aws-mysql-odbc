@@ -40,7 +40,10 @@ MONITOR_CONNECTION_CONTEXT::MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
                                    failure_detection_interval{failure_detection_interval},
                                    failure_detection_count{failure_detection_count},
                                    failure_count{0},
-                                   node_unhealthy{false} {}
+                                   node_unhealthy{false} {
+    if (connection_to_abort && connection_to_abort->ds && connection_to_abort->ds->save_queries)
+        this->logger = init_log_file();
+}
 
 MONITOR_CONNECTION_CONTEXT::~MONITOR_CONNECTION_CONTEXT() {}
 
@@ -118,6 +121,10 @@ DBC* MONITOR_CONNECTION_CONTEXT::get_connection_to_abort() {
     return connection_to_abort;
 }
 
+unsigned long MONITOR_CONNECTION_CONTEXT::get_dbc_id() {
+    return connection_to_abort ? connection_to_abort->id : 0;
+}
+
 // Update whether the connection is still valid if the total elapsed time has passed the grace period.
 void MONITOR_CONNECTION_CONTEXT::update_connection_status(
     std::chrono::steady_clock::time_point status_check_start_time,
@@ -141,6 +148,7 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
     std::chrono::steady_clock::time_point status_check_start_time,
     std::chrono::steady_clock::time_point current_time) {
 
+    auto node_keys_str = build_node_keys_str();
     if (!connection_valid) {
         increment_failure_count();
 
@@ -154,20 +162,22 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
         auto max_invalid_node_duration = get_failure_detection_interval().count() * (std::max)(0, get_failure_detection_count());
 
         if (invalid_node_duration_ms.count() >= max_invalid_node_duration) {
-            // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys.begin());
+            MYLOG_TRACE(logger.get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys_str.c_str());
             set_node_unhealthy(true);
             abort_connection();
             return;
         }
 
-        // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *not responding* (%d).", node_keys.begin(), get_failure_count());
+        MYLOG_TRACE(
+            logger.get(), get_dbc_id(),
+            "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *not responding* (%d).", node_keys_str.c_str(), get_failure_count());
         return;
     }
 
     set_failure_count(0);
     reset_invalid_node_start_time();
     set_node_unhealthy(false);
-    // TODO MYLOG_TRACE(log_file, 0, "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *alive*.", node_keys.begin());
+    MYLOG_TRACE(logger.get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *alive*.", node_keys_str.c_str());
 }
 
 void MONITOR_CONNECTION_CONTEXT::abort_connection() {
@@ -176,4 +186,21 @@ void MONITOR_CONNECTION_CONTEXT::abort_connection() {
         return;
     }
     connection_to_abort->mysql_proxy->close_socket();
+}
+
+std::string MONITOR_CONNECTION_CONTEXT::build_node_keys_str() {
+    if (node_keys.empty()) {
+        return "[]";
+    }
+
+    auto it = node_keys.begin();
+    std::string node_keys_str = '[' +(*it);
+    ++it;
+    while (it != node_keys.end()) {
+        node_keys_str += ", " + *it;
+        ++it;
+    }
+    node_keys_str += ']';
+
+    return node_keys_str;
 }
