@@ -92,6 +92,8 @@ private:
     bool node_unhealthy;
     bool active_context = true;
     std::shared_ptr<FILE> logger;
+
+    std::string build_node_keys_str();
 };
 
 #endif /* __MONITORCONNECTIONCONTEXT_H__ */
