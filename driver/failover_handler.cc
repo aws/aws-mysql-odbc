@@ -57,8 +57,7 @@ const std::regex IPV6_COMPRESSED_PATTERN(
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
     : FAILOVER_HANDLER(
           dbc, ds, std::make_shared<FAILOVER_CONNECTION_HANDLER>(dbc),
-          std::make_shared<TOPOLOGY_SERVICE>(
-              dbc ? dbc->log_file.get() : nullptr, dbc ? dbc->id : 0),
+          std::make_shared<TOPOLOGY_SERVICE>(dbc ? dbc->id : 0, ds ? ds->save_queries : false),
           std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds)) {}
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
@@ -82,12 +81,12 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
         this->topology_service, this->connection_handler, ds->failover_timeout,
-        ds->failover_reader_connect_timeout, dbc->log_file.get(), dbc->id);
+        ds->failover_reader_connect_timeout, dbc->id, ds->save_queries);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
         this->connection_handler, ds->failover_timeout,
         ds->failover_topology_refresh_rate,
-        ds->failover_writer_reconnect_interval, dbc->log_file.get(), dbc->id);
+        ds->failover_writer_reconnect_interval, dbc->id, ds->save_queries);
     this->metrics_container = metrics_container;
 }
 
