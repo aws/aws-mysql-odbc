@@ -187,7 +187,7 @@ TEST_F(MonitorThreadContainerTest, AvailableMonitorsQueue) {
         .WillRepeatedly(Return(false));
 
     // While we have two get_or_create_monitor() calls, we only call create_monitor() once.
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
     
     // This first call should create the monitor.
