@@ -114,7 +114,7 @@ void MONITOR::clear_contexts() {
 
 // Periodically ping the server and update the contexts' connection status.
 void MONITOR::run() {
-    try {
+    
         this->stopped = false;
         while (true) {
             bool have_contexts;
@@ -154,14 +154,14 @@ void MONITOR::run() {
                 std::this_thread::sleep_for(thread_sleep_when_inactive);
             }
         }
-    }
-    catch (...) {
-        // TODO: close connection if needed
-        this->stopped = true;
-    }
+    
+
+    this->stopped = true;
+    this->mysql_proxy->close();
 }
 
 std::chrono::milliseconds MONITOR::get_connection_check_interval() {
+    std::unique_lock<std::mutex> lock(mutex_);
     if (this->contexts.empty()) {
         return std::chrono::milliseconds(0);
     }

@@ -77,7 +77,7 @@ MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INF
     }
 
     // TODO guard these from potential exceptions thrown before, make sure release happens.
-    release_dbc(dbc_clone);
+    //release_dbc(dbc_clone);
 
     return new_connection;
 }

@@ -491,6 +491,8 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     this->mysql = mysql_proxy->mysql;
     mysql_proxy->mysql = nullptr;
 
+    my_SQLFreeConnect(mysql_proxy->dbc);
+
     if (!node_keys.empty()) {
         monitor_service->stop_monitoring_for_all_connections(node_keys);
     }
@@ -502,12 +504,13 @@ void MYSQL_PROXY::close_socket() {
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
-    if (!ds->enable_failure_detection) {
+    if (!ds || !ds->enable_failure_detection) {
         return nullptr;
     }
 
     return monitor_service->start_monitoring(
         dbc,
+        ds,
         node_keys,
         std::make_shared<HOST_INFO>(get_host(), get_port()),
         std::chrono::milliseconds{ds->failure_detection_time},
@@ -517,7 +520,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
 }
 
 void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    if (!ds->enable_failure_detection || context == nullptr) {
+    if (!ds ||!ds->enable_failure_detection || context == nullptr) {
         return;
     }
     monitor_service->stop_monitoring(context);
@@ -612,5 +615,8 @@ bool MYSQL_MONITOR_PROXY::is_connected() {
 }
 
 const char* MYSQL_MONITOR_PROXY::error() {
-    return mysql_error(mysql);
+    return mysql_error(mysql); }
+
+void MYSQL_MONITOR_PROXY::close() {
+    mysql_close(mysql);
 }

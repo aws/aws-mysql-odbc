@@ -79,6 +79,7 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
 
     auto context = monitor_service->start_monitoring(
         nullptr,
+        nullptr,
         node_keys,
         host,
         failure_detection_time,
@@ -100,6 +101,7 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
     for (int i = 0; i < runs; i++) {
         auto context = monitor_service->start_monitoring(
             nullptr,
+            nullptr,
             node_keys,
             host,
             failure_detection_time,
@@ -118,6 +120,7 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
     EXPECT_CALL(*mock_monitor, run()).Times(1);
 
     auto context = monitor_service->start_monitoring(
+        nullptr,
         nullptr,
         node_keys,
         host,
@@ -141,6 +144,7 @@ TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
 
     auto context = monitor_service->start_monitoring(
         nullptr,
+        nullptr,
         node_keys,
         host,
         failure_detection_time,
@@ -160,6 +164,7 @@ TEST_F(MonitorServiceTest, EmptyNodeKeys) {
 
     EXPECT_THROW(
         monitor_service->start_monitoring(
+            nullptr,
             nullptr,
             keys,
             host,

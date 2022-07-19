@@ -44,6 +44,7 @@ MONITOR_SERVICE::MONITOR_SERVICE(
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     DBC* dbc,
+    DataSource* ds,
     std::set<std::string> node_keys,
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds failure_detection_time,
@@ -61,9 +62,9 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         node_keys,
         host,
         disposal_time,
-        dbc ? dbc->ds : nullptr,
+        ds,
         this,
-        dbc && dbc->ds && dbc->ds->save_queries ? true : false);
+        ds && ds->save_queries);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         dbc,

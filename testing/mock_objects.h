@@ -169,8 +169,8 @@ public:
     MOCK_MONITOR_SERVICE() : MONITOR_SERVICE() {};
 
     MOCK_METHOD(std::shared_ptr<MONITOR_CONNECTION_CONTEXT>, start_monitoring,
-                (DBC*, std::set<std::string>, std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, std::chrono::
-                    milliseconds, int, std::chrono::milliseconds));
+                (DBC*, DataSource*, std::set<std::string>, std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, std::
+                    chrono::milliseconds, int, std::chrono::milliseconds));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring_for_all_connections, (std::set<std::string>));
 };

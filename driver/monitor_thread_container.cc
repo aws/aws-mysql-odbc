@@ -26,7 +26,7 @@
 
 #include "monitor_thread_container.h"
 
-MONITOR_THREAD_CONTAINER::MONITOR_THREAD_CONTAINER() : thread_pool{2} {}
+MONITOR_THREAD_CONTAINER::MONITOR_THREAD_CONTAINER() : thread_pool{10} {}
 
 std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
     static std::shared_ptr<MONITOR_THREAD_CONTAINER> instance{new MONITOR_THREAD_CONTAINER};

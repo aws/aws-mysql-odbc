@@ -38,6 +38,7 @@ public:
     
     virtual std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
         DBC* dbc,
+        DataSource* ds,
         std::set<std::string> node_keys,
         std::shared_ptr<HOST_INFO> host,
         std::chrono::milliseconds failure_detection_time,
