@@ -30,6 +30,7 @@
 #include "host_info.h"
 #include "monitor_connection_context.h"
 
+#include <atomic>
 #include <list>
 
 struct CONNECTION_STATUS {
