@@ -49,7 +49,7 @@ public:
         std::shared_ptr<HOST_INFO> host_info,
         std::chrono::milliseconds monitor_disposal_time,
         DataSource* ds,
-        MONITOR_SERVICE* service,
+         std::shared_ptr<MONITOR_SERVICE> service,
         bool enable_logging = false);
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
@@ -66,14 +66,14 @@ public:
     virtual void run();
 
 private:
-    bool stopped = true;
+    std::atomic_bool stopped = true;
     std::shared_ptr<HOST_INFO> host;
     std::chrono::milliseconds connection_check_interval;
     std::chrono::milliseconds disposal_time;
     std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
     std::chrono::steady_clock::time_point last_context_timestamp;
     MYSQL_MONITOR_PROXY* mysql_proxy = nullptr;
-    MONITOR_SERVICE* monitor_service = nullptr;
+    std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
     std::mutex contexts_mutex;
     std::shared_ptr<FILE> logger;
     std::mutex mutex_;

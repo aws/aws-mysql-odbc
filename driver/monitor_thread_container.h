@@ -46,7 +46,7 @@ public:
         std::shared_ptr<HOST_INFO> host,
         std::chrono::milliseconds disposal_time,
         DataSource* ds,
-        MONITOR_SERVICE* monitor_service,
+        std::shared_ptr <MONITOR_SERVICE> monitor_service,
         bool enable_logging = false);
     virtual void add_task(std::shared_ptr<MONITOR> monitor);
     void reset_resource(std::shared_ptr<MONITOR> monitor);
@@ -61,12 +61,15 @@ protected:
         std::shared_ptr<HOST_INFO> host,
         std::chrono::milliseconds disposal_time,
         DataSource* ds,
-        MONITOR_SERVICE* monitor_service,
+        std::shared_ptr<MONITOR_SERVICE> monitor_service,
         bool enable_logging = false);
 
     std::map<std::string, std::shared_ptr<MONITOR>> monitor_map;
+    std::mutex monitor_map_mutex;
     std::map<std::shared_ptr<MONITOR>, std::future<void>> task_map;
+    std::mutex task_map_mutex;
     std::queue<std::shared_ptr<MONITOR>> available_monitors;
+    std::mutex available_monitors_mutex;
     ctpl::thread_pool thread_pool;
     std::mutex mutex_;
 

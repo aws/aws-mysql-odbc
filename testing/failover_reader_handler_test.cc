@@ -86,14 +86,7 @@ protected:
         topology->add_host(reader_c_host);
     }
 
-    static void TearDownTestSuite() { 
-        reader_a_host.reset();
-        reader_b_host.reset();
-        reader_c_host.reset();
-        writer_host.reset();
-
-        topology.reset();
-    }
+    static void TearDownTestSuite() {}
 
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
@@ -110,9 +103,6 @@ protected:
 
     void TearDown() override {
         cleanup_odbc_handles(env, dbc, ds);
-
-        mock_ts.reset();
-        mock_connection_handler.reset();
     }
 };
 

@@ -33,7 +33,7 @@ MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
     DataSource* ds,
-    MONITOR_SERVICE* service,
+    std::shared_ptr <MONITOR_SERVICE> service,
     bool enable_logging)
     : MONITOR(
         host_info,
@@ -46,7 +46,7 @@ MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
     MYSQL_MONITOR_PROXY* proxy,
-    MONITOR_SERVICE* service,
+    std::shared_ptr <MONITOR_SERVICE> service,
     bool enable_logging) {
 
     this->host = host_info;

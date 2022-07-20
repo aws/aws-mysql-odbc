@@ -63,7 +63,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         host,
         disposal_time,
         ds,
-        this,
+        shared_from_this(),
         ds && ds->save_queries);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(

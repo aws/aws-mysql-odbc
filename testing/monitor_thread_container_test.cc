@@ -45,7 +45,7 @@ class MonitorThreadContainerTest : public testing::Test {
 protected:
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
-    MONITOR_SERVICE* monitor_service;
+    std::shared_ptr<MONITOR_SERVICE> monitor_service;
 
     static void SetUpTestSuite() {}
 
@@ -56,10 +56,7 @@ protected:
         thread_container = MONITOR_THREAD_CONTAINER::get_instance();
     }
 
-    void TearDown() override {
-        host.reset();
-        thread_container.reset();
-    }
+    void TearDown() override {}
 };
 
 TEST_F(MonitorThreadContainerTest, GetInstance) {

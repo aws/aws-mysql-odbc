@@ -84,10 +84,7 @@ protected:
     }
 
     void TearDown() override {
-        mock_context_short_interval.reset();
-        mock_context_long_interval.reset();
-        host.reset();
-        delete monitor_service;
+        delete monitor;
     }
 
     // Defined so we can use private method get_connection_check_interval() in tests.

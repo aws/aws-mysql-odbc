@@ -576,13 +576,18 @@ std::shared_ptr<HOST_INFO> MYSQL_PROXY::get_host_info_from_ds() const {
     return std::make_shared<HOST_INFO>(main_host, main_port);
 }
 
-MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) : ds{ds} {}
+MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) {
+    this->ds = ds_new();
+    ds_copy(this->ds, ds);
+}
 
 MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
     if (this->mysql) {
         mysql_close(this->mysql);
         this->mysql = nullptr;
     }
+    if (this->ds)
+        ds_delete(this->ds);
 }
 
 void MYSQL_MONITOR_PROXY::init() {

@@ -34,6 +34,7 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
 }
 
 std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
+    std::unique_lock<std::mutex> lock(monitor_map_mutex);
     if (!this->monitor_map.empty()) {
         for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
             std::string node = *it;
@@ -47,7 +48,8 @@ std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) 
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node) {
-    return this->monitor_map[node];
+    std::unique_lock<std::mutex> lock(monitor_map_mutex);
+    return this->monitor_map.at(node);
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
@@ -55,7 +57,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
     DataSource* ds,
-    MONITOR_SERVICE* monitor_service,
+    std::shared_ptr<MONITOR_SERVICE> monitor_service,
     bool enable_logging) {
 
     std::shared_ptr<MONITOR> monitor;
@@ -63,6 +65,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::unique_lock<std::mutex> lock(mutex_);
     std::string node = this->get_node(node_keys);
     if (node != "") {
+        std::unique_lock<std::mutex> lock(monitor_map_mutex);
         monitor = this->monitor_map[node];
     }
     else {
@@ -82,6 +85,7 @@ void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor) {
         throw std::invalid_argument("Parameter monitor cannot be null");
     }
 
+    std::unique_lock<std::mutex> lock(task_map_mutex);
     if (this->task_map.count(monitor) == 0) {
         auto run_monitor = [monitor](int id) { monitor->run(); };
         this->task_map[monitor] = this->thread_pool.push(run_monitor);
@@ -95,6 +99,7 @@ void MONITOR_THREAD_CONTAINER::reset_resource(std::shared_ptr<MONITOR> monitor) 
 
     this->remove_monitor_mapping(monitor);
 
+    std::unique_lock<std::mutex> lock(available_monitors_mutex);
     this->available_monitors.push(monitor);
 }
 
@@ -105,6 +110,7 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
 
     this->remove_monitor_mapping(monitor);
 
+    std::unique_lock<std::mutex> lock(task_map_mutex);
     if (this->task_map.count(monitor) > 0) {
         std::future<void> task = std::move(this->task_map[monitor]);
         // TODO: cancel task
@@ -115,11 +121,13 @@ void MONITOR_THREAD_CONTAINER::populate_monitor_map(
     std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor) {
 
     for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
+        std::unique_lock<std::mutex> lock(monitor_map_mutex);
         this->monitor_map[*it] = monitor;
     }
 }
 
 void MONITOR_THREAD_CONTAINER::remove_monitor_mapping(std::shared_ptr<MONITOR> monitor) {
+    std::unique_lock<std::mutex> lock(monitor_map_mutex);
     for (auto it = this->monitor_map.begin(); it != this->monitor_map.end();) {
         std::string node = (*it).first;
         if (this->monitor_map[node] == monitor) {
@@ -132,6 +140,7 @@ void MONITOR_THREAD_CONTAINER::remove_monitor_mapping(std::shared_ptr<MONITOR> m
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
+    std::unique_lock<std::mutex> lock(available_monitors_mutex);
     if (!this->available_monitors.empty()) {
         std::shared_ptr<MONITOR> available_monitor = this->available_monitors.front();
         this->available_monitors.pop();
@@ -140,6 +149,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
             return available_monitor;
         }
 
+        //std::unique_lock<std::mutex> lock(task_map_mutex);
         if (this->task_map.count(available_monitor) > 0) {
             // TODO: Cancel task
         }
@@ -151,8 +161,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
-    DataSource* ds,
-    MONITOR_SERVICE* monitor_service,
+    DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service,
     bool enable_logging) {
 
     return std::make_shared<MONITOR>(host, disposal_time, ds, monitor_service, enable_logging);
