@@ -66,7 +66,7 @@ public:
     virtual void run();
 
 private:
-    std::atomic_bool stopped = true;
+    std::atomic_bool stopped{true};
     std::shared_ptr<HOST_INFO> host;
     std::chrono::milliseconds connection_check_interval;
     std::chrono::milliseconds disposal_time;
