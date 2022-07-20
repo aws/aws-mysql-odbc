@@ -57,6 +57,7 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
     MOCK_METHOD(MYSQL_RES*, store_result, ());
     MOCK_METHOD(char**, fetch_row, (MYSQL_RES*));
     MOCK_METHOD(void, free_result, (MYSQL_RES*));
+    MOCK_METHOD(void, close_socket, ());
     MOCK_METHOD(void, mock_mysql_proxy_destructor, ());
 };
 
