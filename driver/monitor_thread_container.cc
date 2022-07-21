@@ -49,7 +49,7 @@ std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) 
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node) {
     std::unique_lock<std::mutex> lock(monitor_map_mutex);
-    return this->monitor_map.at(node);
+    return this->monitor_map[node];
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
