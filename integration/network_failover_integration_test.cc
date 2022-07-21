@@ -68,7 +68,7 @@ protected:
 
     builder = ConnectionStringBuilder();
     builder.withDSN(dsn).withUID(user).withPWD(pwd).withConnectTimeout(10).withNetworkTimeout(10);
-    builder.withPort(MYSQL_PROXY_PORT).withHostPattern(PROXIED_CLUSTER_TEMPLATE).withLogQuery(true);
+    builder.withPort(MYSQL_PROXY_PORT).withHostPattern(PROXIED_CLUSTER_TEMPLATE).withLogQuery(true).withEnableFailureDetection(true);
   }
 
   void TearDown() override {
