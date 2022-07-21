@@ -59,7 +59,6 @@ class FAILOVER_CONNECTION_HANDLER {
         DBC* dbc;
 
         DBC* clone_dbc(DBC* source_dbc);
-        void release_dbc(DBC* dbc_clone);
 };
 
 struct READER_FAILOVER_RESULT {

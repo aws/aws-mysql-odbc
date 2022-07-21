@@ -30,7 +30,7 @@
 #include "monitor_thread_container.h"
 
 class MONITOR_SERVICE : public std::enable_shared_from_this<MONITOR_SERVICE> {
- public:
+public:
     MONITOR_SERVICE(bool enable_logging = false);
     MONITOR_SERVICE(
         std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container,
