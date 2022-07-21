@@ -140,6 +140,7 @@ class MOCK_MYSQL_MONITOR_PROXY : public MYSQL_MONITOR_PROXY {
 public:
     MOCK_MYSQL_MONITOR_PROXY() : MYSQL_MONITOR_PROXY(nullptr) {};
 
+    MOCK_METHOD(bool, is_connected, ());
     MOCK_METHOD(void, init, ());
     MOCK_METHOD(int, ping, ());
     MOCK_METHOD(int, options, (enum mysql_option, const void*));

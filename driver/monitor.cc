@@ -75,9 +75,10 @@ void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> conte
     context->set_start_monitor_time(current_time);
     this->last_context_timestamp = current_time;
     
-    std::unique_lock<std::mutex> lock(mutex_);
-    this->contexts.push_back(context);
-    lock.unlock();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        this->contexts.push_back(context);
+    }
 }
 
 void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
@@ -88,9 +89,10 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
         return;
     }
 
-    std::unique_lock<std::mutex> lock(mutex_);
-    this->contexts.remove(context);
-    lock.unlock();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        this->contexts.remove(context);
+    }
 
     context->invalidate();
 
@@ -102,9 +104,10 @@ bool MONITOR::is_stopped() {
 }
 
 void MONITOR::clear_contexts() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    this->contexts.clear();
-    lock.unlock();
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        this->contexts.clear();
+    }
 
     this->connection_check_interval = (std::chrono::milliseconds::max)();
 }
@@ -114,22 +117,28 @@ void MONITOR::run() {
     try {
         this->stopped = false;
         while (true) {
-            if (!this->contexts.empty()) {
+            bool have_contexts;
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                have_contexts = !this->contexts.empty();
+            }
+            if (have_contexts) {
                 auto status_check_start_time = this->get_current_time();
                 this->last_context_timestamp = status_check_start_time;
 
                 std::chrono::milliseconds check_interval = this->get_connection_check_interval();
                 CONNECTION_STATUS status = this->check_connection_status(check_interval);
 
-                std::unique_lock<std::mutex> lock(mutex_);
-                for (auto it = this->contexts.begin(); it != this->contexts.end(); ++it) {
-                    std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context = *it;
-                    context->update_connection_status(
-                        status_check_start_time,
-                        status_check_start_time + status.elapsed_time,
-                        status.is_valid);
+                {
+                    std::unique_lock<std::mutex> lock(mutex_);
+                    for (auto it = this->contexts.begin(); it != this->contexts.end(); ++it) {
+                        std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context = *it;
+                        context->update_connection_status(
+                            status_check_start_time,
+                            status_check_start_time + status.elapsed_time,
+                            status.is_valid);
+                    }
                 }
-                lock.unlock();
 
                 auto sleep_time = check_interval - status.elapsed_time;
                 if (sleep_time > std::chrono::milliseconds(0)) {
@@ -197,18 +206,20 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
 
 std::chrono::milliseconds MONITOR::find_shortest_interval() {
     auto min = (std::chrono::milliseconds::max)();
-    if (this->contexts.empty()) {
-        return min;
-    }
 
-    std::unique_lock<std::mutex> lock(mutex_);
-    for (auto it = this->contexts.begin(); it != this->contexts.end(); ++it) {
-        auto failure_detection_interval = (*it)->get_failure_detection_interval();
-        if (failure_detection_interval < min) {
-            min = failure_detection_interval;
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (this->contexts.empty()) {
+            return min;
+        }
+
+        for (auto it = this->contexts.begin(); it != this->contexts.end(); ++it) {
+            auto failure_detection_interval = (*it)->get_failure_detection_interval();
+            if (failure_detection_interval < min) {
+                min = failure_detection_interval;
+            }
         }
     }
-    lock.unlock();
 
     return min;
 }

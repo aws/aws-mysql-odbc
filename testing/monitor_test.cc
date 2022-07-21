@@ -232,9 +232,9 @@ TEST_F(MonitorTest, RunWithContext) {
     std::shared_ptr<MONITOR_THREAD_CONTAINER> container = MONITOR_THREAD_CONTAINER::get_instance();
     MONITOR_SERVICE* monitor_service = new MONITOR_SERVICE(container);
 
-    auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
+    auto mock_proxy = new MOCK_MYSQL_MONITOR_PROXY();
     std::shared_ptr<MONITOR> monitorA = 
-        std::make_shared<MONITOR>(host, short_interval, proxy, monitor_service);
+        std::make_shared<MONITOR>(host, short_interval, mock_proxy, monitor_service);
 
     // Put monitor into container map
     std::string node_key = "monitorA";
@@ -247,10 +247,14 @@ TEST_F(MonitorTest, RunWithContext) {
         short_interval,
         failure_detection_count);
 
-    EXPECT_CALL(*proxy, connect())
+    EXPECT_CALL(*mock_proxy, is_connected())
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+    
+    EXPECT_CALL(*mock_proxy, connect())
         .WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*proxy, ping())
+    EXPECT_CALL(*mock_proxy, ping())
         .WillRepeatedly(Return(0));
 
     // Put context
@@ -259,7 +263,7 @@ TEST_F(MonitorTest, RunWithContext) {
     // Start thread to remove context from monitor
     std::thread thread(
         [&monitorA, &context_short_interval]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(30));
+            std::this_thread::sleep_for(short_interval);
             monitorA->stop_monitoring(context_short_interval);
         });
 
