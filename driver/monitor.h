@@ -51,13 +51,19 @@ public:
         DataSource* ds,
         MONITOR_SERVICE* service,
         bool enable_logging = false);
+    MONITOR(
+        std::shared_ptr<HOST_INFO> host_info,
+        std::chrono::milliseconds monitor_disposal_time,
+        MYSQL_MONITOR_PROXY* proxy,
+        MONITOR_SERVICE* service,
+        bool enable_logging = false);
     virtual ~MONITOR();
 
     virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual bool is_stopped();
     virtual void clear_contexts();
-    virtual void run();
+    void run();
 
 private:
     bool stopped = true;
@@ -69,11 +75,13 @@ private:
     MYSQL_MONITOR_PROXY* mysql_proxy = nullptr;
     MONITOR_SERVICE* monitor_service = nullptr;
     std::shared_ptr<FILE> logger;
+    std::mutex mutex_;
 
     std::chrono::milliseconds get_connection_check_interval();
     CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);
     bool connect(std::chrono::milliseconds timeout);
     std::chrono::milliseconds find_shortest_interval();
+    virtual std::chrono::steady_clock::time_point get_current_time();
 
     friend class MonitorTest; // Allows for testing private methods
 };

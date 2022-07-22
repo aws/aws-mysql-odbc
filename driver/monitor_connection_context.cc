@@ -182,7 +182,7 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
 
 void MONITOR_CONNECTION_CONTEXT::abort_connection() {
     std::lock_guard<std::mutex> lock(mutex_);
-    if ((get_connection_to_abort()) || (!is_active_context())) {
+    if ((!get_connection_to_abort()) || (!is_active_context())) {
         return;
     }
     connection_to_abort->mysql_proxy->close_socket();

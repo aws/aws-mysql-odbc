@@ -68,6 +68,8 @@ protected:
     std::map<std::shared_ptr<MONITOR>, std::future<void>*> task_map;
     std::queue<std::shared_ptr<MONITOR>> available_monitors;
     ctpl::thread_pool thread_pool;
+
+    friend class MonitorTest; // Allows for testing private methods
 };
 
 #endif /* __MONITORTHREADCONTAINER_H__ */
