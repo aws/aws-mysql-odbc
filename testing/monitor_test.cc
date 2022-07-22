@@ -216,7 +216,7 @@ TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
 
 TEST_F(MonitorTest, RunWithoutContext) {
     std::shared_ptr<MONITOR_THREAD_CONTAINER> container = MONITOR_THREAD_CONTAINER::get_instance();
-    MONITOR_SERVICE* monitor_service = new MONITOR_SERVICE(container);
+    auto monitor_service = std::make_shared<MONITOR_SERVICE>(container);
 
     std::shared_ptr<MOCK_MONITOR3> mock_monitor = 
         std::make_shared<MOCK_MONITOR3>(host, short_interval, monitor_service);
@@ -288,8 +288,12 @@ TEST_F(MonitorTest, RunWithContext) {
 
     // After running, monitor should be out of the maps
     EXPECT_THAT(container->get_monitor(node_key), nullptr);
+<<<<<<< HEAD
     EXPECT_FALSE(has_task(container, monitorA));
 
     context_short_interval.reset();
     monitorA.reset();
+=======
+    EXPECT_THAT(get_task(container, monitorA), nullptr);
+>>>>>>> d92480c3 (fix unintended inserting empty value to map)
 }

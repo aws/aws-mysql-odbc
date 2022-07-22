@@ -182,7 +182,7 @@ public:
     virtual bool connect();
     virtual bool is_connected();
     virtual const char* error();
-    void close();
+    virtual void close();
 
 private:
     DataSource* ds = nullptr;

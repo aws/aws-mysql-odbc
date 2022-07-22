@@ -49,7 +49,7 @@ std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) 
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node) {
     std::unique_lock<std::mutex> lock(monitor_map_mutex);
-    return this->monitor_map[node];
+    return this->monitor_map.count(node) > 0 ? this->monitor_map.at(node) : nullptr;
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
@@ -64,14 +64,14 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
 
     std::unique_lock<std::mutex> lock(mutex_);
     std::string node = this->get_node(node_keys);
-    if (node != "") {
+    if (!node.empty()) {
         std::unique_lock<std::mutex> lock(monitor_map_mutex);
         monitor = this->monitor_map[node];
     }
     else {
         monitor = this->get_available_monitor();
         if (monitor == nullptr) {
-            monitor = this->create_monitor(host, disposal_time, ds, monitor_service, enable_logging);
+            monitor = this->create_monitor(std::move(host), disposal_time, ds, std::move(monitor_service), enable_logging);
         }
     }
 
@@ -149,7 +149,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
             return available_monitor;
         }
 
-        //std::unique_lock<std::mutex> lock(task_map_mutex);
+        std::unique_lock<std::mutex> lock(task_map_mutex);
         if (this->task_map.count(available_monitor) > 0) {
             // TODO: Cancel task
         }

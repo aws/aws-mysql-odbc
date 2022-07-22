@@ -106,9 +106,10 @@ public:
 
 class MOCK_MONITOR : public MONITOR {
 public:
-    MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time, std::shared_ptr<MONITOR_SERVICE> service) : 
-        MONITOR(host, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr, service) {}
-    
+    MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time,
+                 MYSQL_MONITOR_PROXY* monitor_proxy, std::shared_ptr<MONITOR_SERVICE> service)
+    : MONITOR(host, disposal_time, monitor_proxy, service) {}
+
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(bool, is_stopped, ());

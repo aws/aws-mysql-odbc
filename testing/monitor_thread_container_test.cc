@@ -177,7 +177,7 @@ TEST_F(MonitorThreadContainerTest, RemoveMonitorMapping) {
 
 TEST_F(MonitorThreadContainerTest, AvailableMonitorsQueue) {
     std::set<std::string> keys = { "nodeA", "nodeB", "nodeC", "nodeD" };
-    auto mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, monitor_service);
+    auto mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr, monitor_service);
     auto mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
 
     EXPECT_CALL(*mock_monitor, is_stopped())
