@@ -59,6 +59,7 @@ class MonitorConnectionContextTest : public testing::Test {
 
     void SetUp() override {
         allocate_odbc_handles(env, connection_to_abort, ds);
+        connection_to_abort->mysql_proxy = new MOCK_MYSQL_PROXY(connection_to_abort, ds);
         context = new MONITOR_CONNECTION_CONTEXT(connection_to_abort,
                                                  node_keys,
                                                  failure_detection_time,
