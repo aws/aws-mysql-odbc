@@ -106,26 +106,9 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
     std::stringstream err;
     // Cluster-aware failover is enabled
 
-    std::vector<Srv_host_detail> hosts;
-    try {
-        hosts = parse_host_list(
-            ds_get_utf8attr(ds->server, &ds->server8), ds->port);
-    } catch (std::string&) {
-        err << "Invalid server '" << ds->server8 << "'.";
-        MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw std::runtime_error(err.str());
-    }
-
-    if (hosts.size() == 0) {
-        err << "Empty server host.";
-        MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw std::runtime_error(err.str());
-    }
-
-    std::string main_host(hosts[0].name);
-    unsigned int main_port = hosts[0].port;
-
-    this->current_host = std::make_shared<HOST_INFO>(main_host, main_port);
+    this->current_host = get_host_info_from_ds(ds);
+    std::string main_host = this->current_host->get_host();
+    unsigned int main_port = this->current_host->get_port();
 
     const char* hp =
         ds_get_utf8attr(ds->host_pattern, &ds->host_pattern8);
