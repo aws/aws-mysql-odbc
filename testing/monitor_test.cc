@@ -160,7 +160,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
         .WillRepeatedly(Return(true));
     
     EXPECT_CALL(*mock_proxy, init()).Times(1);
-    EXPECT_CALL(*mock_proxy, options(_, _)).Times(1);
+    EXPECT_CALL(*mock_proxy, options(_, _)).Times(2);
     
     EXPECT_CALL(*mock_proxy, connect())
         .WillOnce(Return(true));
