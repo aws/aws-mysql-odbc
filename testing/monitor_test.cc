@@ -104,8 +104,8 @@ protected:
         container->populate_monitor_map(node_keys, monitor);
     }
 
-    std::future<void>* get_task(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::shared_ptr<MONITOR> monitor) {
-        return container->task_map[monitor];
+    bool has_task(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::shared_ptr<MONITOR> monitor) {
+        return container->task_map.count(monitor) > 0;
     }
 };
 
@@ -222,7 +222,7 @@ TEST_F(MonitorTest, RunWithoutContext) {
 
     // After running with empty context, monitor should be out of the maps
     EXPECT_THAT(container->get_monitor(node_key), nullptr);
-    EXPECT_THAT(get_task(container, mock_monitor), nullptr);
+    EXPECT_FALSE(has_task(container, mock_monitor));
 
     mock_monitor.reset();
     delete monitor_service;
@@ -274,7 +274,7 @@ TEST_F(MonitorTest, RunWithContext) {
 
     // After running, monitor should be out of the maps
     EXPECT_THAT(container->get_monitor(node_key), nullptr);
-    EXPECT_THAT(get_task(container, monitorA), nullptr);
+    EXPECT_FALSE(has_task(container, monitorA));
 
     context_short_interval.reset();
     monitorA.reset();
