@@ -34,6 +34,7 @@
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Return;
+using ::testing::Sequence;
 
 namespace {
     const std::chrono::milliseconds failure_detection_time(10);
@@ -165,18 +166,12 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
         EXPECT_CALL(*monitors[i], run()).Times(AtLeast(1));
     }
 
-    // Must update if num_connection changes!
-    EXPECT_CALL(*mock_container, create_monitor(_, _, _, _, _)).Times(num_connections)
-        .WillOnce(Return(monitors[0]))
-        .WillOnce(Return(monitors[1]))
-        .WillOnce(Return(monitors[2]))
-        .WillOnce(Return(monitors[3]))
-        .WillOnce(Return(monitors[4]))
-        .WillOnce(Return(monitors[5]))
-        .WillOnce(Return(monitors[6]))
-        .WillOnce(Return(monitors[7]))
-        .WillOnce(Return(monitors[8]))
-        .WillOnce(Return(monitors[9]));
+    Sequence s1;
+    for (int i = 0; i < num_connections; i++) {
+        EXPECT_CALL(*mock_container, create_monitor(_, _, _, _, _))
+            .InSequence(s1)
+            .WillOnce(Return(monitors[i]));
+    }
 
     run_start_monitor(num_connections, services, node_key_list, host);
     
