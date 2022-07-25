@@ -45,8 +45,10 @@ namespace {
 
 class MultiThreadedMonitorServiceTest : public testing::Test {
 protected:
+    const int num_connections = 10;
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MOCK_MONITOR_THREAD_CONTAINER> mock_container;
+    std::vector<MONITOR_SERVICE*> services;
 
     static void SetUpTestSuite() {}
 
@@ -55,11 +57,15 @@ protected:
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
+        services = generate_services(num_connections);
     }
 
     void TearDown() override {
         host.reset();
         mock_container.reset();
+        for (MONITOR_SERVICE* service : services) {
+            delete service;
+        }
     }
 
     size_t get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container) {
@@ -153,9 +159,6 @@ protected:
 };
 
 TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectionsToDifferentNodes) {
-    const int num_connections = 10;
-
-    std::vector<MONITOR_SERVICE*> services = generate_services(num_connections);
     std::vector<std::set<std::string>> node_key_list = generate_node_keys(num_connections, true);
 
     std::vector<std::shared_ptr<MOCK_MONITOR2>> monitors;
@@ -195,15 +198,11 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
     }
 
     for (int i = 0; i < num_connections; i++) {
-        delete services[i];
         monitors[i].reset();
     }
 }
 
 TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectionsToOneNode) {
-    const int num_connections = 10;
-
-    std::vector<MONITOR_SERVICE*> services = generate_services(num_connections);
     std::vector<std::set<std::string>> node_key_list = generate_node_keys(num_connections, false);
 
     auto mock_monitor = std::make_shared<MOCK_MONITOR2>(host, monitor_disposal_time, services[0]);
@@ -232,8 +231,5 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
 
     EXPECT_EQ(0, get_contexts(mock_monitor).size());
 
-    for (int i = 0; i < num_connections; i++) {
-        delete services[i];
-    }
     mock_monitor.reset();
 }
