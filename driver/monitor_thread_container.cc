@@ -84,8 +84,7 @@ void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor) {
 
     if (this->task_map.count(monitor) == 0) {
         auto run_monitor = [monitor](int id) { monitor->run(); };
-        std::future<void> future = this->thread_pool.push(run_monitor);
-        this->task_map[monitor] = std::move(future);
+        this->task_map[monitor] = this->thread_pool.push(run_monitor);
     }
 }
 
