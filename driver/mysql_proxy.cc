@@ -48,7 +48,7 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVI
         throw std::runtime_error("DataSource cannot be null.");
     }
 
-    this->host = get_host_info_from_ds(ds, dbc->log_file);
+    this->host = get_host_info_from_ds(ds);
     generate_node_keys();
 }
 
