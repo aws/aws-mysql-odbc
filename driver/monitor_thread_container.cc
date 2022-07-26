@@ -161,7 +161,8 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
-    DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service,
+    DataSource* ds,
+    std::shared_ptr<MONITOR_SERVICE> monitor_service,
     bool enable_logging) {
 
     return std::make_shared<MONITOR>(host, disposal_time, ds, monitor_service, enable_logging);

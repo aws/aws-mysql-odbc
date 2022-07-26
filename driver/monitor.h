@@ -75,7 +75,6 @@ private:
     std::chrono::steady_clock::time_point last_context_timestamp;
     MYSQL_MONITOR_PROXY* mysql_proxy = nullptr;
     std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
-    std::mutex contexts_mutex;
     std::shared_ptr<FILE> logger;
     std::mutex mutex_;
 
