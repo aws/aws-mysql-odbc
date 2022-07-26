@@ -112,7 +112,7 @@ public:
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(bool, is_stopped, ());
-    MOCK_METHOD(std::chrono::steady_clock::time_point, get_current_time, ());
+    MOCK_METHOD(void, run, ());
 };
 
 class MOCK_MONITOR2 : public MONITOR {
@@ -121,6 +121,14 @@ public:
         MONITOR(host, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr, service) {}
 
     MOCK_METHOD(void, run, ());
+};
+
+class MOCK_MONITOR3 : public MONITOR {
+public:
+    MOCK_MONITOR3(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time, MONITOR_SERVICE* service) :
+        MONITOR(host, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr, service) {}
+
+    MOCK_METHOD(std::chrono::steady_clock::time_point, get_current_time, ());
 };
 
 class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {
