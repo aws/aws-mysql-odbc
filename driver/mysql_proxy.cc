@@ -48,7 +48,7 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVI
         throw std::runtime_error("DataSource cannot be null.");
     }
 
-    this->host = get_host_info_from_ds(ds);
+    this->host = get_host_info_from_ds(ds, dbc->log_file);
     generate_node_keys();
 }
 
@@ -536,7 +536,7 @@ void MYSQL_PROXY::generate_node_keys() {
 
     if (is_connected()) {
         // Temporarily turn off failure detection if on
-        const auto is_monitoring = ds->enable_failure_detection;
+        const auto failure_detection_old_state = ds->enable_failure_detection;
         ds->enable_failure_detection = false;
 
         const auto error = query(RETRIEVE_HOST_PORT_SQL);
@@ -548,7 +548,7 @@ void MYSQL_PROXY::generate_node_keys() {
             }
         }
 
-        ds->enable_failure_detection = is_monitoring;
+        ds->enable_failure_detection = failure_detection_old_state;
     }
 }
 

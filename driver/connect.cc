@@ -242,7 +242,7 @@ std::vector<Srv_host_detail> parse_host_list(const char* hosts_str,
   return list;
 }
 
-std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource *ds) {
+std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource* ds) {
   std::vector<Srv_host_detail> hosts;
   std::stringstream err;
   try {
@@ -250,11 +250,17 @@ std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource *ds) {
         parse_host_list(ds_get_utf8attr(ds->server, &ds->server8), ds->port);
   } catch (std::string &) {
     err << "Invalid server '" << ds->server8 << "'.";
+    if (ds->save_queries) {
+      MYLOG_TRACE(init_log_file().get(), 0, err.str().c_str());
+    }
     throw std::runtime_error(err.str());
   }
 
   if (hosts.size() == 0) {
-    err << "No host was found.";
+    err << "No host was retrieved from the data source.";
+    if (ds->save_queries) {
+      MYLOG_TRACE(init_log_file().get(), 0, err.str().c_str());
+    }
     throw std::runtime_error(err.str());
   }
 

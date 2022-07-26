@@ -44,7 +44,7 @@ std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) 
         }
     }
 
-    return "";
+    return std::string();
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node) {

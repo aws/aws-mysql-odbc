@@ -88,7 +88,7 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
     }
 
     std::string node = this->thread_container->get_node(context->get_node_keys());
-    if (node == "") {
+    if (node.empty()) {
         MYLOG_TRACE(
             this->logger.get(), context->get_dbc_id(),
             "[MONITOR_SERVICE] Can not find node key from context");
@@ -100,7 +100,7 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
 
 void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> node_keys) {
     std::string node = this->thread_container->get_node(node_keys);
-    if (node == "") {
+    if (node.empty()) {
         MYLOG_TRACE(
             this->logger.get(), 0,
             "[MONITOR_SERVICE] Invalid node keys passed into stop_monitoring_for_all_connections(). "

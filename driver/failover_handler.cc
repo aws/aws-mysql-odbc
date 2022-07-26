@@ -424,7 +424,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
     if (ec.rfind("08", 0) == 0) {  // start with "08"
 
         // disable failure detection during failover
-        auto failure_detection_enabled = ds->enable_failure_detection;
+        auto failure_detection_old_state = ds->enable_failure_detection;
         ds->enable_failure_detection = false;
 
         // invalidate current connection
@@ -457,7 +457,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
             error_msg = "Connection failure during transaction.";
         }
 
-        ds->enable_failure_detection = failure_detection_enabled;
+        ds->enable_failure_detection = failure_detection_old_state;
 
         return true;
     }
