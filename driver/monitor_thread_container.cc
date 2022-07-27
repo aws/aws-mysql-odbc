@@ -60,6 +60,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
 
     std::shared_ptr<MONITOR> monitor;
 
+    std::unique_lock<std::mutex> lock(mutex_);
     std::string node = this->get_node(node_keys);
     if (node != "") {
         monitor = this->monitor_map[node];
@@ -82,9 +83,8 @@ void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor) {
     }
 
     if (this->task_map.count(monitor) == 0) {
-        std::future<void> future = 
-            this->thread_pool.push([&monitor](int id) { monitor->run(); });
-        this->task_map[monitor] = &future;
+        auto run_monitor = [monitor](int id) { monitor->run(); };
+        this->task_map[monitor] = this->thread_pool.push(run_monitor);
     }
 }
 
@@ -106,7 +106,7 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
     this->remove_monitor_mapping(monitor);
 
     if (this->task_map.count(monitor) > 0) {
-        std::future<void>* task = this->task_map[monitor];
+        std::future<void> task = std::move(this->task_map[monitor]);
         // TODO: cancel task
     }
 }

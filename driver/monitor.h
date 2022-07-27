@@ -63,7 +63,7 @@ public:
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual bool is_stopped();
     virtual void clear_contexts();
-    void run();
+    virtual void run();
 
 private:
     bool stopped = true;
@@ -83,7 +83,9 @@ private:
     std::chrono::milliseconds find_shortest_interval();
     virtual std::chrono::steady_clock::time_point get_current_time();
 
-    friend class MonitorTest; // Allows for testing private methods
+    // Allows for testing private methods
+    friend class MonitorTest;
+    friend class MultiThreadedMonitorServiceTest;
 };
 
 #endif /* __MONITOR_H__ */
