@@ -54,11 +54,6 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
     }
 }
 
-MONITOR_THREAD_CONTAINER::~MONITOR_THREAD_CONTAINER() {
-    release_instance();
-    thread_pool.stop();
-}
-
 std::string MONITOR_THREAD_CONTAINER::get_node(
     std::set<std::string> node_keys) {
     std::unique_lock<std::mutex> lock(monitor_map_mutex);
