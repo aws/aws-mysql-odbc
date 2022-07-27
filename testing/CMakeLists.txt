@@ -61,6 +61,7 @@ add_executable(
   monitor_service_test.cc
   monitor_test.cc
   monitor_thread_container_test.cc
+  multi_threaded_monitor_service_test.cc
   mysql_proxy_test.cc
   query_parsing_test.cc
   main.cc
