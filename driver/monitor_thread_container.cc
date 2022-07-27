@@ -29,11 +29,38 @@
 MONITOR_THREAD_CONTAINER::MONITOR_THREAD_CONTAINER() : thread_pool{10} {}
 
 std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
-    static std::shared_ptr<MONITOR_THREAD_CONTAINER> instance{new MONITOR_THREAD_CONTAINER};
-    return instance;
+    if (singleton) {
+        return singleton;
+    }
+
+    std::lock_guard<std::mutex> guard(mutex_);
+    if (singleton) {
+        return singleton;
+    }
+
+    singleton = std::shared_ptr<MONITOR_THREAD_CONTAINER>(new MONITOR_THREAD_CONTAINER);
+    return singleton;
 }
 
-std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
+void MONITOR_THREAD_CONTAINER::release_instance() {
+    if (!singleton) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> guard(mutex_);
+    if (singleton.use_count() == 1) {
+        singleton->release_resources();
+        singleton.reset();
+    }
+}
+
+MONITOR_THREAD_CONTAINER::~MONITOR_THREAD_CONTAINER() {
+    release_instance();
+    thread_pool.stop();
+}
+
+std::string MONITOR_THREAD_CONTAINER::get_node(
+    std::set<std::string> node_keys) {
     std::unique_lock<std::mutex> lock(monitor_map_mutex);
     if (!this->monitor_map.empty()) {
         for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
@@ -44,7 +71,7 @@ std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) 
         }
     }
 
-    return std::string();
+    return std::string{};
 }
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node) {
@@ -166,4 +193,19 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     bool enable_logging) {
 
     return std::make_shared<MONITOR>(host, disposal_time, ds, monitor_service, enable_logging);
+}
+
+void MONITOR_THREAD_CONTAINER::release_resources() {
+    {
+        std::unique_lock<std::mutex> lock(monitor_map_mutex);
+        monitor_map.clear();
+    }
+    {
+        std::unique_lock<std::mutex> lock(task_map_mutex);
+        for (auto const& task_pair : task_map) {
+        // TODO: Cancel task
+        }
+    }
+
+    thread_pool.stop();
 }

@@ -124,3 +124,8 @@ void MONITOR_SERVICE::notify_unused(std::shared_ptr<MONITOR> monitor) {
     // Remove monitor from the maps
     this->thread_container->release_resource(monitor);
 }
+
+void MONITOR_SERVICE::release_resources() {
+    this->thread_container = nullptr;
+    MONITOR_THREAD_CONTAINER::release_instance();
+}

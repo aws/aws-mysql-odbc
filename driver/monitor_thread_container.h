@@ -38,7 +38,7 @@ class MONITOR_THREAD_CONTAINER {
 public:
     MONITOR_THREAD_CONTAINER(MONITOR_THREAD_CONTAINER const&) = delete;
     MONITOR_THREAD_CONTAINER& operator=(MONITOR_THREAD_CONTAINER const&) = delete;
-    static std::shared_ptr<MONITOR_THREAD_CONTAINER> get_instance();
+    virtual ~MONITOR_THREAD_CONTAINER();
     std::string get_node(std::set<std::string> node_keys);
     std::shared_ptr<MONITOR> get_monitor(std::string node);
     std::shared_ptr<MONITOR> get_or_create_monitor(
@@ -52,6 +52,9 @@ public:
     void reset_resource(std::shared_ptr<MONITOR> monitor);
     void release_resource(std::shared_ptr<MONITOR> monitor);
 
+    static std::shared_ptr<MONITOR_THREAD_CONTAINER> get_instance();
+    static void release_instance();
+
 protected:
     MONITOR_THREAD_CONTAINER();
     void populate_monitor_map(std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
@@ -63,6 +66,8 @@ protected:
         DataSource* ds,
         std::shared_ptr<MONITOR_SERVICE> monitor_service,
         bool enable_logging = false);
+    void release_resources();
+
 
     std::map<std::string, std::shared_ptr<MONITOR>> monitor_map;
     std::map<std::shared_ptr<MONITOR>, std::future<void>> task_map;
@@ -73,9 +78,12 @@ protected:
     ctpl::thread_pool thread_pool;
     std::mutex mutex_;
 
-    // Allows for testing private methods
+    // Allows for testing protected methods
     friend class MonitorTest;
     friend class MultiThreadedMonitorServiceTest;
 };
+
+static std::shared_ptr<MONITOR_THREAD_CONTAINER> singleton;
+static std::mutex mutex_;
 
 #endif /* __MONITORTHREADCONTAINER_H__ */

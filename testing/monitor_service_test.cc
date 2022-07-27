@@ -59,10 +59,12 @@ protected:
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
         monitor_service = std::make_shared<MONITOR_SERVICE>(mock_thread_container);
-        mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr, nullptr);
+        mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr, monitor_service);
     }
 
-    void TearDown() override {}
+    void TearDown() override {
+        monitor_service->release_resources();
+    }
 };
 
 TEST_F(MonitorServiceTest, StartMonitoring) {

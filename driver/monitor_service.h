@@ -49,6 +49,7 @@ public:
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring_for_all_connections(std::set<std::string> node_keys);
     void notify_unused(std::shared_ptr<MONITOR> monitor);
+    void release_resources();
 
 private:
     std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
