@@ -84,6 +84,6 @@ protected:
 };
 
 static std::shared_ptr<MONITOR_THREAD_CONTAINER> singleton;
-static std::mutex mutex_;
+static std::mutex thread_container_singleton_mutex;
 
 #endif /* __MONITORTHREADCONTAINER_H__ */

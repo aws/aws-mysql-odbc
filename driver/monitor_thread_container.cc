@@ -33,7 +33,7 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
         return singleton;
     }
 
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
     if (singleton) {
         return singleton;
     }
@@ -47,7 +47,7 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
         return;
     }
 
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
     if (singleton.use_count() == 1) {
         singleton->release_resources();
         singleton.reset();
