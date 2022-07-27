@@ -54,8 +54,9 @@ namespace {
 class MonitorTest : public testing::Test {
 protected:
     std::shared_ptr<HOST_INFO> host;
-    MONITOR* monitor;
+    std::shared_ptr<MONITOR> monitor;
     MOCK_MYSQL_MONITOR_PROXY* mock_proxy;
+    MONITOR_SERVICE* monitor_service;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_short_interval;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_long_interval;
 
@@ -66,7 +67,8 @@ protected:
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_proxy = new MOCK_MYSQL_MONITOR_PROXY();
-        monitor = new MONITOR(host, monitor_disposal_time, mock_proxy, nullptr);
+        monitor_service = new MONITOR_SERVICE(MONITOR_THREAD_CONTAINER::get_instance());
+        monitor = std::make_shared<MONITOR>(host, monitor_disposal_time, mock_proxy, monitor_service);
         
         mock_context_short_interval = std::make_shared<MOCK_MONITOR_CONNECTION_CONTEXT>(
             node_keys,
@@ -84,8 +86,8 @@ protected:
     void TearDown() override {
         mock_context_short_interval.reset();
         mock_context_long_interval.reset();
-        delete monitor;
         host.reset();
+        delete monitor_service;
     }
 
     // Defined so we can use private method get_connection_check_interval() in tests.
@@ -104,8 +106,8 @@ protected:
         container->populate_monitor_map(node_keys, monitor);
     }
 
-    std::future<void>* get_task(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::shared_ptr<MONITOR> monitor) {
-        return container->task_map[monitor];
+    bool has_task(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::shared_ptr<MONITOR> monitor) {
+        return container->task_map.count(monitor) > 0;
     }
 };
 
@@ -156,6 +158,10 @@ TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
+    EXPECT_CALL(*mock_proxy, is_connected())
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+    
     EXPECT_CALL(*mock_proxy, init()).Times(1);
     EXPECT_CALL(*mock_proxy, options(_, _)).Times(1);
     
@@ -171,6 +177,10 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
+    EXPECT_CALL(*mock_proxy, is_connected())
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+    
     EXPECT_CALL(*mock_proxy, init()).Times(AtLeast(1));
     EXPECT_CALL(*mock_proxy, options(_, _)).Times(AtLeast(1));
 
@@ -189,6 +199,10 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
+    EXPECT_CALL(*mock_proxy, is_connected())
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+    
     EXPECT_CALL(*mock_proxy, init()).Times(AtLeast(1));
     EXPECT_CALL(*mock_proxy, options(_, _)).Times(AtLeast(1));
     
@@ -207,8 +221,8 @@ TEST_F(MonitorTest, RunWithoutContext) {
     std::shared_ptr<MONITOR_THREAD_CONTAINER> container = MONITOR_THREAD_CONTAINER::get_instance();
     MONITOR_SERVICE* monitor_service = new MONITOR_SERVICE(container);
 
-    std::shared_ptr<MOCK_MONITOR> mock_monitor = 
-        std::make_shared<MOCK_MONITOR>(host, short_interval, monitor_service);
+    std::shared_ptr<MOCK_MONITOR3> mock_monitor = 
+        std::make_shared<MOCK_MONITOR3>(host, short_interval, monitor_service);
 
     EXPECT_CALL(*mock_monitor, get_current_time())
         .WillRepeatedly(Return(short_interval_time));
@@ -222,19 +236,32 @@ TEST_F(MonitorTest, RunWithoutContext) {
 
     // After running with empty context, monitor should be out of the maps
     EXPECT_THAT(container->get_monitor(node_key), nullptr);
-    EXPECT_THAT(get_task(container, mock_monitor), nullptr);
+    EXPECT_FALSE(has_task(container, mock_monitor));
 
     mock_monitor.reset();
     delete monitor_service;
 }
 
 TEST_F(MonitorTest, RunWithContext) {
-    std::shared_ptr<MONITOR_THREAD_CONTAINER> container = MONITOR_THREAD_CONTAINER::get_instance();
-    MONITOR_SERVICE* monitor_service = new MONITOR_SERVICE(container);
+    auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
+    
+    EXPECT_CALL(*proxy, is_connected())
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
 
-    auto mock_proxy = new MOCK_MYSQL_MONITOR_PROXY();
+    EXPECT_CALL(*proxy, init()).Times(AtLeast(1));
+    EXPECT_CALL(*proxy, options(_, _)).Times(AtLeast(1));
+
+    EXPECT_CALL(*proxy, connect())
+        .WillRepeatedly(Return(true));
+
+    EXPECT_CALL(*proxy, ping())
+        .WillRepeatedly(Return(0));
+
     std::shared_ptr<MONITOR> monitorA = 
-        std::make_shared<MONITOR>(host, short_interval, mock_proxy, monitor_service);
+        std::make_shared<MONITOR>(host, short_interval, proxy, monitor_service);
+
+    auto container = MONITOR_THREAD_CONTAINER::get_instance();
 
     // Put monitor into container map
     std::string node_key = "monitorA";
@@ -246,16 +273,6 @@ TEST_F(MonitorTest, RunWithContext) {
         failure_detection_time,
         short_interval,
         failure_detection_count);
-
-    EXPECT_CALL(*mock_proxy, is_connected())
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
-    
-    EXPECT_CALL(*mock_proxy, connect())
-        .WillRepeatedly(Return(true));
-
-    EXPECT_CALL(*mock_proxy, ping())
-        .WillRepeatedly(Return(0));
 
     // Put context
     monitorA->start_monitoring(context_short_interval);
@@ -274,9 +291,8 @@ TEST_F(MonitorTest, RunWithContext) {
 
     // After running, monitor should be out of the maps
     EXPECT_THAT(container->get_monitor(node_key), nullptr);
-    EXPECT_THAT(get_task(container, monitorA), nullptr);
+    EXPECT_FALSE(has_task(container, monitorA));
 
     context_short_interval.reset();
     monitorA.reset();
-    delete monitor_service;
 }
