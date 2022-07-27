@@ -86,7 +86,6 @@ protected:
     void TearDown() override {
         mock_context_short_interval.reset();
         mock_context_long_interval.reset();
-        monitor.reset();
         host.reset();
         delete monitor_service;
     }
