@@ -75,6 +75,7 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
+    EXPECT_CALL(*mock_monitor, run()).Times(1);
 
     auto context = monitor_service->start_monitoring(
         nullptr,
@@ -94,6 +95,7 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
     const int runs = 5;
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(runs);
+    EXPECT_CALL(*mock_monitor, run()).Times(1);
 
     for (int i = 0; i < runs; i++) {
         auto context = monitor_service->start_monitoring(
@@ -113,6 +115,7 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
+    EXPECT_CALL(*mock_monitor, run()).Times(1);
 
     auto context = monitor_service->start_monitoring(
         nullptr,
@@ -134,6 +137,7 @@ TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
+    EXPECT_CALL(*mock_monitor, run()).Times(1);
 
     auto context = monitor_service->start_monitoring(
         nullptr,
