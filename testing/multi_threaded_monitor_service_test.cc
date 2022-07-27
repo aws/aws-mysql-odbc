@@ -61,8 +61,6 @@ protected:
     }
 
     void TearDown() override {
-        host.reset();
-        mock_container.reset();
         for (MONITOR_SERVICE* service : services) {
             delete service;
         }
@@ -196,10 +194,6 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
     for (int i = 0; i < num_connections; i++) {
         EXPECT_EQ(0, get_contexts(monitors[i]).size());
     }
-
-    for (int i = 0; i < num_connections; i++) {
-        monitors[i].reset();
-    }
 }
 
 TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectionsToOneNode) {
@@ -230,6 +224,4 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
     run_stop_monitor(num_connections, services, contexts);
 
     EXPECT_EQ(0, get_contexts(mock_monitor).size());
-
-    mock_monitor.reset();
 }
