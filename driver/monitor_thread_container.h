@@ -65,11 +65,14 @@ protected:
         bool enable_logging = false);
 
     std::map<std::string, std::shared_ptr<MONITOR>> monitor_map;
-    std::map<std::shared_ptr<MONITOR>, std::future<void>*> task_map;
+    std::map<std::shared_ptr<MONITOR>, std::future<void>> task_map;
     std::queue<std::shared_ptr<MONITOR>> available_monitors;
     ctpl::thread_pool thread_pool;
+    std::mutex mutex_;
 
-    friend class MonitorTest; // Allows for testing private methods
+    // Allows for testing private methods
+    friend class MonitorTest;
+    friend class MultiThreadedMonitorServiceTest;
 };
 
 #endif /* __MONITORTHREADCONTAINER_H__ */
