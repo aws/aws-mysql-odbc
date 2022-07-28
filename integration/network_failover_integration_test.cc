@@ -95,7 +95,7 @@ TEST_F(NetworkFailoverIntegrationTest, connection_test) {
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
   const std::string server = get_proxied_endpoint(writer_id);
-  connection_string = builder.withServer(server).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).build();
+  connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   assert_query_succeeded(dbc, SERVER_ID_QUERY);
@@ -116,7 +116,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
 
 TEST_F(NetworkFailoverIntegrationTest, use_same_connection_after_failing_failover) {
   const std::string server = get_proxied_endpoint(writer_id);
-  connection_string = builder.withServer(server).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).build();
+  connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
   SQLHSTMT handle;
   EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
@@ -186,7 +186,7 @@ TEST_F(NetworkFailoverIntegrationTest, writer_connection_fails_due_to_no_reader)
   const char* writer_char_id = writer_id.c_str();
   const std::string server = MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX;
 
-  connection_string = builder.withServer(server).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).build();
+  connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   // Put all but writer down first
@@ -210,7 +210,7 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
   // Assert there are at least 2 readers in the cluster.
   EXPECT_LE(2, readers.size());
 
-  connection_string = builder.withServer(reader_endpoint).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).withAllowReaderConnections(true).build();
+  connection_string = builder.withServer(reader_endpoint).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).withAllowReaderConnections(true).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (size_t index = 0; index < readers.size() - 1; ++index) {
@@ -237,7 +237,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   const std::string server = get_proxied_endpoint(first_reader);
   previous_readers.push_back(first_reader);
 
-  connection_string = builder.withServer(server).withFailoverT(GLOBAL_FAILOVER_TIMEOUT).withAllowReaderConnections(true).build();
+  connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).withAllowReaderConnections(true).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(first_reader);
