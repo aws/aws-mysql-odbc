@@ -79,9 +79,6 @@ MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INF
         dbc_clone->mysql_proxy = nullptr;
     }
 
-    // TODO guard these from potential exceptions thrown before, make sure release happens.
-    release_dbc(dbc_clone);
-
     return new_connection;
 }
 
@@ -124,10 +121,4 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
         }
     }
     return dbc_clone;
-}
-
-void FAILOVER_CONNECTION_HANDLER::release_dbc(DBC* dbc_clone) {
-    // dbc->ds is deleted(if not null) in DBC destructor
-    // no need to separately clean it.
-    my_SQLFreeConnect(static_cast<SQLHANDLE>(dbc_clone));
 }
