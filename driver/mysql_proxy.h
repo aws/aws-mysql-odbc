@@ -169,7 +169,6 @@ private:
     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring();
     void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     void generate_node_keys();
-    std::shared_ptr<HOST_INFO> get_host_info_from_ds() const;
 };
 
 class MYSQL_MONITOR_PROXY {
@@ -183,6 +182,7 @@ public:
     virtual bool connect();
     virtual bool is_connected();
     virtual const char* error();
+    virtual void close();
 
 private:
     DataSource* ds = nullptr;
