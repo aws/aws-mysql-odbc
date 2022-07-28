@@ -40,14 +40,14 @@ class ConnectionString {
 
     ConnectionString() : m_dsn(""), m_server(""), m_port(-1),
                          m_uid(""), m_pwd(""), m_db(""), m_log_query(true), m_allow_reader_connections(false),
-                         m_multi_statements(false), m_enable_cluster_failover(true), m_failover_t(-1),
+                         m_multi_statements(false), m_enable_cluster_failover(true), m_failover_timeout(-1),
                          m_connect_timeout(-1), m_network_timeout(-1), m_host_pattern(""),
                          m_enable_failure_detection(true), m_failure_detection_time(-1), m_failure_detection_interval(-1),
                          m_failure_detection_count(-1), m_monitor_disposal_time(-1),
                          
                          is_set_uid(false), is_set_pwd(false), is_set_db(false), is_set_log_query(false),
                          is_set_allow_reader_connections(false), is_set_multi_statements(false), is_set_enable_cluster_failover(false),
-                         is_set_failover_t(false), is_set_connect_timeout(false), is_set_network_timeout(false), is_set_host_pattern(false),
+                         is_set_failover_timeout(false), is_set_connect_timeout(false), is_set_network_timeout(false), is_set_host_pattern(false),
                          is_set_enable_failure_detection(false), is_set_failure_detection_time(false), is_set_failure_detection_interval(false),
                          is_set_failure_detection_count(false), is_set_monitor_disposal_time(false) {};
 
@@ -77,8 +77,8 @@ class ConnectionString {
       if (is_set_enable_cluster_failover) {
         length += sprintf(conn_in + length, "ENABLE_CLUSTER_FAILOVER=%d;", m_enable_cluster_failover ? 1 : 0);
       }
-      if (is_set_failover_t) {
-        length += sprintf(conn_in + length, "FAILOVER_T=%d;", m_failover_t); 
+      if (is_set_failover_timeout) {
+        length += sprintf(conn_in + length, "FAILOVER_TIMEOUT=%d;", m_failover_timeout); 
       }
       if (is_set_connect_timeout) {
         length += sprintf(conn_in + length, "CONNECT_TIMEOUT=%d;", m_connect_timeout); 
@@ -118,7 +118,7 @@ class ConnectionString {
     // Optional fields
     std::string m_uid, m_pwd, m_db;
     bool m_log_query, m_allow_reader_connections, m_multi_statements, m_enable_cluster_failover;
-    int m_failover_t, m_connect_timeout, m_network_timeout;
+    int m_failover_timeout, m_connect_timeout, m_network_timeout;
     std::string m_host_pattern;
     bool m_enable_failure_detection;
     int m_failure_detection_time, m_failure_detection_interval, m_failure_detection_count, m_monitor_disposal_time;
@@ -126,7 +126,7 @@ class ConnectionString {
     bool is_set_uid, is_set_pwd, is_set_db;
     bool is_set_log_query, is_set_allow_reader_connections, is_set_multi_statements;
     bool is_set_enable_cluster_failover;
-    bool is_set_failover_t, is_set_connect_timeout, is_set_network_timeout;
+    bool is_set_failover_timeout, is_set_connect_timeout, is_set_network_timeout;
     bool is_set_host_pattern;
     bool is_set_enable_failure_detection;
     bool is_set_failure_detection_time, is_set_failure_detection_interval, is_set_failure_detection_count;
@@ -179,9 +179,9 @@ class ConnectionString {
       is_set_enable_cluster_failover = true;
     }
 
-    void set_failover_t(const int& failover_t) {
-      m_failover_t = failover_t;
-      is_set_failover_t = true;
+    void set_failover_timeout(const int& failover_timeout) {
+      m_failover_timeout = failover_timeout;
+      is_set_failover_timeout = true;
     }
 
     void set_connect_timeout(const int& connect_timeout) {
@@ -281,8 +281,8 @@ class ConnectionStringBuilder {
       return *this;
     }
 
-    ConnectionStringBuilder& withFailoverT(const int& failover_t) {
-      connection_string->set_failover_t(failover_t);
+    ConnectionStringBuilder& withFailoverTimeout(const int& failover_t) {
+      connection_string->set_failover_timeout(failover_t);
       return *this;
     }
 
