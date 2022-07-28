@@ -44,6 +44,7 @@ MONITOR_SERVICE::MONITOR_SERVICE(
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     DBC* dbc,
+    DataSource* ds,
     std::set<std::string> node_keys,
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds failure_detection_time,
@@ -61,9 +62,9 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         node_keys,
         host,
         disposal_time,
-        dbc ? dbc->ds : nullptr,
-        this,
-        dbc && dbc->ds && dbc->ds->save_queries ? true : false);
+        ds,
+        shared_from_this(),
+        ds && ds->save_queries);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         dbc,
@@ -87,7 +88,7 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
     }
 
     std::string node = this->thread_container->get_node(context->get_node_keys());
-    if (node == "") {
+    if (node.empty()) {
         MYLOG_TRACE(
             this->logger.get(), context->get_dbc_id(),
             "[MONITOR_SERVICE] Can not find node key from context");
@@ -99,7 +100,7 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
 
 void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> node_keys) {
     std::string node = this->thread_container->get_node(node_keys);
-    if (node == "") {
+    if (node.empty()) {
         MYLOG_TRACE(
             this->logger.get(), 0,
             "[MONITOR_SERVICE] Invalid node keys passed into stop_monitoring_for_all_connections(). "
@@ -122,4 +123,9 @@ void MONITOR_SERVICE::notify_unused(std::shared_ptr<MONITOR> monitor) {
 
     // Remove monitor from the maps
     this->thread_container->release_resource(monitor);
+}
+
+void MONITOR_SERVICE::release_resources() {
+    this->thread_container = nullptr;
+    MONITOR_THREAD_CONTAINER::release_instance();
 }
