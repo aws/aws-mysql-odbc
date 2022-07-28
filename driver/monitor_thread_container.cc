@@ -54,8 +54,7 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
     }
 }
 
-std::string MONITOR_THREAD_CONTAINER::get_node(
-    std::set<std::string> node_keys) {
+std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
     std::unique_lock<std::mutex> lock(monitor_map_mutex);
     if (!this->monitor_map.empty()) {
         for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
