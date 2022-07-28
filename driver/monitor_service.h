@@ -29,15 +29,17 @@
 
 #include "monitor_thread_container.h"
 
-class MONITOR_SERVICE {
+class MONITOR_SERVICE : public std::enable_shared_from_this<MONITOR_SERVICE> {
 public:
     MONITOR_SERVICE(bool enable_logging = false);
     MONITOR_SERVICE(
         std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container,
         bool enable_logging = false);
+    virtual ~MONITOR_SERVICE() = default;
     
     virtual std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
         DBC* dbc,
+        DataSource* ds,
         std::set<std::string> node_keys,
         std::shared_ptr<HOST_INFO> host,
         std::chrono::milliseconds failure_detection_time,
@@ -47,6 +49,7 @@ public:
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring_for_all_connections(std::set<std::string> node_keys);
     void notify_unused(std::shared_ptr<MONITOR> monitor);
+    void release_resources();
 
 private:
     std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;

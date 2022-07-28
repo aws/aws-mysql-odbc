@@ -148,7 +148,7 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
     std::chrono::steady_clock::time_point status_check_start_time,
     std::chrono::steady_clock::time_point current_time) {
 
-    auto node_keys_str = build_node_keys_str();
+    const auto node_keys_str = build_node_keys_str();
     if (!connection_valid) {
         increment_failure_count();
 
@@ -156,12 +156,11 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
             set_invalid_node_start_time(status_check_start_time);
         }
 
-        auto invalid_node_duration_ns = current_time - get_invalid_node_start_time();
-        auto invalid_node_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(invalid_node_duration_ns);
+        const auto invalid_node_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - get_invalid_node_start_time());
 
-        auto max_invalid_node_duration = get_failure_detection_interval().count() * (std::max)(0, get_failure_detection_count());
+        const auto max_invalid_node_duration = get_failure_detection_interval() * (std::max)(0, get_failure_detection_count());
 
-        if (invalid_node_duration_ms.count() >= max_invalid_node_duration) {
+        if (invalid_node_duration_ms >= max_invalid_node_duration) {
             MYLOG_TRACE(logger.get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys_str.c_str());
             set_node_unhealthy(true);
             abort_connection();
