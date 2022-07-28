@@ -48,7 +48,7 @@ protected:
     const int num_connections = 10;
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MOCK_MONITOR_THREAD_CONTAINER> mock_container;
-    std::vector<MONITOR_SERVICE*> services;
+    std::vector<std::shared_ptr<MONITOR_SERVICE>> services;
 
     static void SetUpTestSuite() {}
 
@@ -61,9 +61,10 @@ protected:
     }
 
     void TearDown() override {
-        for (MONITOR_SERVICE* service : services) {
-            delete service;
+        for (auto &service : services) {
+            service->release_resources();
         }
+        MONITOR_THREAD_CONTAINER::release_instance();
     }
 
     size_t get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container) {
@@ -74,10 +75,10 @@ protected:
         return monitor->contexts;
     }
 
-    std::vector<MONITOR_SERVICE*> generate_services(int num_services) {
-        std::vector<MONITOR_SERVICE*> services;
+    std::vector<std::shared_ptr<MONITOR_SERVICE>> generate_services(int num_services) {
+        std::vector<std::shared_ptr<MONITOR_SERVICE>> services;
         for (int i = 0; i < num_services; i++) {
-            services.push_back(new MONITOR_SERVICE(mock_container));
+            services.push_back(std::make_shared<MONITOR_SERVICE>(mock_container));
         }
 
         return services;
@@ -105,7 +106,7 @@ protected:
 
     void run_start_monitor(
         int num_threads,
-        std::vector<MONITOR_SERVICE*> services,
+        std::vector<std::shared_ptr<MONITOR_SERVICE>> services,
         std::vector<std::set<std::string>> node_key_list,
         std::shared_ptr<HOST_INFO> host) {
 
@@ -116,6 +117,7 @@ protected:
 
             auto thread = std::thread([&service, node_keys, host]() {
                 service->start_monitoring(
+                    nullptr,
                     nullptr,
                     node_keys,
                     host,
@@ -135,7 +137,7 @@ protected:
 
     void run_stop_monitor(
         int num_threads,
-        std::vector<MONITOR_SERVICE*> services,
+        std::vector<std::shared_ptr<MONITOR_SERVICE>> services,
         std::vector<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts) {
         
         std::vector<std::thread> threads;

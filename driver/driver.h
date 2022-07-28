@@ -303,6 +303,8 @@ struct Srv_host_detail {
 std::vector<Srv_host_detail> parse_host_list(const char *hosts_str,
                                              unsigned int default_port);
 
+std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource* ds);
+
 typedef struct {
   int perms;
   SQLSMALLINT data_type; /* SQL_IS_SMALLINT, etc */

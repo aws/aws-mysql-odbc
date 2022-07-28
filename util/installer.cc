@@ -828,9 +828,7 @@ DataSource *ds_new()
   ds->connect_timeout = get_failover_connect_timeout(0);
   ds->network_timeout = get_failover_network_timeout(0);
 
-  // TODO Disable failure detection for now to pass github actions
-  // ds->enable_failure_detection = ds->enable_cluster_failover;
-  ds->enable_failure_detection = false;
+  ds->enable_failure_detection = ds->enable_cluster_failover;
   ds->failure_detection_time = get_failure_detection_time(0);
   ds->failure_detection_interval = get_failure_detection_interval(0);
   ds->failure_detection_count = get_failure_detection_count(0);

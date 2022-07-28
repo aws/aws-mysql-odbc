@@ -69,7 +69,6 @@ protected:
     }
 
     static void TearDownTestSuite() {
-        cluster_instance.reset();
         delete ts;
     }
 
