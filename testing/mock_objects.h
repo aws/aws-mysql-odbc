@@ -119,7 +119,7 @@ public:
 // Meant for tests that only need to mock Monitor.run()
 class MOCK_MONITOR2 : public MONITOR {
 public:
-    MOCK_MONITOR2(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time, MONITOR_SERVICE* service) :
+    MOCK_MONITOR2(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time, std::shared_ptr<MONITOR_SERVICE> service) :
         MONITOR(host, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr, service) {}
 
     MOCK_METHOD(void, run, ());
@@ -128,7 +128,7 @@ public:
 // Meant for tests that only need to mock get_current_time()
 class MOCK_MONITOR3 : public MONITOR {
 public:
-    MOCK_MONITOR3(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time, MONITOR_SERVICE* service) :
+    MOCK_MONITOR3(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time, std::shared_ptr<MONITOR_SERVICE> service) :
         MONITOR(host, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr, service) {}
 
     MOCK_METHOD(std::chrono::steady_clock::time_point, get_current_time, ());
