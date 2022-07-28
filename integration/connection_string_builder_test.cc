@@ -74,7 +74,7 @@ TEST_F(ConnectionStringBuilderTest, test_complete_string) {
                                    .withAllowReaderConnections(true)
                                    .withMultiStatements(false)
                                    .withDSN("testDSN")
-                                   .withFailoverT(120000)
+                                   .withFailoverTimeout(120000)
                                    .withPort(3306)
                                    .withDatabase("testDb")
                                    .withConnectTimeout(20)
@@ -88,7 +88,7 @@ TEST_F(ConnectionStringBuilderTest, test_complete_string) {
                                    .withEnableClusterFailover(true)
                                    .build();
 
-  const std::string expected = "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;DATABASE=testDb;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;MULTI_STATEMENTS=0;ENABLE_CLUSTER_FAILOVER=1;FAILOVER_T=120000;CONNECT_TIMEOUT=20;NETWORK_TIMEOUT=20;HOST_PATTERN=?.testDomain;ENABLE_FAILURE_DETECTION=1;FAILURE_DETECTION_TIME=10000;FAILURE_DETECTION_INTERVAL=100;FAILURE_DETECTION_COUNT=4;MONITOR_DISPOSAL_TIME=300;";
+  const std::string expected = "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;DATABASE=testDb;LOG_QUERY=0;ALLOW_READER_CONNECTIONS=1;MULTI_STATEMENTS=0;ENABLE_CLUSTER_FAILOVER=1;FAILOVER_TIMEOUT=120000;CONNECT_TIMEOUT=20;NETWORK_TIMEOUT=20;HOST_PATTERN=?.testDomain;ENABLE_FAILURE_DETECTION=1;FAILURE_DETECTION_TIME=10000;FAILURE_DETECTION_INTERVAL=100;FAILURE_DETECTION_COUNT=4;MONITOR_DISPOSAL_TIME=300;";
   EXPECT_EQ(0, expected.compare(connection_string));
 }
 
