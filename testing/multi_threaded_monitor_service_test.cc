@@ -60,7 +60,12 @@ protected:
         services = generate_services(num_connections);
     }
 
-    void TearDown() override {}
+    void TearDown() override {
+        for (auto &service : services) {
+            service->release_resources();
+        }
+        MONITOR_THREAD_CONTAINER::release_instance();
+    }
 
     size_t get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container) {
         return container->monitor_map.size();

@@ -213,11 +213,11 @@ TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
 }
 
 TEST_F(MonitorTest, RunWithoutContext) {
+    auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
     std::shared_ptr<MONITOR_THREAD_CONTAINER> container = MONITOR_THREAD_CONTAINER::get_instance();
     auto monitor_service = std::make_shared<MONITOR_SERVICE>(container);
 
-    std::shared_ptr<MOCK_MONITOR3> mock_monitor = 
-        std::make_shared<MOCK_MONITOR3>(host, short_interval, monitor_service);
+    auto mock_monitor = std::make_shared<MOCK_MONITOR3>(host, short_interval, proxy, monitor_service);
 
     EXPECT_CALL(*mock_monitor, get_current_time())
         .WillRepeatedly(Return(short_interval_time));
