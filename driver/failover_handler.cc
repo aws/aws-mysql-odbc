@@ -107,26 +107,9 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
     std::stringstream err;
     // Cluster-aware failover is enabled
 
-    std::vector<Srv_host_detail> hosts;
-    try {
-        hosts = parse_host_list(
-            ds_get_utf8attr(ds->server, &ds->server8), ds->port);
-    } catch (std::string&) {
-        err << "Invalid server '" << ds->server8 << "'.";
-        MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw std::runtime_error(err.str());
-    }
-
-    if (hosts.size() == 0) {
-        err << "Empty server host.";
-        MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw std::runtime_error(err.str());
-    }
-
-    std::string main_host(hosts[0].name);
-    unsigned int main_port = hosts[0].port;
-
-    this->current_host = std::make_shared<HOST_INFO>(main_host, main_port);
+    this->current_host = get_host_info_from_ds(ds);
+    std::string main_host = this->current_host->get_host();
+    unsigned int main_port = this->current_host->get_port();
 
     const char* hp =
         ds_get_utf8attr(ds->host_pattern, &ds->host_pattern8);
@@ -441,6 +424,10 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
 
     if (ec.rfind("08", 0) == 0) {  // start with "08"
 
+        // disable failure detection during failover
+        auto failure_detection_old_state = ds->enable_failure_detection;
+        ds->enable_failure_detection = false;
+
         // invalidate current connection
         current_host = nullptr;
         // close transaction if needed
@@ -470,6 +457,9 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
             new_error_code = "08007";
             error_msg = "Connection failure during transaction.";
         }
+
+        ds->enable_failure_detection = failure_detection_old_state;
+
         return true;
     }
 
