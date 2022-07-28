@@ -77,28 +77,28 @@ awsmysqlodbcw = AWS ODBC Unicode Driver for MySQL
 awsmysqlodbca = AWS ODBC ANSI Driver for MySQL
 
 [awsmysqlodbcw]
-Driver          = AWS ODBC Unicode Driver for MySQL
-SERVER          = localhost
-NO_SCHEMA       = 1
-TOPOLOGY_RR     = 30000
-FAILOVER_T      = 60000
-FAILOVER_TRR    = 5000
-FAILOVER_WRI    = 5000
-FAILOVER_RCT    = 30000
-CONNECT_TIMEOUT = 30
-NETWORK_TIMEOUT = 30
+Driver           = AWS ODBC Unicode Driver for MySQL
+SERVER           = localhost
+NO_SCHEMA        = 1
+TOPOLOGY_RR      = 30000
+FAILOVER_TIMEOUT = 60000
+FAILOVER_TRR     = 5000
+FAILOVER_WRI     = 5000
+FAILOVER_RCT     = 30000
+CONNECT_TIMEOUT  = 30
+NETWORK_TIMEOUT  = 30
 
 [awsmysqlodbca]
-Driver          = AWS ODBC ANSI Driver for MySQL
-SERVER          = localhost
-NO_SCHEMA       = 1
-TOPOLOGY_RR     = 30000
-FAILOVER_T      = 60000
-FAILOVER_TRR    = 5000
-FAILOVER_WRI    = 5000
-FAILOVER_RCT    = 30000
-CONNECT_TIMEOUT = 30
-NETWORK_TIMEOUT = 30
+Driver           = AWS ODBC ANSI Driver for MySQL
+SERVER           = localhost
+NO_SCHEMA        = 1
+TOPOLOGY_RR      = 30000
+FAILOVER_TIMEOUT = 60000
+FAILOVER_TRR     = 5000
+FAILOVER_WRI     = 5000
+FAILOVER_RCT     = 30000
+CONNECT_TIMEOUT  = 30
+NETWORK_TIMEOUT  = 30
 ```
 
 ##### odbcinst.ini
@@ -135,7 +135,7 @@ In addition to the parameters that you can configure for the [MySQL Connector/OD
 | `HOST_PATTERN`                     | This parameter is not required unless connecting to an AWS RDS cluster via an IP address or custom domain URL. In those cases, this parameter specifies the cluster instance DNS pattern that will be used to build a complete instance endpoint. A "?" character in this pattern should be used as a placeholder for the DB instance identifiers of the instances in the cluster.  <br/><br/>Example: `?.my-domain.com`, `any-subdomain.?.my-domain.com:9999`<br/><br/>Usecase Example: If your cluster instance endpoint follows this pattern:`instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc. and you want your initial connection to be to `customHost:1234`, then your connection string should look like this: `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost` <br><br/> If the provided connection string is not an IP address or custom domain, the driver will automatically acquire the cluster instance host pattern from the customer-provided connection string. | char\* | If connecting using an IP address or custom domain URL: Yes <br><br> Otherwise: No <br><br> See [Host Pattern](#host-pattern) for more details. | `NONE`                                   |
 | `CLUSTER_ID`                       | A unique identifier for the cluster. Connections with the same cluster ID share a cluster topology cache. This connection parameter is not required and thus should only be set if desired.                                                                                                                                                                                        | char\* | No       | Either the cluster ID or the instance ID, depending on whether the provided connection string is a cluster or instance URL. |
 | `TOPOLOGY_RR`                      | Cluster topology refresh rate in milliseconds. The cached topology for the cluster will be invalidated after the specified time, after which it will be updated during the next interaction with the connection.                                                                                                                                                                   | int    | No       | `30000`                                  |
-| `FAILOVER_T`                       | Maximum allowed time in milliseconds to attempt reconnecting to a new writer or reader instance after a cluster failover is initiated.                                                                                                                                                                                                                                             | int    | No       | `60000`                                  |
+| `FAILOVER_TIMEOUT`                 | Maximum allowed time in milliseconds to attempt reconnecting to a new writer or reader instance after a cluster failover is initiated.                                                                                                                                                                                                                                             | int    | No       | `60000`                                  |
 | `FAILOVER_TRR`                     | Cluster topology refresh rate in milliseconds during a writer failover process. During the writer failover process, cluster topology may be refreshed at a faster pace than normal to speed up discovery of the newly promoted writer.                                                                                                                                             | int    | No       | `5000`                                   |
 | `FAILOVER_WRI`                     | Interval of time in milliseconds to wait between attempts to reconnect to a failed writer during a writer failover process.                                                                                                                                                                                                                                                        | int    | No       | `5000`                                   |
 | `FAILOVER_RCT`                     | Maximum allowed time in milliseconds to attempt a connection to a reader instance during a reader failover process.                                                                                                                                                                                                                                                                | int    | No       | `30000`                                  |
