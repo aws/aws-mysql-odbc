@@ -26,6 +26,7 @@
  *
  */
 
+#include "test_utils.h"
 #include "mock_objects.h"
 
 #include <gmock/gmock.h>
@@ -65,14 +66,6 @@ protected:
             service->release_resources();
         }
         MONITOR_THREAD_CONTAINER::release_instance();
-    }
-
-    size_t get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container) {
-        return container->monitor_map.size();
-    }
-
-    std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> get_contexts(std::shared_ptr<MONITOR> monitor) {
-        return monitor->contexts;
     }
 
     std::vector<std::shared_ptr<MONITOR_SERVICE>> generate_services(int num_services) {
@@ -178,11 +171,11 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
 
     run_start_monitor(num_connections, services, node_key_list, host);
     
-    EXPECT_EQ(num_connections, get_map_size(mock_container));
+    EXPECT_EQ(num_connections, TEST_UTILS::get_map_size(mock_container));
     
     std::vector<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
     for (int i = 0; i < num_connections; i++) {
-        auto monitor_contexts = get_contexts(monitors[i]);
+        auto monitor_contexts = TEST_UTILS::get_contexts(monitors[i]);
         EXPECT_EQ(1, monitor_contexts.size());
 
         auto context = monitor_contexts.front();
@@ -194,7 +187,7 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
     run_stop_monitor(num_connections, services, contexts);
 
     for (int i = 0; i < num_connections; i++) {
-        EXPECT_EQ(0, get_contexts(monitors[i]).size());
+        EXPECT_EQ(0, TEST_UTILS::get_contexts(monitors[i]).size());
     }
 }
 
@@ -210,9 +203,9 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
 
     run_start_monitor(num_connections, services, node_key_list, host);
 
-    EXPECT_EQ(1, get_map_size(mock_container));
+    EXPECT_EQ(1, TEST_UTILS::get_map_size(mock_container));
 
-    auto monitor_contexts = get_contexts(mock_monitor);
+    auto monitor_contexts = TEST_UTILS::get_contexts(mock_monitor);
     EXPECT_EQ(num_connections, monitor_contexts.size());
 
     std::vector<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
@@ -225,5 +218,5 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
 
     run_stop_monitor(num_connections, services, contexts);
 
-    EXPECT_EQ(0, get_contexts(mock_monitor).size());
+    EXPECT_EQ(0, TEST_UTILS::get_contexts(mock_monitor).size());
 }
