@@ -151,8 +151,8 @@ protected:
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 
-  SQLCHAR* LONG_QUERY = AS_SQLCHAR("SELECT SLEEP(600)"); // 600s -> 10m
-  const size_t NB_OF_RUNS = 6;
+  SQLCHAR* LONG_QUERY = AS_SQLCHAR("SELECT SLEEP(300)"); // 600s -> 10m
+  const size_t NB_OF_RUNS = 3;
   static constexpr char* OUTPUT_FILE_PATH = "./build/reports/";
 
   static void SetUpTestSuite() {
@@ -392,10 +392,10 @@ INSTANTIATE_TEST_CASE_P(
   ::testing::Values(
     std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 5000,  30000, 30, 30),
     std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 10000, 30000, 30, 30),
-    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 15000, 30000, 30, 30),
-    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 20000, 30000, 30, 30),
-    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 25000, 30000, 30, 30),
-    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 30000, 30000, 30, 30)
+    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 15000, 30000, 30, 30)
+    //std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 20000, 30000, 30, 30),
+    //std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 25000, 30000, 30, 30),
+    //std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 30000, 30000, 30, 30)
   )
 );
 
@@ -406,18 +406,18 @@ INSTANTIATE_TEST_CASE_P(
   ::testing::Values(
     std::make_tuple(EFM_FAILOVER_TEST_ID, 5000,  30000, 5000, 3),
     std::make_tuple(EFM_FAILOVER_TEST_ID, 10000, 30000, 5000, 3),
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 15000, 30000, 5000, 3),
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 20000, 30000, 5000, 3),
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 25000, 30000, 5000, 3),
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 30000, 30000, 5000, 3),
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 35000, 30000, 5000, 3),
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 40000, 30000, 5000, 3),
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 45000, 30000, 5000, 3),
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 50000, 30000, 5000, 3)
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 15000, 30000, 5000, 3)
+    //std::make_tuple(EFM_FAILOVER_TEST_ID, 20000, 30000, 5000, 3),
+    //std::make_tuple(EFM_FAILOVER_TEST_ID, 25000, 30000, 5000, 3),
+    //std::make_tuple(EFM_FAILOVER_TEST_ID, 30000, 30000, 5000, 3),
+    //std::make_tuple(EFM_FAILOVER_TEST_ID, 35000, 30000, 5000, 3),
+    //std::make_tuple(EFM_FAILOVER_TEST_ID, 40000, 30000, 5000, 3),
+    //std::make_tuple(EFM_FAILOVER_TEST_ID, 45000, 30000, 5000, 3),
+    //std::make_tuple(EFM_FAILOVER_TEST_ID, 50000, 30000, 5000, 3)
   )
 );
 
-INSTANTIATE_TEST_CASE_P(
+/*INSTANTIATE_TEST_CASE_P(
   EFMDetectionTimeoutTest,
   FailoverPerformanceTest,
   // Test Type, Sleep Delay, detection grace time, detection interval, detection count
@@ -433,4 +433,4 @@ INSTANTIATE_TEST_CASE_P(
     std::make_tuple(EFM_DETECTION_TEST_ID, 45000, 30000, 5000, 3),
     std::make_tuple(EFM_DETECTION_TEST_ID, 50000, 30000, 5000, 3)
   )
-);
+);*/
