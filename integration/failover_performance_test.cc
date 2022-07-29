@@ -320,7 +320,7 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
 
       const std::string conn_str = builder.withEnableFailureDetection(false)
                                           .withEnableClusterFailover(true)
-                                          .withFailoverT(failover_timeout)
+                                          .withFailoverTimeout(failover_timeout)
                                           .withConnectTimeout(connect_timeout)
                                           .withNetworkTimeout(network_timeout)
                                           .withLogQuery(true).build();
@@ -425,15 +425,15 @@ INSTANTIATE_TEST_CASE_P(
   FailoverPerformanceTest,
   // Test Type, Sleep Delay, detection grace time, detection interval, detection count
   ::testing::Values(
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 5000,  30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 10000, 30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 15000, 30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 20000, 30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 25000, 30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 30000, 30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 35000, 30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 40000, 30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 45000, 30000, 5000, 3),
-    std::make_tuple(EFM_NO_FAILOVER_TEST_ID, 50000, 30000, 5000, 3)
+    std::make_tuple(EFM_DETECTION_TEST_ID, 5000,  30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 10000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 15000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 20000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 25000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 30000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 35000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 40000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 45000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 50000, 30000, 5000, 3)
   )
 );
