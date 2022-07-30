@@ -186,6 +186,12 @@ jobs:
           if [[ -f failover_performance.xlsx && -s failover_performance.xlsx ]]; then
             cp failover_performance.xlsx ./reports/tests/failover_performance.xlsx
           fi
+          if [[ -f efm_performance.xlsx && -s efm_performance.xlsx ]]; then
+            cp efm_performance.xlsx ./reports/tests/efm_performance.xlsx
+          fi
+          if [[ -f efm_detection_performance.xlsx && -s efm_detection_performance.xlsx ]]; then
+            cp efm_detection_performance.xlsx ./reports/tests/efm_detection_performance.xlsx
+          fi
 
       - name: 'Archive log results'
         if: always()
