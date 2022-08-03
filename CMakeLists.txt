@@ -80,6 +80,12 @@ endif()
 
 #-----------------------------------------------------
 
+IF(ENABLE_UNIT_TESTS)
+  ADD_DEFINITIONS(-DUNIT_TESTING)
+ENDIF(ENABLE_UNIT_TESTS)
+
+#-----------------------------------------------------
+
 FIND_PACKAGE(Threads)
 
 INCLUDE(version.cmake)
