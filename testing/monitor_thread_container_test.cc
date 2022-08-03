@@ -28,6 +28,7 @@
 
 #include "driver/monitor_thread_container.h"
 
+#include "test_utils.h"
 #include "mock_objects.h"
 
 #include <gmock/gmock.h>
@@ -37,24 +38,31 @@ using ::testing::_;
 using ::testing::Return;
 
 namespace {
-    std::set<std::string> node_keys = { "any.node.domain" };
+    std::string node_key = "any.node.domain";
+    std::set<std::string> node_keys = { node_key };
+    const std::chrono::milliseconds failure_detection_time(10);
+    const std::chrono::milliseconds failure_detection_interval(30);
+    const int failure_detection_count = 3;
     const std::chrono::milliseconds monitor_disposal_time(200);
 }
 
+static std::shared_ptr<HOST_INFO> host;
+static std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
+static std::shared_ptr<MONITOR_SERVICE> monitor_service;
+
 class MonitorThreadContainerTest : public testing::Test {
 protected:
-    std::shared_ptr<HOST_INFO> host;
-    std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
-    std::shared_ptr<MONITOR_SERVICE> monitor_service;
-
-    static void SetUpTestSuite() {}
-
-    static void TearDownTestSuite() {}
-
-    void SetUp() override {
+    static void SetUpTestSuite() {
         host = std::make_shared<HOST_INFO>("host", 1234);
         thread_container = MONITOR_THREAD_CONTAINER::get_instance();
+        monitor_service = std::make_shared<MONITOR_SERVICE>(thread_container);
     }
+
+    static void TearDownTestSuite() {
+        monitor_service->release_resources();
+    }
+
+    void SetUp() override {}
 
     void TearDown() override {}
 };
@@ -162,7 +170,7 @@ TEST_F(MonitorThreadContainerTest, RemoveMonitorMapping) {
     for (auto it = keys1.begin(); it != keys1.end(); ++it) {
         std::string node = *it;
         auto get_monitor = thread_container->get_monitor(node);
-        EXPECT_EQ(nullptr, get_monitor);
+        EXPECT_THAT(get_monitor, nullptr);
     }
 
     // Check that we still have all the mapping for keys2.
@@ -177,28 +185,80 @@ TEST_F(MonitorThreadContainerTest, RemoveMonitorMapping) {
 
 TEST_F(MonitorThreadContainerTest, AvailableMonitorsQueue) {
     std::set<std::string> keys = { "nodeA", "nodeB", "nodeC", "nodeD" };
-    auto mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr, monitor_service);
     auto mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
+    auto mock_monitor1 = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr, nullptr);
+    auto mock_monitor2 = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr, nullptr);
 
-    EXPECT_CALL(*mock_monitor, is_stopped())
-        .WillRepeatedly(Return(false));
-
-    // While we have two get_or_create_monitor() calls, we only call create_monitor() once.
+    // While we have three get_or_create_monitor() calls, we only call create_monitor() twice.
     EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
-        .WillOnce(Return(mock_monitor));
+        .WillOnce(Return(mock_monitor1))
+        .WillOnce(Return(mock_monitor2));
+
+    EXPECT_CALL(*mock_monitor1, is_stopped())
+        .WillOnce(Return(false))
+        .WillOnce(Return(true));
+
+    EXPECT_CALL(*mock_monitor1, run());
     
     // This first call should create the monitor.
     auto monitor1 = mock_thread_container->get_or_create_monitor(
-        keys, host, monitor_disposal_time, nullptr, monitor_service);
+        keys, host, monitor_disposal_time, nullptr, nullptr);
     EXPECT_NE(nullptr, monitor1);
+
+    mock_thread_container->add_task(monitor1);
+
+    EXPECT_TRUE(TEST_UTILS::has_monitor(mock_thread_container, *keys.begin()));
+    EXPECT_TRUE(TEST_UTILS::has_task(mock_thread_container, monitor1));
 
     // This should remove the node key mappings and add the monitor to the available monitors queue.
     mock_thread_container->reset_resource(monitor1);
 
-    // This second call should get the monitor from the available monitors queue.
+    EXPECT_TRUE(TEST_UTILS::has_available_monitor(mock_thread_container));
+    auto available_monitor = TEST_UTILS::get_available_monitor(mock_thread_container);
+    EXPECT_NE(nullptr, available_monitor);
+
+    EXPECT_TRUE(monitor1 == available_monitor);
+
+    // This second call should get the monitor from the available monitors queue
+    // instead of creating a new monitor.
     auto monitor2 = mock_thread_container->get_or_create_monitor(
-        keys, host, monitor_disposal_time, nullptr, monitor_service);
+        keys, host, monitor_disposal_time, nullptr, nullptr);
     EXPECT_NE(nullptr, monitor2);
 
-    EXPECT_TRUE(monitor1 == monitor2);
+    EXPECT_TRUE(monitor2 == available_monitor);
+
+    // Adding monitor back to available monitors queue.
+    mock_thread_container->reset_resource(monitor2);
+
+    // This call will discard the available monitor because it is now stopped
+    // and create a new monitor.
+    auto monitor3 = mock_thread_container->get_or_create_monitor(
+        { node_key }, host, monitor_disposal_time, nullptr, nullptr);
+    EXPECT_NE(nullptr, monitor3);
+
+    EXPECT_NE(monitor1, monitor3);
+
+    EXPECT_FALSE(TEST_UTILS::has_any_tasks(mock_thread_container));
+}
+
+TEST_F(MonitorThreadContainerTest, PopulateAndRemoveMappings) {
+    auto context = monitor_service->start_monitoring(
+        nullptr,
+        nullptr,
+        node_keys,
+        host,
+        failure_detection_time,
+        failure_detection_interval,
+        failure_detection_count,
+        monitor_disposal_time);
+
+    EXPECT_TRUE(TEST_UTILS::has_monitor(thread_container, node_key));
+    EXPECT_TRUE(TEST_UTILS::has_task(thread_container, thread_container->get_monitor(node_key)));
+
+    monitor_service->stop_monitoring(context);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(600));
+
+    EXPECT_FALSE(TEST_UTILS::has_monitor(thread_container, node_key));
+    EXPECT_FALSE(TEST_UTILS::has_any_tasks(thread_container));
 }
