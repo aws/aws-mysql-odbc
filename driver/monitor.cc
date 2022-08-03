@@ -155,7 +155,6 @@ void MONITOR::run() {
     }
 
     this->stopped = true;
-    this->mysql_proxy->close();
 }
 
 std::chrono::milliseconds MONITOR::get_connection_check_interval() {

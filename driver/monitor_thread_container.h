@@ -78,9 +78,8 @@ protected:
     ctpl::thread_pool thread_pool;
     std::mutex mutex_;
 
-    // Allows for testing protected methods
-    friend class MonitorTest;
-    friend class MultiThreadedMonitorServiceTest;
+    // Allows for testing private methods
+    friend class TEST_UTILS;
 };
 
 static std::shared_ptr<MONITOR_THREAD_CONTAINER> singleton;
