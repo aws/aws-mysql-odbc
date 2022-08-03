@@ -58,3 +58,56 @@ void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_my
         ds = nullptr;
     }
 }
+
+std::chrono::milliseconds TEST_UTILS::get_connection_check_interval(std::shared_ptr<MONITOR> monitor) {
+    return monitor->get_connection_check_interval();
+}
+
+CONNECTION_STATUS TEST_UTILS::check_connection_status(
+    std::shared_ptr<MONITOR> monitor, std::chrono::milliseconds shortest_detection_interval) {
+
+    return monitor->check_connection_status(shortest_detection_interval);
+}
+
+void TEST_UTILS::populate_monitor_map(std::shared_ptr<MONITOR_THREAD_CONTAINER> container,
+    std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor) {
+
+    container->populate_monitor_map(node_keys, monitor);
+}
+
+void TEST_UTILS::populate_task_map(std::shared_ptr<MONITOR_THREAD_CONTAINER> container,
+    std::shared_ptr<MONITOR> monitor) {
+
+    container->task_map[monitor] = std::async(std::launch::async, []() {});
+}
+
+bool TEST_UTILS::has_monitor(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::string node_key) {
+    return container->monitor_map.count(node_key) > 0;
+}
+
+bool TEST_UTILS::has_task(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::shared_ptr<MONITOR> monitor) {
+    return container->task_map.count(monitor) > 0;
+}
+
+bool TEST_UTILS::has_available_monitor(std::shared_ptr<MONITOR_THREAD_CONTAINER> container) {
+    return !container->available_monitors.empty();
+}
+
+std::shared_ptr<MONITOR> TEST_UTILS::get_available_monitor(std::shared_ptr<MONITOR_THREAD_CONTAINER> container) {
+    if (container->available_monitors.empty()) {
+        return nullptr;
+    }
+    return container->available_monitors.front();
+}
+
+bool TEST_UTILS::has_any_tasks(std::shared_ptr<MONITOR_THREAD_CONTAINER> container) {
+    return !container->task_map.empty();
+}
+
+size_t TEST_UTILS::get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container) {
+    return container->monitor_map.size();
+}
+
+std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> TEST_UTILS::get_contexts(std::shared_ptr<MONITOR> monitor) {
+    return monitor->contexts;
+}
