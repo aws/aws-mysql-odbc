@@ -34,4 +34,22 @@
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds);
 void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);
 
+class TEST_UTILS {
+public:
+    static std::chrono::milliseconds get_connection_check_interval(std::shared_ptr<MONITOR> monitor);
+    static CONNECTION_STATUS check_connection_status(
+        std::shared_ptr<MONITOR> monitor, std::chrono::milliseconds shortest_detection_interval);
+    static void populate_monitor_map(std::shared_ptr<MONITOR_THREAD_CONTAINER> container,
+        std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
+    static void populate_task_map(std::shared_ptr<MONITOR_THREAD_CONTAINER> container,
+        std::shared_ptr<MONITOR> monitor);
+    static bool has_monitor(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::string node_key);
+    static bool has_task(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::shared_ptr<MONITOR> monitor);
+    static bool has_any_tasks(std::shared_ptr<MONITOR_THREAD_CONTAINER> container);
+    static bool has_available_monitor(std::shared_ptr<MONITOR_THREAD_CONTAINER> container);
+    static std::shared_ptr<MONITOR> get_available_monitor(std::shared_ptr<MONITOR_THREAD_CONTAINER> container);
+    static size_t get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container);
+    static std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> get_contexts(std::shared_ptr<MONITOR> monitor);
+};
+
 #endif /* __TESTUTILS_H__ */

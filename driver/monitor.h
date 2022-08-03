@@ -85,8 +85,7 @@ private:
     virtual std::chrono::steady_clock::time_point get_current_time();
 
     // Allows for testing private methods
-    friend class MonitorTest;
-    friend class MultiThreadedMonitorServiceTest;
+    friend class TEST_UTILS;
 };
 
 #endif /* __MONITOR_H__ */
