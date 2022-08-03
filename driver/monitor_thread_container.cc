@@ -133,8 +133,7 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
 
     std::unique_lock<std::mutex> lock(task_map_mutex);
     if (this->task_map.count(monitor) > 0) {
-        std::future<void> task = std::move(this->task_map[monitor]);
-        // TODO: cancel task
+        this->task_map.erase(monitor);
     }
 }
 
@@ -172,7 +171,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
 
         std::unique_lock<std::mutex> lock(task_map_mutex);
         if (this->task_map.count(available_monitor) > 0) {
-            // TODO: Cancel task
+            this->task_map.erase(available_monitor);
         }
     }
 
@@ -192,14 +191,12 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
 void MONITOR_THREAD_CONTAINER::release_resources() {
     {
         std::unique_lock<std::mutex> lock(monitor_map_mutex);
-        monitor_map.clear();
+        this->monitor_map.clear();
     }
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
-        for (auto const& task_pair : task_map) {
-        // TODO: Cancel task
-        }
+        this->task_map.clear();
     }
 
-    thread_pool.stop();
+    this->thread_pool.stop();
 }

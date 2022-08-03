@@ -30,6 +30,7 @@
 #include "driver/monitor.h"
 #include "driver/driver.h"
 
+#include "test_utils.h"
 #include "mock_objects.h"
 
 #include <gmock/gmock.h>
@@ -49,7 +50,6 @@ namespace {
     const std::chrono::milliseconds monitor_disposal_time(200);
     const std::chrono::steady_clock::time_point short_interval_time(short_interval);
 }
-
 
 class MonitorTest : public testing::Test {
 protected:
@@ -84,26 +84,6 @@ protected:
     }
 
     void TearDown() override {}
-
-    // Defined so we can use private method get_connection_check_interval() in tests.
-    std::chrono::milliseconds get_connection_check_interval() {
-        return monitor->get_connection_check_interval();
-    }
-
-    // Defined so we can use private method check_connection_status() in tests.
-    CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
-        return monitor->check_connection_status(shortest_detection_interval);
-    }
-
-    void populate_monitor_map(std::shared_ptr<MONITOR_THREAD_CONTAINER> container,
-        std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor) {
-
-        container->populate_monitor_map(node_keys, monitor);
-    }
-
-    bool has_task(std::shared_ptr<MONITOR_THREAD_CONTAINER> container, std::shared_ptr<MONITOR> monitor) {
-        return container->task_map.count(monitor) > 0;
-    }
 };
 
 TEST_F(MonitorTest, StartMonitoringWithDifferentContexts) {
@@ -113,7 +93,7 @@ TEST_F(MonitorTest, StartMonitoringWithDifferentContexts) {
     monitor->start_monitoring(mock_context_short_interval);
     monitor->start_monitoring(mock_context_long_interval);
 
-    EXPECT_EQ(short_interval, get_connection_check_interval());
+    EXPECT_EQ(short_interval, TEST_UTILS::get_connection_check_interval(monitor));
 }
 
 TEST_F(MonitorTest, StopMonitoringWithContextRemaining) {
@@ -125,20 +105,20 @@ TEST_F(MonitorTest, StopMonitoringWithContextRemaining) {
 
     monitor->stop_monitoring(mock_context_short_interval);
 
-    EXPECT_EQ(long_interval, get_connection_check_interval());
+    EXPECT_EQ(long_interval, TEST_UTILS::get_connection_check_interval(monitor));
 }
 
 TEST_F(MonitorTest, StopMonitoringWithNoMatchingContexts) {
     monitor->stop_monitoring(mock_context_long_interval);
 
-    EXPECT_EQ(std::chrono::milliseconds(0), get_connection_check_interval());
+    EXPECT_EQ(std::chrono::milliseconds(0), TEST_UTILS::get_connection_check_interval(monitor));
 
     EXPECT_CALL(*mock_context_short_interval, set_start_monitor_time(_));
     
     monitor->start_monitoring(mock_context_short_interval);
     monitor->stop_monitoring(mock_context_long_interval);
 
-    EXPECT_EQ(short_interval, get_connection_check_interval());
+    EXPECT_EQ(short_interval, TEST_UTILS::get_connection_check_interval(monitor));
 }
 
 TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
@@ -149,7 +129,7 @@ TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
     monitor->stop_monitoring(mock_context_long_interval);
     monitor->stop_monitoring(mock_context_long_interval);
 
-    EXPECT_EQ(std::chrono::milliseconds(0), get_connection_check_interval());
+    EXPECT_EQ(std::chrono::milliseconds(0), TEST_UTILS::get_connection_check_interval(monitor));
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
@@ -166,7 +146,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
     EXPECT_CALL(*mock_proxy, ping())
         .WillOnce(Return(0));
 
-    CONNECTION_STATUS status = check_connection_status(short_interval);
+    CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor, short_interval);
     EXPECT_TRUE(status.is_valid);
     EXPECT_TRUE(status.elapsed_time >= std::chrono::milliseconds(0));
 }
@@ -186,10 +166,10 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
         .WillOnce(Return(0))
         .WillOnce(Return(1));
 
-    CONNECTION_STATUS status1 = check_connection_status(short_interval);
+    CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitor, short_interval);
     EXPECT_TRUE(status1.is_valid);
 
-    CONNECTION_STATUS status2 = check_connection_status(short_interval);
+    CONNECTION_STATUS status2 = TEST_UTILS::check_connection_status(monitor, short_interval);
     EXPECT_FALSE(status2.is_valid);
 }
 
@@ -207,7 +187,7 @@ TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
     EXPECT_CALL(*mock_proxy, ping())
         .WillOnce(Return(1));
 
-    CONNECTION_STATUS status = check_connection_status(short_interval);
+    CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor, short_interval);
     EXPECT_FALSE(status.is_valid);
     EXPECT_TRUE(status.elapsed_time >= std::chrono::milliseconds(0));
 }
@@ -222,16 +202,20 @@ TEST_F(MonitorTest, RunWithoutContext) {
     EXPECT_CALL(*mock_monitor, get_current_time())
         .WillRepeatedly(Return(short_interval_time));
 
-    // Put monitor into container map
+    // Put monitor into container maps
     std::string node_key = "monitorA";
-    populate_monitor_map(container, { node_key }, mock_monitor);
+    TEST_UTILS::populate_monitor_map(container, { node_key }, mock_monitor);
+    TEST_UTILS::populate_task_map(container, mock_monitor);
+
+    EXPECT_TRUE(TEST_UTILS::has_monitor(container, node_key));
+    EXPECT_TRUE(TEST_UTILS::has_task(container, mock_monitor));
 
     // Run monitor without contexts. Should end by itself.
     mock_monitor->run();
 
     // After running with empty context, monitor should be out of the maps
-    EXPECT_THAT(container->get_monitor(node_key), nullptr);
-    EXPECT_FALSE(has_task(container, mock_monitor));
+    EXPECT_FALSE(TEST_UTILS::has_monitor(container, node_key));
+    EXPECT_FALSE(TEST_UTILS::has_task(container, mock_monitor));
 }
 
 TEST_F(MonitorTest, RunWithContext) {
@@ -257,7 +241,11 @@ TEST_F(MonitorTest, RunWithContext) {
 
     // Put monitor into container map
     std::string node_key = "monitorA";
-    populate_monitor_map(container, { node_key }, monitorA);
+    TEST_UTILS::populate_monitor_map(container, { node_key }, monitorA);
+    TEST_UTILS::populate_task_map(container, monitorA);
+
+    EXPECT_TRUE(TEST_UTILS::has_monitor(container, node_key));
+    EXPECT_TRUE(TEST_UTILS::has_task(container, monitorA));
 
     auto context_short_interval = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         nullptr,
@@ -282,6 +270,6 @@ TEST_F(MonitorTest, RunWithContext) {
     thread.join();
 
     // After running, monitor should be out of the maps
-    EXPECT_THAT(container->get_monitor(node_key), nullptr);
-    EXPECT_FALSE(has_task(container, monitorA));
+    EXPECT_FALSE(TEST_UTILS::has_monitor(container, node_key));
+    EXPECT_FALSE(TEST_UTILS::has_task(container, monitorA));
 }
