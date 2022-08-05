@@ -81,7 +81,7 @@ endif()
 #-----------------------------------------------------
 
 IF(ENABLE_UNIT_TESTS)
-  ADD_DEFINITIONS(-DUNIT_TESTING)
+  ADD_DEFINITIONS(-DUNIT_TEST_BUILD)
 ENDIF(ENABLE_UNIT_TESTS)
 
 #-----------------------------------------------------
