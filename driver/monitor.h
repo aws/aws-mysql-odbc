@@ -84,8 +84,10 @@ private:
     std::chrono::milliseconds find_shortest_interval();
     virtual std::chrono::steady_clock::time_point get_current_time();
 
+#ifdef UNIT_TEST_BUILD
     // Allows for testing private methods
     friend class TEST_UTILS;
+#endif
 };
 
 #endif /* __MONITOR_H__ */
