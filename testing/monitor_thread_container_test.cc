@@ -257,7 +257,7 @@ TEST_F(MonitorThreadContainerTest, PopulateAndRemoveMappings) {
 
     monitor_service->stop_monitoring(context);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(600));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 
     EXPECT_FALSE(TEST_UTILS::has_monitor(thread_container, node_key));
     EXPECT_FALSE(TEST_UTILS::has_any_tasks(thread_container));
