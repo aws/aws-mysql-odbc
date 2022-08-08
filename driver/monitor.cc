@@ -33,26 +33,22 @@ MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
     DataSource* ds,
-    std::shared_ptr <MONITOR_SERVICE> service,
     bool enable_logging)
     : MONITOR(
         std::move(host_info),
         monitor_disposal_time,
         new MYSQL_MONITOR_PROXY(ds),
-        std::move(service),
         enable_logging) {};
 
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
     MYSQL_MONITOR_PROXY* proxy,
-    std::shared_ptr <MONITOR_SERVICE> service,
     bool enable_logging) {
 
     this->host = std::move(host_info);
     this->disposal_time = monitor_disposal_time;
     this->mysql_proxy = proxy;
-    this->monitor_service = std::move(service);
     this->connection_check_interval = (std::chrono::milliseconds::max)();
     if (enable_logging)
         this->logger = init_log_file();
@@ -113,7 +109,7 @@ void MONITOR::clear_contexts() {
 }
 
 // Periodically ping the server and update the contexts' connection status.
-void MONITOR::run() {
+void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
     this->stopped = false;
     while (true) {
         bool have_contexts;
@@ -147,7 +143,7 @@ void MONITOR::run() {
         else {
             auto current_time = this->get_current_time();
             if ((current_time - this->last_context_timestamp) >= this->disposal_time) {
-                this->monitor_service->notify_unused(shared_from_this());
+                service->notify_unused(shared_from_this());
                 break;
             }
             std::this_thread::sleep_for(thread_sleep_when_inactive);
