@@ -156,15 +156,15 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
 
     std::vector<std::shared_ptr<MOCK_MONITOR2>> monitors;
     for (int i = 0; i < num_connections; i++) {
-        auto mock_monitor = std::make_shared<MOCK_MONITOR2>(host, monitor_disposal_time, services[i]);
+        auto mock_monitor = std::make_shared<MOCK_MONITOR2>(host, monitor_disposal_time);
         monitors.push_back(mock_monitor);
 
-        EXPECT_CALL(*monitors[i], run()).Times(AtLeast(1));
+        EXPECT_CALL(*monitors[i], run(_)).Times(AtLeast(1));
     }
 
     Sequence s1;
     for (int i = 0; i < num_connections; i++) {
-        EXPECT_CALL(*mock_container, create_monitor(_, _, _, _, _))
+        EXPECT_CALL(*mock_container, create_monitor(_, _, _, _))
             .InSequence(s1)
             .WillOnce(Return(monitors[i]));
     }
@@ -194,12 +194,12 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
 TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectionsToOneNode) {
     std::vector<std::set<std::string>> node_key_list = generate_node_keys(num_connections, false);
 
-    auto mock_monitor = std::make_shared<MOCK_MONITOR2>(host, monitor_disposal_time, services[0]);
+    auto mock_monitor = std::make_shared<MOCK_MONITOR2>(host, monitor_disposal_time);
 
-    EXPECT_CALL(*mock_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_container, create_monitor(_, _, _, _))
         .WillOnce(Return(mock_monitor));
 
-    EXPECT_CALL(*mock_monitor, run()).Times(AtLeast(1));
+    EXPECT_CALL(*mock_monitor, run(_)).Times(AtLeast(1));
 
     run_start_monitor(num_connections, services, node_key_list, host);
 
