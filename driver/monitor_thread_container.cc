@@ -101,12 +101,8 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
 }
 
 void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor, std::shared_ptr<MONITOR_SERVICE> service) {
-    if (monitor == nullptr) {
-        throw std::invalid_argument("Parameter monitor cannot be null");
-    }
-
-    if (service == nullptr) {
-        throw std::invalid_argument("Parameter service cannot be null");
+    if (monitor == nullptr || service == nullptr) {
+        throw std::invalid_argument("Invalid parameters passed into MONITOR_THREAD_CONTAINER::add_task()");
     }
 
     std::unique_lock<std::mutex> lock(task_map_mutex);

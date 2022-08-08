@@ -48,15 +48,19 @@ namespace {
 
 static std::shared_ptr<HOST_INFO> host;
 static std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
+static std::shared_ptr<MONITOR_SERVICE> service;
 
 class MonitorThreadContainerTest : public testing::Test {
 protected:
     static void SetUpTestSuite() {
         host = std::make_shared<HOST_INFO>("host", 1234);
         thread_container = MONITOR_THREAD_CONTAINER::get_instance();
+        service = std::make_shared<MONITOR_SERVICE>(thread_container);
     }
 
-    static void TearDownTestSuite() {}
+    static void TearDownTestSuite() {
+        service->release_resources();
+    }
 
     void SetUp() override {}
 
@@ -241,9 +245,7 @@ TEST_F(MonitorThreadContainerTest, AvailableMonitorsQueue) {
 }
 
 TEST_F(MonitorThreadContainerTest, PopulateAndRemoveMappings) {
-    auto monitor_service = std::make_shared<MONITOR_SERVICE>(thread_container);
-    
-    auto context = monitor_service->start_monitoring(
+    auto context = service->start_monitoring(
         nullptr,
         nullptr,
         node_keys,
@@ -256,12 +258,10 @@ TEST_F(MonitorThreadContainerTest, PopulateAndRemoveMappings) {
     EXPECT_TRUE(TEST_UTILS::has_monitor(thread_container, node_key));
     EXPECT_TRUE(TEST_UTILS::has_task(thread_container, thread_container->get_monitor(node_key)));
 
-    monitor_service->stop_monitoring(context);
+    service->stop_monitoring(context);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 
     EXPECT_FALSE(TEST_UTILS::has_monitor(thread_container, node_key));
     EXPECT_FALSE(TEST_UTILS::has_any_tasks(thread_container));
-
-    monitor_service->release_resources();
 }
