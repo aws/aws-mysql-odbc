@@ -64,7 +64,8 @@ protected:
     builder = ConnectionStringBuilder();
     builder.withPort(MYSQL_PORT)
         .withLogQuery(true)
-        .withEnableFailureDetection(true);
+        .withEnableFailureDetection(true)
+        .withEnableClusterFailover(false);
   }
 
   void TearDown() override {

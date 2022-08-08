@@ -75,7 +75,8 @@ protected:
     builder.withPort(MYSQL_PROXY_PORT)
         .withHostPattern(PROXIED_CLUSTER_TEMPLATE)
         .withLogQuery(true)
-        .withEnableFailureDetection(true);
+        .withEnableFailureDetection(true)
+        .withEnableClusterFailover(false);
   }
 
   void TearDown() override {
