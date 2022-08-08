@@ -108,22 +108,22 @@ public:
 class MOCK_MONITOR : public MONITOR {
 public:
     MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time,
-                 MYSQL_MONITOR_PROXY* monitor_proxy, std::shared_ptr<MONITOR_SERVICE> service)
-    : MONITOR(host, disposal_time, monitor_proxy, service) {}
+                 MYSQL_MONITOR_PROXY* monitor_proxy)
+    : MONITOR(host, disposal_time, monitor_proxy) {}
 
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(bool, is_stopped, ());
-    MOCK_METHOD(void, run, ());
+    MOCK_METHOD(void, run, (std::shared_ptr<MONITOR_SERVICE>));
 };
 
 // Meant for tests that only need to mock Monitor.run()
 class MOCK_MONITOR2 : public MONITOR {
 public:
-    MOCK_MONITOR2(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time, std::shared_ptr<MONITOR_SERVICE> service) :
-        MONITOR(host, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr, service) {}
+    MOCK_MONITOR2(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time) :
+        MONITOR(host, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr) {}
 
-    MOCK_METHOD(void, run, ());
+    MOCK_METHOD(void, run, (std::shared_ptr<MONITOR_SERVICE>));
 };
 
 // Meant for tests that only need to mock get_current_time()
@@ -131,9 +131,8 @@ class MOCK_MONITOR3 : public MONITOR {
 public:
   MOCK_MONITOR3(std::shared_ptr<HOST_INFO> host,
                 std::chrono::milliseconds disposal_time,
-                MYSQL_MONITOR_PROXY* monitor_proxy,
-                std::shared_ptr<MONITOR_SERVICE> service)
-      : MONITOR(host, disposal_time, monitor_proxy, service) {}
+                MYSQL_MONITOR_PROXY* monitor_proxy)
+      : MONITOR(host, disposal_time, monitor_proxy) {}
 
     MOCK_METHOD(std::chrono::steady_clock::time_point, get_current_time, ());
 };
@@ -142,7 +141,7 @@ class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {
 public:
     MOCK_MONITOR_THREAD_CONTAINER() : MONITOR_THREAD_CONTAINER() {}
     MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, 
-        (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, DataSource*, std::shared_ptr<MONITOR_SERVICE>, bool));
+        (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, DataSource*, bool));
 };
 
 class MOCK_MONITOR_CONNECTION_CONTEXT : public MONITOR_CONNECTION_CONTEXT {

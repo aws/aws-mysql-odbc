@@ -56,7 +56,6 @@ protected:
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MONITOR> monitor;
     MOCK_MYSQL_MONITOR_PROXY* mock_proxy;
-    std::shared_ptr<MONITOR_SERVICE> monitor_service;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_short_interval;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_long_interval;
 
@@ -67,8 +66,7 @@ protected:
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_proxy = new MOCK_MYSQL_MONITOR_PROXY();
-        monitor_service = std::make_shared<MONITOR_SERVICE>(MONITOR_THREAD_CONTAINER::get_instance());
-        monitor = std::make_shared<MONITOR>(host, monitor_disposal_time, mock_proxy, monitor_service);
+        monitor = std::make_shared<MONITOR>(host, monitor_disposal_time, mock_proxy);
         
         mock_context_short_interval = std::make_shared<MOCK_MONITOR_CONNECTION_CONTEXT>(
             node_keys,
@@ -197,7 +195,7 @@ TEST_F(MonitorTest, RunWithoutContext) {
     std::shared_ptr<MONITOR_THREAD_CONTAINER> container = MONITOR_THREAD_CONTAINER::get_instance();
     auto monitor_service = std::make_shared<MONITOR_SERVICE>(container);
 
-    auto mock_monitor = std::make_shared<MOCK_MONITOR3>(host, short_interval, proxy, monitor_service);
+    auto mock_monitor = std::make_shared<MOCK_MONITOR3>(host, short_interval, proxy);
 
     EXPECT_CALL(*mock_monitor, get_current_time())
         .WillRepeatedly(Return(short_interval_time));
@@ -211,7 +209,7 @@ TEST_F(MonitorTest, RunWithoutContext) {
     EXPECT_TRUE(TEST_UTILS::has_task(container, mock_monitor));
 
     // Run monitor without contexts. Should end by itself.
-    mock_monitor->run();
+    mock_monitor->run(monitor_service);
 
     // After running with empty context, monitor should be out of the maps
     EXPECT_FALSE(TEST_UTILS::has_monitor(container, node_key));
@@ -235,9 +233,10 @@ TEST_F(MonitorTest, RunWithContext) {
         .WillRepeatedly(Return(0));
 
     std::shared_ptr<MONITOR> monitorA = 
-        std::make_shared<MONITOR>(host, short_interval, proxy, monitor_service);
+        std::make_shared<MONITOR>(host, short_interval, proxy);
 
     auto container = MONITOR_THREAD_CONTAINER::get_instance();
+    auto monitor_service = std::make_shared<MONITOR_SERVICE>(container);
 
     // Put monitor into container map
     std::string node_key = "monitorA";
@@ -265,7 +264,7 @@ TEST_F(MonitorTest, RunWithContext) {
         });
 
     // Run monitor. Should end by itself after above thread stops monitoring.
-    monitorA->run();
+    monitorA->run(monitor_service);
 
     thread.join();
 

@@ -78,7 +78,6 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
     DataSource* ds,
-    std::shared_ptr<MONITOR_SERVICE> monitor_service,
     bool enable_logging) {
 
     std::shared_ptr<MONITOR> monitor;
@@ -92,7 +91,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     else {
         monitor = this->get_available_monitor();
         if (monitor == nullptr) {
-            monitor = this->create_monitor(std::move(host), disposal_time, ds, std::move(monitor_service), enable_logging);
+            monitor = this->create_monitor(std::move(host), disposal_time, ds, enable_logging);
         }
     }
 
@@ -101,14 +100,14 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     return monitor;
 }
 
-void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor) {
-    if (monitor == nullptr) {
-        throw std::invalid_argument("Parameter monitor cannot be null");
+void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor, std::shared_ptr<MONITOR_SERVICE> service) {
+    if (monitor == nullptr || service == nullptr) {
+        throw std::invalid_argument("Invalid parameters passed into MONITOR_THREAD_CONTAINER::add_task()");
     }
 
     std::unique_lock<std::mutex> lock(task_map_mutex);
     if (this->task_map.count(monitor) == 0) {
-        auto run_monitor = [monitor](int id) { monitor->run(); };
+        auto run_monitor = [monitor, service](int id) { monitor->run(service); };
         this->task_map[monitor] = this->thread_pool.push(run_monitor);
     }
 }
@@ -182,10 +181,9 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds disposal_time,
     DataSource* ds,
-    std::shared_ptr<MONITOR_SERVICE> monitor_service,
     bool enable_logging) {
 
-    return std::make_shared<MONITOR>(host, disposal_time, ds, monitor_service, enable_logging);
+    return std::make_shared<MONITOR>(host, disposal_time, ds, enable_logging);
 }
 
 void MONITOR_THREAD_CONTAINER::release_resources() {
