@@ -59,7 +59,7 @@ protected:
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
         monitor_service = std::make_shared<MONITOR_SERVICE>(mock_thread_container);
-        mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr, monitor_service);
+        mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr);
     }
 
     void TearDown() override {
@@ -68,11 +68,11 @@ protected:
 };
 
 TEST_F(MonitorServiceTest, StartMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
-    EXPECT_CALL(*mock_monitor, run()).Times(1);
+    EXPECT_CALL(*mock_monitor, run(_)).Times(1);
 
     auto context = monitor_service->start_monitoring(
         nullptr,
@@ -87,13 +87,13 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     const int runs = 5;
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(runs);
-    EXPECT_CALL(*mock_monitor, run()).Times(1);
+    EXPECT_CALL(*mock_monitor, run(_)).Times(1);
 
     for (int i = 0; i < runs; i++) {
         auto context = monitor_service->start_monitoring(
@@ -110,11 +110,11 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
-    EXPECT_CALL(*mock_monitor, run()).Times(1);
+    EXPECT_CALL(*mock_monitor, run(_)).Times(1);
 
     auto context = monitor_service->start_monitoring(
         nullptr,
@@ -133,11 +133,11 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
-    EXPECT_CALL(*mock_monitor, run()).Times(1);
+    EXPECT_CALL(*mock_monitor, run(_)).Times(1);
 
     auto context = monitor_service->start_monitoring(
         nullptr,
