@@ -63,7 +63,6 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         host,
         disposal_time,
         ds,
-        shared_from_this(),
         ds && ds->save_queries);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
@@ -74,7 +73,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         failure_detection_count);
 
     monitor->start_monitoring(context);
-    this->thread_container->add_task(monitor);
+    this->thread_container->add_task(monitor, shared_from_this());
 
     return context;
 }
