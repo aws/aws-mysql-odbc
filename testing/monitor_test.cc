@@ -141,8 +141,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
     EXPECT_CALL(*mock_proxy, connect())
         .WillOnce(Return(true));
 
-    EXPECT_CALL(*mock_proxy, ping())
-        .WillOnce(Return(0));
+    EXPECT_CALL(*mock_proxy, ping()).Times(0);
 
     CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor, short_interval);
     EXPECT_TRUE(status.is_valid);
@@ -168,7 +167,10 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
     EXPECT_TRUE(status1.is_valid);
 
     CONNECTION_STATUS status2 = TEST_UTILS::check_connection_status(monitor, short_interval);
-    EXPECT_FALSE(status2.is_valid);
+    EXPECT_TRUE(status2.is_valid);
+
+    CONNECTION_STATUS status3 = TEST_UTILS::check_connection_status(monitor, short_interval);
+    EXPECT_FALSE(status3.is_valid);
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
@@ -185,9 +187,13 @@ TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
     EXPECT_CALL(*mock_proxy, ping())
         .WillOnce(Return(1));
 
-    CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor, short_interval);
-    EXPECT_FALSE(status.is_valid);
-    EXPECT_TRUE(status.elapsed_time >= std::chrono::milliseconds(0));
+    CONNECTION_STATUS first_status = TEST_UTILS::check_connection_status(monitor, short_interval);
+    EXPECT_TRUE(first_status.is_valid);
+    EXPECT_TRUE(first_status.elapsed_time >= std::chrono::milliseconds(0));
+
+    CONNECTION_STATUS second_status = TEST_UTILS::check_connection_status(monitor, short_interval);
+    EXPECT_FALSE(second_status.is_valid);
+    EXPECT_TRUE(second_status.elapsed_time >= std::chrono::milliseconds(0));
 }
 
 TEST_F(MonitorTest, RunWithoutContext) {
