@@ -164,15 +164,17 @@ std::chrono::milliseconds MONITOR::get_connection_check_interval() {
 
 CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
     if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {
-        auto start = this->get_current_time();
-        if (!this->connect(shortest_detection_interval)) {
-            auto duration = this->get_current_time() - start;
-            return CONNECTION_STATUS {
-                false,
-                std::chrono::duration_cast<std::chrono::milliseconds>(duration)
-            };
-        }
+        const auto start = this->get_current_time();
+        bool connected = this->connect(shortest_detection_interval);
+        return CONNECTION_STATUS{
+            connected,
+            std::chrono::duration_cast<std::chrono::milliseconds>(this->get_current_time() - start)
+        };
     }
+
+    unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(shortest_detection_interval).count();
+    this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
+    this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
 
     auto start = this->get_current_time();
     bool is_connection_active = this->mysql_proxy->ping() == 0;
