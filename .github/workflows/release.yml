@@ -1,0 +1,131 @@
+name: Automated releases
+
+# Pull request on branch for testing purposes. Will be removed before merge.
+on:
+  push:
+    tags:
+      - "*.*.*"
+  pull_request:
+    branches:
+      - '*'
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  windows-release:
+    name: Windows
+    runs-on: windows-2019
+    env:
+      CMAKE_GENERATOR: Visual Studio 16 2019
+      MYSQL_DIR: C:/mysql-8.0.28-winx64
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Configure build environment/dependencies
+      - name: Cache MySQL client libs and include files
+        id: cache-mysql
+        uses: actions/cache@v3
+        with:
+          path: |
+            C:/mysql-8.0.28-winx64/
+          key: ${{ runner.os }}-mysql-${{ hashFiles('**/VersionInfo.h') }}
+
+      - name: Install MySQL client libs and include files
+        if: steps.cache-mysql.outputs.cache-hit != 'true'
+        run: |
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.28-winx64.zip -o mysql.zip
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.28-winx64-debug-test.zip -o mysql-debug.zip
+          unzip -d C:/ mysql.zip
+          mkdir C:/mysql-8.0.28-winx64-debug
+          unzip -d C:/mysql-8.0.28-winx64-debug mysql-debug.zip
+          mv -Force C:/mysql-8.0.28-winx64-debug/mysql-8.0.28-winx64/lib/debug/mysqlclient.lib C:/mysql-8.0.28-winx64/lib/mysqlclient.lib
+
+      #- name: Set up MinGW
+      #  uses: egor-tensin/setup-mingw@v2
+      #  with:
+      #    platform: x64
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B . -A x64
+                -G "$CMAKE_GENERATOR"
+                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DMYSQLCLIENT_STATIC_LINKING=TRUE
+                -DENABLE_UNIT_TESTS=FALSE
+                -DENABLE_INTEGRATION_TESTS=FALSE
+
+      - name: Build the driver
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          cmake --build . --config $BUILD_TYPE
+
+      - name: Copy the files needed for Wix
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          cp ./lib/$BUILD_TYPE/awsmysqlodbc*.dll ./wix/x64
+          cp ./lib/$BUILD_TYPE/awsmysqlodbc*.lib ./wix/x64
+          cp ./lib/$BUILD_TYPE/awsmysqlodbc*.dll ./wix/x86
+          cp ./lib/$BUILD_TYPE/awsmysqlodbc*.lib ./wix/x86
+          cp ./bin/$BUILD_TYPE/myodbc-installer.exe ./wix/x64
+          cp ./bin/$BUILD_TYPE/myodbc-installer.exe ./wix/x86
+          cp ./INFO_BIN ./wix/doc
+          cp ./INFO_SRC ./wix/doc
+          cp ./ChangeLog ./wix/doc
+          cp ./README.md ./wix/doc
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build the installer
+        working-directory: ${{ github.workspace }}/wix
+        run: |
+          cmake -DMSI_64=1 -G "NMake Makefiles"
+          nmake
+
+      #- name: Run powershell installer script
+      #  shell: pwsh
+      #  working-directory: ${{ github.workspace }}
+      #  run: |
+      #    .\build_installer.ps1 "x64" "Debug" "C:/mysql-8.0.28-winx64"
+
+      #- name: Error log
+      #  if: always()
+      #  shell: bash
+      #  working-directory: ${{ github.workspace }}/wix/CMakeFiles
+      #  run: |
+      #    cat CMakeOutput.log
+
+      - name: List files in build dir
+        shell: bash
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          pwd
+          ls -l .
+
+      - name: List files in wix
+        shell: bash
+        working-directory: ${{ github.workspace }}/wix
+        run: |
+          pwd
+          ls -l .
+
+      - name: List files in root
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          pwd
+          ls -l .
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          draft: true
+          prerelease: false
+          files: |
+            README.md

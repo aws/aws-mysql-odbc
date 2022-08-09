@@ -1,16 +1,17 @@
 name: Failover Unit Tests
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - '*'
-    paths-ignore:
-      - '**/*.md'
-      - '**/*.jpg'
-      - '**/README.txt'
+# Disabling temporarily
+#on:
+#  push:
+#    branches:
+#      - main
+#  pull_request:
+#    branches:
+#      - '*'
+#    paths-ignore:
+#      - '**/*.md'
+#      - '**/*.jpg'
+#      - '**/README.txt'
 
 env:
   LINUX_BUILD_TYPE: Release
