@@ -1,0 +1,103 @@
+name: Automated releases
+
+# Pull request on branch for testing purposes. Will be removed before merge.
+on:
+  push:
+    tags:
+      - "*.*.*-ignore"
+  pull_request:
+    branches:
+      - 'automated_release'
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  windows-release:
+    name: Windows
+    runs-on: windows-2019
+    env:
+      CMAKE_GENERATOR: Visual Studio 16 2019
+      MYSQL_DIR: C:/mysql-8.0.28-winx64
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Configure build environment/dependencies
+      - name: Cache MySQL client libs and include files
+        id: cache-mysql
+        uses: actions/cache@v3
+        with:
+          path: |
+            C:/mysql-8.0.28-winx64/
+          key: ${{ runner.os }}-mysql-${{ hashFiles('**/VersionInfo.h') }}
+
+      - name: Install MySQL client libs and include files
+        if: steps.cache-mysql.outputs.cache-hit != 'true'
+        run: |
+          pwd
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.28-winx64.zip -o mysql.zip
+          unzip -d C:/ mysql.zip
+
+      - name: Create build environment
+        shell: bash
+        run: cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B build -A x64
+                -G "$CMAKE_GENERATOR"
+                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DMYSQLCLIENT_STATIC_LINKING=TRUE
+                -DENABLE_UNIT_TESTS=FALSE
+                -DENABLE_INTEGRATION_TESTS=FALSE
+
+      # Build the driver
+      - name: Build Driver and Copy files
+        shell: bash
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          pwd
+          cmake --build . --config $BUILD_TYPE
+
+      # Copy the files needed for Wix
+      - name: Build Driver and Copy files
+        shell: bash
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          pwd
+          cp ./lib/$BUILD_TYPE/awsmysqlodbc*.dll ./Wix/x64
+          cp ./lib/$BUILD_TYPE/awsmysqlodbc*.lib ./Wix/x64
+          cp ./lib/$BUILD_TYPE/awsmysqlodbc*.dll ./Wix/x86
+          cp ./lib/$BUILD_TYPE/awsmysqlodbc*.lib ./Wix/x86
+          cp ./bin/$BUILD_TYPE/myodbc-installer.exe ./Wix/x64
+          cp ./bin/$BUILD_TYPE/myodbc-installer.exe ./Wix/x86
+          cp ./INFO_BIN ./wix/doc
+          cp ./INFO_SRC ./wix/doc
+          cp ./ChangeLog ./wix/doc
+          cp ./README.md ./wix/doc
+
+      # Generate the installer
+      - name: Build Installer
+        shell: bash
+        working-directory: ${{ github.workspace }}/build/wix
+        run: |
+          pwd
+          cmake -DMSI_64=1 -G "NMake Makefiles"
+          nmake
+          ls -l .
+
+      - name: List files
+        shell: bash
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          ls -l .
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          draft: true
+          prerelease: false
+          files: |
+            README.md
