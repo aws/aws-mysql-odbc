@@ -55,7 +55,7 @@ public:
     static void release_instance();
 
 protected:
-    MONITOR_THREAD_CONTAINER();
+    MONITOR_THREAD_CONTAINER() = default;
     void populate_monitor_map(std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
     void remove_monitor_mapping(std::shared_ptr<MONITOR> monitor);
     std::shared_ptr<MONITOR> get_available_monitor();
