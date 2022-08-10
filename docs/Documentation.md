@@ -19,3 +19,8 @@
         - [Sample Code](./using-the-aws-driver/UsingTheAwsDriver.md#sample-code)
         - [08007 - Connection Failure During Transaction](./using-the-aws-driver/UsingTheAwsDriver.md#08007---connection-failure-during-transaction)
         - [Sample Code](./using-the-aws-driver/UsingTheAwsDriver.md#sample-code-1)
+- [Building the AWS ODBC Driver for MySQL](./building-the-aws-driver/BuildingTheAwsDriver.md#building-the-aws-odbc-driver-for-mysql)
+    - [Windows](./building-the-aws-driver/BuildingTheAwsDriver.md#windows-1)
+    - [MacOS](./building-the-aws-driver/BuildingTheAwsDriver.md#macos-1)
+        - [Troubleshoot](./building-the-aws-driver/BuildingTheAwsDriver.md#troubleshoot)
+    - [Linux](./building-the-aws-driver/BuildingTheAwsDriver.md#linux-1)
