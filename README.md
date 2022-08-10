@@ -8,13 +8,6 @@
   - [What is Failover?](#what-is-failover)
   - [Benefits of the AWS ODBC Driver for MySQL](#benefits-of-the-aws-odbc-driver-for-mysql)
   - [Getting Started](#getting-started)
-    - [Installing the AWS ODBC Driver for MySQL](#installing-the-aws-odbc-driver-for-mysql)
-      - [Windows](#windows)
-      - [MacOS](#macos)
-      - [Linux](#linux)
-      - [Configuring the Driver and DSN Entries](#configuring-the-driver-and-dsn-entries)
-        - [odbc.ini](#odbcini)
-        - [odbcinst.ini](#odbcinstini)
   - [Using the AWS ODBC Driver for MySQL](#using-the-aws-odbc-driver-for-mysql)
     - [Connection Strings and Configuring the Driver](#connection-strings-and-configuring-the-driver)
     - [Failover Specific Options](#failover-specific-options)
@@ -55,64 +48,7 @@ An Amazon Aurora database (DB) cluster uses failover to automatically repair the
 Although Aurora is able to provide maximum availability through the use of failover, existing client drivers do not fully support this functionality. This is partially due to the time required for the DNS of the new primary DB instance to be fully resolved in order to properly direct the connection. The AWS ODBC Driver for MySQL fully utilizes failover behaviour by maintaining a cache of the Aurora cluster topology and each DB instance's role (Aurora Replica or primary DB instance). This topology is provided via a direct query to the Aurora database, essentially providing a shortcut to bypass the delays caused by DNS resolution. With this knowledge, the AWS ODBC Driver can more closely monitor the Aurora DB cluster status so that a connection to the new primary DB instance can be established as fast as possible. Additionally, as noted above, the AWS ODBC Driver is designed to be drop-in compatible for other MySQL ODBC drivers and can be used to interact with Aurora MySQL, RDS MySQL, and commercial/open-source MySQL databases.
 
 ## Getting Started
-
-### Installing the AWS ODBC Driver for MySQL
-
-#### Windows
-Download the `.msi` Windows installer for your system; run the installer and follow the onscreen instructions. The default target installation location for the driver files is `C:\Program Files\AWS ODBC Driver for MySQL`. An ANSI driver and a Unicode driver will be installed, named respectively `AWS ODBC ANSI Driver for MySQL` and `AWS ODBC Unicode Driver for MySQL`. To uninstall the ODBC driver, open the same installer file and follow the onscreen instructions to remove the driver.
-
-#### MacOS
-Download the `.pkg` installer; run the installer and follow the onscreen instructions. The default target installation location for the driver folder is `/usr/local/`. Note that for a MacOS system, additional steps are required to configure the driver and Data Source Name (DSN) entries before you can use the driver(s). Initially, the installer will register two driver entries with two corresponding DSN entries. For information about [how to configure the driver and DSN settings](#configuring-the-driver-and-dsn-entries), review the configuration sample. There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
-
-#### Linux
-Download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
-
-#### Configuring the Driver and DSN Entries 
-To use the driver on MacOS or Linux systems, the two files (`odbc.ini` and `odbcinst.ini`) must exist and contain the correct driver and data source name (DSN) configurations. You can modify the files manually, or through tools with a GUI such as the iODBC Administrator (available for MacOS). The sample odbc.ini and odbcinst.ini files that follow show how an ANSI driver could be set up for a MacOS system. For a Linux system, the files would be similar, but the driver file would have a `.so` extension instead of the `.dylib` extension as shown in the sample. On a MacOS system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/Library/ODBC/` directory. On a Linux system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/etc` directory.
-
-##### odbc.ini
-```bash
-[ODBC Data Sources]
-awsmysqlodbcw = AWS ODBC Unicode Driver for MySQL
-awsmysqlodbca = AWS ODBC ANSI Driver for MySQL
-
-[awsmysqlodbcw]
-Driver                             = AWS ODBC Unicode Driver for MySQL
-SERVER                             = localhost
-NO_SCHEMA                          = 1
-TOPOLOGY_REFRESH_RATE              = 30000
-FAILOVER_TIMEOUT                   = 60000
-FAILOVER_TOPOLOGY_REFRESH_RATE     = 5000
-FAILOVER_WRITER_RECONNECT_INTERVAL = 5000
-FAILOVER_READER_CONNECT_TIMEOUT    = 30000
-CONNECT_TIMEOUT                    = 30
-NETWORK_TIMEOUT                    = 30
-
-[awsmysqlodbca]
-Driver                             = AWS ODBC ANSI Driver for MySQL
-SERVER                             = localhost
-NO_SCHEMA                          = 1
-TOPOLOGY_RR                        = 30000
-FAILOVER_TIMEOUT                   = 60000
-FAILOVER_TOPOLOGY_REFRESH_RATE     = 5000
-FAILOVER_WRITER_RECONNECT_INTERVAL = 5000
-FAILOVER_READER_CONNECT_TIMEOUT    = 30000
-CONNECT_TIMEOUT                    = 30
-NETWORK_TIMEOUT                    = 30
-```
-
-##### odbcinst.ini
-```bash
-[ODBC Drivers]
-AWS ODBC Unicode Driver for MySQL = Installed
-AWS ODBC ANSI Driver for MySQL    = Installed
-
-[AWS ODBC Unicode Driver for MySQL]
-Driver = /usr/local/aws-mysql-odbc-0.1.0-macos/lib/awsmysqlodbcw.dylib
-
-[AWS ODBC ANSI Driver for MySQL]
-Driver = /usr/local/aws-mysql-odbc-0.1.0-macos/lib/awsmysqlodbca.dylib
-```
+For more information on how to install and configure the AWS ODBC Driver for MySQL, please visit the [getting started page](./docs/GettingStarted.md).
 
 ## Using the AWS ODBC Driver for MySQL
 The AWS ODBC Driver for MySQL is drop-in compatible, so usage is identical to the [MySQL Connector/ODBC driver](https://github.com/mysql/mysql-connector-odbc/). The sections below highlight driver usage specific to failover.
