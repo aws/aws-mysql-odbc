@@ -55,6 +55,7 @@ MONITOR::MONITOR(
 }
 
 MONITOR::~MONITOR() {
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] deleting Monitor");
     if (this->mysql_proxy) {
         delete this->mysql_proxy;
         this->mysql_proxy = nullptr;
@@ -151,6 +152,7 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
     }
 
     this->stopped = true;
+    mysql_thread_end();
 }
 
 std::chrono::milliseconds MONITOR::get_connection_check_interval() {

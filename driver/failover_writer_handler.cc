@@ -139,6 +139,7 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
                                                     new_connection);
                     f_sync.mark_as_complete(true);
                     MYLOG_TRACE(logger.get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
+                    mysql_thread_end();
                     return;
                 }
                 release_new_connection();
@@ -150,6 +151,7 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
     // Another thread finishes or both timeout, this thread is canceled
     release_new_connection();
     MYLOG_TRACE(logger.get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
+    mysql_thread_end();
 }
 
 bool RECONNECT_TO_WRITER_HANDLER::is_current_host_writer(
@@ -195,6 +197,7 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
                                             new_connection);
             f_sync.mark_as_complete(true);
             MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
+            mysql_thread_end();
             return;
         }
     }
@@ -204,6 +207,7 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
     clean_up_reader_connection();
     release_new_connection();
     MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
+    mysql_thread_end();
 }
 
 // Connect to a reader to later retrieve the latest topology

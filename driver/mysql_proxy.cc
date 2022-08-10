@@ -558,12 +558,15 @@ MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) {
 }
 
 MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] deleting MYSQL_MONITOR_PROXY");
     if (this->mysql) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] closing mysql");
         mysql_close(this->mysql);
-        this->mysql = nullptr;
     }
-    if (this->ds)
-        ds_delete(this->ds);
+    if (this->ds) {
+      ds_delete(this->ds);
+      MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] deleting ds");
+    }
 }
 
 void MYSQL_MONITOR_PROXY::init() {
