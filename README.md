@@ -158,7 +158,7 @@ To configure failure detection, you can pass the following parameters to the AWS
 | `MONITOR_DISPOSAL_TIME`            | Interval in milliseconds for a monitor to be considered inactive and to be disposed.                                                                                                                                                                                                                                                                                               | int    | No       | `60000`                                  |
 
 #### Driver Behaviour During Failover For Different Connection URLs
-![failover_behaviour](doc/failover_behaviour.jpg)
+![failover_behaviour](docs/failover_behaviour.jpg)
 
 #### Host Pattern
 When connecting to Aurora clusters, this parameter is required when the connection string does not provide enough information about the database cluster domain name. If the Aurora cluster endpoint is used directly, the driver will recognize the standard Aurora domain name and can re-build a proper Aurora instance name when needed. In cases where the connection string uses an IP address, a custom domain name or localhost, the driver won't know how to build a proper domain name for a database instance endpoint. For example, if a custom domain was being used and the cluster instance endpoints followed a pattern of `instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc, the driver would need to know how to construct the instance endpoints using the specified custom domain. Because there isn't enough information from the custom domain alone to create the instance endpoints, the `HOST_PATTERN` should be set to `?.customHost`, making the connection string `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost`. Refer to [Driver Behaviour During Failover For Different Connection URLs](#driver-behaviour-during-failover-for-different-connection-urls) for more examples.
@@ -607,7 +607,7 @@ When connecting the AWS ODBC Driver for MySQL using a Windows system, ensure log
 5. Ensure the box to log queries is checked.
 
 ##### Example
-![enable-logging-windows](doc/enable-logging-windows.jpg)
+![enable-logging-windows](docs/enable-logging-windows.jpg)
 
 The resulting log file, named `myodbc.sql`, can be found under `%temp%`.
 
