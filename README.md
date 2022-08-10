@@ -11,9 +11,6 @@
   - [Documentation](#documentation)
   - [Getting Help and Opening Issues](#getting-help-and-opening-issues)
     - [Logging](#logging)
-      - [Enabling Logs On Windows](#enabling-logs-on-windows)
-        - [Example](#example)
-      - [Enabling Logs On MacOS and Linux](#enabling-logs-on-macos-and-linux)
   - [License](#license)
 
 ## What is Failover?
@@ -41,24 +38,7 @@ Please include a reproduction case for the issue when appropriate.
 The GitHub issues are intended for bug reports and feature requests. Keeping the list of open issues lean will help us respond in a timely manner.
 
 ### Logging
-If you encounter an issue with the AWS ODBC Driver for MySQL and would like to report it, please include driver logs if possible, as they help us diagnose problems quicker.
-
-#### Enabling Logs On Windows
-When connecting the AWS ODBC Driver for MySQL using a Windows system, ensure logging is enabled by following the steps below:
-
-1. Open the ODBC Data Source Administrator.
-2. Add a new DSN or configure an existing DSN of your choice.
-3. Open the details for the DSN.
-4. Navigate to the Debug tab.
-5. Ensure the box to log queries is checked.
-
-##### Example
-![enable-logging-windows](docs/enable-logging-windows.jpg)
-
-The resulting log file, named `myodbc.sql`, can be found under `%temp%`.
-
-#### Enabling Logs On MacOS and Linux
-When connecting the AWS ODBC Driver for MySQL using a MacOS or Linux system, include the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.sql`, can be found in the current working directory.
+If you encounter an issue with the AWS ODBC Driver for MySQL and would like to report it, please [include driver logs](./docs/using-the-aws-driver/UsingTheAwsDriver.md#logging) if possible, as they help us diagnose problems quicker. 
 
 ## License
 This software is released under version 2 of the GNU General Public License (GPLv2).

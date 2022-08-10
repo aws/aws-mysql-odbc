@@ -276,5 +276,24 @@ int main() {
 }
 ```
 
+## Logging
+
+### Enabling Logs On Windows
+When connecting the AWS ODBC Driver for MySQL using a Windows system, ensure logging is enabled by following the steps below:
+
+1. Open the ODBC Data Source Administrator.
+2. Add a new DSN or configure an existing DSN of your choice.
+3. Open the details for the DSN.
+4. Navigate to the Debug tab.
+5. Ensure the box to log queries is checked.
+
+#### Example
+![enable-logging-windows](./enable-logging-windows.jpg)
+
+The resulting log file, named `myodbc.sql`, can be found under `%temp%`.
+
+### Enabling Logs On MacOS and Linux
+When connecting the AWS ODBC Driver for MySQL using a MacOS or Linux system, include the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.sql`, can be found in the current working directory.
+
 >## :warning: Warnings About Proper Usage of the AWS ODBC Driver for MySQL
 >It is highly recommended that you use the cluster and read-only cluster endpoints instead of the direct instance endpoints of your Aurora cluster, unless you are confident about your application's use of instance endpoints. Although the driver will correctly failover to the new writer instance when using instance endpoints, use of these endpoints is discouraged because individual instances can spontaneously change reader/writer status when failover occurs. The driver will always connect directly to the instance specified if an instance endpoint is provided, so a write-safe connection cannot be assumed if the application uses instance endpoints.
