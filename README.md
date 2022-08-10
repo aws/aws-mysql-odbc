@@ -8,12 +8,12 @@
   - [What is Failover?](#what-is-failover)
   - [Benefits of the AWS ODBC Driver for MySQL](#benefits-of-the-aws-odbc-driver-for-mysql)
   - [Getting Started](#getting-started)
+  - [Documentation](#documentation)
   - [Getting Help and Opening Issues](#getting-help-and-opening-issues)
     - [Logging](#logging)
       - [Enabling Logs On Windows](#enabling-logs-on-windows)
         - [Example](#example)
       - [Enabling Logs On MacOS and Linux](#enabling-logs-on-macos-and-linux)
-  - [Documentation](#documentation)
   - [License](#license)
 
 ## What is Failover?
@@ -24,6 +24,9 @@ Although Aurora is able to provide maximum availability through the use of failo
 
 ## Getting Started
 For more information on how to install and configure the AWS ODBC Driver for MySQL, please visit the [getting started page](./docs/GettingStarted.md).
+
+## Documentation
+Please refer to the AWS Driver's [documentation](./docs/Documentation.md) for details on how to use, build, and test the AWS Driver. For additional documentation, [please refer to the documentation for the open-source mysql-connector-odbc driver that the AWS ODBC Driver for MySQL is based on](https://dev.mysql.com/doc/connector-cpp/8.0/en/).
 
 ## Getting Help and Opening Issues
 If you encounter a bug with the AWS ODBC Driver for MySQL, we would like to hear about it. Please search the [existing issues](https://github.com/awslabs/aws-mysql-odbc/issues) and see if others are also experiencing the issue before opening a new issue. When opening a new issue, please provide: 
@@ -56,9 +59,6 @@ The resulting log file, named `myodbc.sql`, can be found under `%temp%`.
 
 #### Enabling Logs On MacOS and Linux
 When connecting the AWS ODBC Driver for MySQL using a MacOS or Linux system, include the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.sql`, can be found in the current working directory.
-
-## Documentation
-For additional documentation about the AWS ODBC Driver for MySQL, [please refer to the documentation for the open-source mysql-connector-odbc driver that the AWS ODBC Driver for MySQL is based on](https://dev.mysql.com/doc/connector-cpp/8.0/en/).
 
 ## License
 This software is released under version 2 of the GNU General Public License (GPLv2).
