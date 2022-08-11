@@ -680,7 +680,7 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
       }
       break;
     case IDC_CHECK_enable_failure_detection:
-    {
+      {
         HWND monitoringTab = TabCtrl_1.hTabPages[MONITORING_TAB - 1];
         assert(monitoringTab);
         HWND detectionTime = GetDlgItem(monitoringTab, IDC_EDIT_failure_detection_time);
@@ -696,7 +696,8 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         EnableWindow(detectionInterval, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
         EnableWindow(detectionCount, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
         EnableWindow(disposalTime, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
-    }
+      }
+      break;
     case IDC_CHECK_cursor_prefetch_active:
       {
         HWND cursorTab= TabCtrl_1.hTabPages[CURSORS_TAB-1];
