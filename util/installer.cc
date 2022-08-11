@@ -1788,7 +1788,7 @@ int ds_add(DataSource *ds)
   if (ds_add_strprop(ds->name, W_SSL_CRL, ds->ssl_crl)) goto error;
   if (ds_add_strprop(ds->name, W_SSL_CRLPATH, ds->ssl_crlpath)) goto error;
   /* Failover */
-  if (ds_add_intprop(ds->name, W_ENABLE_CLUSTER_FAILOVER, ds->enable_cluster_failover)) goto error;
+  if (ds_add_intprop(ds->name, W_ENABLE_CLUSTER_FAILOVER, ds->enable_cluster_failover, true)) goto error;
   if (ds_add_intprop(ds->name, W_ALLOW_READER_CONNECTIONS, ds->allow_reader_connections)) goto error;
   if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS, ds->gather_perf_metrics)) goto error;
   if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS_PER_INSTANCE, ds->gather_metrics_per_instance)) goto error;
@@ -1803,7 +1803,7 @@ int ds_add(DataSource *ds)
   if (ds_add_intprop(ds->name, W_NETWORK_TIMEOUT, ds->network_timeout)) goto error;
 
   /* Monitoring */
-  if (ds_add_intprop(ds->name, W_ENABLE_FAILURE_DETECTION, ds->enable_failure_detection)) goto error;
+  if (ds_add_intprop(ds->name, W_ENABLE_FAILURE_DETECTION, ds->enable_failure_detection, true)) goto error;
   if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_TIME, ds->failure_detection_time)) goto error;
   if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_INTERVAL, ds->failure_detection_interval)) goto error;
   if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_COUNT, ds->failure_detection_count)) goto error;

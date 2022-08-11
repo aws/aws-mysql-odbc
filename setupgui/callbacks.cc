@@ -325,10 +325,14 @@ void syncTabsData(HWND hwnd, DataSource *params)
 
   /* 4 - Monitoring */
   GET_BOOL_TAB(MONITORING_TAB, enable_failure_detection);
-  GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_time);
-  GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_interval);
-  GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_count);
-  GET_UNSIGNED_TAB(MONITORING_TAB, monitor_disposal_time);
+  if (READ_BOOL_TAB(MONITORING_TAB, enable_failure_detection))
+  {
+    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_time);
+    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_interval);
+    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_count);
+    GET_UNSIGNED_TAB(MONITORING_TAB, monitor_disposal_time);
+  }
+
 
   /* 5 - Metadata */
   GET_BOOL_TAB(METADATA_TAB, change_bigint_columns_to_int);
@@ -482,10 +486,18 @@ void syncTabs(HWND hwnd, DataSource *params)
 
   /* 4 - Monitoring */
   SET_BOOL_TAB(MONITORING_TAB, enable_failure_detection);
-  SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_time);
-  SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_interval);
-  SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_count);
-  SET_UNSIGNED_TAB(MONITORING_TAB, monitor_disposal_time);
+  if (READ_BOOL_TAB(MONITORING_TAB, enable_failure_detection)) {
+#ifdef _WIN32
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_time, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_interval, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_count, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_monitor_disposal_time, TRUE);
+#endif
+    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_time);
+    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_interval);
+    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_count);
+    SET_UNSIGNED_TAB(MONITORING_TAB, monitor_disposal_time);
+  }
 
   /* 5 - Metadata */
   SET_BOOL_TAB(METADATA_TAB, change_bigint_columns_to_int);
