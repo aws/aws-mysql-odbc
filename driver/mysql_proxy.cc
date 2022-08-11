@@ -546,6 +546,7 @@ void MYSQL_PROXY::generate_node_keys() {
             while ((row = fetch_row(result))) {
                 node_keys.insert(std::string(row[0]));
             }
+            free_result(result);
         }
 
         ds->enable_failure_detection = failure_detection_old_state;
