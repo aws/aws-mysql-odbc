@@ -35,6 +35,6 @@
         - [Integration Tests Against A MySQL Server](./testing-the-aws-driver/TestingTheAwsDriver.md#integration-tests-against-a-mysql-server)
             - [Prerequisites](./testing-the-aws-driver/TestingTheAwsDriver.md#prerequisites)
             - [Steps](./testing-the-aws-driver/TestingTheAwsDriver.md#steps)
-      - [Failover Specific Integration Tests](./testing-the-aws-driver/TestingTheAwsDriver.md#failover-specific-integration-tests)
+        - [Failover Specific Integration Tests](./testing-the-aws-driver/TestingTheAwsDriver.md#failover-specific-integration-tests)
             - [Prerequisites](./testing-the-aws-driver/TestingTheAwsDriver.md#prerequisites-1)
             - [Steps](./testing-the-aws-driver/TestingTheAwsDriver.md#steps-1)
