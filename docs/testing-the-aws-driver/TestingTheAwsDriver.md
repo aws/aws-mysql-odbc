@@ -76,7 +76,7 @@ There are two types of integration tests you can run. One type is an integration
 4. [**Optional**] To start the MySQL Server via a Docker image. Navigate to `test/docker` and execute `docker-compose up -d` to start the server in the background.
 5. Navigate to the `test` directory and execute `ctest`.
 
-### Failover-specific Integration Tests
+### Failover Specific Integration Tests
 > **NOTE:** This set of tests can only be run on Linux at the moment.
 
 #### Prerequisites
