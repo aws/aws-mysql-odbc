@@ -71,7 +71,7 @@ There are two types of integration tests you can run. One type is an integration
     | ODBCINI              | The path to your odbc.ini file                                  | /etc/odbc.ini                   | MacOS and Linux systems |
     | ODBCINSTINI          | The path to your odbcinst.ini file                              | /etc/odbcinst.ini               | MacOS and Linux systems |
     > **NOTE:** The `TEST_PASSWORD` environment variable is only required if you have specified a password for the `root` user when installing the MySQL Server.
-2. Build and install the driver for a specific platform as described in [Installing the AWS ODBC Driver for MySQL](#installing-the-aws-odbc-driver-for-mysql).
+2. Build and install the driver for a specific platform as described in [Installing the AWS ODBC Driver for MySQL](../GettingStarted.md#installing-the-aws-odbc-driver-for-mysql).
 3. Start the MySQL Server. You may either start a local server or use a docker images. 
 4. [**Optional**] To start the MySQL Server via a Docker image. Navigate to `test/docker` and execute `docker-compose up -d` to start the server in the background.
 5. Navigate to the `test` directory and execute `ctest`.
