@@ -56,7 +56,7 @@ There are two types of integration tests you can run. One type is an integration
 ### Integration Tests Against A MySQL Server
 
 #### Prerequisites
-- Install MySQL Server. See the [build instructions for the desired system](#building-the-aws-odbc-driver-for-mysql) for instructions.
+- Install MySQL Server. See the [build instructions for the desired system](../building-the-aws-driver/BuildingTheAwsDriver.md) for instructions.
 - [**Optional**] Install [Docker](https://docs.docker.com/get-docker/).
 
 #### Steps
