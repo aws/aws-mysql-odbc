@@ -29,9 +29,11 @@
 #include "driver.h"
 
 MONITOR_SERVICE::MONITOR_SERVICE(bool enable_logging) {
+    
     this->thread_container = MONITOR_THREAD_CONTAINER::get_instance();
     if (enable_logging)
         this->logger = init_log_file();
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR_SERVICE] newing MONITOR_SERVICE");
 }
 
 MONITOR_SERVICE::MONITOR_SERVICE(
@@ -40,6 +42,10 @@ MONITOR_SERVICE::MONITOR_SERVICE(
  
     if (enable_logging)
         this->logger = init_log_file();
+}
+
+MONITOR_SERVICE::~MONITOR_SERVICE() {
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR_SERVICE] deleting MONITOR_SERVICE");
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
@@ -60,7 +66,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
 
     std::shared_ptr<MONITOR> monitor = this->thread_container->get_or_create_monitor(
         node_keys,
-        host,
+        std::move(host),
         disposal_time,
         ds,
         ds && ds->save_queries);
@@ -119,7 +125,8 @@ void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> 
     }
 }
 
-void MONITOR_SERVICE::notify_unused(std::shared_ptr<MONITOR> monitor) {
+void MONITOR_SERVICE::notify_unused(const std::shared_ptr<MONITOR>& monitor) const {
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR_SERVICE] notify_unused()");
     if (monitor == nullptr) {
         MYLOG_TRACE(
             this->logger.get(), 0,

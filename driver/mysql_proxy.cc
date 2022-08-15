@@ -53,6 +53,7 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVI
 }
 
 MYSQL_PROXY::~MYSQL_PROXY() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] deleting MYSQL_PROXY");
     if (this->mysql) {
         close();
     }
@@ -568,6 +569,7 @@ MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
       ds_delete(this->ds);
       MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] deleting ds");
     }
+    mysql_thread_end();
 }
 
 void MYSQL_MONITOR_PROXY::init() {

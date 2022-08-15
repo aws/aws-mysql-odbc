@@ -35,7 +35,7 @@ public:
     MONITOR_SERVICE(
         std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container,
         bool enable_logging = false);
-    virtual ~MONITOR_SERVICE() = default;
+    virtual ~MONITOR_SERVICE();
     
     virtual std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
         DBC* dbc,
@@ -48,7 +48,7 @@ public:
         std::chrono::milliseconds disposal_time);
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring_for_all_connections(std::set<std::string> node_keys);
-    void notify_unused(std::shared_ptr<MONITOR> monitor);
+    void notify_unused(const std::shared_ptr<MONITOR>& monitor) const;
     void release_resources();
 
 private:

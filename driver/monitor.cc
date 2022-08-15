@@ -60,6 +60,7 @@ MONITOR::~MONITOR() {
         delete this->mysql_proxy;
         this->mysql_proxy = nullptr;
     }
+    mysql_thread_end();
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
@@ -97,7 +98,11 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
 }
 
 bool MONITOR::is_stopped() {
-    return this->stopped.load();
+    return this->stopped.load(); }
+
+void MONITOR::stop() {
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] stop()");
+    this->stopped.store(true);
 }
 
 void MONITOR::clear_contexts() {
@@ -110,9 +115,10 @@ void MONITOR::clear_contexts() {
 }
 
 // Periodically ping the server and update the contexts' connection status.
-void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
+void MONITOR::operator()(std::shared_ptr<MONITOR_SERVICE> service) {
     this->stopped = false;
-    while (true) {
+    while (!this->stopped) {
+        MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] is stopped %s", this->stopped ? "true" : "false");
         bool have_contexts;
         {
             std::unique_lock<std::mutex> lock(mutex_);
@@ -144,12 +150,15 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
         else {
             auto current_time = this->get_current_time();
             if ((current_time - this->last_context_timestamp) >= this->disposal_time) {
-                service->notify_unused(shared_from_this());
+                //service->notify_unused(shared_from_this());
                 break;
             }
             std::this_thread::sleep_for(thread_sleep_when_inactive);
         }
     }
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] is stopped %s, outside while loop", this->stopped ? "true" : "false");
+
+    service->notify_unused(shared_from_this());
 
     this->stopped = true;
     mysql_thread_end();
