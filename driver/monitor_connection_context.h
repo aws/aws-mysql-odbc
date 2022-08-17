@@ -27,6 +27,7 @@
 #ifndef __MONITORCONNECTIONCONTEXT_H__
 #define __MONITORCONNECTIONCONTEXT_H__
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <mutex>
