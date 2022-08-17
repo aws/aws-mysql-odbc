@@ -114,9 +114,8 @@ void MONITOR_THREAD_CONTAINER::add_task(const std::shared_ptr<MONITOR>& monitor,
     if (this->task_map.count(monitor) == 0) {
         this->thread_pool.resize(this->thread_pool.size() + 1);
         MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] thread pool size %d", thread_pool.size());
-        //auto run_monitor = [&monitor, service](int id) { monitor->run(service); };
-        //auto monitor_future = std::async(std::launch::async, std::ref(*monitor), service);
-        //this->thread_pool.push(*monitor, );
+        auto run_monitor = [monitor, service](int id) { monitor->run(service); };
+        this->task_map[monitor] = this->thread_pool.push(run_monitor);
         MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] add_task()");
     }
 }
@@ -142,7 +141,6 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
         if (this->task_map.count(monitor) > 0) {
-            monitor->stop();
             this->task_map.erase(monitor);
         }
     }
@@ -208,31 +206,27 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         std::unique_lock<std::mutex> lock(monitor_map_mutex);
         this->monitor_map.clear();
     }
+
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
         for (auto const& task_pair : task_map) {
             task_pair.first->stop();
             MYLOG_TRACE(init_log_file().get(), 0, "monitor ref count %d", task_pair.first.use_count());
         }
-        //this->task_map.clear();
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] thread_pool.stop()");
     }
+
+    this->thread_pool.stop(true);
+
+    {
+        std::unique_lock<std::mutex> lock(task_map_mutex);
+        this->task_map.clear();
+    }
+
     {
         std::unique_lock<std::mutex> lock(available_monitors_mutex);
         std::queue<std::shared_ptr<MONITOR>> empty;
         std::swap(available_monitors, empty);
-    }
-
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] thread_pool.stop()");
-    this->thread_pool.stop(true);
-
-    {
-        //std::unique_lock<std::mutex> lock(task_map_mutex);
-        for (auto const& task_pair : task_map) {
-            task_pair.first->stop();
-            MYLOG_TRACE(init_log_file().get(), 0, "monitor ref count %d", task_pair.first.use_count());
-            task_pair.second.;
-        }
-        this->task_map.clear();
     }
 
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] task map size %d", task_map.size());

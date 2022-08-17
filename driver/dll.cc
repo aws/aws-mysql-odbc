@@ -152,8 +152,6 @@ void myodbc_end()
     */
     my_thread_end_wait_time= 0;
 #endif
-    MYLOG_TRACE(init_log_file().get(), 0, "MONITOR_THREAD_CONTAINER::release_instance()");
-    MONITOR_THREAD_CONTAINER::release_instance();
     mysql_library_end();
   }
 }

@@ -63,7 +63,7 @@ public:
     virtual bool is_stopped();
     virtual void stop();
     virtual void clear_contexts();
-    virtual void operator()(std::shared_ptr<MONITOR_SERVICE> service);
+    virtual void run(std::shared_ptr<MONITOR_SERVICE> service);
 
 private:
     std::atomic_bool stopped{true};

@@ -126,7 +126,6 @@ void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> 
 }
 
 void MONITOR_SERVICE::notify_unused(const std::shared_ptr<MONITOR>& monitor) const {
-    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR_SERVICE] notify_unused()");
     if (monitor == nullptr) {
         MYLOG_TRACE(
             this->logger.get(), 0,
