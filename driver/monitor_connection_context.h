@@ -27,6 +27,7 @@
 #ifndef __MONITORCONNECTIONCONTEXT_H__
 #define __MONITORCONNECTIONCONTEXT_H__
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <mutex>
@@ -90,7 +91,7 @@ private:
     std::chrono::steady_clock::time_point invalid_node_start_time;
     int failure_count;
     bool node_unhealthy;
-    bool active_context = true;
+    std::atomic_bool active_context{ true };
     std::shared_ptr<FILE> logger;
 
     std::string build_node_keys_str();
