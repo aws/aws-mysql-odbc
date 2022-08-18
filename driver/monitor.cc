@@ -85,12 +85,12 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
         return;
     }
 
+    context->invalidate();
+
     {
         std::unique_lock<std::mutex> lock(mutex_);
         this->contexts.remove(context);
     }
-
-    context->invalidate();
 
     this->connection_check_interval = this->find_shortest_interval();
 }
