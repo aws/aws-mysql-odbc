@@ -86,6 +86,8 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
         return;
     }
 
+    context->invalidate();
+
     std::string node = this->thread_container->get_node(context->get_node_keys());
     if (node.empty()) {
         MYLOG_TRACE(
@@ -94,7 +96,10 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
         return;
     }
 
-    this->thread_container->get_monitor(node)->stop_monitoring(context);
+    auto monitor = this->thread_container->get_monitor(node);
+    if (monitor != nullptr) {
+        monitor->stop_monitoring(context);
+    }
 }
 
 void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> node_keys) {
@@ -108,8 +113,10 @@ void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> 
     }
 
     auto monitor = this->thread_container->get_monitor(node);
-    monitor->clear_contexts();
-    this->thread_container->reset_resource(monitor);
+    if (monitor != nullptr) {
+        monitor->clear_contexts();
+        this->thread_container->reset_resource(monitor);
+    }
 }
 
 void MONITOR_SERVICE::notify_unused(std::shared_ptr<MONITOR> monitor) {
