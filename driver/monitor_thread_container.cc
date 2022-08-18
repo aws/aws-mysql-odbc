@@ -37,7 +37,6 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
     if (singleton) {
         return singleton;
     }
-    MYLOG_TRACE(init_log_file().get(), 0, "newing MONITOR_THREAD_CONTAINER");
     singleton = std::shared_ptr<MONITOR_THREAD_CONTAINER>(new MONITOR_THREAD_CONTAINER);
     return singleton;
 }
@@ -48,18 +47,11 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
     }
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
-    MYLOG_TRACE(init_log_file().get(), 0, "singleton.use_count(): %d", singleton.use_count());
-    MYLOG_TRACE(init_log_file().get(), 0, "singleton->release_resources();");
     singleton->release_resources();
     singleton.reset();
 }
 
-MONITOR_THREAD_CONTAINER::~MONITOR_THREAD_CONTAINER() {
-    MYLOG_TRACE(init_log_file().get(), 0, "deleting MONITOR_THREAD_CONTAINER");
-}
-
-std::string MONITOR_THREAD_CONTAINER::get_node(
-    std::set<std::string> node_keys) {
+std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
     std::unique_lock<std::mutex> lock(monitor_map_mutex);
     if (!this->monitor_map.empty()) {
         for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
@@ -115,7 +107,6 @@ void MONITOR_THREAD_CONTAINER::add_task(const std::shared_ptr<MONITOR>& monitor,
         this->thread_pool.resize(this->thread_pool.size() + 1);
         auto run_monitor = [monitor, service](int id) { monitor->run(service); };
         this->task_map[monitor] = this->thread_pool.push(run_monitor);
-        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] add_task()");
     }
 }
 
@@ -210,9 +201,7 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         std::unique_lock<std::mutex> lock(task_map_mutex);
         for (auto const& task_pair : task_map) {
             task_pair.first->stop();
-            MYLOG_TRACE(init_log_file().get(), 0, "monitor ref count %d", task_pair.first.use_count());
         }
-        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] thread_pool.stop()");
     }
 
     this->thread_pool.stop(true);
@@ -227,10 +216,4 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         std::queue<std::shared_ptr<MONITOR>> empty;
         std::swap(available_monitors, empty);
     }
-
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] task map size %d", task_map.size());
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] monitor map size %d", monitor_map.size());
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] available monitor map size %d", available_monitors.size());
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] thread_pool size %d", thread_pool.size());
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] thread_pool number of idle threads size %d", thread_pool.n_idle());
 }

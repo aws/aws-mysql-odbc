@@ -35,7 +35,7 @@ public:
     MONITOR_SERVICE(
         std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container,
         bool enable_logging = false);
-    virtual ~MONITOR_SERVICE();
+    virtual ~MONITOR_SERVICE() = default;
     
     virtual std::shared_ptr<MONITOR_CONNECTION_CONTEXT> start_monitoring(
         DBC* dbc,

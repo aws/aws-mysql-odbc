@@ -32,7 +32,6 @@ MONITOR_SERVICE::MONITOR_SERVICE(bool enable_logging) {
     this->thread_container = MONITOR_THREAD_CONTAINER::get_instance();
     if (enable_logging)
         this->logger = init_log_file();
-    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR_SERVICE] newing MONITOR_SERVICE");
 }
 
 MONITOR_SERVICE::MONITOR_SERVICE(
@@ -41,10 +40,6 @@ MONITOR_SERVICE::MONITOR_SERVICE(
  
     if (enable_logging)
         this->logger = init_log_file();
-}
-
-MONITOR_SERVICE::~MONITOR_SERVICE() {
-    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR_SERVICE] deleting MONITOR_SERVICE");
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(

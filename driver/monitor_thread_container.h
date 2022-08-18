@@ -38,7 +38,7 @@ class MONITOR_THREAD_CONTAINER {
 public:
     MONITOR_THREAD_CONTAINER(MONITOR_THREAD_CONTAINER const&) = delete;
     MONITOR_THREAD_CONTAINER& operator=(MONITOR_THREAD_CONTAINER const&) = delete;
-    virtual ~MONITOR_THREAD_CONTAINER();
+    virtual ~MONITOR_THREAD_CONTAINER() = default;
     std::string get_node(std::set<std::string> node_keys);
     std::shared_ptr<MONITOR> get_monitor(std::string node);
     std::shared_ptr<MONITOR> get_or_create_monitor(

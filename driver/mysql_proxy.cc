@@ -37,10 +37,7 @@ namespace {
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
     : MYSQL_PROXY(dbc, ds, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
 
-MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service)
-    : dbc{dbc}, ds{ds} {
-    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] newing MYSQL_PROXY");
-
+MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service) : dbc{dbc}, ds{ds} {
     if (!this->dbc) {
         throw std::runtime_error("DBC cannot be null.");
     }
@@ -67,7 +64,6 @@ MYSQL_PROXY::MYSQL_PROXY(MYSQL_PROXY&& other) {
 }
 
 MYSQL_PROXY::~MYSQL_PROXY() {
-    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] deleting MYSQL_PROXY");
     if (this->mysql) {
         close();
     }
@@ -220,7 +216,6 @@ int MYSQL_PROXY::stmt_next_result(MYSQL_STMT* stmt) {
 }
 
 void MYSQL_PROXY::close() {
-    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] mysql_close()");
     mysql_close(mysql);
     mysql = nullptr;
 }
@@ -575,20 +570,16 @@ void MYSQL_PROXY::generate_node_keys() {
 }
 
 MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) {
-    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] newing MYSQL_MONITOR_PROXY");
     this->ds = ds_new();
     ds_copy(this->ds, ds);
 }
 
 MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
-    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] deleting MYSQL_MONITOR_PROXY");
     if (this->mysql) {
-        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] closing mysql");
         mysql_close(this->mysql);
     }
     if (this->ds) {
         ds_delete(this->ds);
-        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] deleting ds");
     }
     mysql_thread_end();
 }
@@ -625,4 +616,5 @@ const char* MYSQL_MONITOR_PROXY::error() {
 
 void MYSQL_MONITOR_PROXY::close() {
     mysql_close(mysql);
+    mysql= nullptr;
 }

@@ -194,6 +194,7 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
 }
 
 bool MONITOR::connect(std::chrono::milliseconds timeout) {
+    this->mysql_proxy->close();
     this->mysql_proxy->init();
 
     unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
@@ -202,6 +203,7 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
 
     if (!this->mysql_proxy->connect()) {
         MYLOG_TRACE(this->logger.get(), 0, this->mysql_proxy->error());
+        this->mysql_proxy->close();
         return false;
     }
 

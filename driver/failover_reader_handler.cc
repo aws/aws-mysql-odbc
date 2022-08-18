@@ -201,22 +201,14 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
             MYLOG_TRACE(logger.get(), dbc_id,
                         "[FAILOVER_READER_HANDLER] Connected to reader: %s",
                         first_connection_result.new_host->get_host_port_pair().c_str());
-            //second_connection_future.get();
-            //delete second_connection_result.new_connection;
             return first_connection_result;
         } else if (!odd_hosts_number && second_connection_result.connected) {
             MYLOG_TRACE(logger.get(), dbc_id,
                         "[FAILOVER_READER_HANDLER] Connected to reader: %s",
                         second_connection_result.new_host->get_host_port_pair().c_str());
-            //first_connection_future.get();
-            //delete first_connection_result.new_connection;
             return second_connection_result;
         }
         // None has connected. We move on and try new hosts.
-        //first_connection_future.get();
-        //second_connection_future.get();
-        //delete first_connection_result.new_connection;
-        //delete second_connection_result.new_connection;
         i += 2;
         std::this_thread::sleep_for(std::chrono::seconds(READER_CONNECT_INTERVAL_SEC));
     }

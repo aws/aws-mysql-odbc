@@ -98,7 +98,6 @@ void FAILOVER::sleep(int miliseconds) {
 
 // Close new connection if not needed (other task finishes and returns first)
 void FAILOVER::release_new_connection() {
-    MYLOG_TRACE(logger.get(), dbc_id, "release_new_connection()");
     if (new_connection) {
         new_connection->delete_ds();
         delete new_connection;
@@ -345,23 +344,15 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
         MYLOG_TRACE(logger.get(), dbc_id,
                     "[FAILOVER_WRITER_HANDLER] Successfully re-connected to the current writer instance: %s",
                     reconnect_result.new_topology->get_writer()->get_host_port_pair().c_str());
-        //new_writer_future.get();
-        //delete new_writer_result.new_connection;
         return reconnect_result;
     } else if (new_writer_result.connected) {
         MYLOG_TRACE(logger.get(), dbc_id,
                     "[FAILOVER_WRITER_HANDLER] Successfully connected to the new writer instance: %s",
                     new_writer_result.new_topology->get_writer()->get_host_port_pair().c_str());
-        //reconnect_future.get();
-        //delete reconnect_result.new_connection;
         return new_writer_result;
     }
 
     // timeout
     MYLOG_TRACE(logger.get(), dbc_id, "[FAILOVER_WRITER_HANDLER] Failed to connect to the writer instance.");
-    //new_writer_future.get();
-    //reconnect_future.get();
-    //delete new_writer_result.new_connection;
-    //delete reconnect_result.new_connection;
     return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }
