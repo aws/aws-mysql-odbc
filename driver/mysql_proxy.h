@@ -161,7 +161,7 @@ public:
 
     virtual void close_socket();
 
-private:
+protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     MYSQL* mysql = nullptr;

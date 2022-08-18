@@ -71,6 +71,7 @@ MYSQL_PROXY::~MYSQL_PROXY() {
 
 void MYSQL_PROXY::delete_ds() {
     ds_delete(ds);
+    ds = nullptr;
 }
 
 uint64_t MYSQL_PROXY::num_rows(MYSQL_RES* res) {
