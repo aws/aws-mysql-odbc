@@ -110,11 +110,11 @@ void MONITOR_CONNECTION_CONTEXT::set_node_unhealthy(bool node) {
 }
 
 bool MONITOR_CONNECTION_CONTEXT::is_active_context() {
-    return active_context;
+    return active_context.load();
 }
 
 void MONITOR_CONNECTION_CONTEXT::invalidate() {
-    active_context = false;
+    active_context.store(false);
 }
 
 DBC* MONITOR_CONNECTION_CONTEXT::get_connection_to_abort() {
