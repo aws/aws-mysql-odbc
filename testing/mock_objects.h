@@ -63,6 +63,10 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
         }
     }
 
+    DataSource* get_ds() {
+        return this->ds;
+    };
+
     MOCK_METHOD(bool, is_connected, ());
     MOCK_METHOD(std::string, get_host, ());
     MOCK_METHOD(unsigned int, get_port, ());
