@@ -29,7 +29,6 @@
 #include "driver.h"
 
 MONITOR_SERVICE::MONITOR_SERVICE(bool enable_logging) {
-    
     this->thread_container = MONITOR_THREAD_CONTAINER::get_instance();
     if (enable_logging)
         this->logger = init_log_file();

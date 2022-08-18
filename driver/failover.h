@@ -57,7 +57,6 @@ class FAILOVER_CONNECTION_HANDLER {
 
     private:
         DBC* dbc;
-
         DBC* clone_dbc(DBC* source_dbc);
 };
 

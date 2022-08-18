@@ -38,18 +38,32 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
     : MYSQL_PROXY(dbc, ds, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
 
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service)
-    : dbc{dbc}, ds{ds}, monitor_service{std::move(monitor_service)} {
+    : dbc{dbc}, ds{ds} {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] newing MYSQL_PROXY");
 
-    if (!dbc) {
+    if (!this->dbc) {
         throw std::runtime_error("DBC cannot be null.");
     }
 
-    if (!ds) {
+    if (!this->ds) {
         throw std::runtime_error("DataSource cannot be null.");
+    }
+
+    if (this->ds->enable_failure_detection) {
+        this->monitor_service = std::move(monitor_service);
     }
 
     this->host = get_host_info_from_ds(ds);
     generate_node_keys();
+}
+
+MYSQL_PROXY::MYSQL_PROXY(MYSQL_PROXY&& other) {
+    this->mysql = std::move(other.mysql);
+    this->dbc = std::move(other.dbc);
+    this->ds = std::move(other.ds);
+    this->monitor_service = std::move(other.monitor_service);
+    this->host = std::move(other.host);
+    this->node_keys = std::move(other.node_keys);
 }
 
 MYSQL_PROXY::~MYSQL_PROXY() {
@@ -57,6 +71,10 @@ MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
         close();
     }
+}
+
+void MYSQL_PROXY::delete_ds() {
+    ds_delete(ds);
 }
 
 uint64_t MYSQL_PROXY::num_rows(MYSQL_RES* res) {
@@ -202,6 +220,7 @@ int MYSQL_PROXY::stmt_next_result(MYSQL_STMT* stmt) {
 }
 
 void MYSQL_PROXY::close() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] mysql_close()");
     mysql_close(mysql);
     mysql = nullptr;
 }
@@ -492,9 +511,10 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     this->mysql = mysql_proxy->mysql;
     mysql_proxy->mysql = nullptr;
 
-    my_SQLFreeConnect(mysql_proxy->dbc);
+    ds_delete(mysql_proxy->ds);
+    delete mysql_proxy;
 
-    if (!node_keys.empty()) {
+    if (monitor_service && !node_keys.empty()) {
         monitor_service->stop_monitoring_for_all_connections(node_keys);
     }
     generate_node_keys();
@@ -555,6 +575,7 @@ void MYSQL_PROXY::generate_node_keys() {
 }
 
 MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] newing MYSQL_MONITOR_PROXY");
     this->ds = ds_new();
     ds_copy(this->ds, ds);
 }
@@ -566,8 +587,8 @@ MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
         mysql_close(this->mysql);
     }
     if (this->ds) {
-      ds_delete(this->ds);
-      MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] deleting ds");
+        ds_delete(this->ds);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] deleting ds");
     }
     mysql_thread_end();
 }

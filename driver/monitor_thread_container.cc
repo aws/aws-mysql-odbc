@@ -113,7 +113,6 @@ void MONITOR_THREAD_CONTAINER::add_task(const std::shared_ptr<MONITOR>& monitor,
     std::unique_lock<std::mutex> lock(task_map_mutex);
     if (this->task_map.count(monitor) == 0) {
         this->thread_pool.resize(this->thread_pool.size() + 1);
-        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] thread pool size %d", thread_pool.size());
         auto run_monitor = [monitor, service](int id) { monitor->run(service); };
         this->task_map[monitor] = this->thread_pool.push(run_monitor);
         MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] add_task()");

@@ -79,7 +79,9 @@ FAILOVER::FAILOVER(
         logger = init_log_file();
 }
 
-FAILOVER::~FAILOVER() {}
+FAILOVER::~FAILOVER() {
+    //release_new_connection();
+}
 
 bool FAILOVER::is_writer_connected() {
     return new_connection && new_connection->is_connected();
@@ -96,7 +98,9 @@ void FAILOVER::sleep(int miliseconds) {
 
 // Close new connection if not needed (other task finishes and returns first)
 void FAILOVER::release_new_connection() {
+    MYLOG_TRACE(logger.get(), dbc_id, "release_new_connection()");
     if (new_connection) {
+        new_connection->delete_ds();
         delete new_connection;
         new_connection = nullptr;
     }
@@ -136,7 +140,7 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
                         break;
                     }
                     result = WRITER_FAILOVER_RESULT(true, false, latest_topology,
-                                                    new_connection);
+                                                    std::move(new_connection));
                     f_sync.mark_as_complete(true);
                     MYLOG_TRACE(logger.get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
                     mysql_thread_end();
@@ -194,7 +198,7 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
             clean_up_reader_connection();
         } else {
             result = WRITER_FAILOVER_RESULT(true, true, current_topology,
-                                            new_connection);
+                                            std::move(new_connection));
             f_sync.mark_as_complete(true);
             MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
             mysql_thread_end();
@@ -265,6 +269,7 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
 // Close reader connection if not needed (open and not the same as current connection)
 void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
     if (reader_connection && new_connection != reader_connection) {
+        reader_connection->delete_ds();
         delete reader_connection;
         reader_connection = nullptr;
     }
@@ -340,15 +345,23 @@ WRITER_FAILOVER_RESULT FAILOVER_WRITER_HANDLER::failover(
         MYLOG_TRACE(logger.get(), dbc_id,
                     "[FAILOVER_WRITER_HANDLER] Successfully re-connected to the current writer instance: %s",
                     reconnect_result.new_topology->get_writer()->get_host_port_pair().c_str());
+        //new_writer_future.get();
+        //delete new_writer_result.new_connection;
         return reconnect_result;
     } else if (new_writer_result.connected) {
         MYLOG_TRACE(logger.get(), dbc_id,
                     "[FAILOVER_WRITER_HANDLER] Successfully connected to the new writer instance: %s",
                     new_writer_result.new_topology->get_writer()->get_host_port_pair().c_str());
+        //reconnect_future.get();
+        //delete reconnect_result.new_connection;
         return new_writer_result;
     }
 
     // timeout
     MYLOG_TRACE(logger.get(), dbc_id, "[FAILOVER_WRITER_HANDLER] Failed to connect to the writer instance.");
+    //new_writer_future.get();
+    //reconnect_future.get();
+    //delete new_writer_result.new_connection;
+    //delete reconnect_result.new_connection;
     return WRITER_FAILOVER_RESULT(false, false, nullptr, nullptr);
 }

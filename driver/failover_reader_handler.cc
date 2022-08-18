@@ -179,10 +179,8 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
                                              std::ref(first_reader_host), std::ref(local_sync),
                                              std::ref(first_connection_result));
 
-        std::shared_ptr<HOST_INFO> second_reader_host;
-
         if (!odd_hosts_number) {
-            second_reader_host = hosts_list.at(i + 1);
+            std::shared_ptr<HOST_INFO> second_reader_host = hosts_list.at(i + 1);
             second_connection_future = std::async(std::launch::async, std::ref(second_connection_handler),
                                                   std::ref(second_reader_host), std::ref(local_sync),
                                                   std::ref(second_connection_result));
@@ -203,14 +201,22 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
             MYLOG_TRACE(logger.get(), dbc_id,
                         "[FAILOVER_READER_HANDLER] Connected to reader: %s",
                         first_connection_result.new_host->get_host_port_pair().c_str());
+            //second_connection_future.get();
+            //delete second_connection_result.new_connection;
             return first_connection_result;
         } else if (!odd_hosts_number && second_connection_result.connected) {
             MYLOG_TRACE(logger.get(), dbc_id,
                         "[FAILOVER_READER_HANDLER] Connected to reader: %s",
                         second_connection_result.new_host->get_host_port_pair().c_str());
+            //first_connection_future.get();
+            //delete first_connection_result.new_connection;
             return second_connection_result;
         }
         // None has connected. We move on and try new hosts.
+        //first_connection_future.get();
+        //second_connection_future.get();
+        //delete first_connection_result.new_connection;
+        //delete second_connection_result.new_connection;
         i += 2;
         std::this_thread::sleep_for(std::chrono::seconds(READER_CONNECT_INTERVAL_SEC));
     }
@@ -246,12 +252,13 @@ void CONNECT_TO_READER_HANDLER::operator()(
                 // If another thread finishes first, or both timeout, this thread is canceled.
                 release_new_connection();
             } else {
-                result = READER_FAILOVER_RESULT(true, reader, new_connection);
+                result = READER_FAILOVER_RESULT(true, reader, std::move(this->new_connection));
                 f_sync.mark_as_complete(true);
                 MYLOG_TRACE(
                     logger.get(), dbc_id,
                     "[CONNECT_TO_READER_HANDLER] Connected to reader: %s",
                     reader->get_host_port_pair().c_str());
+                mysql_thread_end();
                 return;
             }
         } else {
@@ -265,4 +272,7 @@ void CONNECT_TO_READER_HANDLER::operator()(
             }
         }
     }
+
+    release_new_connection();
+    mysql_thread_end();
 }

@@ -97,7 +97,8 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
 }
 
 bool MONITOR::is_stopped() {
-    return this->stopped.load(); }
+    return this->stopped.load(); 
+}
 
 void MONITOR::stop() {
     this->stopped.store(true);
