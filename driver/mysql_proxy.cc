@@ -581,7 +581,6 @@ MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
     if (this->ds) {
         ds_delete(this->ds);
     }
-    mysql_thread_end();
 }
 
 void MYSQL_MONITOR_PROXY::init() {

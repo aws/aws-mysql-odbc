@@ -26,8 +26,6 @@
 
 #include "monitor_thread_container.h"
 
-#include "mylog.h"
-
 std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
     if (singleton) {
         return singleton;
@@ -37,6 +35,7 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
     if (singleton) {
         return singleton;
     }
+
     singleton = std::shared_ptr<MONITOR_THREAD_CONTAINER>(new MONITOR_THREAD_CONTAINER);
     return singleton;
 }

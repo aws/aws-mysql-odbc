@@ -250,7 +250,6 @@ void CONNECT_TO_READER_HANDLER::operator()(
                     logger.get(), dbc_id,
                     "[CONNECT_TO_READER_HANDLER] Connected to reader: %s",
                     reader->get_host_port_pair().c_str());
-                mysql_thread_end();
                 return;
             }
         } else {
@@ -266,5 +265,4 @@ void CONNECT_TO_READER_HANDLER::operator()(
     }
 
     release_new_connection();
-    mysql_thread_end();
 }

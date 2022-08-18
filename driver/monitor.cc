@@ -59,7 +59,6 @@ MONITOR::~MONITOR() {
         delete this->mysql_proxy;
         this->mysql_proxy = nullptr;
     }
-    mysql_thread_end();
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
@@ -157,7 +156,6 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
     service->notify_unused(shared_from_this());
 
     this->stopped = true;
-    mysql_thread_end();
 }
 
 std::chrono::milliseconds MONITOR::get_connection_check_interval() {
