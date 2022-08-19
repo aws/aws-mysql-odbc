@@ -61,9 +61,9 @@ public:
     virtual void start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual void stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context);
     virtual bool is_stopped();
-    virtual void stop();
     virtual void clear_contexts();
     virtual void run(std::shared_ptr<MONITOR_SERVICE> service);
+    void stop();
 
 private:
     std::atomic_bool stopped{true};

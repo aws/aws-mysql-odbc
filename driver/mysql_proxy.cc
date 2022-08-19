@@ -54,15 +54,6 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVI
     generate_node_keys();
 }
 
-MYSQL_PROXY::MYSQL_PROXY(MYSQL_PROXY&& other) {
-    this->mysql = std::move(other.mysql);
-    this->dbc = std::move(other.dbc);
-    this->ds = std::move(other.ds);
-    this->monitor_service = std::move(other.monitor_service);
-    this->host = std::move(other.host);
-    this->node_keys = std::move(other.node_keys);
-}
-
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
         close();
@@ -510,7 +501,7 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     ds_delete(mysql_proxy->ds);
     delete mysql_proxy;
 
-    if (monitor_service && !node_keys.empty()) {
+    if (monitor_service != nullptr && !node_keys.empty()) {
         monitor_service->stop_monitoring_for_all_connections(node_keys);
     }
     generate_node_keys();

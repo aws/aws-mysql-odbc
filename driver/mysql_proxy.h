@@ -38,8 +38,6 @@ class MYSQL_PROXY {
 public:
     MYSQL_PROXY(DBC* dbc, DataSource* ds);
     MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service);
-    MYSQL_PROXY(const MYSQL_PROXY&) = delete;
-    MYSQL_PROXY(MYSQL_PROXY&&);
     virtual ~MYSQL_PROXY();
 
     void delete_ds();

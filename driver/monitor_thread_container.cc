@@ -199,7 +199,8 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
         for (auto const& task_pair : task_map) {
-            task_pair.first->stop();
+            auto monitor = task_pair.first;
+            monitor->stop();
         }
     }
 
