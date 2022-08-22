@@ -47,8 +47,8 @@ public:
         std::chrono::milliseconds disposal_time,
         DataSource* ds,
         bool enable_logging = false);
-    virtual void add_task(std::shared_ptr<MONITOR> monitor, std::shared_ptr<MONITOR_SERVICE> service);
-    void reset_resource(std::shared_ptr<MONITOR> monitor);
+    virtual void add_task(const std::shared_ptr<MONITOR>& monitor, const std::shared_ptr<MONITOR_SERVICE>& service);
+    void reset_resource(const std::shared_ptr<MONITOR>& monitor);
     void release_resource(std::shared_ptr<MONITOR> monitor);
 
     static std::shared_ptr<MONITOR_THREAD_CONTAINER> get_instance();
@@ -56,8 +56,8 @@ public:
 
 protected:
     MONITOR_THREAD_CONTAINER() = default;
-    void populate_monitor_map(std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
-    void remove_monitor_mapping(std::shared_ptr<MONITOR> monitor);
+    void populate_monitor_map(std::set<std::string> node_keys, const std::shared_ptr<MONITOR>& monitor);
+    void remove_monitor_mapping(const std::shared_ptr<MONITOR>& monitor);
     std::shared_ptr<MONITOR> get_available_monitor();
     virtual std::shared_ptr<MONITOR> create_monitor(
         std::shared_ptr<HOST_INFO> host,
