@@ -46,25 +46,25 @@ namespace {
     const std::chrono::milliseconds monitor_disposal_time(200);
 }
 
-static std::shared_ptr<HOST_INFO> host;
-static std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
-static std::shared_ptr<MONITOR_SERVICE> service;
-
 class MonitorThreadContainerTest : public testing::Test {
 protected:
-    static void SetUpTestSuite() {
+    std::shared_ptr<HOST_INFO> host;
+    std::shared_ptr<MONITOR_THREAD_CONTAINER> thread_container;
+    std::shared_ptr<MONITOR_SERVICE> service;
+
+    static void SetUpTestSuite() {}
+
+    static void TearDownTestSuite() {}
+
+    void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
         thread_container = MONITOR_THREAD_CONTAINER::get_instance();
         service = std::make_shared<MONITOR_SERVICE>(thread_container);
     }
 
-    static void TearDownTestSuite() {
+    void TearDown() override {
         service->release_resources();
     }
-
-    void SetUp() override {}
-
-    void TearDown() override {}
 };
 
 TEST_F(MonitorThreadContainerTest, GetInstance) {
