@@ -37,15 +37,17 @@ namespace {
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
     : MYSQL_PROXY(dbc, ds, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
 
-MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service)
-    : dbc{dbc}, ds{ds}, monitor_service{std::move(monitor_service)} {
-
-    if (!dbc) {
+MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service) : dbc{dbc}, ds{ds} {
+    if (!this->dbc) {
         throw std::runtime_error("DBC cannot be null.");
     }
 
-    if (!ds) {
+    if (!this->ds) {
         throw std::runtime_error("DataSource cannot be null.");
+    }
+
+    if (this->ds->enable_failure_detection) {
+        this->monitor_service = std::move(monitor_service);
     }
 
     this->host = get_host_info_from_ds(ds);
@@ -56,6 +58,11 @@ MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
         close();
     }
+}
+
+void MYSQL_PROXY::delete_ds() {
+    ds_delete(ds);
+    ds = nullptr;
 }
 
 uint64_t MYSQL_PROXY::num_rows(MYSQL_RES* res) {
@@ -491,9 +498,10 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     this->mysql = mysql_proxy->mysql;
     mysql_proxy->mysql = nullptr;
 
-    my_SQLFreeConnect(mysql_proxy->dbc);
+    ds_delete(mysql_proxy->ds);
+    delete mysql_proxy;
 
-    if (!node_keys.empty()) {
+    if (monitor_service != nullptr && !node_keys.empty()) {
         monitor_service->stop_monitoring_for_all_connections(node_keys);
     }
     generate_node_keys();
@@ -546,6 +554,7 @@ void MYSQL_PROXY::generate_node_keys() {
             while ((row = fetch_row(result))) {
                 node_keys.insert(std::string(row[0]));
             }
+            free_result(result);
         }
 
         ds->enable_failure_detection = failure_detection_old_state;
@@ -560,10 +569,10 @@ MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) {
 MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
     if (this->mysql) {
         mysql_close(this->mysql);
-        this->mysql = nullptr;
     }
-    if (this->ds)
+    if (this->ds) {
         ds_delete(this->ds);
+    }
 }
 
 void MYSQL_MONITOR_PROXY::init() {
@@ -598,4 +607,5 @@ const char* MYSQL_MONITOR_PROXY::error() {
 
 void MYSQL_MONITOR_PROXY::close() {
     mysql_close(mysql);
+    mysql= nullptr;
 }
