@@ -60,7 +60,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
 
     std::shared_ptr<MONITOR> monitor = this->thread_container->get_or_create_monitor(
         node_keys,
-        host,
+        std::move(host),
         disposal_time,
         ds,
         ds && ds->save_queries);
@@ -119,7 +119,7 @@ void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> 
     }
 }
 
-void MONITOR_SERVICE::notify_unused(std::shared_ptr<MONITOR> monitor) {
+void MONITOR_SERVICE::notify_unused(const std::shared_ptr<MONITOR>& monitor) const {
     if (monitor == nullptr) {
         MYLOG_TRACE(
             this->logger.get(), 0,
