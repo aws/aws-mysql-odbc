@@ -46,10 +46,27 @@
 #endif
 #endif
 
+DataSource* ds_new();
+void ds_delete(DataSource* ds);
+void ds_copy(DataSource* ds, DataSource* ds_source);
+
 class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
  public:
-    MOCK_MYSQL_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {};
-    ~MOCK_MYSQL_PROXY() { mock_mysql_proxy_destructor(); }
+    MOCK_MYSQL_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {
+        this->ds = ds_new();
+        ds_copy(this->ds, ds);
+    };
+    ~MOCK_MYSQL_PROXY() {
+        mock_mysql_proxy_destructor();
+        if (this->ds) {
+            ds_delete(this->ds);
+            this->ds = nullptr;
+        }
+    }
+
+    DataSource* get_ds() {
+        return this->ds;
+    };
 
     MOCK_METHOD(bool, is_connected, ());
     MOCK_METHOD(std::string, get_host, ());
