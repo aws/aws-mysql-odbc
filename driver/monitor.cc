@@ -96,7 +96,11 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
 }
 
 bool MONITOR::is_stopped() {
-    return this->stopped.load();
+    return this->stopped.load(); 
+}
+
+void MONITOR::stop() {
+    this->stopped.store(true);
 }
 
 void MONITOR::clear_contexts() {
@@ -111,7 +115,7 @@ void MONITOR::clear_contexts() {
 // Periodically ping the server and update the contexts' connection status.
 void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
     this->stopped = false;
-    while (true) {
+    while (!this->stopped) {
         bool have_contexts;
         {
             std::unique_lock<std::mutex> lock(mutex_);
@@ -143,12 +147,13 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
         else {
             auto current_time = this->get_current_time();
             if ((current_time - this->last_context_timestamp) >= this->disposal_time) {
-                service->notify_unused(shared_from_this());
                 break;
             }
             std::this_thread::sleep_for(thread_sleep_when_inactive);
         }
     }
+
+    service->notify_unused(shared_from_this());
 
     this->stopped = true;
 }
@@ -187,6 +192,7 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
 }
 
 bool MONITOR::connect(std::chrono::milliseconds timeout) {
+    this->mysql_proxy->close();
     this->mysql_proxy->init();
 
     unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
@@ -195,6 +201,7 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
 
     if (!this->mysql_proxy->connect()) {
         MYLOG_TRACE(this->logger.get(), 0, this->mysql_proxy->error());
+        this->mysql_proxy->close();
         return false;
     }
 

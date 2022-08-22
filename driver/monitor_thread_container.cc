@@ -46,10 +46,8 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
     }
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
-    if (singleton.use_count() == 1) {
-        singleton->release_resources();
-        singleton.reset();
-    }
+    singleton->release_resources();
+    singleton.reset();
 }
 
 std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
@@ -98,7 +96,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     return monitor;
 }
 
-void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor, std::shared_ptr<MONITOR_SERVICE> service) {
+void MONITOR_THREAD_CONTAINER::add_task(const std::shared_ptr<MONITOR>& monitor, const std::shared_ptr<MONITOR_SERVICE>& service) {
     if (monitor == nullptr || service == nullptr) {
         throw std::invalid_argument("Invalid parameters passed into MONITOR_THREAD_CONTAINER::add_task()");
     }
@@ -111,7 +109,7 @@ void MONITOR_THREAD_CONTAINER::add_task(std::shared_ptr<MONITOR> monitor, std::s
     }
 }
 
-void MONITOR_THREAD_CONTAINER::reset_resource(std::shared_ptr<MONITOR> monitor) {
+void MONITOR_THREAD_CONTAINER::reset_resource(const std::shared_ptr<MONITOR>& monitor) {
     if (monitor == nullptr) {
         return;
     }
@@ -142,7 +140,7 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
 }
 
 void MONITOR_THREAD_CONTAINER::populate_monitor_map(
-    std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor) {
+    std::set<std::string> node_keys, const std::shared_ptr<MONITOR>& monitor) {
 
     for (auto it = node_keys.begin(); it != node_keys.end(); ++it) {
         std::unique_lock<std::mutex> lock(monitor_map_mutex);
@@ -150,7 +148,7 @@ void MONITOR_THREAD_CONTAINER::populate_monitor_map(
     }
 }
 
-void MONITOR_THREAD_CONTAINER::remove_monitor_mapping(std::shared_ptr<MONITOR> monitor) {
+void MONITOR_THREAD_CONTAINER::remove_monitor_mapping(const std::shared_ptr<MONITOR>& monitor) {
     std::unique_lock<std::mutex> lock(monitor_map_mutex);
     for (auto it = this->monitor_map.begin(); it != this->monitor_map.end();) {
         std::string node = (*it).first;
@@ -175,6 +173,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
 
         std::unique_lock<std::mutex> lock(task_map_mutex);
         if (this->task_map.count(available_monitor) > 0) {
+            available_monitor->stop();
             this->task_map.erase(available_monitor);
         }
     }
@@ -196,10 +195,25 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         std::unique_lock<std::mutex> lock(monitor_map_mutex);
         this->monitor_map.clear();
     }
+
+    {
+        std::unique_lock<std::mutex> lock(task_map_mutex);
+        for (auto const& task_pair : task_map) {
+            auto monitor = task_pair.first;
+            monitor->stop();
+        }
+    }
+
+    this->thread_pool.stop(true);
+
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
         this->task_map.clear();
     }
 
-    this->thread_pool.stop();
+    {
+        std::unique_lock<std::mutex> lock(available_monitors_mutex);
+        std::queue<std::shared_ptr<MONITOR>> empty;
+        std::swap(available_monitors, empty);
+    }
 }
