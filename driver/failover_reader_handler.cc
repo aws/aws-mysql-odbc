@@ -182,10 +182,8 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
                                              std::ref(first_reader_host), std::ref(local_sync),
                                              std::ref(first_connection_result));
 
-        std::shared_ptr<HOST_INFO> second_reader_host;
-
         if (!odd_hosts_number) {
-            second_reader_host = hosts_list.at(i + 1);
+            std::shared_ptr<HOST_INFO> second_reader_host = hosts_list.at(i + 1);
             second_connection_future = std::async(std::launch::async, std::ref(second_connection_handler),
                                                   std::ref(second_reader_host), std::ref(local_sync),
                                                   std::ref(second_connection_result));
@@ -249,7 +247,7 @@ void CONNECT_TO_READER_HANDLER::operator()(
                 // If another thread finishes first, or both timeout, this thread is canceled.
                 release_new_connection();
             } else {
-                result = READER_FAILOVER_RESULT(true, reader, new_connection);
+                result = READER_FAILOVER_RESULT(true, reader, std::move(this->new_connection));
                 f_sync.mark_as_complete(true);
                 MYLOG_TRACE(
                     logger.get(), dbc_id,
@@ -268,4 +266,6 @@ void CONNECT_TO_READER_HANDLER::operator()(
             }
         }
     }
+
+    release_new_connection();
 }

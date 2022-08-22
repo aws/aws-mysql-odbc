@@ -40,6 +40,7 @@ public:
     MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service);
     virtual ~MYSQL_PROXY();
 
+    void delete_ds();
     uint64_t num_rows(MYSQL_RES* res);
     unsigned int num_fields(MYSQL_RES* res);
     MYSQL_FIELD* fetch_field_direct(MYSQL_RES* res, unsigned int fieldnr);
@@ -158,7 +159,7 @@ public:
 
     virtual void close_socket();
 
-private:
+protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     MYSQL* mysql = nullptr;
