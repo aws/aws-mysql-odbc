@@ -77,7 +77,10 @@ MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INF
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
         new_connection = dbc_clone->mysql_proxy;
         dbc_clone->mysql_proxy = nullptr;
+        dbc_clone->ds = nullptr;
     }
+
+    my_SQLFreeConnect(dbc_clone);
 
     return new_connection;
 }
