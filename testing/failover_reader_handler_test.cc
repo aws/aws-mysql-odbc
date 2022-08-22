@@ -297,6 +297,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
     Mock::AllowLeak(mock_reader_b_proxy);
+    Mock::AllowLeak(mock_reader_b_proxy->get_ds());
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -387,6 +388,7 @@ TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
     Mock::AllowLeak(mock_reader_b_proxy);
+    Mock::AllowLeak(mock_reader_b_proxy->get_ds());
 
     auto current_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     current_topology->add_host(writer_host);
