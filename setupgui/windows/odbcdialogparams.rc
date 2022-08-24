@@ -286,8 +286,8 @@ IDD_TAB7 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "&Log queries to %TEMP%\\myodbc.sql",IDC_CHECK_save_queries,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,148,10
+    CONTROL         "&Log driver activity to %TEMP%\\myodbc.log",IDC_CHECK_save_queries,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,160,10
 END
 
 IDD_TAB8 DIALOGEX 0, 0, 509, 181
