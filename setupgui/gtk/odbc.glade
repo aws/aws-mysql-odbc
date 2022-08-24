@@ -1313,7 +1313,7 @@
                     <property name="border_width">8</property>
                     <child>
                       <object class="GtkCheckButton" id="save_queries">
-                        <property name="label" translatable="yes">Log queries to /tmp/myodbc.sql</property>
+                        <property name="label" translatable="yes">Log driver activity to /tmp/myodbc.log</property>
                         <property name="use_action_appearance">False</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>

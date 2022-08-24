@@ -1278,7 +1278,7 @@ static char *ui_xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
                     "<property name=\"border_width\">8</property>\n" \
                     "<child>\n" \
                       "<object class=\"GtkCheckButton\" id=\"save_queries\">\n" \
-                        "<property name=\"label\" translatable=\"yes\">Log queries to /tmp/myodbc.sql</property>\n" \
+                        "<property name=\"label\" translatable=\"yes\">Log driver activity to /tmp/myodbc.log</property>\n" \
                         "<property name=\"use_action_appearance\">False</property>\n" \
                         "<property name=\"visible\">True</property>\n" \
                         "<property name=\"can_focus\">True</property>\n" \
