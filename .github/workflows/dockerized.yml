@@ -179,9 +179,9 @@ jobs:
         run: |
           echo "Displaying logs"
           mkdir -p ./reports/tests
-          if [[ -f myodbc.sql && -s myodbc.sql ]]; then 
-            cat myodbc.sql
-            cp myodbc.sql ./reports/tests/myodbc.sql
+          if [[ -f myodbc.log && -s myodbc.log ]]; then 
+            cat myodbc.log
+            cp myodbc.log ./reports/tests/myodbc.log
           fi
           if [[ -f failover_performance.xlsx && -s failover_performance.xlsx ]]; then
             cp failover_performance.xlsx ./reports/tests/failover_performance.xlsx
