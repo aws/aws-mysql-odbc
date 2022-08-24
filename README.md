@@ -583,7 +583,7 @@ There are two types of integration tests you can run. One type is an integration
     cmake --build build --config Release
    ```
 5. Navigate to the `testframework` directory and run the command: `./gradlew --no-parallel --no-daemon test-failover --info`.
-6. Log files are written to the `build` directory as `myodbc.sql`.
+6. Log files are written to the `build` directory as `myodbc.log`.
 
 ## Getting Help and Opening Issues
 If you encounter a bug with the MySQL Connector/ODBC Driver, we would like to hear about it. Please search the [existing issues](https://github.com/mysql/mysql-connector-odbc/issues) and see if others are also experiencing the issue before opening a new issue. When opening a new issue, we will need the version of MySQL Connector/ODBC Driver, C++ language version, OS you’re using, and the MySQL database version you're running against. Please include a reproduction case for the issue when appropriate.
@@ -605,10 +605,10 @@ When connecting the MySQL Connector/ODBC Driver using a Windows system, ensure l
 ##### Example
 ![enable-logging-windows](doc/enable-logging-windows.jpg)
 
-The resulting log file, named `myodbc.sql`, can be found under `%temp%`.
+The resulting log file, named `myodbc.log`, can be found under `%temp%`.
 
 #### Enabling Logs On MacOS and Linux
-When connecting the MySQL Connector/ODBC Driver using a MacOS or Linux system, use the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.sql`, can be found in the current working directory.
+When connecting the MySQL Connector/ODBC Driver using a MacOS or Linux system, use the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.log`, can be found in the current working directory.
 
 ## License
 This software is released under version 2 of the GNU General Public License (GPLv2).
