@@ -124,4 +124,4 @@ There are two types of integration tests you can run. One type is an integration
     cmake --build build --config Release
    ```
 5. Navigate to the `testframework` directory and run the command: `./gradlew --no-parallel --no-daemon test-failover --info`.
-6. Log files are written to the `build` directory as `myodbc.sql`.
+6. Log files are written to the `build` directory as `myodbc.log`.

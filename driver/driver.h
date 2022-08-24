@@ -117,15 +117,15 @@
 
 #if defined(__APPLE__)
 
-#define DRIVER_LOG_FILE "/tmp/myodbc.sql"
+#define DRIVER_LOG_FILE "/tmp/myodbc.log"
 
 #elif defined(__UNIX__)
 
-#define DRIVER_LOG_FILE "/tmp/myodbc.sql"
+#define DRIVER_LOG_FILE "/tmp/myodbc.log"
 
 #else
 
-#define DRIVER_LOG_FILE "myodbc.sql"
+#define DRIVER_LOG_FILE "myodbc.log"
 
 #endif
 
