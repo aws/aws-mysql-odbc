@@ -81,7 +81,7 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
     if (context == nullptr) {
         MYLOG_TRACE(
             this->logger.get(), 0,
-            "[MONITOR_SERVICE] Invalid context passed into stop_monitoring()");
+            "[MONITOR] Invalid context passed into stop_monitoring()");
         return;
     }
 
