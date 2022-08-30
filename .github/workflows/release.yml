@@ -60,6 +60,5 @@ jobs:
         with:
           draft: true
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
-          bodyFile: RELEASE_DETAILS.md
           artifacts: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
           token: ${{ secrets.GITHUB_TOKEN }}
