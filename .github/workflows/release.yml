@@ -31,11 +31,9 @@ jobs:
           brew install libiodbc mysql-client
       
       - name: Create build environment
-        shell: bash
         run: cmake -E make_directory ${{ github.workspace }}/build
 
       - name: Configure CMake
-        shell: bash
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
@@ -46,13 +44,12 @@ jobs:
       # Build driver
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
-        shell: bash
         run: |
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
           cmake --build .
           
       - name: Build installer
-        shell: bash
+        working-directory: ${{ github.workspace }}/build
         if: success()
         run: |
           cpack .
@@ -64,5 +61,5 @@ jobs:
           draft: true
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
           bodyFile: RELEASE_DETAILS.md
-          artifacts: aws-mysql-odbc-*.pkg
+          artifacts: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
           token: ${{ secrets.GITHUB_TOKEN }}
