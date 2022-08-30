@@ -71,26 +71,19 @@ typedef struct {
 #define FAILOVER_TIMEOUT_MS 60000
 #define FAILOVER_READER_CONNECT_TIMEOUT_MS 30000
 #define FAILOVER_WRITER_RECONNECT_INTERVAL_MS 5000
-#define FAILOVER_CONNECT_TIMEOUT_SECS 30
-#define FAILOVER_NETWORK_TIMEOUT_SECS 30
+
 // Monitoring default settings
 #define FAILURE_DETECTION_TIME_MS 30000
 #define FAILURE_DETECTION_INTERVAL_MS 5000
 #define FAILURE_DETECTION_COUNT 3
 #define MONITOR_DISPOSAL_TIME_MS 60000
 
-unsigned int get_topology_refresh_rate(unsigned int milliseconds);
-unsigned int get_failover_timeout(unsigned int milliseconds);
-unsigned int get_failover_toplogy_refresh_rate(unsigned int milliseconds);
-unsigned int get_failover_reader_connect_timeout(unsigned int milliseconds);
-unsigned int get_failover_writer_reconnect_interval(unsigned int milliseconds);
-unsigned int get_failover_connect_timeout(unsigned int seconds);
-unsigned int get_failover_network_timeout(unsigned int seconds);
+// Default timeout settings
+#define DEFAULT_CONNECT_TIMEOUT_SECS 30
+#define DEFAULT_NETWORK_TIMEOUT_SECS 30
 
-unsigned int get_failure_detection_time(unsigned int milliseconds);
-unsigned int get_failure_detection_interval(unsigned int milliseconds);
-unsigned int get_failure_detection_count(unsigned int count);
-unsigned int get_monitor_disposal_time(unsigned int milliseconds);
+unsigned int get_connect_timeout(unsigned int seconds);
+unsigned int get_network_timeout(unsigned int seconds);
 
 Driver *driver_new();
 void driver_delete(Driver *driver);
