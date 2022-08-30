@@ -379,8 +379,8 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
         // Since we can't determine whether failover should be enabled
         // before we connect, there is a possibility we need to reconnect
         // again with the correct connection settings for failover.
-        const unsigned int connect_timeout = get_failover_connect_timeout(ds->connect_timeout);
-        const unsigned int network_timeout = get_failover_network_timeout(ds->network_timeout);
+        const unsigned int connect_timeout = get_connect_timeout(ds->connect_timeout);
+        const unsigned int network_timeout = get_network_timeout(ds->network_timeout);
 
         if (is_failover_enabled() && (connect_timeout != dbc->login_timeout ||
                                       network_timeout != ds->read_timeout ||
