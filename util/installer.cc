@@ -361,46 +361,6 @@ UWORD config_set(UWORD mode)
   return current;
 }
 
-unsigned int get_topology_refresh_rate(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return TOPOLOGY_REFRESH_RATE_MS;
-}
-
-unsigned int get_failover_timeout(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILOVER_TIMEOUT_MS;
-}
-
-unsigned int get_failover_toplogy_refresh_rate(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILOVER_TOPOLOGY_REFRESH_RATE_MS;
-}
-
-unsigned int get_failover_reader_connect_timeout(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILOVER_READER_CONNECT_TIMEOUT_MS;
-}
-
-unsigned int get_failover_writer_reconnect_interval(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILOVER_WRITER_RECONNECT_INTERVAL_MS;
-}
-
 unsigned int get_connect_timeout(unsigned int seconds) {
   if (seconds && seconds > 0) {
     return seconds;
@@ -415,38 +375,6 @@ unsigned int get_network_timeout(unsigned int seconds) {
   }
 
   return DEFAULT_NETWORK_TIMEOUT_SECS;
-}
-
-unsigned int get_failure_detection_time(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILURE_DETECTION_TIME_MS;
-}
-
-unsigned int get_failure_detection_interval(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILURE_DETECTION_INTERVAL_MS;
-}
-
-unsigned int get_failure_detection_count(unsigned int count) {
-  if (count && count > 0) {
-    return count;
-  }
-
-  return FAILURE_DETECTION_COUNT;
-}
-
-unsigned int get_monitor_disposal_time(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return MONITOR_DISPOSAL_TIME_MS;
 }
 
 /* ODBC Installer Driver Wrapper */

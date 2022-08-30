@@ -82,19 +82,8 @@ typedef struct {
 #define DEFAULT_CONNECT_TIMEOUT_SECS 30
 #define DEFAULT_NETWORK_TIMEOUT_SECS 30
 
-unsigned int get_topology_refresh_rate(unsigned int milliseconds);
-unsigned int get_failover_timeout(unsigned int milliseconds);
-unsigned int get_failover_toplogy_refresh_rate(unsigned int milliseconds);
-unsigned int get_failover_reader_connect_timeout(unsigned int milliseconds);
-unsigned int get_failover_writer_reconnect_interval(unsigned int milliseconds);
-
 unsigned int get_connect_timeout(unsigned int seconds);
 unsigned int get_network_timeout(unsigned int seconds);
-
-unsigned int get_failure_detection_time(unsigned int milliseconds);
-unsigned int get_failure_detection_interval(unsigned int milliseconds);
-unsigned int get_failure_detection_count(unsigned int count);
-unsigned int get_monitor_disposal_time(unsigned int milliseconds);
 
 Driver *driver_new();
 void driver_delete(Driver *driver);
