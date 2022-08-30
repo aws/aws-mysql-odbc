@@ -378,26 +378,23 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   if (dsrc->read_options_from_mycnf)
     mysql_proxy->options(MYSQL_READ_DEFAULT_GROUP, "odbc");
 
+  unsigned int connect_timeout, read_timeout, write_timeout;
   if (failover_enabled)
   {
-      const unsigned int connect_timeout = get_failover_connect_timeout(dsrc->connect_timeout);
-      const unsigned int network_timeout = get_failover_network_timeout(dsrc->network_timeout);
-
-      mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
-      mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &network_timeout);
-      mysql_proxy->options(MYSQL_OPT_WRITE_TIMEOUT, &network_timeout);
+      connect_timeout = get_connect_timeout(dsrc->connect_timeout);
+      read_timeout = get_network_timeout(dsrc->network_timeout);
+      write_timeout = read_timeout;
   }
   else
   {
-      if (login_timeout)
-          mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &login_timeout);
-
-      if (dsrc->read_timeout)
-          mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &dsrc->read_timeout);
-
-      if (dsrc->write_timeout)
-          mysql_proxy->options(MYSQL_OPT_WRITE_TIMEOUT, &dsrc->write_timeout);
+      connect_timeout = get_connect_timeout(login_timeout);
+      read_timeout = get_network_timeout(dsrc->read_timeout);
+      write_timeout = get_network_timeout(dsrc->write_timeout);
   }
+
+  mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
+  mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &read_timeout);
+  mysql_proxy->options(MYSQL_OPT_WRITE_TIMEOUT, &write_timeout);
 
 /*
   Pluggable authentication was introduced in mysql 5.5.7

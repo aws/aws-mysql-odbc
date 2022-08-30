@@ -374,92 +374,20 @@ UWORD config_set(UWORD mode)
   return current;
 }
 
-unsigned int get_topology_refresh_rate(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return TOPOLOGY_REFRESH_RATE_MS;
-}
-
-unsigned int get_failover_timeout(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILOVER_TIMEOUT_MS;
-}
-
-unsigned int get_failover_toplogy_refresh_rate(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILOVER_TOPOLOGY_REFRESH_RATE_MS;
-}
-
-unsigned int get_failover_reader_connect_timeout(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILOVER_READER_CONNECT_TIMEOUT_MS;
-}
-
-unsigned int get_failover_writer_reconnect_interval(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILOVER_WRITER_RECONNECT_INTERVAL_MS;
-}
-
-unsigned int get_failover_connect_timeout(unsigned int seconds) {
+unsigned int get_connect_timeout(unsigned int seconds) {
   if (seconds && seconds > 0) {
     return seconds;
   }
 
-  return FAILOVER_CONNECT_TIMEOUT_SECS;
+  return DEFAULT_CONNECT_TIMEOUT_SECS;
 }
 
-unsigned int get_failover_network_timeout(unsigned int seconds) {
+unsigned int get_network_timeout(unsigned int seconds) {
   if (seconds && seconds > 0) {
     return seconds;
   }
 
-  return FAILOVER_NETWORK_TIMEOUT_SECS;
-}
-
-unsigned int get_failure_detection_time(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILURE_DETECTION_TIME_MS;
-}
-
-unsigned int get_failure_detection_interval(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return FAILURE_DETECTION_INTERVAL_MS;
-}
-
-unsigned int get_failure_detection_count(unsigned int count) {
-  if (count && count > 0) {
-    return count;
-  }
-
-  return FAILURE_DETECTION_COUNT;
-}
-
-unsigned int get_monitor_disposal_time(unsigned int milliseconds) {
-  if (milliseconds && milliseconds > 0) {
-    return milliseconds;
-  }
-
-  return MONITOR_DISPOSAL_TIME_MS;
+  return DEFAULT_NETWORK_TIMEOUT_SECS;
 }
 
 /* ODBC Installer Driver Wrapper */
@@ -820,19 +748,19 @@ DataSource *ds_new()
   ds->enable_cluster_failover = true;
   ds->allow_reader_connections = false;
   ds->gather_perf_metrics = false;
-  ds->topology_refresh_rate = get_topology_refresh_rate(0);
-  ds->failover_timeout = get_failover_timeout(0);
-  ds->failover_reader_connect_timeout = get_failover_reader_connect_timeout(0);
-  ds->failover_topology_refresh_rate = get_failover_toplogy_refresh_rate(0);
-  ds->failover_writer_reconnect_interval = get_failover_writer_reconnect_interval(0);
-  ds->connect_timeout = get_failover_connect_timeout(0);
-  ds->network_timeout = get_failover_network_timeout(0);
+  ds->topology_refresh_rate = TOPOLOGY_REFRESH_RATE_MS;
+  ds->failover_timeout = FAILOVER_TIMEOUT_MS;
+  ds->failover_reader_connect_timeout = FAILOVER_READER_CONNECT_TIMEOUT_MS;
+  ds->failover_topology_refresh_rate = FAILOVER_TOPOLOGY_REFRESH_RATE_MS;
+  ds->failover_writer_reconnect_interval = FAILOVER_WRITER_RECONNECT_INTERVAL_MS;
+  ds->connect_timeout = DEFAULT_CONNECT_TIMEOUT_SECS;
+  ds->network_timeout = DEFAULT_NETWORK_TIMEOUT_SECS;
 
   ds->enable_failure_detection = ds->enable_cluster_failover;
-  ds->failure_detection_time = get_failure_detection_time(0);
-  ds->failure_detection_interval = get_failure_detection_interval(0);
-  ds->failure_detection_count = get_failure_detection_count(0);
-  ds->monitor_disposal_time = get_monitor_disposal_time(0);
+  ds->failure_detection_time = FAILURE_DETECTION_TIME_MS;
+  ds->failure_detection_interval = FAILURE_DETECTION_INTERVAL_MS;
+  ds->failure_detection_count = FAILURE_DETECTION_COUNT;
+  ds->monitor_disposal_time = MONITOR_DISPOSAL_TIME_MS;
 
   /* DS_PARAM */
 
