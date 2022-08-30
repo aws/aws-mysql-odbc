@@ -1,12 +1,9 @@
 name: Release Draft
-# This workflow is triggered on creating tags to master
+# This workflow is triggered on creating tags to any branch
 on:
   push:
     tags:
       - "*.*.*"
-  pull_request:
-    branches:
-      - '*'
 
 env:
   BUILD_TYPE: Release
