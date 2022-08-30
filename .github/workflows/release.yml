@@ -1,4 +1,4 @@
-name: Build and Release timestream-odbc
+name: Release Draft
 # This workflow is triggered on creating tags to master
 on:
   push:
@@ -59,6 +59,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           draft: true
+          commit: ${{ github.ref_name }}
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
           bodyFile: RELEASE_DETAILS.md
           artifacts: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
