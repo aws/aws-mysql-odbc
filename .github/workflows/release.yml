@@ -59,7 +59,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           draft: true
-          commit: ${{ github.ref_name }}
+          commit: ${GITHUB_REF#refs/heads/}
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
           bodyFile: RELEASE_DETAILS.md
           artifacts: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
