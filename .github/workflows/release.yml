@@ -67,13 +67,17 @@ jobs:
         uses: actions/checkout@v2
 
       # Configure build environment/dependencies
-      - name: Install MySQL client libs & other dependencies
+      - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install 
                 build-essential 
-                libgtk-3-dev 
-                libmysqlclient-dev 
+                libgtk-3-dev
                 unixodbc
                 unixodbc-dev
+
+      - name: Install MySQL client libs and include files
+        run: |
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.30-linux-glibc2.12-x86_64.tar.xz -o mysql.tar.gz
+          tar xf mysql.tar.gz
 
       - name: Create build environment
         shell: bash
@@ -87,6 +91,7 @@ jobs:
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DWITH_UNIXODBC=1
                 -DCONNECTOR_PLATFORM=linux
+                -DMYSQL_DIR=./mysql-8.0.30-linux-glibc2.12-x86_64/
 
       # Build driver
       - name: Build driver
@@ -116,10 +121,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: installers
-      
-      - name: ls
-        run: |
-          ls -lR
 
       # Get tag version for release
       - name: Set Version Env Variable
