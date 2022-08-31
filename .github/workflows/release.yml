@@ -90,7 +90,7 @@ jobs:
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: cmake --build . --config $LINUX_BUILD_TYPE
+        run: cmake --build . --config $BUILD_TYPE
 
       - name: Build installer
         working-directory: ${{ github.workspace }}/build
