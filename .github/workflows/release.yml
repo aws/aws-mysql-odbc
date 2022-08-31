@@ -117,9 +117,9 @@ jobs:
         with:
           name: installers
       
-      - name: Unzip artifacts
+      - name: ls
         run: |
-          unzip installers
+          ls -l **/*
 
       # Get tag version for release
       - name: Set Version Env Variable
@@ -130,6 +130,6 @@ jobs:
         with:
           draft: true
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
-          artifacts: "./installers/*.pkg, ./installers/*.tar.gz"
+          artifacts: "./*.pkg, ./*.tar.gz"
           token: ${{ secrets.GITHUB_TOKEN }}
     
