@@ -109,7 +109,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=TRUE
-                -DENABLE_PERFORMANCE_TESTS=FALSE
+                -DENABLE_PERFORMANCE_TESTS=TRUE
                 -DENABLE_UNIT_TESTS=FALSE
                 -DWITH_UNIXODBC=1
 
@@ -134,7 +134,7 @@ jobs:
       - name: 'Set up Temp AWS Credentials'
         run: |
           creds=($(aws sts get-session-token \
-            --duration-seconds 3600 \
+            --duration-seconds 10800 \
             --query 'Credentials.[AccessKeyId, SecretAccessKey, SessionToken]' \
             --output text \
           | xargs));
