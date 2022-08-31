@@ -119,7 +119,7 @@ jobs:
       
       - name: ls
         run: |
-          ls -l **/*
+          ls -lR
 
       # Get tag version for release
       - name: Set Version Env Variable
