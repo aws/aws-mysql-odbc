@@ -120,6 +120,6 @@ jobs:
         with:
           draft: true
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
-          artifacts: ${{ github.workspace }}
+          artifacts: ${{ github.workspace }}/
           token: ${{ secrets.GITHUB_TOKEN }}
     
