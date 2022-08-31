@@ -86,6 +86,8 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
         return;
     }
 
+    context->invalidate();
+
     std::string node = this->thread_container->get_node(context->get_node_keys());
     if (node.empty()) {
         MYLOG_TRACE(
