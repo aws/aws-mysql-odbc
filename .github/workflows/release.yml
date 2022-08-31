@@ -53,7 +53,9 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v3
         with:
+          name: installers
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
+          if-no-files-found: error
 
   build-linux:
     name: Linux
@@ -101,7 +103,9 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v3
         with:
+          name: installers
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
+          if-no-files-found: error
 
   draft-release:
     name: Create Draft Release
@@ -110,6 +114,12 @@ jobs:
     steps:
       - name: Download all installers
         uses: actions/download-artifact@v3
+        with:
+          name: installers
+      
+      - name: Unzip artifacts
+        run: |
+          unzip installers
 
       # Get tag version for release
       - name: Set Version Env Variable
@@ -120,6 +130,6 @@ jobs:
         with:
           draft: true
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
-          artifacts: ${{ github.workspace }}/
+          artifacts: "./installers/*.pkg, ./installers/*.tar.gz"
           token: ${{ secrets.GITHUB_TOKEN }}
     
