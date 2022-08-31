@@ -110,10 +110,12 @@ void MONITOR_CONNECTION_CONTEXT::set_node_unhealthy(bool node) {
 }
 
 bool MONITOR_CONNECTION_CONTEXT::is_active_context() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] Calling is_active_context()");
     return active_context;
 }
 
 void MONITOR_CONNECTION_CONTEXT::invalidate() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] Calling invalidate()");
     active_context = false;
 }
 
@@ -130,8 +132,11 @@ void MONITOR_CONNECTION_CONTEXT::update_connection_status(
     std::chrono::steady_clock::time_point status_check_start_time,
     std::chrono::steady_clock::time_point current_time,
     bool is_valid) {
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] update_connection_status() entry");
     
     if (!is_active_context()) {
+      MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] Inactive context");
       return;
     }
 
@@ -140,6 +145,7 @@ void MONITOR_CONNECTION_CONTEXT::update_connection_status(
     if (total_elapsed_time > get_failure_detection_time()) {
       set_connection_valid(is_valid, status_check_start_time, current_time);
     }
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] update_connection_status() exit");
 }
 
 // Set whether the connection to the server is still valid based on the monitoring settings.
@@ -182,6 +188,7 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
 void MONITOR_CONNECTION_CONTEXT::abort_connection() {
     std::lock_guard<std::mutex> lock(mutex_);
     if ((!get_connection_to_abort()) || (!is_active_context())) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] No connection/active_context to abort");
         return;
     }
     connection_to_abort->mysql_proxy->close_socket();

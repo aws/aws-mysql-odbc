@@ -94,10 +94,12 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
         return;
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] this->thread_container->get_monitor(node)->stop_monitoring(context)");
     this->thread_container->get_monitor(node)->stop_monitoring(context);
 }
 
 void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> node_keys) {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] stop_monitoring_for_all_connections() entry");
     std::string node = this->thread_container->get_node(node_keys);
     if (node.empty()) {
         MYLOG_TRACE(
@@ -107,9 +109,14 @@ void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> 
         return;
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] auto monitor = this->thread_container->get_monitor(node)");
     auto monitor = this->thread_container->get_monitor(node);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] monitor->clear_contexts()");
     monitor->clear_contexts();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] this->thread_container->reset_resource(monitor)");
     this->thread_container->reset_resource(monitor);
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] stop_monitoring_for_all_connections() exit");
 }
 
 void MONITOR_SERVICE::notify_unused(const std::shared_ptr<MONITOR>& monitor) const {

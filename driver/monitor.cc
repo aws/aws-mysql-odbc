@@ -62,6 +62,7 @@ MONITOR::~MONITOR() {
 }
 
 void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] start_monitoring() entry");
     std::chrono::milliseconds detection_interval = context->get_failure_detection_interval();
     if (detection_interval < this->connection_check_interval) {
         this->connection_check_interval = detection_interval;
@@ -74,10 +75,13 @@ void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> conte
     {
         std::unique_lock<std::mutex> lock(mutex_);
         this->contexts.push_back(context);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Added context; contexts.size() = %d", contexts.size());
     }
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] start_monitoring() exit");
 }
 
 void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] stop_monitoring() entry");
     if (context == nullptr) {
         MYLOG_TRACE(
             this->logger.get(), 0,
@@ -88,11 +92,14 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
     {
         std::unique_lock<std::mutex> lock(mutex_);
         this->contexts.remove(context);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Removed context; contexts.size() = %d", contexts.size());
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] context->invalidate()");
     context->invalidate();
 
     this->connection_check_interval = this->find_shortest_interval();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] stop_monitoring() exit");
 }
 
 bool MONITOR::is_stopped() {
