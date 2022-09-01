@@ -1,16 +1,16 @@
 name: Community Tests
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - '*'
-    paths-ignore:
-      - '**/*.md'
-      - '**/*.jpg'
-      - '**/README.txt'
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - '*'
+#     paths-ignore:
+#       - '**/*.md'
+#       - '**/*.jpg'
+#       - '**/README.txt'
 
 env:
   BUILD_TYPE: Release
@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
-                -DMYSQL_SQL="C:/mysql-8.0.28-winx64"
+                -DMYSQL_SQL="$MYSQL_DIR"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
 
