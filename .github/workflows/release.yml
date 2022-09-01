@@ -117,7 +117,6 @@ jobs:
     runs-on: windows-2019
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
-      MYSQL_FOLDER: C:/mysql-8.0.30-winx64
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -128,10 +127,11 @@ jobs:
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.30-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
+      - uses: ilammy/msvc-dev-cmd@v1
+
       - name: Run build installer script
         run: |
           .\build_installer.ps1 x64 $BUILD_TYPE C:/mysql-8.0.30-winx64
-          ls
       
       - name: Upload Windows installer as artifact
         if: success()
