@@ -133,5 +133,6 @@ void MONITOR_SERVICE::notify_unused(const std::shared_ptr<MONITOR>& monitor) con
 
 void MONITOR_SERVICE::release_resources() {
     this->thread_container = nullptr;
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] about to call release_instance()");
     MONITOR_THREAD_CONTAINER::release_instance();
 }

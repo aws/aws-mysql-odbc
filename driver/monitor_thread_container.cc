@@ -26,6 +26,8 @@
 
 #include "monitor_thread_container.h"
 
+#include "mylog.h"
+
 std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
     if (singleton) {
         return singleton;
@@ -41,11 +43,14 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
 }
 
 void MONITOR_THREAD_CONTAINER::release_instance() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Entering release_instance()");
     if (!singleton) {
         return;
     }
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
+    auto use_count = singleton.use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] release_instance(): use_count = %d", use_count);
     if (singleton.use_count() == 1) {
         singleton->release_resources();
         singleton.reset();

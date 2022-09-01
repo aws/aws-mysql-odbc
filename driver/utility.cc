@@ -95,6 +95,8 @@ SQLRETURN exec_stmt_query_std(STMT *stmt, const std::string &query,
 SQLRETURN odbc_stmt(DBC *dbc, const char *query,
                     SQLULEN query_length, my_bool req_lock)
 {
+  MYLOG_TRACE(init_log_file().get(), 0, "[odbc_stmt] Calling odbc_stmt() on query = \"%s\"", query);
+    
   SQLRETURN result = SQL_SUCCESS;
   LOCK_DBC_DEFER(dbc);
 
@@ -115,16 +117,21 @@ SQLRETURN odbc_stmt(DBC *dbc, const char *query,
   }
 
   bool server_alive = is_server_alive(dbc);
+  MYLOG_TRACE(init_log_file().get(), 0, "[odbc_stmt] server_alive = %d", server_alive);
   if (!server_alive || dbc->mysql_proxy->real_query(query, query_length))
   {
       const unsigned int mysql_error_code = dbc->mysql_proxy->error_code();
+      MYLOG_TRACE(init_log_file().get(), 0, "[odbc_stmt] mysql_error_code = %d", mysql_error_code);
 
-      MYLOG_DBC_TRACE(dbc, dbc->mysql_proxy->error());
+      MYLOG_TRACE(init_log_file().get(), 0, "[odbc_stmt] dbc->mysql_proxy->error() = '%s'", dbc->mysql_proxy->error());
+
+      //MYLOG_DBC_TRACE(dbc, dbc->mysql_proxy->error());
       result = set_conn_error(dbc, MYERR_S1000, dbc->mysql_proxy->error(), mysql_error_code);
 
       if (!server_alive || is_connection_lost(mysql_error_code))
       {
           bool rollback = (!autocommit_on(dbc) && trans_supported(dbc)) || dbc->transaction_open;
+          MYLOG_TRACE(init_log_file().get(), 0, "[odbc_stmt] rollback = %d", rollback);
           if (rollback)
           {
               MYLOG_DBC_TRACE(dbc, "Rolling back");
@@ -134,6 +141,8 @@ SQLRETURN odbc_stmt(DBC *dbc, const char *query,
           const char *error_code, *error_msg;
           if (dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
           {
+              MYLOG_TRACE(init_log_file().get(), 0, "[odbc_stmt] Inside if (dbc->fh->trigger_failover_if_needed(\"08S01\", error_code, error_msg))");
+              MYLOG_TRACE(init_log_file().get(), 0, "[odbc_stmt] error_code = %s", error_code);
               if (strcmp(error_code, "08007") == 0)
               {
                   result = set_conn_error(dbc, MYERR_08007, "Connection failure during transaction.", 0);
@@ -151,6 +160,7 @@ SQLRETURN odbc_stmt(DBC *dbc, const char *query,
       }
   }
 
+  MYLOG_TRACE(init_log_file().get(), 0, "[odbc_stmt] Finishing odbc_stmt() with result = %d", result);
   return result;
 }
 

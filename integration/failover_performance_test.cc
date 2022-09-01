@@ -29,6 +29,9 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdarg>
+#include <cstdio>
+#include <ctime>
 #include <fstream>
 #include <functional>
 #include <thread>
@@ -136,6 +139,54 @@ static std::vector<SOCKET_PERFORMANCE_DATA> socket_failover_data;
 static std::vector<EFM_PERFORMANCE_DATA> efm_failover_data;
 static std::vector<EFM_PERFORMANCE_DATA> efm_detection_data;
 
+char* get_time() {
+    time_t now = time(nullptr);
+    //char time[256];
+    //strftime(time, sizeof(time), "%Y/%m/%d %X ", localtime(&now));
+    char* time = asctime(gmtime(&now));
+    time[strlen(time) - 1] = '\0';    // Remove \n
+    return time;
+}
+
+//#define print_log(f_, ...) printf("%s ", get_time()), printf((f_), ##__VA_ARGS__), printf("\n")
+
+static FILE* log_file = nullptr;
+
+#define DRIVER_LOG_FILE "perf_test.log"
+
+void print_log(const char* fmt, ...) {
+    if (!log_file) {
+        printf("Initializing log_file\n");
+        log_file = fopen(DRIVER_LOG_FILE, "a+");
+        if (log_file) {
+            printf("log_file initialized\n");
+            fprintf(log_file, "\n\n-- Perf Test logging\n");
+        }
+        else {
+            printf("Failed to initialize log_file\n");
+        }
+    }
+    
+    if (log_file && fmt) {
+        time_t now = time(nullptr);
+        char time_buf[256];
+        strftime(time_buf, sizeof(time_buf), "%Y/%m/%d %X ", localtime(&now));
+
+        va_list args1;
+        va_start(args1, fmt);
+        va_list args2;
+        va_copy(args2, args1);
+        std::vector<char> buf(1 + vsnprintf(nullptr, 0, fmt, args1));
+        va_end(args1);
+        vsnprintf(buf.data(), buf.size(), fmt, args2);
+        va_end(args2);
+
+        printf("%s - %s\n", time_buf, buf.data());
+        fprintf(log_file, "%s - %s\n", time_buf, buf.data());
+        fflush(log_file);
+    }
+}
+
 class FailoverPerformanceTest :
   public ::testing::WithParamInterface<std::tuple<int, int, int, int, int>>,
   public BaseFailoverIntegrationTest {
@@ -173,9 +224,15 @@ protected:
   }
 
   void SetUp() override {
+    print_log("[SetUp()] Calling SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env)");
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+    
+    print_log("[SetUp()] Calling SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0)");
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
+    
+    print_log("[SetUp()] Calling SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc)");
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+    
     client_config.region = "us-east-2";
     rds_client = Aws::RDS::RDSClient(credentials, client_config);
 
@@ -198,6 +255,8 @@ protected:
     std::atomic<std::chrono::steady_clock::time_point> downtime(std::chrono::steady_clock::now());
     std::vector<int> recorded_metrics;
 
+    print_log("[measure_performance] NB_OF_RUNS = %zd", NB_OF_RUNS);
+
     for (size_t i = 0; i < NB_OF_RUNS; i++) {
       // Ensure all proxies are up
       for (const auto& x : proxy_map) {
@@ -205,8 +264,10 @@ protected:
       }
 
       EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(conn_str.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+      print_log("[measure_performance] SQLDriverConnect()");
       SQLHSTMT handle;
       EXPECT_EQ(SQL_SUCCESS, SQLAllocHandle(SQL_HANDLE_STMT, dbc, &handle));
+      print_log("[measure_performance] SQLAllocHandle()");
 
       // Start thread for shutdown
       auto network_shutdown_function = [&](const std::string& instance_id, const int sleep_ms, std::atomic<std::chrono::steady_clock::time_point>& downtime_detection) {
@@ -217,7 +278,10 @@ protected:
       std::thread network_shutdown_thread(network_shutdown_function, std::cref(writer_id), std::cref(sleep_delay), std::ref(downtime));
 
       // Execute long query and wait for error / failover.
+      print_log("[measure_performance] executing query = '%s'", LONG_QUERY);
       if (SQL_ERROR == SQLExecDirect(handle, LONG_QUERY, SQL_NTS)) {
+        print_log("[measure_performance] query failed");
+          
         int failover_time = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - downtime.load(std::memory_order_relaxed)).count());
         recorded_metrics.push_back(failover_time);
       }
@@ -228,8 +292,13 @@ protected:
       }
 
       EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
-      EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+      print_log("[measure_performance] SQLFreeHandle()");
+      SQLRETURN rc = SQLDisconnect(dbc);
+      print_log("[measure_performance] SQLDisconnect() returned %d", rc);
+      EXPECT_EQ(SQL_SUCCESS, rc);
     }
+
+    print_log("[measure_performance] Outside loop");
 
     // Metrics Statistics
     const size_t recorded_metrics_size = recorded_metrics.size();
@@ -301,13 +370,17 @@ protected:
 };
 
 TEST_P(FailoverPerformanceTest, test_measure_failover) {
+  print_log("[test_measure_failover] Starting Test");
+
   const int test_type = std::get<0>(GetParam());
   const int sleep_delay = std::get<1>(GetParam());
   const std::string server = get_proxied_endpoint(writer_id);
   
+  print_log("[test_measure_failover] Starting builder");
   builder.withDSN(dsn).withServer(server).withPort(MYSQL_PROXY_PORT)
     .withDatabase(db).withUID(user).withPWD(pwd).withHostPattern(PROXIED_CLUSTER_TEMPLATE)
     .withAllowReaderConnections(true);
+  print_log("[test_measure_failover] Finished builder");
 
   switch (test_type) {
     case SOCKET_TIMEOUT_TEST_ID: {
@@ -336,14 +409,21 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
 
     case EFM_FAILOVER_TEST_ID: {
       const int detection_time = std::get<2>(GetParam());
-      const int detection_interval = std::get<3>(GetParam());
-      const int detection_count = std::get<4>(GetParam());
+      print_log("[test_measure_failover] detection_time = %d", detection_time);
 
-      const std::string conn_str = builder.withEnableFailureDetection(true)
+      const int detection_interval = std::get<3>(GetParam());
+      print_log("[test_measure_failover] detection_interval = %d", detection_interval);
+
+      const int detection_count = std::get<4>(GetParam());
+      print_log("[test_measure_failover] detection_count = %d", detection_count);
+
+      std::string conn_str = builder.withEnableFailureDetection(true)
                                           .withEnableClusterFailover(true)
                                           .withFailureDetectionTime(detection_time)
                                           .withFailureDetectionInterval(detection_interval)
                                           .withFailureDetectionCount(detection_count).build();
+
+      print_log("[test_measure_failover] conn_str = '%s'", conn_str);
 
       EFM_PERFORMANCE_DATA data;
       data.network_outage_delay = sleep_delay;
@@ -352,21 +432,32 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       data.detection_count = detection_count;
 
       if (measure_performance(conn_str, sleep_delay, data)) {
+        print_log("[test_measure_failover] measure_performance returned true");
         efm_failover_data.push_back(data);
+      }
+      else {
+          print_log("[test_measure_failover] measure_performance returned false");
       }
       break;
     }
 
     case EFM_DETECTION_TEST_ID: {
       const int detection_time = std::get<2>(GetParam());
-      const int detection_interval = std::get<3>(GetParam());
-      const int detection_count = std::get<4>(GetParam());
+      print_log("[test_measure_failover] detection_time = %d", detection_time);
 
-      const std::string conn_str = builder.withEnableFailureDetection(true)
+      const int detection_interval = std::get<3>(GetParam());
+      print_log("[test_measure_failover] detection_interval = %d", detection_interval);
+
+      const int detection_count = std::get<4>(GetParam());
+      print_log("[test_measure_failover] detection_count = %d", detection_count);
+
+      std::string conn_str = builder.withEnableFailureDetection(true)
                                           .withEnableClusterFailover(false)
                                           .withFailureDetectionTime(detection_time)
                                           .withFailureDetectionInterval(detection_interval)
                                           .withFailureDetectionCount(detection_count).build();
+
+      print_log("[test_measure_failover] conn_str = '%s'", conn_str);
 
       EFM_PERFORMANCE_DATA data;
       data.network_outage_delay = sleep_delay;
@@ -375,7 +466,11 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       data.detection_count = detection_count;
 
       if (measure_performance(conn_str, sleep_delay, data)) {
+        print_log("[test_measure_failover] measure_performance returned true");
         efm_failover_data.push_back(data);
+      }
+      else {
+          print_log("[test_measure_failover] measure_performance returned false");
       }
       break;
     }

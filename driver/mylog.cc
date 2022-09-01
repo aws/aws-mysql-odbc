@@ -99,6 +99,11 @@ std::shared_ptr<FILE> init_log_file() {
     fprintf(file, "--\n");
     fprintf(file, "--  Driver name: %s  Version: %s\n", DRIVER_NAME,
             DRIVER_VERSION);
+#ifdef _WIN32
+    fprintf(file, "-- Log path = %s\n", filename);
+#else
+    fprintf(file, "-- Log path = %s\n", DRIVER_LOG_FILE);
+#endif
 #ifdef HAVE_LOCALTIME_R
     {
       time_t now = time(nullptr);

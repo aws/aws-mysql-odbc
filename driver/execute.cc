@@ -79,7 +79,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       query_length= strlen(query);
     }
 
-    MYLOG_STMT_TRACE(stmt, query);
+    MYLOG_TRACE(init_log_file().get(), 0, "Executing query = \"%s\"", query);
     DO_LOCK_STMT();
 
     if ( !is_server_alive( stmt->dbc ) )
@@ -186,6 +186,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       }
       else
       {
+          MYLOG_TRACE(init_log_file().get(), 0, "Unsuccessful odbc_stmt()");
           native_error = stmt->dbc->error.native_error;
           trigger_failover_upon_error = false; // possible failover was already handled in odbc_stmt()
       }
@@ -193,9 +194,11 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     MYLOG_STMT_TRACE(stmt, "query has been executed");
 
+    MYLOG_TRACE(init_log_file().get(), 0, "native_error = %d", native_error);
     if (native_error)
     {
       const auto error_code = stmt->dbc->mysql_proxy->error_code();
+      MYLOG_TRACE(init_log_file().get(), 0, "error_code = %d", error_code);
       if (error_code)
       {
           MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql_proxy->error());
@@ -281,6 +284,7 @@ exit:
       reset_parsed_query(&stmt->orig_query, NULL, NULL, NULL);
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "Exiting do_query()");
     return error;
 }
 
@@ -1604,6 +1608,7 @@ SQLRETURN my_SQLExecute( STMT *pStmt )
       if (!connection_failure)
       {
         rc= do_query(pStmt, query, length);
+        MYLOG_TRACE(init_log_file().get(), 0, "do_query returned %d", rc);
       }
       else
       {
@@ -1682,14 +1687,17 @@ SQLRETURN my_SQLExecute( STMT *pStmt )
   {
     if (all_parameters_failed)
     {
+      MYLOG_TRACE(init_log_file().get(), 0, "my_SQLExecute() returning SQL_ERROR");
       return SQL_ERROR;
     }
     else if (one_of_params_not_succeded != 0)
     {
+      MYLOG_TRACE(init_log_file().get(), 0, "my_SQLExecute() returning SQL_SUCCESS_WITH_INFO");
       return SQL_SUCCESS_WITH_INFO;
     }
   }
 
+  MYLOG_TRACE(init_log_file().get(), 0, "my_SQLExecute() returning %d", rc);
   return rc;
 }
 

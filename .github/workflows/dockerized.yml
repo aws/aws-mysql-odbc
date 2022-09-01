@@ -183,6 +183,10 @@ jobs:
             cat myodbc.log
             cp myodbc.log ./reports/tests/myodbc.log
           fi
+          if [[ -f perf_test.log && -s perf_test.log ]]; then 
+            cat perf_test.log
+            cp perf_test.log ./reports/tests/perf_test.log
+          fi
           if [[ -f failover_performance.xlsx && -s failover_performance.xlsx ]]; then
             cp failover_performance.xlsx ./reports/tests/failover_performance.xlsx
           fi

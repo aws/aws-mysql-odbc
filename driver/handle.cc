@@ -195,6 +195,7 @@ SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
 #ifdef _UNIX_
     myodbc_end();
 #endif /* _UNIX_ */
+    MYLOG_TRACE(init_log_file().get(), 0, "[my_SQLFreeEnv] about to call release_instance()");
     MONITOR_THREAD_CONTAINER::release_instance();
     return(SQL_SUCCESS);
 }
