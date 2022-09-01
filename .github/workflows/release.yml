@@ -117,7 +117,7 @@ jobs:
     runs-on: windows-2019
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
-      MYSQL_DIR: C:/mysql-8.0.30-winx64
+      MYSQL_FOLDER: C:/mysql-8.0.30-winx64
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -130,7 +130,7 @@ jobs:
 
       - name: Run build installer script
         run: |
-          .\build_installer.ps1 x64 $BUILD_TYPE $MYSQL_DIR
+          .\build_installer.ps1 x64 $BUILD_TYPE $MYSQL_FOLDER
       
       - name: Upload Windows installer as artifact
         if: success()
