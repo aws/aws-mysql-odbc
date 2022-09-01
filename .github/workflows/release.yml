@@ -125,7 +125,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.30-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.30-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Run build installer script
