@@ -130,6 +130,7 @@ jobs:
 
       - name: Run build installer script
         run: |
+          ls
           .\build_installer.ps1 x64 $BUILD_TYPE $MYSQL_FOLDER
       
       - name: Upload Windows installer as artifact
