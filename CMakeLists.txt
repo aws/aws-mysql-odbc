@@ -703,6 +703,13 @@ macro(bundle_lib lib)
 endmacro(bundle_lib)
 
 
+macro(copy_lib_for_wix lib)
+
+  get_filename_component(lib_name ${lib} NAME)  
+  configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/${lib_name} COPYONLY)
+
+endmacro(copy_lib_for_wix)
+
 IF(MYSQLCLIENT_STATIC_LINKING AND NOT RPM_BUILD)
 
   #Look for libraries and client-side plugins which are
@@ -727,6 +734,7 @@ IF(MYSQLCLIENT_STATIC_LINKING AND NOT RPM_BUILD)
         AND NOT bundled_${lib_name}
       )
         bundle_lib(${lib})
+        copy_lib_for_wix(${lib})
       endif()
 
     endforeach(lib)
@@ -763,6 +771,7 @@ IF(MYSQLCLIENT_STATIC_LINKING AND NOT RPM_BUILD)
     )
 
       bundle_lib(${lib})
+      copy_lib_for_wix(${lib})
 
       # Also bundle modules required by the SASL library if they exist
       # and the library is bundled.
@@ -804,6 +813,8 @@ IF(MYSQLCLIENT_STATIC_LINKING AND NOT RPM_BUILD)
       DESTINATION "${LIB_SUBDIR}/plugin"
       COMPONENT JDBCDll
     )
+     
+    configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/plugin/${lib_name}.dll COPYONLY)
 
     endif()
   endforeach()

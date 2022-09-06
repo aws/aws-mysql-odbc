@@ -60,7 +60,7 @@ jobs:
                 -DENABLE_INTEGRATION_TESTS=FALSE
 
       # Configure test environment
-      - name: Build Driver and Copy files
+      - name: Build Driver
         shell: bash
         working-directory: ${{ github.workspace }}/build
         run: |
