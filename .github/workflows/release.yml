@@ -10,7 +10,7 @@ env:
 
 jobs:
   build-mac:
-    name: MacOS
+    name: macOS
     runs-on: macos-latest
     env:
       CMAKE_GENERATOR: Unix Makefiles
@@ -49,7 +49,7 @@ jobs:
         if: success()
         run: cpack .
 
-      - name: Upload Mac installer as artifact
+      - name: Upload macOS installer as artifact
         if: success()
         uses: actions/upload-artifact@v3
         with:
