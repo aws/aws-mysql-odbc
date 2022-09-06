@@ -12,6 +12,8 @@ Download the `.pkg` installer; run the installer and follow the onscreen instruc
 Download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 ### Configuring the Driver and DSN Entries 
+To configure the driver on Windows, use the ODBC Data Source Administrator to add or configure a DSN for either the `AWS ODBC ANSI Driver for MySQL` or `AWS ODBC Unicode Driver for MySQL`. With this DSN you can specify the desired connection options. Further connection parameters are available with the `Details >>` button.
+
 To use the driver on MacOS or Linux systems, the two files (`odbc.ini` and `odbcinst.ini`) must exist and contain the correct driver and data source name (DSN) configurations. You can modify the files manually, or through tools with a GUI such as the iODBC Administrator (available for MacOS). The sample odbc.ini and odbcinst.ini files that follow show how an ANSI driver could be set up for a MacOS system. For a Linux system, the files would be similar, but the driver file would have a `.so` extension instead of the `.dylib` extension as shown in the sample. On a MacOS system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/Library/ODBC/` directory. On a Linux system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/etc` directory.
 
 #### odbc.ini
