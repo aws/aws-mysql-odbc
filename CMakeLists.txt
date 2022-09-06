@@ -861,6 +861,12 @@ function(bundle_lib lib)
 
 endfunction(bundle_lib)
 
+macro(copy_lib_for_wix lib)
+
+  get_filename_component(lib_name ${lib} NAME)  
+  configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/${lib_name} COPYONLY)
+
+endmacro(copy_lib_for_wix)
 
 # Bundle libraries listed in a list variable ${to_bundle}.
 # Libraries that were found and bundled are removed from ${to_bundle} list.
@@ -915,6 +921,7 @@ macro(bundle_libs to_bundle ignored)
         #message(STATUS "removing from list: ${name}")
         list(REMOVE_ITEM ${to_bundle} ${name})
         bundle_lib(${lib})
+        copy_lib_for_wix(${lib})
         set(found ${name})
         break()
       endif()
@@ -986,6 +993,8 @@ macro(bundle_plugins ignored)
       DESTINATION "${LIB_SUBDIR}/plugin"
       COMPONENT ODBCDll
     )
+     
+    configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/plugin/${lib_name}.dll COPYONLY)
 
     # See if libsasl is bundled to also bundle sasl plugins
     if("${DEPS_${plugin}}" MATCHES "sasl")
