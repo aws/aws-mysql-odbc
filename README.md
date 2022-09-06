@@ -51,7 +51,6 @@ Source packages are available from our [github releases page](https://github.com
       - [Enabling Logs On Windows](#enabling-logs-on-windows)
         - [Example](#example)
       - [Enabling Logs On MacOS and Linux](#enabling-logs-on-macos-and-linux)
-  - [Documentation](#documentation)
   - [License](#license)
 
 ## What is Failover?
@@ -74,6 +73,8 @@ Download the `.pkg` installer; run the installer and follow the onscreen instruc
 Download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 #### Configuring the Driver and DSN Entries 
+To configure the driver on Windows, use the ODBC Data Source Administrator to add or configure a DSN for either the `MySQL ODBC ANSI Driver` or `MySQL ODBC 8.0 Unicode Driver`. With this DSN you can specify the desired connection options. Further connection parameters are available with the `Details >>` button.
+
 To use the driver on MacOS or Linux systems, the two files (`odbc.ini` and `odbcinst.ini`) must exist and contain the correct driver and data source name (DSN) configurations. You can modify the files manually, or through tools with a GUI such as the iODBC Administrator (available for MacOS). The sample odbc.ini and odbcinst.ini files that follow show how an ANSI driver could be set up for a MacOS system. For a Linux system, the files would be similar, but the driver file would have a `.so` extension instead of the `.dylib` extension as shown in the sample. On a MacOS system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/Library/ODBC/` directory. On a Linux system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/etc` directory.
 
 ##### odbc.ini
@@ -127,7 +128,7 @@ To set up a connection, the driver uses an ODBC connection string. An ODBC conne
 2. configure options explicitly (SERVER=xxx;PORT=xxx;...). This option will override values set inside the DSN.
 
 ### Failover Specific Options
-In addition to the parameters that you can configure for the [MySQL Connector/ODBC driver](https://dev.mysql.com/doc/connector-odbc/en/connector-odbc-configuration-connection-parameters.html), you can pass the following parameters to the MySQL Connector/ODBC Driver through the connection string to specify additional driver behaviour. If the values for these options are not specified, the default values will be used.
+In addition to the parameters that you can configure for the [MySQL Connector/ODBC driver](https://dev.mysql.com/doc/connector-odbc/en/connector-odbc-configuration-connection-parameters.html), you can configure the following parameters in a DSN or connection string to specify failover behaviour. If the values for these options are not specified, the default values will be used. If you are dealing with the Windows DSN UI, click `Details >>` and navigate to the `Cluster Failover` tab to find the equivalent parameters.
 
 | Option                             | Description                                                                                                                                                                                                                                                                                                                                                                        | Type   | Required | Default                                  |
 | ---------------------------------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|----------|------------------------------------------|
@@ -145,10 +146,16 @@ In addition to the parameters that you can configure for the [MySQL Connector/OD
 | `CONNECT_TIMEOUT`                    | Timeout (in seconds) for socket connect, with 0 being no timeout.                                                                                                                                                                                                                                                                                                                  | int    | No       | `30`                                     |
 | `NETWORK_TIMEOUT`                    | Timeout (in seconds) on network socket operations, with 0 being no timeout.                                                                                                                                                                                                                                                                                                        | int    | No       | `30`                                     |
 
-### Failure Detection Specific Options
-Failure detection is a monitoring process that enables the cluster failover mechanism to be more efficient and precise. Enabling it allows a monitoring thread to constantly verify whether an active connection is healthy or not. When failure detection is disabled, cluster failover is triggered by the timeout values defined in the previous section. 
+### Driver Behaviour During Failover For Different Connection URLs
+![failover_behaviour](./failover_behaviour.jpg)
 
-To configure failure detection, you can pass the following parameters to the MySQL Connector/ODBC Driver through the connection string. If the values for these options are not specified, the default values will be used.
+### Host Pattern
+When connecting to Aurora clusters, this parameter is required when the connection string does not provide enough information about the database cluster domain name. If the Aurora cluster endpoint is used directly, the driver will recognize the standard Aurora domain name and can re-build a proper Aurora instance name when needed. In cases where the connection string uses an IP address, a custom domain name or localhost, the driver won't know how to build a proper domain name for a database instance endpoint. For example, if a custom domain was being used and the cluster instance endpoints followed a pattern of `instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc, the driver would need to know how to construct the instance endpoints using the specified custom domain. Because there isn't enough information from the custom domain alone to create the instance endpoints, the `HOST_PATTERN` should be set to `?.customHost`, making the connection string `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost`. Refer to [Driver Behaviour During Failover For Different Connection URLs](#driver-behaviour-during-failover-for-different-connection-urls) for more examples.
+
+## Enhanced Failure Monitoring Options
+Enhanced Failure Monitoring is a means of failure detection that enables the cluster failover mechanism to be more efficient and precise. Enabling it allows a monitoring thread to periodically check the connected database node's health. If a database node is determined to be unhealthy, the query will be retried with a new database node and the monitor restarted. When failure detection is disabled, cluster failover is triggered by the timeout values defined in the previous section. 
+
+To configure failure detection, you can specify the following parameters in a DSN or connection string. If the values for these options are not specified, the default values will be used. If you are dealing with the Windows DSN UI, click `Details >>` and navigate to the `Monitoring` tab to find the equivalent parameters.
 
 `FAILURE_DETECTION_TIME`, `FAILURE_DETECTION_INTERVAL`, and `FAILURE_DETECTION_COUNT` are similar to TCP Keep Alive parameters.
 
@@ -159,12 +166,6 @@ To configure failure detection, you can pass the following parameters to the MyS
 | `FAILURE_DETECTION_INTERVAL`       | Interval in milliseconds between probes to database node.                                                                                                                                                                                                                                                                                                                          | int    | No       | `5000`                                   |
 | `FAILURE_DETECTION_COUNT`          | Number of failed connection checks before considering database node as unhealthy.                                                                                                                                                                                                                                                                                                  | int    | No       | `3`                                      |
 | `MONITOR_DISPOSAL_TIME`            | Interval in milliseconds for a monitor to be considered inactive and to be disposed.                                                                                                                                                                                                                                                                                               | int    | No       | `60000`                                  |
-
-#### Driver Behaviour During Failover For Different Connection URLs
-![failover_behaviour](doc/failover_behaviour.jpg)
-
-#### Host Pattern
-When connecting to Aurora clusters, this parameter is required when the connection string does not provide enough information about the database cluster domain name. If the Aurora cluster endpoint is used directly, the driver will recognize the standard Aurora domain name and can re-build a proper Aurora instance name when needed. In cases where the connection string uses an IP address, a custom domain name or localhost, the driver won't know how to build a proper domain name for a database instance endpoint. For example, if a custom domain was being used and the cluster instance endpoints followed a pattern of `instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc, the driver would need to know how to construct the instance endpoints using the specified custom domain. Because there isn't enough information from the custom domain alone to create the instance endpoints, the `HOST_PATTERN` should be set to `?.customHost`, making the connection string `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost`. Refer to [Driver Behaviour During Failover For Different Connection URLs](#driver-behaviour-during-failover-for-different-connection-urls) for more examples.
 
 ### Failover Exception Codes
 
