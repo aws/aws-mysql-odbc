@@ -10,7 +10,6 @@
   - [Getting Started](#getting-started)
   - [Documentation](#documentation)
   - [Getting Help and Opening Issues](#getting-help-and-opening-issues)
-    - [Logging](#logging)
   - [License](#license)
 
 ## What is Failover?
@@ -33,12 +32,9 @@ If you encounter a bug with the AWS ODBC Driver for MySQL, we would like to hear
 - the OS platform and version
 - the MySQL database version you're running against
 
-Please include a reproduction case for the issue when appropriate.
+Please include a reproduction case for the issue when appropriate. Also please [include driver logs](./docs/using-the-aws-driver/UsingTheAwsDriver.md#logging) if possible, as they help us diagnose problems quicker. 
 
 The GitHub issues are intended for bug reports and feature requests. Keeping the list of open issues lean will help us respond in a timely manner.
-
-### Logging
-If you encounter an issue with the AWS ODBC Driver for MySQL and would like to report it, please [include driver logs](./docs/using-the-aws-driver/UsingTheAwsDriver.md#logging) if possible, as they help us diagnose problems quicker. 
 
 ## License
 This software is released under version 2 of the GNU General Public License (GPLv2).
