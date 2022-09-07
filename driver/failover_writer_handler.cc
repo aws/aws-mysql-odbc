@@ -79,8 +79,6 @@ FAILOVER::FAILOVER(
         logger = init_log_file();
 }
 
-FAILOVER::~FAILOVER() {}
-
 bool FAILOVER::is_writer_connected() {
     return new_connection && new_connection->is_connected();
 }
