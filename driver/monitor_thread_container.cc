@@ -46,8 +46,10 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
     }
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
-    singleton->release_resources();
-    singleton.reset();
+    if (singleton.use_count() == 1) {
+        singleton->release_resources();
+        singleton.reset();
+    }
 }
 
 std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
