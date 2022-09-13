@@ -96,8 +96,7 @@ void FAILOVER::sleep(int miliseconds) {
 void FAILOVER::release_new_connection() {
     if (new_connection) {
         new_connection->delete_ds();
-        delete new_connection;
-        new_connection = nullptr;
+        new_connection.reset();
     }
 }
 
@@ -261,8 +260,7 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
 void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
     if (reader_connection && new_connection != reader_connection) {
         reader_connection->delete_ds();
-        delete reader_connection;
-        reader_connection = nullptr;
+        reader_connection.reset();
     }
 }
 

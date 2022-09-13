@@ -183,7 +183,7 @@ SQLRETURN set_desc_error  (DESC *desc, char *state,
                           const char *message, uint errcode);
 SQLRETURN handle_connection_error (STMT *stmt);
 my_bool   is_connection_lost      (uint errcode);
-void      set_mem_error           (MYSQL_PROXY *mysql_proxy);
+void      set_mem_error           (std::shared_ptr<MYSQL_PROXY> mysql_proxy);
 void      translate_error         (char *save_state, myodbc_errid errid, uint mysql_err);
 
 SQLSMALLINT get_sql_data_type_from_str(const char *mysql_type_name);

@@ -143,7 +143,7 @@ static MYSQL_RES *server_list_dbkeys(STMT *stmt,
                                      SQLSMALLINT table_len)
 {
     DBC   *dbc = stmt->dbc;
-    MYSQL_PROXY *mysql_proxy= dbc->mysql_proxy;
+    auto mysql_proxy= dbc->mysql_proxy;
     char  tmpbuff[1024];
     std::string query;
     query.reserve(1024);
@@ -191,7 +191,7 @@ server_list_dbcolumns(STMT *stmt,
                       SQLCHAR *szColumn, SQLSMALLINT cbColumn)
 {
   DBC *dbc= stmt->dbc;
-  MYSQL_PROXY *mysql_proxy= dbc->mysql_proxy;
+  auto mysql_proxy= dbc->mysql_proxy;
   MYSQL_RES *result;
   char buff[NAME_LEN * 2 + 64], column_buff[NAME_LEN * 2 + 64];
 
@@ -527,7 +527,7 @@ static MYSQL_RES *table_privs_raw_data( STMT *      stmt,
                                         SQLSMALLINT table_len)
 {
   DBC *dbc= stmt->dbc;
-  MYSQL_PROXY *mysql_proxy= dbc->mysql_proxy;
+  auto mysql_proxy= dbc->mysql_proxy;
   char   tmpbuff[1024];
   std::string query;
   size_t cnt = 0;
@@ -686,7 +686,7 @@ static MYSQL_RES *column_privs_raw_data(STMT *      stmt,
                                         SQLSMALLINT column_len)
 {
   DBC   *dbc = stmt->dbc;
-  MYSQL_PROXY *mysql_proxy = dbc->mysql_proxy;
+  auto mysql_proxy = dbc->mysql_proxy;
 
   char tmpbuff[1024];
   std::string query;
@@ -853,9 +853,9 @@ MYSQL_RES *table_status_no_i_s(STMT        *stmt,
                                SQLSMALLINT  table_length,
                                my_bool      wildcard)
 {
-	MYSQL_PROXY *mysql_proxy= stmt->dbc->mysql_proxy;
+  auto mysql_proxy= stmt->dbc->mysql_proxy;
 
-	char tmpbuff[1024];
+  char tmpbuff[1024];
   std::string query;
   size_t cnt = 0;
 
@@ -1685,7 +1685,7 @@ static MYSQL_RES *server_list_proc_params(STMT *stmt,
                                           SQLSMALLINT par_name_len)
 {
   DBC   *dbc = stmt->dbc;
-  MYSQL_PROXY *mysql_proxy= dbc->mysql_proxy;
+  auto mysql_proxy= dbc->mysql_proxy;
   char   tmpbuf[1024];
   std::string qbuff;
   qbuff.reserve(2048);

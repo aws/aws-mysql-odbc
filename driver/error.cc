@@ -324,7 +324,7 @@ MYERROR::MYERROR(const char *state, const char *msg, SQLINTEGER errcode,
   @type    : myodbc3 internal
   @purpose : sets a myodbc_malloc() failure on a MYSQL* connection
 */
-void set_mem_error(MYSQL_PROXY* mysql_proxy)
+void set_mem_error(std::shared_ptr<MYSQL_PROXY> mysql_proxy)
 {
   mysql_proxy->set_last_error_code(CR_OUT_OF_MEMORY);
   myodbc_stpmov(mysql_proxy->get_last_error(), "Memory allocation failed");

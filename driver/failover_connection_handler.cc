@@ -56,7 +56,7 @@ SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, 
     return dbc_ptr->connect(ds, failover_enabled);
 }
 
-MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info) {
+std::shared_ptr<MYSQL_PROXY> FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info) {
 
     if (dbc == nullptr || dbc->ds == nullptr || host_info == nullptr) {
         return nullptr;
@@ -67,7 +67,7 @@ MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INF
     DBC* dbc_clone = clone_dbc(dbc);
     ds_set_wstrnattr(&dbc_clone->ds->server, (SQLWCHAR*)new_host.c_str(), new_host.size());
 
-    MYSQL_PROXY* new_connection = nullptr;
+    std::shared_ptr<MYSQL_PROXY> new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
     const SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds, true);
 
@@ -83,7 +83,7 @@ MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INF
 }
 
 void FAILOVER_CONNECTION_HANDLER::update_connection(
-    MYSQL_PROXY* new_connection, const std::string& new_host_name) {
+    std::shared_ptr<MYSQL_PROXY> new_connection, const std::string& new_host_name) {
 
     if (new_connection->is_connected()) {
         dbc->close();
@@ -113,7 +113,8 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
             dbc_clone = static_cast<DBC*>(hdbc);
             dbc_clone->ds = ds_new();
             ds_copy(dbc_clone->ds, source_dbc->ds);
-            dbc_clone->mysql_proxy = new MYSQL_PROXY(dbc_clone, dbc_clone->ds);
+            MYLOG_TRACE(init_log_file().get(), 0, "[FAILOVER_CONNECTION_HANDLER] Calling MYSQL_PROXY constructor");
+            dbc_clone->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc_clone, dbc_clone->ds);
         } else {
             const char* err = "Cannot allocate connection handle when cloning DBC in writer failover process";
             MYLOG_DBC_TRACE(dbc, err);

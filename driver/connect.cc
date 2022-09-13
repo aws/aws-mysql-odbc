@@ -960,7 +960,8 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   if (ds->save_queries && !dbc->log_file) 
     dbc->log_file = init_log_file();
 
-  dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
+  MYLOG_TRACE(init_log_file().get(), 0, "[MySQLConnect] Calling MYSQL_PROXY constructor");
+  dbc->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc, ds);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (!dbc->ds)
@@ -1075,7 +1076,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     if (ds->save_queries && !dbc->log_file) 
       dbc->log_file = init_log_file();
 
-    dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MySQLDriverConnect] SQL_DRIVER_COMPLETE: Calling MYSQL_PROXY constructor");
+    dbc->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc, ds);
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
     rc = dbc->fh->init_cluster_info();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
@@ -1258,7 +1260,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   if (ds->save_queries && !dbc->log_file) 
       dbc->log_file = init_log_file();
 
-  dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
+  MYLOG_TRACE(init_log_file().get(), 0, "[MySQLDriverConnect] Calling MYSQL_PROXY constructor");
+  dbc->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc, ds);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)

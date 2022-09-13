@@ -594,24 +594,24 @@ static std::atomic_ulong last_dbc_id{1};
 
 struct DBC
 {
-  ENV              *env;
-  MYSQL_PROXY      *mysql_proxy;
-  std::list<STMT*> stmt_list;
-  std::list<DESC*> desc_list; // Explicit descriptors
-  STMT_OPTIONS     stmt_options;
-  MYERROR          error;
-  std::shared_ptr<FILE> log_file; // empty shared_ptr
-  char             st_error_prefix[255] = { 0 };
-  std::string      database;
-  SQLUINTEGER      login_timeout = 0;
-  time_t           last_query_time = 0;
-  int              txn_isolation = 0;
-  uint             port = 0;
-  uint             cursor_count = 0;
-  ulong            net_buffer_len = 0;
-  uint             commit_flag = 0;
-  bool             has_query_attrs = false;
-  ulong            id;
+  ENV                          *env;
+  std::shared_ptr<MYSQL_PROXY> mysql_proxy;
+  std::list<STMT*>             stmt_list;
+  std::list<DESC*>             desc_list; // Explicit descriptors
+  STMT_OPTIONS                 stmt_options;
+  MYERROR                      error;
+  std::shared_ptr<FILE>        log_file; // empty shared_ptr
+  char                         st_error_prefix[255] = { 0 };
+  std::string                  database;
+  SQLUINTEGER                  login_timeout = 0;
+  time_t                       last_query_time = 0;
+  int                          txn_isolation = 0;
+  uint                         port = 0;
+  uint                         cursor_count = 0;
+  ulong                        net_buffer_len = 0;
+  uint                         commit_flag = 0;
+  bool                         has_query_attrs = false;
+  ulong                        id;
 
   std::recursive_mutex lock;
 
@@ -945,7 +945,7 @@ struct ODBC_STMT
 {
   MYSQL_STMT *m_stmt;
 
-  ODBC_STMT(MYSQL_PROXY *mysql_proxy) { m_stmt = mysql_proxy->stmt_init(); }
+  ODBC_STMT(std::shared_ptr<MYSQL_PROXY> mysql_proxy) { m_stmt = mysql_proxy->stmt_init(); }
   operator MYSQL_STMT*() { return m_stmt; }
   ~ODBC_STMT() { mysql_stmt_close(m_stmt); } // TODO Replace with proxy call
 };

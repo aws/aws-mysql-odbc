@@ -119,8 +119,8 @@ DBC::~DBC()
   if (ds)
     ds_delete(ds);
 
-  if (mysql_proxy) 
-    delete mysql_proxy;
+  if (mysql_proxy)
+    mysql_proxy.reset();
 
   if (fh)
     delete fh;

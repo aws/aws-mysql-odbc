@@ -493,13 +493,13 @@ unsigned int MYSQL_PROXY::get_server_status() const {
     return this->mysql->server_status;
 }
 
-void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
+void MYSQL_PROXY::set_connection(std::shared_ptr<MYSQL_PROXY> mysql_proxy) {
     close();
     this->mysql = mysql_proxy->mysql;
     mysql_proxy->mysql = nullptr;
 
     ds_delete(mysql_proxy->ds);
-    delete mysql_proxy;
+    mysql_proxy.reset();
 
     if (monitor_service != nullptr && !node_keys.empty()) {
         monitor_service->stop_monitoring_for_all_connections(node_keys);

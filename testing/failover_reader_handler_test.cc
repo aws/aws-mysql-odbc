@@ -56,9 +56,9 @@ protected:
     static std::shared_ptr<HOST_INFO> reader_c_host;
     static std::shared_ptr<HOST_INFO> writer_host;
 
-    MOCK_MYSQL_PROXY* mock_reader_a_proxy;
-    MOCK_MYSQL_PROXY* mock_reader_b_proxy;
-    MOCK_MYSQL_PROXY* mock_writer_proxy;
+    std::shared_ptr<MOCK_MYSQL_PROXY> mock_reader_a_proxy;
+    std::shared_ptr<MOCK_MYSQL_PROXY> mock_reader_b_proxy;
+    std::shared_ptr<MOCK_MYSQL_PROXY> mock_writer_proxy;
 
     static std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology;
     
@@ -237,7 +237,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Failure) {
 // Verify that reader failover handler connects to a reader node that is marked up.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Reader) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = std::make_shared<MOCK_MYSQL_PROXY>(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -258,13 +258,13 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Reader) {
     EXPECT_FALSE(result.new_host->is_host_writer());
 
     // Explicit delete on reader A as it is returned as valid connection/result
-    delete mock_reader_a_proxy;
+    mock_reader_a_proxy.reset();
 }
 
 // Verify that reader failover handler connects to a writer node.
 // Expected result: new connection to writer
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Writer) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_writer_proxy = std::make_shared<MOCK_MYSQL_PROXY>(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -284,18 +284,18 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Writer) {
     EXPECT_TRUE(result.new_host->is_host_writer());
 
     // Explicit delete as it is returned as result & is not deconstructed during failover
-    delete mock_writer_proxy; 
+    mock_writer_proxy.reset();
 }
 
 // Verify that reader failover handler connects to the fastest reader node available that is marked up.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds); // Will be free'd during failover as it is slower
+    mock_reader_a_proxy = std::make_shared<MOCK_MYSQL_PROXY>(dbc, ds);
+    mock_reader_b_proxy = std::make_shared<MOCK_MYSQL_PROXY>(dbc, ds); // Will be free'd during failover as it is slower
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
-    Mock::AllowLeak(mock_reader_b_proxy);
+    Mock::AllowLeak(mock_reader_b_proxy.get());
     Mock::AllowLeak(mock_reader_b_proxy->get_ds());
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
@@ -321,15 +321,15 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
     EXPECT_FALSE(result.new_host->is_host_writer());
 
     // Explicit delete on reader A as it is returned as a valid result
-    delete mock_reader_a_proxy;
+    mock_reader_a_proxy.reset();
 }
 
 // Verify that reader failover handler fails to connect when a host fails to connect before timeout.
 // Expected result: no connection
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Timeout) {
     // Connections should automatically free inside failover
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = std::make_shared<MOCK_MYSQL_PROXY>(dbc, ds);
+    mock_reader_b_proxy = std::make_shared<MOCK_MYSQL_PROXY>(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -381,12 +381,12 @@ TEST_F(FailoverReaderHandlerTest, Failover_Failure) {
 // Verify that reader failover handler connects to a faster reader node.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds); // Will be free'd during failover to timeout / too slow
+    mock_reader_a_proxy = std::make_shared<MOCK_MYSQL_PROXY>(dbc, ds);
+    mock_reader_b_proxy = std::make_shared<MOCK_MYSQL_PROXY>(dbc, ds); // Will be free'd during failover to timeout / too slow
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
-    Mock::AllowLeak(mock_reader_b_proxy);
+    Mock::AllowLeak(mock_reader_b_proxy.get());
     Mock::AllowLeak(mock_reader_b_proxy->get_ds());
 
     auto current_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
@@ -417,5 +417,5 @@ TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
     EXPECT_EQ("reader-a-host", result.new_host->instance_name);
 
     // Explicit delete on reader A as it's returned as a valid result
-    delete mock_reader_a_proxy;
+    mock_reader_a_proxy.reset();
 }

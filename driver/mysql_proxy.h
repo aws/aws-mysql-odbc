@@ -155,7 +155,7 @@ public:
 
     unsigned int get_server_status() const;
 
-    void set_connection(MYSQL_PROXY* mysql_proxy);
+    void set_connection(std::shared_ptr<MYSQL_PROXY> mysql_proxy);
 
     virtual void close_socket();
 

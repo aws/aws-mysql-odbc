@@ -302,7 +302,7 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
                                    my_bool      show_tables,
                                    my_bool      show_views)
 {
-  MYSQL_PROXY *mysql_proxy= stmt->dbc->mysql_proxy;
+  auto mysql_proxy= stmt->dbc->mysql_proxy;
   /** the buffer size should count possible escapes */
   my_bool clause_added= FALSE;
   std::string query;
@@ -408,7 +408,7 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
                                          my_bool      show_tables,
                                          my_bool      show_views)
 {
-  MYSQL_PROXY *mysql_proxy= stmt->dbc->mysql_proxy;
+  auto mysql_proxy= stmt->dbc->mysql_proxy;
   /** the buffer size should count possible escapes */
   my_bool clause_added= FALSE;
   std::string query;
@@ -1433,7 +1433,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
                            SQLSMALLINT fk_table_len)
 {
   STMT *stmt=(STMT *) hstmt;
-  MYSQL_PROXY *mysql_proxy= stmt->dbc->mysql_proxy;
+  auto mysql_proxy= stmt->dbc->mysql_proxy;
   char tmpbuff[1024]; /* This should be big enough. */
   char *update_rule, *delete_rule, *ref_constraints_join;
   SQLRETURN rc;

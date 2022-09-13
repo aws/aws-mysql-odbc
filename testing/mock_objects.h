@@ -84,7 +84,7 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
 
     MOCK_METHOD(void, set_cluster_id, (std::string));
     MOCK_METHOD(void, set_cluster_instance_template, (std::shared_ptr<HOST_INFO>));
-    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (MYSQL_PROXY*, bool));
+    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (std::shared_ptr<MYSQL_PROXY>, bool));
     MOCK_METHOD(void, mark_host_down, (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(void, mark_host_up, (std::shared_ptr<HOST_INFO>));
 };
@@ -99,7 +99,7 @@ class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
 class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
  public:
     MOCK_CONNECTION_HANDLER() : FAILOVER_CONNECTION_HANDLER(nullptr) {}
-    MOCK_METHOD(MYSQL_PROXY*, connect, (const std::shared_ptr<HOST_INFO>&));
+    MOCK_METHOD(std::shared_ptr<MYSQL_PROXY>, connect, (const std::shared_ptr<HOST_INFO>&));
     MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*, bool));
 };
 
