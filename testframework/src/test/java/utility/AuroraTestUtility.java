@@ -172,7 +172,7 @@ public class AuroraTestUtility {
         .withSourceRegion(dbRegion)
         .withEnableIAMDatabaseAuthentication(true)
         .withEngine(dbEngine)
-        .withEngineVersion(dbEngineVersion)
+        //.withEngineVersion(dbEngineVersion)
         .withStorageEncrypted(true)
         .withTags(testRunnerTag);
 
