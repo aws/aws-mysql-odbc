@@ -42,6 +42,10 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
     return singleton;
 }
 
+long MONITOR_THREAD_CONTAINER::get_singleton_use_count() {
+    return singleton.use_count();
+}
+
 void MONITOR_THREAD_CONTAINER::release_instance() {
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Entering release_instance()");
     if (!singleton) {

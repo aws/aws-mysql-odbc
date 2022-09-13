@@ -43,10 +43,10 @@ MONITOR_SERVICE::MONITOR_SERVICE(
 }
 
 MONITOR_SERVICE::~MONITOR_SERVICE() {
-    auto use_count = this->thread_container.use_count();
+    auto use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
     MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] use_count = %d", use_count);
     this->thread_container.reset();
-    use_count = this->thread_container.use_count();
+    use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
     MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] after reset; use_count = %d", use_count);
 }
 

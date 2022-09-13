@@ -53,6 +53,7 @@ public:
 
     static std::shared_ptr<MONITOR_THREAD_CONTAINER> get_instance();
     static void release_instance();
+    static long get_singleton_use_count();
 
 protected:
     MONITOR_THREAD_CONTAINER() = default;
