@@ -42,6 +42,14 @@ MONITOR_SERVICE::MONITOR_SERVICE(
         this->logger = init_log_file();
 }
 
+MONITOR_SERVICE::~MONITOR_SERVICE() {
+    auto use_count = this->thread_container.use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] use_count = %d", use_count);
+    this->thread_container.reset();
+    use_count = this->thread_container.use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] after reset; use_count = %d", use_count);
+}
+
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     DBC* dbc,
     DataSource* ds,
