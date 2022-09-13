@@ -79,6 +79,7 @@ public class AuroraTestUtility {
   private String dbName = "test";
   private String dbIdentifier = "test-identifier";
   private String dbEngine = "aurora-mysql";
+  private String dbEngineVersion = "8.0.mysql_aurora.3.02.1";
   private String dbInstanceClass = "db.r5.large";
   private final String dbRegion;
   private final String dbSecGroup = "default";
@@ -171,6 +172,7 @@ public class AuroraTestUtility {
         .withSourceRegion(dbRegion)
         .withEnableIAMDatabaseAuthentication(true)
         .withEngine(dbEngine)
+        .withEngineVersion(dbEngineVersion)
         .withStorageEncrypted(true)
         .withTags(testRunnerTag);
 
