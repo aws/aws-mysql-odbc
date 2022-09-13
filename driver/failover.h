@@ -57,6 +57,7 @@ class FAILOVER_CONNECTION_HANDLER {
 
     private:
         DBC* dbc;
+
         DBC* clone_dbc(DBC* source_dbc);
 };
 
@@ -239,7 +240,7 @@ class FAILOVER {
     FAILOVER(std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
              std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
              unsigned long dbc_id, bool enable_logging = false);
-    virtual ~FAILOVER() = default;
+    virtual ~FAILOVER();
     bool is_writer_connected();
 
    protected:

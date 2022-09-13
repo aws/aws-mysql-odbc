@@ -79,6 +79,8 @@ FAILOVER::FAILOVER(
         logger = init_log_file();
 }
 
+FAILOVER::~FAILOVER() {}
+
 bool FAILOVER::is_writer_connected() {
     return new_connection && new_connection->is_connected();
 }
@@ -95,7 +97,6 @@ void FAILOVER::sleep(int miliseconds) {
 // Close new connection if not needed (other task finishes and returns first)
 void FAILOVER::release_new_connection() {
     if (new_connection) {
-        new_connection->delete_ds();
         delete new_connection;
         new_connection = nullptr;
     }
@@ -135,7 +136,7 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
                         break;
                     }
                     result = WRITER_FAILOVER_RESULT(true, false, latest_topology,
-                                                    std::move(new_connection));
+                                                    new_connection);
                     f_sync.mark_as_complete(true);
                     MYLOG_TRACE(logger.get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
                     return;
@@ -191,7 +192,7 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
             clean_up_reader_connection();
         } else {
             result = WRITER_FAILOVER_RESULT(true, true, current_topology,
-                                            std::move(new_connection));
+                                            new_connection);
             f_sync.mark_as_complete(true);
             MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
             return;
@@ -260,7 +261,6 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
 // Close reader connection if not needed (open and not the same as current connection)
 void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
     if (reader_connection && new_connection != reader_connection) {
-        reader_connection->delete_ds();
         delete reader_connection;
         reader_connection = nullptr;
     }
