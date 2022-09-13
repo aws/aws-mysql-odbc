@@ -960,8 +960,10 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   if (ds->save_queries && !dbc->log_file) 
     dbc->log_file = init_log_file();
 
-  MYLOG_TRACE(init_log_file().get(), 0, "[MySQLConnect] Calling MYSQL_PROXY constructor");
+  MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLConnect] Calling MYSQL_PROXY constructor");
   dbc->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc, ds);
+  MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLConnect] Created MYSQL_PROXY with address %p", dbc->mysql_proxy.get());
+
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (!dbc->ds)
@@ -1076,8 +1078,10 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     if (ds->save_queries && !dbc->log_file) 
       dbc->log_file = init_log_file();
 
-    MYLOG_TRACE(init_log_file().get(), 0, "[MySQLDriverConnect] SQL_DRIVER_COMPLETE: Calling MYSQL_PROXY constructor");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLDriverConnect] SQL_DRIVER_COMPLETE: Calling MYSQL_PROXY constructor");
     dbc->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc, ds);
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLDriverConnect] Created MYSQL_PROXY with address %p", dbc->mysql_proxy.get());
+
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
     rc = dbc->fh->init_cluster_info();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
@@ -1260,8 +1264,11 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   if (ds->save_queries && !dbc->log_file) 
       dbc->log_file = init_log_file();
 
-  MYLOG_TRACE(init_log_file().get(), 0, "[MySQLDriverConnect] Calling MYSQL_PROXY constructor");
+  MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLDriverConnect] Calling MYSQL_PROXY constructor");
   dbc->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc, ds);
+  MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLDriverConnect] Created MYSQL_PROXY with address %p", dbc->mysql_proxy.get());
+  MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLDriverConnect] after creating mp: mp_use_count = %d", dbc->mysql_proxy.use_count());
+
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
@@ -1356,31 +1363,21 @@ void DBC::free_connection_stmts()
   @since ISO SQL 92
 */
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
-{
-  MYLOG_TRACE(init_log_file().get(), 0, "Calling SQLDisconnect()");
-  
+{ 
   DBC *dbc= (DBC *) hdbc;
+  MYLOG_TRACE(init_log_file().get(), dbc->id, "Calling SQLDisconnect()");
 
-  MYLOG_TRACE(init_log_file().get(), 0, "DataSource* ds = dbc->ds");
   DataSource* ds = dbc->ds;
 
   if (ds && ds->gather_perf_metrics) {
-    MYLOG_TRACE(init_log_file().get(), 0, "Inside if (ds && ds->gather_perf_metrics)");
     std::string cluster_id_str = "";
     if (dbc->fh) {
-      MYLOG_TRACE(init_log_file().get(), 0, "Inside if (dbc->fh)");
       cluster_id_str = dbc->fh->cluster_id;
     }
 
-    MYLOG_TRACE(init_log_file().get(), 0, "cluster_id_str = '%s'", cluster_id_str);
-
-    MYLOG_TRACE(init_log_file().get(), 0, "ds->gather_metrics_per_instance = %d", ds->gather_metrics_per_instance);
-
     if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds->gather_metrics_per_instance) && dbc->mysql_proxy) {
       cluster_id_str = dbc->mysql_proxy->get_host();
-      MYLOG_TRACE(init_log_file().get(), 0, "cluster_id_str = '%s'", cluster_id_str);
       cluster_id_str.append(":").append(std::to_string(dbc->mysql_proxy->get_port()));
-      MYLOG_TRACE(init_log_file().get(), 0, "cluster_id_str = '%s'", cluster_id_str);
     }
 
     CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(
@@ -1388,17 +1385,13 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
         dbc->log_file ? dbc->log_file.get() : nullptr, dbc->id);
   }
 
-  MYLOG_TRACE(init_log_file().get(), 0, "CHECK_HANDLE(hdbc)");
   CHECK_HANDLE(hdbc);
 
-  MYLOG_TRACE(init_log_file().get(), 0, "dbc->free_connection_stmts()");
   dbc->free_connection_stmts();
 
-  MYLOG_TRACE(init_log_file().get(), 0, "dbc->close()");
   dbc->close();
 
   if (dbc->ds && dbc->ds->save_queries) {
-    MYLOG_TRACE(init_log_file().get(), 0, "Inside if (dbc->ds && dbc->ds->save_queries)");
     dbc->log_file.reset();
     end_log_file();
   }
@@ -1407,15 +1400,13 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 
   if(dbc->ds)
   {
-    MYLOG_TRACE(init_log_file().get(), 0, "Inside if (dbc->ds)");
     ds_delete(dbc->ds);
   }
   dbc->ds= NULL;
 
-  MYLOG_TRACE(init_log_file().get(), 0, "dbc->database.clear()");
   dbc->database.clear();
 
-  MYLOG_TRACE(init_log_file().get(), 0, "Exiting SQLDisconnect()");
+  MYLOG_TRACE(init_log_file().get(), dbc->id, "Exiting SQLDisconnect()");
   return SQL_SUCCESS;
 }
 

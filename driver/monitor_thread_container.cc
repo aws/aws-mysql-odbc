@@ -39,6 +39,10 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
     }
 
     singleton = std::shared_ptr<MONITOR_THREAD_CONTAINER>(new MONITOR_THREAD_CONTAINER);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Created singleton thread container with address %p", singleton.get());
+    
+    auto mtc_use_count = singleton.use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] get_instance(): mtc_use_count = %d", mtc_use_count);
     return singleton;
 }
 
@@ -53,8 +57,8 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
     }
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
-    auto use_count = singleton.use_count();
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] release_instance(): use_count = %d", use_count);
+    auto mtc_use_count = singleton.use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] release_instance(): mtc_use_count = %d", mtc_use_count);
     if (singleton.use_count() == 1) {
         singleton->release_resources();
         singleton.reset();
@@ -108,6 +112,8 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
 }
 
 void MONITOR_THREAD_CONTAINER::add_task(const std::shared_ptr<MONITOR>& monitor, const std::shared_ptr<MONITOR_SERVICE>& service) {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] add_task(): using ms with address %p", service.get());
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] add_task(): ms_use_count = %d", service.use_count());
     if (monitor == nullptr || service == nullptr) {
         throw std::invalid_argument("Invalid parameters passed into MONITOR_THREAD_CONTAINER::add_task()");
     }

@@ -467,6 +467,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
 
 bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const char*& error_msg) {
     MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting reader failover procedure.");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[FAILOVER_HANDLER] Starting reader failover procedure.");
     auto result = failover_reader_handler->failover(current_topology);
 
     if (result.connected) {
@@ -490,6 +491,7 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const cha
 
 bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code, const char*& error_msg) {
     MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting writer failover procedure.");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[FAILOVER_HANDLER] Starting writer failover procedure.");
     auto result = failover_writer_handler->failover(current_topology);
 
     if (!result.connected) {

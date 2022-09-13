@@ -34,10 +34,7 @@ namespace {
     const char* RETRIEVE_HOST_PORT_SQL = "SELECT CONCAT(@@hostname, ':', @@port)";
 }
 
-MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
-    : MYSQL_PROXY(dbc, ds, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
-
-MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service) : dbc{dbc}, ds{ds} {
+MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds) : dbc{dbc}, ds{ds} {
     if (!this->dbc) {
         throw std::runtime_error("DBC cannot be null.");
     }
@@ -47,16 +44,48 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVI
     }
 
     if (this->ds->enable_failure_detection) {
-        this->monitor_service = std::move(monitor_service);
+        auto mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
+        auto ms_use_count = this->monitor_service.use_count();
+        MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] mtc_use_count = %d", mtc_use_count);
+        MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] ms_use_count = %d", ms_use_count);
+
+        this->monitor_service = std::make_shared<MONITOR_SERVICE>(this->ds && this->ds->save_queries);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] Assigned ms with address %p", this->monitor_service.get());
+
+        mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
+        ms_use_count = this->monitor_service.use_count();
+        MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] mtc_use_count = %d", mtc_use_count);
+        MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] ms_use_count = %d", ms_use_count);
     }
 
     this->host = get_host_info_from_ds(ds);
     generate_node_keys();
 }
 
+MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service) : dbc{ dbc }, ds{ ds }, monitor_service{ monitor_service } {
+    this->host = get_host_info_from_ds(ds);
+    generate_node_keys();
+}
+
 MYSQL_PROXY::~MYSQL_PROXY() {
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[~MYSQL_PROXY] Destroying MYSQL_PROXY with address %p", this);
     if (this->mysql) {
         close();
+    }
+
+    if (this->monitor_service) {
+        auto mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
+        auto ms_use_count = this->monitor_service.use_count();
+        MYLOG_TRACE(init_log_file().get(), dbc->id, "[~MYSQL_PROXY] mtc_use_count = %d", mtc_use_count);
+        MYLOG_TRACE(init_log_file().get(), dbc->id, "[~MYSQL_PROXY] ms_use_count = %d", ms_use_count);
+
+        MYLOG_TRACE(init_log_file().get(), 0, "[~MYSQL_PROXY] Reset on ms with address %p", this->monitor_service.get());
+        this->monitor_service.reset();
+
+        mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
+        ms_use_count = this->monitor_service.use_count();
+        MYLOG_TRACE(init_log_file().get(), dbc->id, "[~MYSQL_PROXY] after ms reset: mtc_use_count = %d", mtc_use_count);
+        MYLOG_TRACE(init_log_file().get(), dbc->id, "[~MYSQL_PROXY] after ms reset: ms_use_count = %d", ms_use_count);
     }
 }
 

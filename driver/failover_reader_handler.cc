@@ -238,6 +238,7 @@ void CONNECT_TO_READER_HANDLER::operator()(
                     "[CONNECT_TO_READER_HANDLER] Trying to connect to reader: %s",
                     reader->get_host_port_pair().c_str());
 
+        MYLOG_TRACE(init_log_file().get(), dbc_id, "[CONNECT_TO_READER_HANDLER] About to call connect().");
         if (connect(reader)) {
             topology_service->mark_host_up(reader);
             if (f_sync.is_completed()) {

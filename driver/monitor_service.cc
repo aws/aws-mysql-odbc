@@ -29,7 +29,14 @@
 #include "driver.h"
 
 MONITOR_SERVICE::MONITOR_SERVICE(bool enable_logging) {
+    auto mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] constructor: mtc_use_count = %d", mtc_use_count);
+
     this->thread_container = MONITOR_THREAD_CONTAINER::get_instance();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] Assigned mtc with address %p", this->thread_container.get());
+
+    mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] constructor: mtc_use_count = %d", mtc_use_count);
     if (enable_logging)
         this->logger = init_log_file();
 }
@@ -43,11 +50,16 @@ MONITOR_SERVICE::MONITOR_SERVICE(
 }
 
 MONITOR_SERVICE::~MONITOR_SERVICE() {
-    auto use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
-    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] use_count = %d", use_count);
+    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] Destroying monitor service with address %p", this);
+    
+    auto mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] destructor: mtc_use_count = %d", mtc_use_count);
+    
+    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] Reset on mtc with address %p", this->thread_container.get());
     this->thread_container.reset();
-    use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
-    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] after reset; use_count = %d", use_count);
+    
+    mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] destructor: after reset; mtc_use_count = %d", mtc_use_count);
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(

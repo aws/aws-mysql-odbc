@@ -64,6 +64,7 @@ std::shared_ptr<MYSQL_PROXY> FAILOVER_CONNECTION_HANDLER::connect(const std::sha
 
     const auto new_host = to_sqlwchar_string(host_info->get_host());
 
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[FAILOVER_CONNECTION_HANDLER] About to clone dbc.");
     DBC* dbc_clone = clone_dbc(dbc);
     ds_set_wstrnattr(&dbc_clone->ds->server, (SQLWCHAR*)new_host.c_str(), new_host.size());
 
@@ -113,7 +114,7 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
             dbc_clone = static_cast<DBC*>(hdbc);
             dbc_clone->ds = ds_new();
             ds_copy(dbc_clone->ds, source_dbc->ds);
-            MYLOG_TRACE(init_log_file().get(), 0, "[FAILOVER_CONNECTION_HANDLER] Calling MYSQL_PROXY constructor");
+            MYLOG_TRACE(init_log_file().get(), dbc_clone->id, "[FAILOVER_CONNECTION_HANDLER] Calling MYSQL_PROXY constructor");
             dbc_clone->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc_clone, dbc_clone->ds);
         } else {
             const char* err = "Cannot allocate connection handle when cloning DBC in writer failover process";

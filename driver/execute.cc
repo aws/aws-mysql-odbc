@@ -186,7 +186,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       }
       else
       {
-          MYLOG_TRACE(init_log_file().get(), 0, "Unsuccessful odbc_stmt()");
+          MYLOG_TRACE(init_log_file().get(), stmt->dbc->id, "Unsuccessful odbc_stmt()");
           native_error = stmt->dbc->error.native_error;
           trigger_failover_upon_error = false; // possible failover was already handled in odbc_stmt()
       }
@@ -194,11 +194,11 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     MYLOG_STMT_TRACE(stmt, "query has been executed");
 
-    MYLOG_TRACE(init_log_file().get(), 0, "native_error = %d", native_error);
+    MYLOG_TRACE(init_log_file().get(), stmt->dbc->id, "native_error = %d", native_error);
     if (native_error)
     {
       const auto error_code = stmt->dbc->mysql_proxy->error_code();
-      MYLOG_TRACE(init_log_file().get(), 0, "error_code = %d", error_code);
+      MYLOG_TRACE(init_log_file().get(), stmt->dbc->id, "error_code = %d", error_code);
       if (error_code)
       {
           MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql_proxy->error());
@@ -284,7 +284,7 @@ exit:
       reset_parsed_query(&stmt->orig_query, NULL, NULL, NULL);
     }
 
-    MYLOG_TRACE(init_log_file().get(), 0, "Exiting do_query()");
+    MYLOG_TRACE(init_log_file().get(), stmt->dbc->id, "Exiting do_query()");
     return error;
 }
 
