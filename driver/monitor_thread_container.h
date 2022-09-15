@@ -65,6 +65,7 @@ protected:
         std::chrono::milliseconds disposal_time,
         DataSource* ds,
         bool enable_logging = false);
+    void stop_all_monitors();
     void release_resources();
 
     std::map<std::string, std::shared_ptr<MONITOR>> monitor_map;

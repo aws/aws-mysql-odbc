@@ -56,6 +56,8 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
         return;
     }
 
+    singleton->stop_all_monitors();
+
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
     auto mtc_use_count = singleton.use_count();
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] release_instance(): mtc_use_count = %d", mtc_use_count);
@@ -208,18 +210,19 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     return std::make_shared<MONITOR>(host, disposal_time, ds, enable_logging);
 }
 
+void MONITOR_THREAD_CONTAINER::stop_all_monitors() {
+    std::unique_lock<std::mutex> lock(task_map_mutex);
+    for (auto const& task_pair : task_map) {
+        auto monitor = task_pair.first;
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Stopping monitor %p", monitor.get());
+        monitor->stop();
+    }
+}
+
 void MONITOR_THREAD_CONTAINER::release_resources() {
     {
         std::unique_lock<std::mutex> lock(monitor_map_mutex);
         this->monitor_map.clear();
-    }
-
-    {
-        std::unique_lock<std::mutex> lock(task_map_mutex);
-        for (auto const& task_pair : task_map) {
-            auto monitor = task_pair.first;
-            monitor->stop();
-        }
     }
 
     this->thread_pool.stop(true);
