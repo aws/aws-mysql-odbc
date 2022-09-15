@@ -153,10 +153,10 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
         }
         else {
             MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p No contexts", this);
-            auto current_time = this->get_current_time();
-            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p current_time = %d, last_context_timestamp = %d, disposal_time = %d", 
-                this, current_time.time_since_epoch().count(), last_context_timestamp.time_since_epoch().count(), disposal_time.count());
-            if ((current_time - this->last_context_timestamp) >= this->disposal_time) {
+            
+            auto time_inactive = std::chrono::duration_cast<std::chrono::milliseconds>(this->get_current_time() - this->last_context_timestamp);
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p time_inactive = %d, disposal_time = %d", this, time_inactive.count(), disposal_time.count());
+            if (time_inactive >= this->disposal_time) {
                 MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Breaking out of loop", this);
                 break;
             }
@@ -167,7 +167,7 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
     service->notify_unused(shared_from_this());
 
     this->stopped = true;
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Finished running monitor #%d at address %p", monitor_runs, this);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Finished running monitor #%d", this, monitor_runs);
 }
 
 std::chrono::milliseconds MONITOR::get_connection_check_interval() {
