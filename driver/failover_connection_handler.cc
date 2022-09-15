@@ -116,6 +116,8 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
             ds_copy(dbc_clone->ds, source_dbc->ds);
             MYLOG_TRACE(init_log_file().get(), dbc_clone->id, "[FAILOVER_CONNECTION_HANDLER] Calling MYSQL_PROXY constructor");
             dbc_clone->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc_clone, dbc_clone->ds);
+            MYLOG_TRACE(init_log_file().get(), dbc_clone->id, "[FAILOVER_CONNECTION_HANDLER] Created MYSQL_PROXY with address %p", dbc_clone->mysql_proxy.get());
+            MYLOG_TRACE(init_log_file().get(), dbc_clone->id, "[FAILOVER_CONNECTION_HANDLER] after creating mp: mp_use_count = %d", dbc_clone->mysql_proxy.use_count());
         } else {
             const char* err = "Cannot allocate connection handle when cloning DBC in writer failover process";
             MYLOG_DBC_TRACE(dbc, err);

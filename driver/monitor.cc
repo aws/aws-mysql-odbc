@@ -112,9 +112,11 @@ void MONITOR::clear_contexts() {
     this->connection_check_interval = (std::chrono::milliseconds::max)();
 }
 
+static int monitor_runs = 0;
+
 // Periodically ping the server and update the contexts' connection status.
 void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Running monitor using ms with address %p", service.get());
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Running monitor #%d using ms with address %p", ++monitor_runs, service.get());
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] ms_use_count = %d", service.use_count());
     this->stopped = false;
     while (!this->stopped) {
@@ -158,7 +160,7 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
     service->notify_unused(shared_from_this());
 
     this->stopped = true;
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Finished running monitor");
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Finished running monitor #%d", monitor_runs);
 }
 
 std::chrono::milliseconds MONITOR::get_connection_check_interval() {
