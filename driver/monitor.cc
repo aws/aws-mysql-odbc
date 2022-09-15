@@ -74,6 +74,7 @@ void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> conte
     {
         std::unique_lock<std::mutex> lock(mutex_);
         this->contexts.push_back(context);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p pushed context; num_contexts = %d", this, this->contexts.size());
     }
 }
 
@@ -90,6 +91,7 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
     {
         std::unique_lock<std::mutex> lock(mutex_);
         this->contexts.remove(context);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p removed context; num_contexts = %d", this, this->contexts.size());
     }
 
     this->connection_check_interval = this->find_shortest_interval();
@@ -116,7 +118,7 @@ static int monitor_runs = 0;
 
 // Periodically ping the server and update the contexts' connection status.
 void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Running monitor #%d using ms with address %p", ++monitor_runs, service.get());
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Running monitor #%d at address %p using ms with address %p", ++monitor_runs, this, service.get());
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] ms_use_count = %d", service.use_count());
     this->stopped = false;
     while (!this->stopped) {

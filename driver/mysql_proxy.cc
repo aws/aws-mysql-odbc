@@ -135,37 +135,37 @@ unsigned long MYSQL_PROXY::thread_id() {
 }
 
 int MYSQL_PROXY::set_character_set(const char* csname) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on set_character_set()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on set_character_set()", this);
     const auto context = start_monitoring();
     const int ret = mysql_set_character_set(mysql, csname);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on set_character_set()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on set_character_set()", this);
     return ret;
 }
 
 void MYSQL_PROXY::init() {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on init()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on init()", this);
     const auto context = start_monitoring();
     this->mysql = mysql_init(nullptr);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on init()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on init()", this);
 }
 
 bool MYSQL_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on ssl_set()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on ssl_set()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on ssl_set()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on ssl_set()", this);
     return ret;
 }
 
 bool MYSQL_PROXY::change_user(const char* user, const char* passwd, const char* db) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on change_user()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on change_user()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_change_user(mysql, user, passwd, db);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on change_user()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on change_user()", this);
     return ret;
 }
 
@@ -174,56 +174,56 @@ bool MYSQL_PROXY::real_connect(
     const char* db, unsigned int port, const char* unix_socket,
     unsigned long clientflag) {
 
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on real_connect()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on real_connect()", this);
     const auto context = start_monitoring();
     const MYSQL* new_mysql = mysql_real_connect(mysql, host, user, passwd, db, port, unix_socket, clientflag);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on real_connect()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on real_connect()", this);
     return new_mysql != nullptr;
 }
 
 int MYSQL_PROXY::select_db(const char* db) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on select_db()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on select_db()", this);
     const auto context = start_monitoring();
     const int ret = mysql_select_db(mysql, db);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on select_db()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on select_db()", this);
     return ret;
 }
 
 int MYSQL_PROXY::query(const char* q) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on query()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on query()", this);
     const auto context = start_monitoring();
     const int ret = mysql_query(mysql, q);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on query()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on query()", this);
     return ret;
 }
 
 int MYSQL_PROXY::real_query(const char* q, unsigned long length) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on real_query()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on real_query()", this);
     const auto context = start_monitoring();
     const int ret = mysql_real_query(mysql, q, length);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on real_query()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on real_query()", this);
     return ret;
 }
 
 MYSQL_RES* MYSQL_PROXY::store_result() {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on store_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on store_result()", this);
     const auto context = start_monitoring();
     MYSQL_RES* ret = mysql_store_result(mysql);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on store_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on store_result()", this);
     return ret;
 }
 
 MYSQL_RES* MYSQL_PROXY::use_result() {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on use_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on use_result()", this);
     const auto context = start_monitoring();
     MYSQL_RES* ret = mysql_use_result(mysql);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on use_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on use_result()", this);
     return ret;
 }
 
@@ -236,29 +236,29 @@ void MYSQL_PROXY::get_character_set_info(MY_CHARSET_INFO* charset) {
 }
 
 bool MYSQL_PROXY::autocommit(bool auto_mode) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on autocommit()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on autocommit()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_autocommit(mysql, auto_mode);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on autocommit()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on autocommit()", this);
     return ret;
 }
 
 int MYSQL_PROXY::next_result() {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on next_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on next_result()", this);
     const auto context = start_monitoring();
     const int ret = mysql_next_result(mysql);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on next_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on next_result()", this);
     return ret;
 }
 
 int MYSQL_PROXY::stmt_next_result(MYSQL_STMT* stmt) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_next_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_next_result()", this);
     const auto context = start_monitoring();
     const int ret = mysql_stmt_next_result(stmt);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_next_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_next_result()", this);
     return ret;
 }
 
@@ -271,20 +271,20 @@ bool MYSQL_PROXY::real_connect_dns_srv(
     const char* dns_srv_name, const char* user,
     const char* passwd, const char* db, unsigned long client_flag) {
 
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on real_connect_dns_srv()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on real_connect_dns_srv()", this);
     const auto context = start_monitoring();
     const MYSQL* new_mysql = mysql_real_connect_dns_srv(mysql, dns_srv_name, user, passwd, db, client_flag);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on real_connect_dns_srv()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on real_connect_dns_srv()", this);
     return new_mysql != nullptr;
 }
 
 int MYSQL_PROXY::ping() {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on ping()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on ping()", this);
     const auto context = start_monitoring();
     const int ret = mysql_ping(mysql);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on ping()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on ping()", this);
     return ret;
 }
 
@@ -297,29 +297,29 @@ int MYSQL_PROXY::get_option(mysql_option option, const void* arg) {
 }
 
 int MYSQL_PROXY::options4(mysql_option option, const void* arg1, const void* arg2) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on options4()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on options4()", this);
     const auto context = start_monitoring();
     const int ret = mysql_options4(mysql, option, arg1, arg2);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on options4()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on options4()", this);
     return ret;
 }
 
 int MYSQL_PROXY::options(mysql_option option, const void* arg) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on options()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on options()", this);
     const auto context = start_monitoring();
     const int ret = mysql_options(mysql, option, arg);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on options()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on options()", this);
     return ret;
 }
 
 void MYSQL_PROXY::free_result(MYSQL_RES* result) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on free_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on free_result()", this);
     const auto context = start_monitoring();
     mysql_free_result(result);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on free_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on free_result()", this);
 }
 
 void MYSQL_PROXY::data_seek(MYSQL_RES* result, uint64_t offset) {
@@ -335,11 +335,11 @@ MYSQL_FIELD_OFFSET MYSQL_PROXY::field_seek(MYSQL_RES* result, MYSQL_FIELD_OFFSET
 }
 
 MYSQL_ROW MYSQL_PROXY::fetch_row(MYSQL_RES* result) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on fetch_row()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on fetch_row()", this);
     const auto context = start_monitoring();
     const MYSQL_ROW ret = mysql_fetch_row(result);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on fetch_row()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on fetch_row()", this);
     return ret;
 }
 
@@ -352,148 +352,148 @@ MYSQL_FIELD* MYSQL_PROXY::fetch_field(MYSQL_RES* result) {
 }
 
 MYSQL_RES* MYSQL_PROXY::list_fields(const char* table, const char* wild) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on list_fields()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on list_fields()", this);
     const auto context = start_monitoring();
     MYSQL_RES* ret = mysql_list_fields(mysql, table, wild);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on list_fields()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on list_fields()", this);
     return ret;
 }
 
 unsigned long MYSQL_PROXY::real_escape_string(char* to, const char* from, unsigned long length) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on real_escape_string()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on real_escape_string()", this);
     const auto context = start_monitoring();
     const unsigned long ret = mysql_real_escape_string(mysql, to, from, length);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on real_escape_string()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on real_escape_string()", this);
     return ret;
 }
 
 bool MYSQL_PROXY::bind_param(unsigned n_params, MYSQL_BIND* binds, const char** names) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on bind_param()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on bind_param()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_bind_param(mysql, n_params, binds, names);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on bind_param()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on bind_param()", this);
     return ret;
 }
 
 MYSQL_STMT* MYSQL_PROXY::stmt_init() {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_init()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_init()", this);
     const auto context = start_monitoring();
     MYSQL_STMT* ret = mysql_stmt_init(mysql);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_init()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_init()", this);
     return ret;
 }
 
 int MYSQL_PROXY::stmt_prepare(MYSQL_STMT* stmt, const char* query, unsigned long length) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_prepare()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_prepare()", this);
     const auto context = start_monitoring();
     const int ret = mysql_stmt_prepare(stmt, query, length);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_prepare()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_prepare()", this);
     return ret;
 }
 
 int MYSQL_PROXY::stmt_execute(MYSQL_STMT* stmt) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_execute()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_execute()", this);
     const auto context = start_monitoring();
     const int ret = mysql_stmt_execute(stmt);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_execute()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_execute()", this);
     return ret;
 }
 
 int MYSQL_PROXY::stmt_fetch(MYSQL_STMT* stmt) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_fetch()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_fetch()", this);
     const auto context = start_monitoring();
     const int ret = mysql_stmt_fetch(stmt);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_fetch()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_fetch()", this);
     return ret;
 }
 
 int MYSQL_PROXY::stmt_fetch_column(MYSQL_STMT* stmt, MYSQL_BIND* bind_arg, unsigned int column, unsigned long offset) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_fetch_column()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_fetch_column()", this);
     const auto context = start_monitoring();
     const int ret = mysql_stmt_fetch_column(stmt, bind_arg, column, offset);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_fetch_column()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_fetch_column()", this);
     return ret;
 }
 
 int MYSQL_PROXY::stmt_store_result(MYSQL_STMT* stmt) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_store_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_store_result()", this);
     const auto context = start_monitoring();
     const int ret = mysql_stmt_store_result(stmt);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_store_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_store_result()", this);
     return ret;
 }
 
 bool MYSQL_PROXY::stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_bind_param()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_bind_param()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_stmt_bind_param(stmt, bnd);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_bind_param()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_bind_param()", this);
     return ret;
 }
 
 bool MYSQL_PROXY::stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_bind_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_bind_result()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_stmt_bind_result(stmt, bnd);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_bind_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_bind_result()", this);
     return ret;
 }
 
 bool MYSQL_PROXY::stmt_close(MYSQL_STMT* stmt) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_close()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_close()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_stmt_close(stmt);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_close()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_close()", this);
     return ret;
 }
 
 bool MYSQL_PROXY::stmt_reset(MYSQL_STMT* stmt) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_reset()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_reset()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_stmt_reset(stmt);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_reset()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_reset()", this);
     return ret;
 }
 
 bool MYSQL_PROXY::stmt_free_result(MYSQL_STMT* stmt) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_free_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_free_result()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_stmt_free_result(stmt);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_free_result()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_free_result()", this);
     return ret;
 }
 
 bool MYSQL_PROXY::stmt_send_long_data(MYSQL_STMT* stmt, unsigned int param_number, const char* data,
                                       unsigned long length) {
 
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_send_long_data()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_send_long_data()", this);
     const auto context = start_monitoring();
     const bool ret = mysql_stmt_send_long_data(stmt, param_number, data, length);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_send_long_data()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_send_long_data()", this);
     return ret;
 }
 
 MYSQL_RES* MYSQL_PROXY::stmt_result_metadata(MYSQL_STMT* stmt) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on stmt_result_metadata()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on stmt_result_metadata()", this);
     const auto context = start_monitoring();
     MYSQL_RES* ret = mysql_stmt_result_metadata(stmt);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on stmt_result_metadata()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on stmt_result_metadata()", this);
     return ret;
 }
 
@@ -530,11 +530,11 @@ unsigned int MYSQL_PROXY::stmt_field_count(MYSQL_STMT* stmt) {
 }
 
 st_mysql_client_plugin* MYSQL_PROXY::client_find_plugin(const char* name, int type) {
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Calling start monitoring on client_find_plugin()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Calling start monitoring on client_find_plugin()", this);
     const auto context = start_monitoring();
     st_mysql_client_plugin* ret = mysql_client_find_plugin(mysql, name, type);
     stop_monitoring(context);
-    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] Finished stop monitoring on client_find_plugin()");
+    MYLOG_TRACE(init_log_file().get(), dbc->id, "[MYSQL_PROXY] %p: Finished stop monitoring on client_find_plugin()", this);
     return ret;
 }
 

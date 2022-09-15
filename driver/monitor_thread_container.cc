@@ -103,6 +103,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
         monitor = this->get_available_monitor();
         if (monitor == nullptr) {
             monitor = this->create_monitor(std::move(host), disposal_time, ds, enable_logging);
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Created monitor with address %p", monitor.get());
         }
     }
 
