@@ -145,8 +145,8 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
             }
         }
         else {
-            auto current_time = this->get_current_time();
-            if ((current_time - this->last_context_timestamp) >= this->disposal_time) {
+            auto time_inactive = std::chrono::duration_cast<std::chrono::milliseconds>(this->get_current_time() - this->last_context_timestamp);
+            if (time_inactive >= this->disposal_time) {
                 break;
             }
             std::this_thread::sleep_for(thread_sleep_when_inactive);
