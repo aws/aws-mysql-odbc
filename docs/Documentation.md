@@ -11,6 +11,7 @@
 - [Using the AWS ODBC Driver for MySQL](./using-the-aws-driver/UsingTheAwsDriver.md)
     - [Connection Strings and Configuring the Driver](./using-the-aws-driver/UsingTheAwsDriver.md#connection-strings-and-configuring-the-driver)
     - [Failover Specific Options](./using-the-aws-driver/UsingTheAwsDriver.md#failover-specific-options)
+    - [Failover Configuration Guide](using-the-aws-driver/FailoverConfigurationGuide.md)
     - [Failure Detection Specific Options](./using-the-aws-driver/UsingTheAwsDriver.md#failure-detection-specific-options)
         - [Driver Behaviour During Failover For Different Connection URLs](./using-the-aws-driver/UsingTheAwsDriver.md#driver-behaviour-during-failover-for-different-connection-urls)
         - [Host Pattern](./using-the-aws-driver/UsingTheAwsDriver.md#host-pattern)
