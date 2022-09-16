@@ -21,11 +21,18 @@ Source packages are available from our [github releases page](https://github.com
       - [Configuring the Driver and DSN Entries](#configuring-the-driver-and-dsn-entries)
         - [odbc.ini](#odbcini)
         - [odbcinst.ini](#odbcinstini)
-  - [Using the MySQL Connector/ODBC Driver](#using-the-mysql-connector/odbc-driver)
     - [Connection Strings and Configuring the Driver](#connection-strings-and-configuring-the-driver)
     - [Failover Specific Options](#failover-specific-options)
       - [Driver Behaviour During Failover For Different Connection URLs](#driver-behaviour-during-failover-for-different-connection-urls)
       - [Host Pattern](#host-pattern)
+    - [Advanced Failover Configuration](#advanced-failover-configuration)
+      - [Failover Time Profiles](#failover-time-profiles)
+        - [Example of the configuration for a normal failover time profile](#example-of-the-configuration-for-a-normal-failover-time-profile)
+        - [Example of the configuration for an aggressive failover time profile](#example-of-the-configuration-for-an-aggressive-failover-time-profile)
+      - [Writer Cluster Endpoints After Failover](#writer-cluster-endpoints-after-failover)
+      - [2-Node Clusters](#2-node-clusters)
+      - [Node Availability](#node-availability)
+    - [Enhanced Failure Monitoring Options](#enhanced-failure-monitoring-options)
     - [Failover Exception Codes](#failover-exception-codes)
       - [08S01 - Communication Link Failure](#08s01---communication-link-failure)
       - [08S02 - Communication Link Changed](#08s02---communication-link-changed)
@@ -64,7 +71,7 @@ Although Aurora is able to provide maximum availability through the use of failo
 ### Installing the MySQL Connector/ODBC Driver
 
 #### Windows
-Download the `.msi` Windows installer for your system; run the installer and follow the onscreen instructions. The default target installation location for the driver files is `C:\Program Files\MySQL\Connector ODBC 8.0`. An ANSI driver and a Unicode driver will be installed, named respectively `MySQL ODBC ANSI Driver` and `MySQL ODBC 8.0 Unicode Driver`. To uninstall the ODBC driver, open the same installer file and follow the onscreen instructions to remove the driver.
+Download the `.msi` Windows installer for your system; execute the installer and follow the onscreen instructions. The default target installation location for the driver files is `C:\Program Files\MySQL\Connector ODBC 8.0`. An ANSI driver and a Unicode driver will be installed, named respectively `MySQL ODBC ANSI Driver` and `MySQL ODBC 8.0 Unicode Driver`. To uninstall the ODBC driver, open the same installer file, select the option to uninstall the driver and follow the onscreen instructions to successfully uninstall the driver.
 
 #### MacOS
 Download the `.pkg` installer; run the installer and follow the onscreen instructions. The default target installation location for the driver folder is `/usr/local/`. Note that for a MacOS system, additional steps are required to configure the driver and Data Source Name (DSN) entries before you can use the driver(s). Initially, the installer will register two driver entries with two corresponding DSN entries. For information about [how to configure the driver and DSN settings](#configuring-the-driver-and-dsn-entries), review the configuration sample. There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
@@ -73,9 +80,13 @@ Download the `.pkg` installer; run the installer and follow the onscreen instruc
 Download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 #### Configuring the Driver and DSN Entries 
-To configure the driver on Windows, use the ODBC Data Source Administrator to add or configure a DSN for either the `MySQL ODBC ANSI Driver` or `MySQL ODBC 8.0 Unicode Driver`. With this DSN you can specify the desired connection options. Further connection parameters are available with the `Details >>` button.
+To configure the driver on Windows, use the `ODBC Data Source Administrator` tool to add or configure a DSN for either the `MySQL ODBC ANSI Driver` or `MySQL ODBC 8.0 Unicode Driver`. With this DSN you can specify the options for the desired connection. Additional configuration properties are available by clicking the `Details >>` button.
 
-To use the driver on MacOS or Linux systems, the two files (`odbc.ini` and `odbcinst.ini`) must exist and contain the correct driver and data source name (DSN) configurations. You can modify the files manually, or through tools with a GUI such as the iODBC Administrator (available for MacOS). The sample odbc.ini and odbcinst.ini files that follow show how an ANSI driver could be set up for a MacOS system. For a Linux system, the files would be similar, but the driver file would have a `.so` extension instead of the `.dylib` extension as shown in the sample. On a MacOS system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/Library/ODBC/` directory. On a Linux system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/etc` directory.
+To use the driver on MacOS or Linux systems, you need to create two files (`odbc.ini` and `odbcinst.ini`), that will contain the configuration for the driver and the Data Source Name (DSN).
+
+You can modify the files manually, or through tools with a GUI such as `iODBC Administrator` (available for MacOS). In the following sections, we show samples of `odbc.ini` and `odbcinst.ini` files that describe how an ANSI driver could be set up for a MacOS system. In a MacOS system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/Library/ODBC/` directory.
+
+For a Linux system, the files would be similar, but the driver file would have the `.so` extension instead of the `.dylib` extension shown in the sample. On a Linux system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/etc` directory.
 
 ##### odbc.ini
 ```bash
@@ -151,6 +162,39 @@ In addition to the parameters that you can configure for the [MySQL Connector/OD
 
 ### Host Pattern
 When connecting to Aurora clusters, this parameter is required when the connection string does not provide enough information about the database cluster domain name. If the Aurora cluster endpoint is used directly, the driver will recognize the standard Aurora domain name and can re-build a proper Aurora instance name when needed. In cases where the connection string uses an IP address, a custom domain name or localhost, the driver won't know how to build a proper domain name for a database instance endpoint. For example, if a custom domain was being used and the cluster instance endpoints followed a pattern of `instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc, the driver would need to know how to construct the instance endpoints using the specified custom domain. Because there isn't enough information from the custom domain alone to create the instance endpoints, the `HOST_PATTERN` should be set to `?.customHost`, making the connection string `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost`. Refer to [Driver Behaviour During Failover For Different Connection URLs](#driver-behaviour-during-failover-for-different-connection-urls) for more examples.
+
+## Advanced Failover Configuration
+
+### Failover Time Profiles
+A failover time profile refers to a specific combination of failover parameters that determine the time in which failover should be completed and define the aggressiveness of failover. Some failover parameters include `FAILOTVER_TIMEOUT` and `FAILOVER_READER_CONNECT_TIMEOUT`. Failover should be completed within 5 minutes by default. If the connection is not re-established during this time, then the failover process times out and fails. Users can configure the failover parameters to adjust the aggressiveness of the failover and fulfill the needs of their specific application. For example, a user could take a more aggressive approach and shorten the time limit on failover to promote a fail-fast approach for an application that does not tolerate database outages. Examples of normal and aggressive failover time profiles are shown below. 
+<br><br>
+**:warning:Note**: Aggressive failover does come with its side effects. Since the time limit on failover is shorter, it becomes more likely that a problem is caused not by a failure, but rather because of a timeout.
+<br><br>
+
+#### Example of the configuration for a normal failover time profile:
+| Parameter                              | Value     |
+|----------------------------------------|-----------|
+| `FAILOTVER_TIMEOUT`                    | `180000 ` |
+| `FAILOVER_WRITER_RECONNECT_INTERVAL`   | `2000`    |
+| `FAILOVER_READER_CONNECT_TIMEOUT`      | `30000`   |
+| `FAILOVER_TOPOLOGY_REFRESH_RATE`       | `2000`    |
+
+#### Example of the configuration for an aggressive failover time profile:
+| Parameter                              | Value   |
+|----------------------------------------|---------|
+| `FAILOTVER_TIMEOUT`                    | `30000` |
+| `FAILOVER_WRITER_RECONNECT_INTERVAL`   | `2000`  |
+| `FAILOVER_READER_CONNECT_TIMEOUT`      | `10000` |
+| `FAILOVER_TOPOLOGY_REFRESH_RATE`       | `2000`  |
+
+### Writer Cluster Endpoints After Failover
+Connecting to a writer cluster endpoint after failover can result in a faulty connection because DNS causes a delay in changing the writer cluster. On the AWS DNS server, this change is updated usually between 15-20 seconds, but the other DNS servers sitting between the application and the AWS DNS server may not be updated in time. Using this stale DNS data will most likely cause problems for users, so it is important to keep this is mind.
+
+### 2-Node Clusters
+Using failover with a 2-node cluster is not beneficial because during the failover process involving one writer node and one reader node, the two nodes simply switch roles; the reader becomes the writer and the writer becomes the reader. If failover is triggered because one of the nodes has a problem, this problem will persist because there aren't any extra nodes to take the responsibility of the one that is broken. Three or more database nodes are recommended to improve the stability of the cluster.
+
+### Node Availability
+It seems as though just one node, the one triggering the failover, will be unavailable during the failover process; this is actually not true. When failover is triggered, all nodes become unavailable for a short time. This is because the control plane, which orchestrates the failover process, first shuts down all nodes, then starts the writer node, and finally starts and connects the remaining nodes to the writer. In short, failover requires each node to be reconfigured and thus, all nodes must become unavailable for a short period of time. One additional note to point out is that if your failover time is aggressive, then this may cause failover to fail because some nodes may still be unavailable by the time your failover times out.
 
 ## Enhanced Failure Monitoring Options
 Enhanced Failure Monitoring is a means of failure detection that enables the cluster failover mechanism to be more efficient and precise. Enabling it allows a monitoring thread to periodically check the connected database node's health. If a database node is determined to be unhealthy, the query will be retried with a new database node and the monitor restarted. When failure detection is disabled, cluster failover is triggered by the timeout values defined in the previous section. 
@@ -609,7 +653,7 @@ When connecting the MySQL Connector/ODBC Driver using a Windows system, ensure l
 The resulting log file, named `myodbc.log`, can be found under `%temp%`.
 
 #### Enabling Logs On MacOS and Linux
-When connecting the MySQL Connector/ODBC Driver using a MacOS or Linux system, use the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.log`, can be found in the current working directory.
+When connecting the MySQL Connector/ODBC Driver using a MacOS or Linux system, use the `LOG_QUERY` parameter in the connection string with the value of `1` to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.log`, can be found in the current working directory.
 
 ## License
 This software is released under version 2 of the GNU General Public License (GPLv2).
