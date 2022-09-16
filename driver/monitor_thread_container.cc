@@ -58,7 +58,9 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
         return;
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] About to call singleton->stop_all_monitors()");
     singleton->stop_all_monitors();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Finished singleton->stop_all_monitors()");
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] release_instance(): mtc_use_count = %d", singleton.use_count());
@@ -148,6 +150,7 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
         return;
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Removing monitor %p mapping", monitor.get());
     this->remove_monitor_mapping(monitor);
 
     {
@@ -158,6 +161,7 @@ void MONITOR_THREAD_CONTAINER::release_resource(std::shared_ptr<MONITOR> monitor
         }
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Resizing thread pool");
     if (this->thread_pool.n_idle() > 0) {
         this->thread_pool.resize(this->thread_pool.size() - 1);
     }
@@ -225,6 +229,7 @@ void MONITOR_THREAD_CONTAINER::stop_all_monitors() {
             MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Stopping monitor %p", monitor.get());
             monitor->stop();
 
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Adding task to vector");
             tasks.push_back(std::move(task_map[monitor]));
         }
     }
@@ -232,6 +237,7 @@ void MONITOR_THREAD_CONTAINER::stop_all_monitors() {
     // Wait for monitors to finish
     for (auto it = tasks.begin(); it != tasks.end(); ++it) {
         std::future<void> task = std::move(*it);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Waiting for monitor to finish");
         task.get();
     }
 }
