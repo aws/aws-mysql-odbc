@@ -118,8 +118,10 @@ void MONITOR::clear_contexts() {
 void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] Running monitor at address %p using ms with address %p", this, service.get());
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] ms_use_count = %d", service.use_count());
+    long long loop_counter = 0;
     this->stopped = false;
     while (!this->stopped) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p loop_counter = %d", this, ++loop_counter);
         bool have_contexts;
         {
             std::unique_lock<std::mutex> lock(mutex_);
@@ -134,6 +136,7 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
             CONNECTION_STATUS status = this->check_connection_status(check_interval);
 
             {
+                MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p updating connection status", this);
                 std::unique_lock<std::mutex> lock(mutex_);
                 for (auto it = this->contexts.begin(); it != this->contexts.end(); ++it) {
                     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context = *it;
@@ -161,6 +164,8 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
             std::this_thread::sleep_for(thread_sleep_when_inactive);
         }
     }
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Outside loop", this);
 
     service->notify_unused(shared_from_this());
 
