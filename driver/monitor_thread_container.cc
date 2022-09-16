@@ -211,11 +211,24 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
 }
 
 void MONITOR_THREAD_CONTAINER::stop_all_monitors() {
-    std::unique_lock<std::mutex> lock(task_map_mutex);
-    for (auto const& task_pair : task_map) {
-        auto monitor = task_pair.first;
-        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Stopping monitor %p", monitor.get());
-        monitor->stop();
+    std::vector<std::future<void>> tasks;
+
+    {
+        // Stop all monitors
+        std::unique_lock<std::mutex> lock(task_map_mutex);
+        for (auto const& task_pair : task_map) {
+            std::shared_ptr<MONITOR> monitor = task_pair.first;
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Stopping monitor %p", monitor.get());
+            monitor->stop();
+
+            tasks.push_back(std::move(task_map[monitor]));
+        }
+    }
+
+    // Wait for monitors to finish
+    for (auto it = tasks.begin(); it != tasks.end(); ++it) {
+        std::future<void> task = std::move(*it);
+        task.get();
     }
 }
 
