@@ -1,5 +1,5 @@
 # Using the AWS ODBC Driver for MySQL
-The AWS ODBC Driver for MySQL is drop-in compatible, so usage is identical to the [MySQL Connector/ODBC driver](https://github.com/mysql/mysql-connector-odbc/). The sections below highlight driver usage specific to failover.
+The AWS ODBC Driver for MySQL is drop-in compatible, so its usage is identical to the [MySQL Connector/ODBC driver](https://github.com/mysql/mysql-connector-odbc/). The sections below highlight driver usage specific to failover.
 
 ## Connection Strings and Configuring the Driver
 To set up a connection, the driver uses an ODBC connection string. An ODBC connection string specifies a set of semicolon-delimited connection options. Typically, a connection string will either:
@@ -293,7 +293,7 @@ When connecting the AWS ODBC Driver for MySQL using a Windows system, ensure log
 The resulting log file, named `myodbc.log`, can be found under `%temp%`.
 
 ### Enabling Logs On MacOS and Linux
-When connecting the AWS ODBC Driver for MySQL using a MacOS or Linux system, include the `LOG_QUERY` parameter in the connection string to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.log`, can be found in the current working directory.
+When connecting the AWS ODBC Driver for MySQL using a MacOS or Linux system, include the `LOG_QUERY` parameter in the connection string with the value of `1` to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.log`, can be found in the current working directory.
 
 >## :warning: Warnings About Proper Usage of the AWS ODBC Driver for MySQL
 >It is highly recommended that you use the cluster and read-only cluster endpoints instead of the direct instance endpoints of your Aurora cluster, unless you are confident about your application's use of instance endpoints. Although the driver will correctly failover to the new writer instance when using instance endpoints, use of these endpoints is discouraged because individual instances can spontaneously change reader/writer status when failover occurs. The driver will always connect directly to the instance specified if an instance endpoint is provided, so a write-safe connection cannot be assumed if the application uses instance endpoints.
