@@ -252,16 +252,16 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         this->monitor_map.clear();
     }
 
-    {
-        std::unique_lock<std::mutex> lock(task_map_mutex);
-        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Clearing task_map; task_map.size() = %d", task_map.size());
-        this->task_map.clear();
-    }
+    //{
+    //    std::unique_lock<std::mutex> lock(task_map_mutex);
+    //    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Clearing task_map; task_map.size() = %d", task_map.size());
+    //    this->task_map.clear();
+    //}
 
-    {
-        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Clearing available_monitors");
-        std::unique_lock<std::mutex> lock(available_monitors_mutex);
-        std::queue<std::shared_ptr<MONITOR>> empty;
-        std::swap(available_monitors, empty);
-    }
+    //{
+    //    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Clearing available_monitors");
+    //    std::unique_lock<std::mutex> lock(available_monitors_mutex);
+    //    std::queue<std::shared_ptr<MONITOR>> empty;
+    //    std::swap(available_monitors, empty);
+    //}
 }
