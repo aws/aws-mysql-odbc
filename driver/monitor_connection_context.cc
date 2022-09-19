@@ -131,13 +131,18 @@ void MONITOR_CONNECTION_CONTEXT::update_connection_status(
     std::chrono::steady_clock::time_point current_time,
     bool is_valid) {
     
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] %p Entering update_connection_status()", this);
     if (!is_active_context()) {
+      MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] %p Returning due to inactive context", this);
       return;
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] %p auto total_elapsed_time = current_time - get_start_monitor_time();", this);
     auto total_elapsed_time = current_time - get_start_monitor_time();
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] %p if (total_elapsed_time > get_failure_detection_time()) {", this);
     if (total_elapsed_time > get_failure_detection_time()) {
+      MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_CONNECTION_CONTEXT] %p set_connection_valid(is_valid, status_check_start_time, current_time);", this);
       set_connection_valid(is_valid, status_check_start_time, current_time);
     }
 }
@@ -148,35 +153,51 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
     std::chrono::steady_clock::time_point status_check_start_time,
     std::chrono::steady_clock::time_point current_time) {
 
+    MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p Entering set_connection_valid()", this);
     const auto node_keys_str = build_node_keys_str();
+    MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p node_keys_str = %s", this, node_keys_str.c_str());
     if (!connection_valid) {
+        MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p increment_failure_count", this);
         increment_failure_count();
 
+        MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p if (!is_invalid_node_start_time_defined()) {", this);
         if (!is_invalid_node_start_time_defined()) {
+            MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p set_invalid_node_start_time(status_check_start_time);", this);
             set_invalid_node_start_time(status_check_start_time);
         }
 
+        MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p const auto invalid_node_duration_ms = ......", this);
         const auto invalid_node_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - get_invalid_node_start_time());
 
+        MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p const auto max_invalid_node_duration = ....", this);
         const auto max_invalid_node_duration = get_failure_detection_interval() * (std::max)(0, get_failure_detection_count());
 
+        MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p if (invalid_node_duration_ms >= max_invalid_node_duration) {", this);
         if (invalid_node_duration_ms >= max_invalid_node_duration) {
-            MYLOG_TRACE(logger.get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys_str.c_str());
+            MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys_str.c_str());
             set_node_unhealthy(true);
+
+            MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p abort_connection();", this);
             abort_connection();
             return;
         }
 
         MYLOG_TRACE(
-            logger.get(), get_dbc_id(),
+            init_log_file().get(), get_dbc_id(),
             "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *not responding* (%d).", node_keys_str.c_str(), get_failure_count());
         return;
     }
 
+    MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p set_failure_count(0);", this);
     set_failure_count(0);
+
+    MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p reset_invalid_node_start_time();", this);
     reset_invalid_node_start_time();
+
+    MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] %p set_node_unhealthy(false);", this);
     set_node_unhealthy(false);
-    MYLOG_TRACE(logger.get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *alive*.", node_keys_str.c_str());
+
+    MYLOG_TRACE(init_log_file().get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *alive*.", node_keys_str.c_str());
 }
 
 void MONITOR_CONNECTION_CONTEXT::abort_connection() {

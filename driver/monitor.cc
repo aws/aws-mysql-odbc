@@ -127,19 +127,25 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
             std::unique_lock<std::mutex> lock(mutex_);
             have_contexts = !this->contexts.empty();
         }
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p have_contexts = %d", this, have_contexts);
         if (have_contexts) {
-            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p have_contexts", this);
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p auto status_check_start_time = this->get_current_time();");
             auto status_check_start_time = this->get_current_time();
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p this->last_context_timestamp = status_check_start_time;");
             this->last_context_timestamp = status_check_start_time;
 
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p std::chrono::milliseconds check_interval = this->get_connection_check_interval();", this);
             std::chrono::milliseconds check_interval = this->get_connection_check_interval();
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p CONNECTION_STATUS status = this->check_connection_status(check_interval);", this);
             CONNECTION_STATUS status = this->check_connection_status(check_interval);
 
             {
                 MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p updating connection status", this);
                 std::unique_lock<std::mutex> lock(mutex_);
                 for (auto it = this->contexts.begin(); it != this->contexts.end(); ++it) {
+                    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context = *it;", this);
                     std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context = *it;
+                    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p context->update_connection_status", this);
                     context->update_connection_status(
                         status_check_start_time,
                         status_check_start_time + status.elapsed_time,
@@ -147,20 +153,21 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
                 }
             }
 
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p auto sleep_time = check_interval - status.elapsed_time;", this);
             auto sleep_time = check_interval - status.elapsed_time;
             if (sleep_time > std::chrono::milliseconds(0)) {
+                MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p sleep thread", this);
                 std::this_thread::sleep_for(sleep_time);
             }
         }
         else {
-            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p No contexts", this);
-            
             auto time_inactive = std::chrono::duration_cast<std::chrono::milliseconds>(this->get_current_time() - this->last_context_timestamp);
             MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p time_inactive = %d, disposal_time = %d", this, time_inactive.count(), disposal_time.count());
             if (time_inactive >= this->disposal_time) {
                 MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Breaking out of loop", this);
                 break;
             }
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p sleep thread", this);
             std::this_thread::sleep_for(thread_sleep_when_inactive);
         }
     }
@@ -174,16 +181,22 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
 }
 
 std::chrono::milliseconds MONITOR::get_connection_check_interval() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Entering get_connection_check_interval()", this);
     std::unique_lock<std::mutex> lock(mutex_);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p if (this->contexts.empty()) {", this);
     if (this->contexts.empty()) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p return std::chrono::milliseconds(0);", this);
         return std::chrono::milliseconds(0);
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p return this->connection_check_interval;", this);
     return this->connection_check_interval;
 }
 
 CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Entering check_connection_status()", this);
     if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Inside if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {", this);
         const auto start = this->get_current_time();
         bool connected = this->connect(shortest_detection_interval);
         return CONNECTION_STATUS{
@@ -192,14 +205,17 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
         };
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(shortest_detection_interval).count();", this);
     unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(shortest_detection_interval).count();
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p auto start = this->get_current_time();", this);
     auto start = this->get_current_time();
     bool is_connection_active = this->mysql_proxy->ping() == 0;
     auto duration = this->get_current_time() - start;
     
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p return CONNECTION_STATUS", this);
     return CONNECTION_STATUS{
         is_connection_active,
         std::chrono::duration_cast<std::chrono::milliseconds>(duration)
