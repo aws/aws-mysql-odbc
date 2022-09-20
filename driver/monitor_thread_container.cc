@@ -26,6 +26,8 @@
 
 #include "monitor_thread_container.h"
 
+#include "mylog.h"
+
 std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
     if (singleton) {
         return singleton;
@@ -46,6 +48,8 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
     }
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
+    MYLOG_TRACE(init_log_file().get(), 0, "singleton.use_count(): %d", singleton.use_count());
+    MYLOG_TRACE(init_log_file().get(), 0, "singleton->release_resources();");
     singleton->release_resources();
     singleton.reset();
 }
@@ -204,7 +208,7 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         }
     }
 
-    this->thread_pool.stop(true);
+    this->thread_pool.stop();
 
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
