@@ -26,6 +26,7 @@
         - [Enabling Logs On Windows](./using-the-aws-driver/UsingTheAwsDriver.md#enabling-logs-on-windows)
             - [Example](./using-the-aws-driver/UsingTheAwsDriver.md#example)
       - [Enabling Logs On MacOS and Linux](./using-the-aws-driver/UsingTheAwsDriver.md#enabling-logs-on-macos-and-linux)
+    - [Host Monitoring](./using-the-aws-driver/HostMonitoring.md)
 - [Building the AWS ODBC Driver for MySQL](./building-the-aws-driver/BuildingTheAwsDriver.md)
     - [Windows](./building-the-aws-driver/BuildingTheAwsDriver.md#windows)
     - [MacOS](./building-the-aws-driver/BuildingTheAwsDriver.md#macos)
