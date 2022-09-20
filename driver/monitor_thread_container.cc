@@ -64,12 +64,12 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] release_instance(): mtc_use_count = %d", singleton.use_count());
-    //if (singleton.use_count() == 1) {
+    if (singleton.use_count() == 1) {
         MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Releasing resources");
         singleton->release_resources();
         singleton.reset();
         MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] After release: mtc_use_count = %d", singleton.use_count());
-    //}
+    }
 }
 
 std::string MONITOR_THREAD_CONTAINER::get_node(std::set<std::string> node_keys) {
@@ -252,16 +252,16 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         this->monitor_map.clear();
     }
 
-    //{
-    //    std::unique_lock<std::mutex> lock(task_map_mutex);
-    //    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Clearing task_map; task_map.size() = %d", task_map.size());
-    //    this->task_map.clear();
-    //}
+    {
+        std::unique_lock<std::mutex> lock(task_map_mutex);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Clearing task_map; task_map.size() = %d", task_map.size());
+        this->task_map.clear();
+    }
 
-    //{
-    //    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Clearing available_monitors");
-    //    std::unique_lock<std::mutex> lock(available_monitors_mutex);
-    //    std::queue<std::shared_ptr<MONITOR>> empty;
-    //    std::swap(available_monitors, empty);
-    //}
+    {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Clearing available_monitors");
+        std::unique_lock<std::mutex> lock(available_monitors_mutex);
+        std::queue<std::shared_ptr<MONITOR>> empty;
+        std::swap(available_monitors, empty);
+    }
 }
