@@ -691,6 +691,10 @@ int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
     return mysql_options(mysql, option, arg);
 }
 
+int MYSQL_MONITOR_PROXY::get_option(mysql_option option, const void* arg) {
+    return mysql_get_option(mysql, option, arg);
+}
+
 bool MYSQL_MONITOR_PROXY::connect() {
     if (!ds)
         return false;

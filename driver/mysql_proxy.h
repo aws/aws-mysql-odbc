@@ -181,6 +181,7 @@ public:
     virtual int ping();
     virtual int options(enum mysql_option option, const void* arg);
     virtual bool connect();
+    virtual int get_option(mysql_option option, const void* arg);
     virtual bool is_connected();
     virtual const char* error();
     virtual void close();

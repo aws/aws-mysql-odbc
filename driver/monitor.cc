@@ -211,6 +211,13 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
 
+    unsigned int connect_timeout = -1;
+    unsigned int read_timeout = -1;
+    this->mysql_proxy->get_option(MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
+    this->mysql_proxy->get_option(MYSQL_OPT_READ_TIMEOUT, &read_timeout);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p connect_timeout = %d", this, connect_timeout);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p read_timeout = %d", this, read_timeout);
+
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p auto start = this->get_current_time();", this);
     auto start = this->get_current_time();
 
