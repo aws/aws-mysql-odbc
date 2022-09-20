@@ -681,7 +681,10 @@ void MYSQL_MONITOR_PROXY::init() {
 }
 
 int MYSQL_MONITOR_PROXY::ping() {
-    return mysql_ping(mysql);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering ping()");
+    auto ret = mysql_ping(mysql);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting ping() with ret = %d", ret);
+    return ret;
 }
 
 int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
