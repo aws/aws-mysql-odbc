@@ -696,14 +696,20 @@ int MYSQL_MONITOR_PROXY::get_option(mysql_option option, const void* arg) {
 }
 
 bool MYSQL_MONITOR_PROXY::connect() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering connect()");
     if (!ds)
         return false;
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] const auto host = get_host_info_from_ds(ds);");
     const auto host = get_host_info_from_ds(ds);
 
-    return mysql_real_connect(mysql, host->get_host().c_str(), ds_get_utf8attr(ds->uid, &ds->uid8),
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Calling mysql_real_connect()");
+    bool ret = mysql_real_connect(mysql, host->get_host().c_str(), ds_get_utf8attr(ds->uid, &ds->uid8),
                               ds_get_utf8attr(ds->pwd, &ds->pwd8), nullptr, host->get_port(),
                               ds_get_utf8attr(ds->socket, &ds->socket8), 0) != nullptr;
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting connect() with ret = %d", ret);
+    return ret;
 }
 
 bool MYSQL_MONITOR_PROXY::is_connected() {
