@@ -168,7 +168,8 @@ std::chrono::milliseconds MONITOR::get_connection_check_interval() {
 }
 
 CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
-    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] check_connection_status");
+    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected() || true) {
         const auto start = this->get_current_time();
         bool connected = this->connect(shortest_detection_interval);
         return CONNECTION_STATUS{

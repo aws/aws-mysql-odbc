@@ -208,7 +208,7 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         }
     }
 
-    this->thread_pool.stop();
+    this->thread_pool.stop(true);
 
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
