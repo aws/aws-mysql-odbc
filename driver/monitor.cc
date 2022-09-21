@@ -195,10 +195,11 @@ std::chrono::milliseconds MONITOR::get_connection_check_interval() {
 
 CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Entering check_connection_status() on %d", this, shortest_detection_interval.count());
-    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {
+    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected() || true) {
         MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Inside if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {", this);
         const auto start = this->get_current_time();
         bool connected = this->connect(shortest_detection_interval);
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p return CONNECTION_STATUS", this);
         return CONNECTION_STATUS{
             connected,
             std::chrono::duration_cast<std::chrono::milliseconds>(this->get_current_time() - start)
@@ -239,14 +240,18 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
     this->mysql_proxy->init();
 
     unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p timeout_sec = %d", this, timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
 
     if (!this->mysql_proxy->connect()) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Unsuccessful connection", this);
         MYLOG_TRACE(this->logger.get(), 0, this->mysql_proxy->error());
         this->mysql_proxy->close();
         return false;
     }
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p successfully connected", this);
 
     return true;
 }
