@@ -1,7 +1,7 @@
 # Host Monitoring
 
 ## Enhanced Failure Monitoring
-<div style="text-align:center"><img src="../../images/enhanced_failure_monitoring_diagram.png"/></div>
+<div style="text-align:center"><img src="../images/enhanced_failure_monitoring_diagram.png"/></div>
 
 The figure above shows a simplified workflow of Enhanced Failure Monitoring (EFM). Enhanced Failure Monitoring is a feature that is available within the AWS ODBC Driver for MySQL. There is a monitor that will periodically check the connected database node's health, or availability. If a database node is determined to be unhealthy, the connection will be aborted. This check uses the [Enhanced Failure Monitoring Parameters](#enhanced-failure-monitoring-parameters) and a database node's responsiveness to determine whether a node is healthy.
 
@@ -21,7 +21,7 @@ This option is useful when a user application executes quick statements that run
 Enhanced Failure Monitoring is enabled by default in AWS ODBC Driver for MySQL, but it can be disabled with the parameter `ENABLE_FAILURE_DETECTION` is set to `0` in `odbc.ini` or in the connection string.
 > 
 ### Enhanced Failure Monitoring Parameters
-<div style="text-align:center"><img src="../../images/efm_monitor_process.png" /></div>
+<div style="text-align:center"><img src="../images/efm_monitor_process.png" /></div>
 
 The parameters `FAILURE_DETECTION_TIME`, `FAILURE_DETECTION_INTERVAL`, and `FAILURE_DETECTION_COUNT` are similar to TCP Keepalive parameters. Each connection has its own set of parameters. The `FAILURE_DETECTION_TIME` is how long the monitor waits after a SQL query is started to send a probe to a database node. The `FAILURE_DETECTION_INTERVAL` is how often the monitor sends a probe to a database node. The `FAILURE_DETECTION_COUNT` is how many times a monitor probe can go unacknowledged before the database node is deemed unhealthy. 
 
