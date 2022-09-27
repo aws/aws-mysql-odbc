@@ -682,8 +682,15 @@ void MYSQL_MONITOR_PROXY::init() {
 
 int MYSQL_MONITOR_PROXY::ping() {
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering ping()");
-    auto ret = mysql_ping(mysql);
+    int ret = mysql_ping(mysql);
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting ping() with ret = %d", ret);
+    return ret;
+}
+
+int MYSQL_MONITOR_PROXY::real_query(const char* q, unsigned long length) {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering real_query(\"%s\")", q);
+    int ret = mysql_real_query(mysql, q, length);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting real_query() with ret = %d", ret);
     return ret;
 }
 
