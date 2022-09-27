@@ -11,6 +11,9 @@ on:
       - '**/*.md'
       - '**/*.jpg'
       - '**/README.txt'
+      - 'docs/**'
+      - 'ISSUE_TEMPLATE/**'
+      - '**/remove-old-artifacts.yml'
 
 env:
   LINUX_BUILD_TYPE: Release
