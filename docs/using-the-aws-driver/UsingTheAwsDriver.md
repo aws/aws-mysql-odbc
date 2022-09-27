@@ -1,13 +1,32 @@
 # Using the AWS ODBC Driver for MySQL
+
 The AWS ODBC Driver for MySQL is drop-in compatible, so its usage is identical to the [MySQL Connector/ODBC driver](https://github.com/mysql/mysql-connector-odbc/). The sections below highlight driver usage specific to failover.
 
+## Failover Process
+
+In an Amazon Aurora database (DB) cluster, failover is a mechanism by which Aurora automatically repairs the DB cluster status when a primary DB instance becomes unavailable. It achieves this goal by electing an Aurora Replica to become the new primary DB instance, so that the DB cluster can provide maximum availability to a primary read-write DB instance. The AWS ODBC Driver for MySQL uses the Failover Plugin to coordinate with this behavior in order to provide minimal downtime in the event of a DB instance failure.
+
+![failover_diagram](../images/failover_diagram.png)
+
+The figure above provides a simplified overview of how the AWS ODBC Driver for MySQL handles an Aurora failover encounter. Starting at the top of the diagram, an application using the driver sends a request to get a logical connection to an Aurora database.
+
+In this example, the application requests a connection using the Aurora DB cluster endpoint and is returned a logical connection that is physically connected to the primary DB instance in the DB cluster, DB instance C. By design, details about which specific DB instance the physical connection is connected to have been abstracted away.
+
+Over the course of the application's lifetime, it executes various statements against the logical connection. If DB instance C is stable and active, these statements succeed and the application continues as normal. If DB instance C experiences a failure, Aurora will initiate failover to promote a new primary DB instance. At the same time, the AWS ODBC Driver for MySQL will intercept the related communication exception and kick off its own internal failover process.
+
+If the primary DB instance has failed, the driver will use its internal topology cache to temporarily connect to an active Aurora Replica. This Aurora Replica will be periodically queried for the DB cluster topology until the new primary DB instance is identified (DB instance A or B in this case).
+
+At this point, the driver will connect to the new primary DB instance and return control to the application to allow the user to reconfigure the session state as needed. Although the DNS endpoint for the DB cluster might not yet resolve to the new primary DB instance, the driver has already discovered this new DB instance during its failover process, and will be directly connected to it when the application continues executing statements. In this way the driver provides a faster way to reconnect to a newly promoted DB instance, thus increasing the availability of the DB cluster.
+
 ## Connection Strings and Configuring the Driver
+
 To set up a connection, the driver uses an ODBC connection string. An ODBC connection string specifies a set of semicolon-delimited connection options. Typically, a connection string will either:
 
-1. specify a Data Source Name containing a preconfigured set of options (DSN=xxx;) or
-2. configure options explicitly (SERVER=xxx;PORT=xxx;...). This option will override values set inside the DSN.
+1. specify a Data Source Name containing a preconfigured set of options (`DSN=xxx;`) or
+2. configure options explicitly (`SERVER=xxx;PORT=xxx;...;`). This option will override values set inside the DSN.
 
 ## Failover Specific Options
+
 In addition to the parameters that you can configure for the [MySQL Connector/ODBC driver](https://dev.mysql.com/doc/connector-odbc/en/connector-odbc-configuration-connection-parameters.html), you can configure the following parameters in a DSN or connection string to specify failover behaviour. If the values for these options are not specified, the default values will be used. If you are dealing with the Windows DSN UI, click `Details >>` and navigate to the `Cluster Failover` tab to find the equivalent parameters.
 
 | Option                             | Description                                                                                                                                                                                                                                                                                                                                                                        | Type   | Required | Default                                  |
@@ -27,23 +46,28 @@ In addition to the parameters that you can configure for the [MySQL Connector/OD
 | `NETWORK_TIMEOUT`                    | Timeout (in seconds) on network socket operations, with 0 being no timeout.                                                                                                                                                                                                                                                                                                        | int    | No       | `30`                                     |
 
 ### Driver Behaviour During Failover For Different Connection URLs
-![failover_behaviour](./failover_behaviour.jpg)
+
+![failover_behaviour](../images/failover_behaviour.jpg)
 
 ### Host Pattern
+
 When connecting to Aurora clusters, this parameter is required when the connection string does not provide enough information about the database cluster domain name. If the Aurora cluster endpoint is used directly, the driver will recognize the standard Aurora domain name and can re-build a proper Aurora instance name when needed. In cases where the connection string uses an IP address, a custom domain name or localhost, the driver won't know how to build a proper domain name for a database instance endpoint. For example, if a custom domain was being used and the cluster instance endpoints followed a pattern of `instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc, the driver would need to know how to construct the instance endpoints using the specified custom domain. Because there isn't enough information from the custom domain alone to create the instance endpoints, the `HOST_PATTERN` should be set to `?.customHost`, making the connection string `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost`. Refer to [Driver Behaviour During Failover For Different Connection URLs](#driver-behaviour-during-failover-for-different-connection-urls) for more examples.
 
 ## Failover Exception Codes
 
 ### 08S01 - Communication Link Failure
+
 When the driver returns an error code ```08S01```, the original connection failed, and the driver tried to failover to a new instance, but was not able to. There are various reasons this may happen: no nodes were available, a network failure occurred, and so on. In this scenario, please wait until the server is up or other problems are solved.
 
 ### 08S02 - Communication Link Changed
+
 When the driver returns an error code ```08S02```, the original connection failed while autocommit was set to true, and the driver successfully failed over to another available instance in the cluster. However, any session state configuration of the initial connection is now lost. In this scenario, you should:
 
 1. Reconfigure and reuse the original connection (the reconfigured session state will be the same as the original connection).
 2. Repeat the query that was executed when the connection failed and continue work as desired.
 
 #### Sample Code
+
 ```cpp
 #include <iostream>
 #include <sql.h>
@@ -144,6 +168,7 @@ int main() {
 ```
 
 ### 08007 - Connection Failure During Transaction
+
 When the driver returns an error code ```08007```, the original connection failed within a transaction (while autocommit was set to false). In this scenario, when the transaction ends, the driver first attempts to rollback the transaction, and then fails over to another available instance in the cluster. Note that the rollback might be unsuccessful as the initial connection may be broken at the time that the driver recognizes the problem. Note also that any session state configuration of the initial connection is now lost. In this scenario, you should:
 
 1. Reconfigure and reuse the original connection (the reconfigured session state will be the same as the original connection).
@@ -151,6 +176,7 @@ When the driver returns an error code ```08007```, the original connection faile
 3. Repeat the query that was executed when the connection failed, and continue work.
 
 #### Sample Code
+
 ```cpp
 #include <iostream>
 #include <sql.h>
@@ -264,6 +290,7 @@ int main() {
 ## Logging
 
 ### Enabling Logs On Windows
+
 When connecting the AWS ODBC Driver for MySQL using a Windows system, ensure logging is enabled by following the steps below:
 
 1. Open the ODBC Data Source Administrator.
@@ -273,12 +300,15 @@ When connecting the AWS ODBC Driver for MySQL using a Windows system, ensure log
 5. Ensure the box to log queries is checked.
 
 #### Example
+
 ![enable-logging-windows](./enable-logging-windows.jpg)
 
 The resulting log file, named `myodbc.log`, can be found under `%temp%`.
 
 ### Enabling Logs On MacOS and Linux
+
 When connecting the AWS ODBC Driver for MySQL using a MacOS or Linux system, include the `LOG_QUERY` parameter in the connection string with the value of `1` to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.log`, can be found in the current working directory.
 
 >## :warning: Warnings About Proper Usage of the AWS ODBC Driver for MySQL
+>
 >It is highly recommended that you use the cluster and read-only cluster endpoints instead of the direct instance endpoints of your Aurora cluster, unless you are confident about your application's use of instance endpoints. Although the driver will correctly failover to the new writer instance when using instance endpoints, use of these endpoints is discouraged because individual instances can spontaneously change reader/writer status when failover occurs. The driver will always connect directly to the instance specified if an instance endpoint is provided, so a write-safe connection cannot be assumed if the application uses instance endpoints.
