@@ -21,6 +21,7 @@ Source packages are available from our [github releases page](https://github.com
       - [Configuring the Driver and DSN Entries](#configuring-the-driver-and-dsn-entries)
         - [odbc.ini](#odbcini)
         - [odbcinst.ini](#odbcinstini)
+    - [Failover Process](#failover-process)
     - [Connection Strings and Configuring the Driver](#connection-strings-and-configuring-the-driver)
     - [Failover Specific Options](#failover-specific-options)
       - [Driver Behaviour During Failover For Different Connection URLs](#driver-behaviour-during-failover-for-different-connection-urls)
@@ -65,9 +66,11 @@ Source packages are available from our [github releases page](https://github.com
   - [License](#license)
 
 ## What is Failover?
+
 In an Amazon Aurora database (DB) cluster, failover is a mechanism by which Aurora automatically repairs the DB cluster status when a primary DB instance becomes unavailable. It achieves this goal by electing an Aurora Replica to become the new primary DB instance, so that the DB cluster can provide maximum availability to a primary read-write DB instance. The MySQL Connector/ODBC Driver is designed to coordinate with this behavior in order to provide minimal downtime in the event of a DB instance failure.
 
 ## Benefits of the MySQL Connector/ODBC Driver
+
 Although Aurora is able to provide maximum availability through the use of failover, existing client drivers do not currently support this functionality. This is partially due to the time required for the DNS of the new primary DB instance to be fully resolved in order to properly direct the connection. The MySQL Connector/ODBC Driver fully utilizes failover behavior by maintaining a cache of the Aurora cluster topology and each DB instance's role (Aurora Replica or primary DB instance). This topology is provided via a direct query to the Aurora database, essentially providing a shortcut to bypass the delays caused by DNS resolution. With this knowledge, the MySQL Connector/ODBC Driver can more closely monitor the Aurora DB cluster status so that a connection to the new primary DB instance can be established as fast as possible. Additionally, the MySQL Connector/ODBC Driver can be used to interact with Aurora MySQL, RDS MySQL, and commercial/open-source MySQL databases.
 
 ## Getting Started
@@ -75,15 +78,19 @@ Although Aurora is able to provide maximum availability through the use of failo
 ### Installing the MySQL Connector/ODBC Driver
 
 #### Windows
+
 Download the `.msi` Windows installer for your system; execute the installer and follow the onscreen instructions. The default target installation location for the driver files is `C:\Program Files\MySQL\Connector ODBC 8.0`. An ANSI driver and a Unicode driver will be installed, named respectively `MySQL ODBC ANSI Driver` and `MySQL ODBC 8.0 Unicode Driver`. To uninstall the ODBC driver, open the same installer file, select the option to uninstall the driver and follow the onscreen instructions to successfully uninstall the driver.
 
 #### MacOS
+
 Download the `.pkg` installer; run the installer and follow the onscreen instructions. The default target installation location for the driver folder is `/usr/local/`. Note that for a MacOS system, additional steps are required to configure the driver and Data Source Name (DSN) entries before you can use the driver(s). Initially, the installer will register two driver entries with two corresponding DSN entries. For information about [how to configure the driver and DSN settings](#configuring-the-driver-and-dsn-entries), review the configuration sample. There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 #### Linux
+
 Download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 #### Configuring the Driver and DSN Entries 
+
 To configure the driver on Windows, use the `ODBC Data Source Administrator` tool to add or configure a DSN for either the `MySQL ODBC ANSI Driver` or `MySQL ODBC 8.0 Unicode Driver`. With this DSN you can specify the options for the desired connection. Additional configuration properties are available by clicking the `Details >>` button.
 
 To use the driver on MacOS or Linux systems, you need to create two files (`odbc.ini` and `odbcinst.ini`), that will contain the configuration for the driver and the Data Source Name (DSN).
@@ -93,6 +100,7 @@ You can modify the files manually, or through tools with a GUI such as `iODBC Ad
 For a Linux system, the files would be similar, but the driver file would have the `.so` extension instead of the `.dylib` extension shown in the sample. On a Linux system, the `odbc.ini` and `odbcinst.ini` files are typically located in the `/etc` directory.
 
 ##### odbc.ini
+
 ```bash
 [ODBC Data Sources]
 myodbcw = ODBC Unicode Driver for MySQL
@@ -124,6 +132,7 @@ NETWORK_TIMEOUT                    = 30
 ```
 
 ##### odbcinst.ini
+
 ```bash
 [ODBC Drivers]
 ODBC Unicode Driver for MySQL = Installed
@@ -136,13 +145,31 @@ Driver = /usr/local/MySQL_ODBC_Connector/lib/myodbc8w.dylib
 Driver = /usr/local/MySQL_ODBC_Connector/lib/myodbc8a.dylib
 ```
 
+## Failover Process
+
+In an Amazon Aurora database (DB) cluster, failover is a mechanism by which Aurora automatically repairs the DB cluster status when a primary DB instance becomes unavailable. It achieves this goal by electing an Aurora Replica to become the new primary DB instance, so that the DB cluster can provide maximum availability to a primary read-write DB instance. The MySQL Connector/ODBC Driver uses the Failover Plugin to coordinate with this behavior in order to provide minimal downtime in the event of a DB instance failure.
+
+![failover_diagram](docs/images/failover_diagram.png)
+
+The figure above provides a simplified overview of how the MySQL Connector/ODBC Driver handles an Aurora failover encounter. Starting at the top of the diagram, an application using the driver sends a request to get a logical connection to an Aurora database.
+
+In this example, the application requests a connection using the Aurora DB cluster endpoint and is returned a logical connection that is physically connected to the primary DB instance in the DB cluster, DB instance C. By design, details about which specific DB instance the physical connection is connected to have been abstracted away.
+
+Over the course of the application's lifetime, it executes various statements against the logical connection. If DB instance C is stable and active, these statements succeed and the application continues as normal. If DB instance C experiences a failure, Aurora will initiate failover to promote a new primary DB instance. At the same time, the MySQL Connector/ODBC Driver will intercept the related communication exception and kick off its own internal failover process.
+
+If the primary DB instance has failed, the driver will use its internal topology cache to temporarily connect to an active Aurora Replica. This Aurora Replica will be periodically queried for the DB cluster topology until the new primary DB instance is identified (DB instance A or B in this case).
+
+At this point, the driver will connect to the new primary DB instance and return control to the application to allow the user to reconfigure the session state as needed. Although the DNS endpoint for the DB cluster might not yet resolve to the new primary DB instance, the driver has already discovered this new DB instance during its failover process, and will be directly connected to it when the application continues executing statements. In this way the driver provides a faster way to reconnect to a newly promoted DB instance, thus increasing the availability of the DB cluster.
+
 ### Connection Strings and Configuring the Driver
+
 To set up a connection, the driver uses an ODBC connection string. An ODBC connection string specifies a set of semicolon-delimited connection options. Typically, a connection string will either:
 
-1. specify a Data Source Name containing a preconfigured set of options (DSN=xxx;) or
-2. configure options explicitly (SERVER=xxx;PORT=xxx;...). This option will override values set inside the DSN.
+1. specify a Data Source Name containing a preconfigured set of options (`DSN=xxx;`) or
+2. configure options explicitly (`SERVER=xxx;PORT=xxx;...;`). This option will override values set inside the DSN.
 
 ### Failover Specific Options
+
 In addition to the parameters that you can configure for the [MySQL Connector/ODBC driver](https://dev.mysql.com/doc/connector-odbc/en/connector-odbc-configuration-connection-parameters.html), you can configure the following parameters in a DSN or connection string to specify failover behaviour. If the values for these options are not specified, the default values will be used. If you are dealing with the Windows DSN UI, click `Details >>` and navigate to the `Cluster Failover` tab to find the equivalent parameters.
 
 | Option                             | Description                                                                                                                                                                                                                                                                                                                                                                        | Type   | Required | Default                                  |
@@ -162,20 +189,24 @@ In addition to the parameters that you can configure for the [MySQL Connector/OD
 | `NETWORK_TIMEOUT`                    | Timeout (in seconds) on network socket operations, with 0 being no timeout.                                                                                                                                                                                                                                                                                                        | int    | No       | `30`                                     |
 
 ### Driver Behaviour During Failover For Different Connection URLs
-![failover_behaviour](./failover_behaviour.jpg)
+
+![failover_behaviour](docs/images/failover_behaviour.jpg)
 
 ### Host Pattern
+
 When connecting to Aurora clusters, this parameter is required when the connection string does not provide enough information about the database cluster domain name. If the Aurora cluster endpoint is used directly, the driver will recognize the standard Aurora domain name and can re-build a proper Aurora instance name when needed. In cases where the connection string uses an IP address, a custom domain name or localhost, the driver won't know how to build a proper domain name for a database instance endpoint. For example, if a custom domain was being used and the cluster instance endpoints followed a pattern of `instanceIdentifier1.customHost`, `instanceIdentifier2.customHost`, etc, the driver would need to know how to construct the instance endpoints using the specified custom domain. Because there isn't enough information from the custom domain alone to create the instance endpoints, the `HOST_PATTERN` should be set to `?.customHost`, making the connection string `SERVER=customHost;PORT=1234;DATABASE=test;HOST_PATTERN=?.customHost`. Refer to [Driver Behaviour During Failover For Different Connection URLs](#driver-behaviour-during-failover-for-different-connection-urls) for more examples.
 
 ## Advanced Failover Configuration
 
 ### Failover Time Profiles
+
 A failover time profile refers to a specific combination of failover parameters that determine the time in which failover should be completed and define the aggressiveness of failover. Some failover parameters include `FAILOTVER_TIMEOUT` and `FAILOVER_READER_CONNECT_TIMEOUT`. Failover should be completed within 5 minutes by default. If the connection is not re-established during this time, then the failover process times out and fails. Users can configure the failover parameters to adjust the aggressiveness of the failover and fulfill the needs of their specific application. For example, a user could take a more aggressive approach and shorten the time limit on failover to promote a fail-fast approach for an application that does not tolerate database outages. Examples of normal and aggressive failover time profiles are shown below. 
 <br><br>
 **:warning:Note**: Aggressive failover does come with its side effects. Since the time limit on failover is shorter, it becomes more likely that a problem is caused not by a failure, but rather because of a timeout.
 <br><br>
 
 #### Example of the configuration for a normal failover time profile:
+
 | Parameter                              | Value     |
 |----------------------------------------|-----------|
 | `FAILOTVER_TIMEOUT`                    | `180000 ` |
@@ -184,6 +215,7 @@ A failover time profile refers to a specific combination of failover parameters 
 | `FAILOVER_TOPOLOGY_REFRESH_RATE`       | `2000`    |
 
 #### Example of the configuration for an aggressive failover time profile:
+
 | Parameter                              | Value   |
 |----------------------------------------|---------|
 | `FAILOTVER_TIMEOUT`                    | `30000` |
@@ -192,35 +224,43 @@ A failover time profile refers to a specific combination of failover parameters 
 | `FAILOVER_TOPOLOGY_REFRESH_RATE`       | `2000`  |
 
 ### Writer Cluster Endpoints After Failover
+
 Connecting to a writer cluster endpoint after failover can result in a faulty connection because DNS causes a delay in changing the writer cluster. On the AWS DNS server, this change is updated usually between 15-20 seconds, but the other DNS servers sitting between the application and the AWS DNS server may not be updated in time. Using this stale DNS data will most likely cause problems for users, so it is important to keep this is mind.
 
 ### 2-Node Clusters
+
 Using failover with a 2-node cluster is not beneficial because during the failover process involving one writer node and one reader node, the two nodes simply switch roles; the reader becomes the writer and the writer becomes the reader. If failover is triggered because one of the nodes has a problem, this problem will persist because there aren't any extra nodes to take the responsibility of the one that is broken. Three or more database nodes are recommended to improve the stability of the cluster.
 
 ### Node Availability
+
 It seems as though just one node, the one triggering the failover, will be unavailable during the failover process; this is actually not true. When failover is triggered, all nodes become unavailable for a short time. This is because the control plane, which orchestrates the failover process, first shuts down all nodes, then starts the writer node, and finally starts and connects the remaining nodes to the writer. In short, failover requires each node to be reconfigured and thus, all nodes must become unavailable for a short period of time. One additional note to point out is that if your failover time is aggressive, then this may cause failover to fail because some nodes may still be unavailable by the time your failover times out.
 
 ## Enhanced Failure Monitoring
+
 <div style="text-align:center"><img src="docs/images/enhanced_failure_monitoring_diagram.png"/></div>
 
 The figure above shows a simplified workflow of Enhanced Failure Monitoring (EFM). Enhanced Failure Monitoring is a feature that is available within the MySQL Connector/ODBC Driver. There is a monitor that will periodically check the connected database node's health, or availability. If a database node is determined to be unhealthy, the connection will be aborted. This check uses the [Enhanced Failure Monitoring Parameters](#enhanced-failure-monitoring-parameters) and a database node's responsiveness to determine whether a node is healthy.
 
 ### The Benefits Enhanced Failure Monitoring
+
 Enhanced Failure Monitoring helps user applications detect failures earlier. When a user application executes a query, EFM may detect that the connected database node is unavailable. When this happens, the query is cancelled and the connection will be aborted. This allows queries to fail fast instead of waiting indefinitely or failing due to a timeout.
 
-One use case is to pair EFM with [Failover](./using-the-aws-driver/UsingTheAwsDriver.md#failover-specific-options). When EFM discovers a database node failure, the connection will be aborted. Without Failover enabled, the connection would be terminated up to the user application level. If Failover is enabled, the MySQL Connector/ODBC Driver can attempt to failover to a different, healthy database node where the query can be executed.
+One use case is to pair EFM with [Failover](#failover-specific-options). When EFM discovers a database node failure, the connection will be aborted. Without Failover enabled, the connection would be terminated up to the user application level. If Failover is enabled, the MySQL Connector/ODBC Driver can attempt to failover to a different, healthy database node where the query can be executed.
 
 Not all user applications will have a need for Enhanced Failure Monitoring. If a user application's query times are predictable and short, and the application does not execute any long-running SQL queries, Enhanced Failure Monitoring may be replaced with a simple network timeout that would consume fewer resources and would be simpler to configure. 
 
 Although this is a viable alternative, EFM is more configurable than simple network timeouts. Users should keep these advantages and disadvantages in mind when deciding whether Enhanced Failure Monitoring is suitable for their application.
 
 #### Simple Network Timeout
+
 This option is useful when a user application executes quick statements that run for predictable lengths of time. In this case, the network timeout should be set to a value such as the 95th to 99th percentile. One can set network timeout by setting the `NETWORK_TIMEOUT` property in the `odbc.ini` file, or appending `NETWORK_TIMEOUT=?;` to the connection string (where `?` indicates the timeout value in seconds) or in the UI to configure the DSN.
 
 ### Enabling Host Monitoring
+
 Enhanced Failure Monitoring is enabled by default in MySQL Connector/ODBC Driver, but it can be disabled with the parameter `ENABLE_FAILURE_DETECTION` is set to `0` in `odbc.ini` or in the connection string.
 > 
 ### Enhanced Failure Monitoring Parameters
+
 <div style="text-align:center"><img src="docs/images/efm_monitor_process.png" /></div>
 The parameters `FAILURE_DETECTION_TIME`, `FAILURE_DETECTION_INTERVAL`, and `FAILURE_DETECTION_COUNT` are similar to TCP Keepalive parameters. Each connection has its own set of parameters. The `FAILURE_DETECTION_TIME` is how long the monitor waits after a SQL query is started to send a probe to a database node. The `FAILURE_DETECTION_INTERVAL` is how often the monitor sends a probe to a database node. The `FAILURE_DETECTION_COUNT` is how many times a monitor probe can go unacknowledged before the database node is deemed unhealthy. 
 
@@ -253,15 +293,18 @@ To configure failure detection, you can specify the following parameters in a DS
 ### Failover Exception Codes
 
 #### 08S01 - Communication Link Failure
+
 When the driver returns an error code ```08S01```, the original connection failed, and the driver tried to failover to a new instance, but was not able to. There are various reasons this may happen: no nodes were available, a network failure occurred, and so on. In this scenario, please wait until the server is up or other problems are solved.
 
 #### 08S02 - Communication Link Changed
+
 When the driver returns an error code ```08S02```, the original connection failed while autocommit was set to true, and the driver successfully failed over to another available instance in the cluster. However, any session state configuration of the initial connection is now lost. In this scenario, you should:
 
 1. Reconfigure and reuse the original connection (the reconfigured session state will be the same as the original connection).
 2. Repeat the query that was executed when the connection failed and continue work as desired.
 
 ##### Sample Code
+
 ```cpp
 #include <iostream>
 #include <sql.h>
@@ -362,6 +405,7 @@ int main() {
 ```
 
 #### 08007 - Connection Failure During Transaction
+
 When the driver returns an error code ```08007```, the original connection failed within a transaction (while autocommit was set to false). In this scenario, when the transaction ends, the driver first attempts to rollback the transaction, and then fails over to another available instance in the cluster. Note that the rollback might be unsuccessful as the initial connection may be broken at the time that the driver recognizes the problem. Note also that any session state configuration of the initial connection is now lost. In this scenario, you should:
 
 1. Reconfigure and reuse the original connection (the reconfigured session state will be the same as the original connection).
@@ -369,6 +413,7 @@ When the driver returns an error code ```08007```, the original connection faile
 3. Repeat the query that was executed when the connection failed, and continue work.
 
 ##### Sample Code
+
 ```cpp
 #include <iostream>
 #include <sql.h>
@@ -485,6 +530,7 @@ int main() {
 ## Building the MySQL Connector/ODBC Driver
 
 ### Windows
+
 <!-- TODO: Verify that the driver can be built with newer versions of Visual Studio after rebasing -->
 1. Install the following programs to build the driver:
     - [CMake](https://cmake.org/download/)
@@ -498,6 +544,7 @@ int main() {
     ```
 
 ### MacOS
+
 1. Install the following packages available on `Homebrew` or other package management system of your choice:
      - `libiodbc`
      - `cmake`
@@ -515,6 +562,7 @@ int main() {
     Note: you may have a different `libiodbc` version. Change `3.52.15` to your respective version.
 
 #### Troubleshoot
+
 If you encounter an `ld: library not found for -lzstd` error, run the following command, and then rebuild the driver:
 ```
 export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
@@ -530,6 +578,7 @@ export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl@1.1/lib/
 ```
 
 ### Linux
+
 1. Install the following required packages:
     ```
     sudo apt-get update
@@ -542,7 +591,9 @@ export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl@1.1/lib/
     ```
 
 ## Testing the MySQL Connector/ODBC Driver
+
 ### Unit Tests
+
 1. Build driver binaries with `ENABLE_UNIT_TESTS` command set to `TRUE`:
    - **Windows**
         ```
@@ -594,15 +645,18 @@ Note: Google Test filter = TopologyServiceTest.*
 ```
 
 ### Integration Tests
+
 There are two types of integration tests you can run. One type is an integration test against a MySQL Server, and the other type consists of the two sets of integration tests specific to the failover functionality provided by the MySQL Connector/ODBC Driver.
 
 #### Integration Tests Against A MySQL Server
 
 ##### Prerequisites
+
 - Install MySQL Server. See the [build instructions for the desired system](#building-the-mysql-connector/odbc-driver) for instructions.
 - [**Optional**] Install [Docker](https://docs.docker.com/get-docker/).
 
 ##### Steps
+
 1. Specify the following environment variables on your target platform before building the driver:
     | Environment Variable | Description                                                     | Example                         | Platforms               |
     |----------------------|-----------------------------------------------------------------|---------------------------------|-------------------------|
@@ -620,9 +674,11 @@ There are two types of integration tests you can run. One type is an integration
 5. Navigate to the `test` directory and execute `ctest`.
 
 #### Failover-specific Integration Tests
+
 > **NOTE:** This set of tests can only be run on Linux at the moment.
 
 ##### Prerequisites
+
 - Install JDK 8:
   ```
   sudo apt-get install openjdk-8-jdk
@@ -630,6 +686,7 @@ There are two types of integration tests you can run. One type is an integration
 - Install [Docker](https://docs.docker.com/get-docker/)
   
 ##### Steps
+
 > **NOTE:** Running these tests will automatically create an Amazon Aurora MySQL DB cluster with at least 5 instances and may induce a cost. Ensure the test cluster is cleaned up after testing on the [Amazon RDS Management Console](https://console.aws.amazon.com/rds/home).
 
 1. This set of tests runs against an Amazon Aurora MySQL DB cluster with at least 5 instances. The test will automatically generate the required AWS MySQL DB cluster and instances if proper AWS credentials are set up. Refer to the [documentation](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_SettingUp_Aurora.html) for information about setting up a development environment for Amazon Aurora.
@@ -670,14 +727,17 @@ There are two types of integration tests you can run. One type is an integration
 6. Log files are written to the `build` directory as `myodbc.log`.
 
 ## Getting Help and Opening Issues
+
 If you encounter a bug with the MySQL Connector/ODBC Driver, we would like to hear about it. Please search the [existing issues](https://github.com/mysql/mysql-connector-odbc/issues) and see if others are also experiencing the issue before opening a new issue. When opening a new issue, we will need the version of MySQL Connector/ODBC Driver, C++ language version, OS you’re using, and the MySQL database version you're running against. Please include a reproduction case for the issue when appropriate.
 
 The GitHub issues are intended for bug reports and feature requests. Keeping the list of open issues lean will help us respond in a timely manner.
 
 ### Logging
+
 If you encounter an issue with the MySQL Connector/ODBC Driver and would like to report it, please include driver logs if possible, as they help us diagnose problems quicker.
 
 #### Enabling Logs On Windows
+
 When connecting the MySQL Connector/ODBC Driver using a Windows system, ensure logging is enabled by following the steps below:
 
 1. Open the ODBC Data Source Administrator.
@@ -687,12 +747,15 @@ When connecting the MySQL Connector/ODBC Driver using a Windows system, ensure l
 5. Ensure the box to log queries is checked.
 
 ##### Example
+
 ![enable-logging-windows](doc/enable-logging-windows.jpg)
 
 The resulting log file, named `myodbc.log`, can be found under `%temp%`.
 
 #### Enabling Logs On MacOS and Linux
+
 When connecting the MySQL Connector/ODBC Driver using a MacOS or Linux system, use the `LOG_QUERY` parameter in the connection string with the value of `1` to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.log`, can be found in the current working directory.
 
 ## License
+
 This software is released under version 2 of the GNU General Public License (GPLv2).
