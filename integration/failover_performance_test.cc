@@ -202,7 +202,7 @@ protected:
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 
-  SQLCHAR* LONG_QUERY = AS_SQLCHAR("SELECT SLEEP(300)"); // 600s -> 10m
+  SQLCHAR* LONG_QUERY = AS_SQLCHAR("SELECT SLEEP(600)"); // 600s -> 10m
   const size_t NB_OF_RUNS = 3;
   static constexpr char* OUTPUT_FILE_PATH = "./build/reports/";
 
