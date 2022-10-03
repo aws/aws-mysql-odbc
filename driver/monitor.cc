@@ -195,7 +195,7 @@ std::chrono::milliseconds MONITOR::get_connection_check_interval() {
 
 CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds shortest_detection_interval) {
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Entering check_connection_status() on %d", this, shortest_detection_interval.count());
-    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {
+    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected() || true) {
         MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p Inside if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {", this);
         const auto start = this->get_current_time();
         bool connected = this->connect(shortest_detection_interval);
@@ -226,11 +226,11 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p auto start = this->get_current_time();", this);
     auto start = this->get_current_time();
 
-    //MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p bool is_connection_active = this->mysql_proxy->ping() == 0;", this);
-    //bool is_connection_active = this->mysql_proxy->ping() == 0;
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p bool is_connection_active = this->mysql_proxy->ping() == 0;", this);
+    bool is_connection_active = this->mysql_proxy->ping() == 0;
 
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p bool is_connection_active = this->mysql_proxy->real_query() == 0;", this);
-    bool is_connection_active = this->mysql_proxy->real_query("SELECT 1", 8) == 0;
+    //MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p bool is_connection_active = this->mysql_proxy->real_query() == 0;", this);
+    //bool is_connection_active = this->mysql_proxy->real_query("SELECT 1", 8) == 0;
 
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] %p auto duration = this->get_current_time() - start;", this);
     auto duration = this->get_current_time() - start;
