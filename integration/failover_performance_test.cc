@@ -187,6 +187,16 @@ void print_log(const char* fmt, ...) {
     }
 }
 
+void print_data(EFM_PERFORMANCE_DATA data) {
+  print_log("[print_data] Outage delay = %d", data.network_outage_delay);
+  print_log("[print_data] Detection time = %d", data.detection_time);
+  print_log("[print_data] Detection interval = %d", data.detection_interval);
+  print_log("[print_data] Detection count = %d", data.detection_count);
+  print_log("[print_data] Min Failover time = %d", data.min_failover_time);
+  print_log("[print_data] Max Failover time = %d", data.max_failover_time);
+  print_log("[print_data] Avf Failover time = %d", data.avg_failover_time);
+}
+
 class FailoverPerformanceTest :
   public ::testing::WithParamInterface<std::tuple<int, int, int, int, int>>,
   public BaseFailoverIntegrationTest {
@@ -433,6 +443,7 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
 
       if (measure_performance(conn_str, sleep_delay, data)) {
         print_log("[test_measure_failover] measure_performance returned true");
+        print_data(data);
         efm_failover_data.push_back(data);
       }
       else {
@@ -467,6 +478,7 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
 
       if (measure_performance(conn_str, sleep_delay, data)) {
         print_log("[test_measure_failover] measure_performance returned true");
+        print_data(data);
         efm_detection_data.push_back(data);
       }
       else {
