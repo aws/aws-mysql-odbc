@@ -378,7 +378,7 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       data.detection_count = detection_count;
 
       if (measure_performance(conn_str, sleep_delay, data)) {
-        efm_failover_data.push_back(data);
+        efm_detection_data.push_back(data);
       }
       break;
     }
