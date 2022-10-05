@@ -467,7 +467,7 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
 
       if (measure_performance(conn_str, sleep_delay, data)) {
         print_log("[test_measure_failover] measure_performance returned true");
-        efm_failover_data.push_back(data);
+        efm_detection_data.push_back(data);
       }
       else {
           print_log("[test_measure_failover] measure_performance returned false");
