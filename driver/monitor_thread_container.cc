@@ -191,11 +191,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
 }
 
 void MONITOR_THREAD_CONTAINER::release_resources() {
-    {
-        std::unique_lock<std::mutex> lock(monitor_map_mutex);
-        this->monitor_map.clear();
-    }
-
+    // Stop all monitors
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
         for (auto const& task_pair : task_map) {
@@ -204,7 +200,13 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         }
     }
 
+    // Wait for monitor threads to finish
     this->thread_pool.stop(true);
+
+    {
+        std::unique_lock<std::mutex> lock(monitor_map_mutex);
+        this->monitor_map.clear();
+    }
 
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
