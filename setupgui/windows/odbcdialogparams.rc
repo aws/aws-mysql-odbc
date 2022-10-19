@@ -109,9 +109,9 @@ BEGIN
     CONTROL         "TCP/IP &Server:",IDC_RADIO_tcp,"Button",BS_AUTORADIOBUTTON | BS_RIGHT,32,105,60,13
     CONTROL         "Named &Pipe:",IDC_RADIO_pipe,"Button",BS_AUTORADIOBUTTON | BS_RIGHT,32,122,60,13
     RTEXT           "Server",IDC_STATIC,97,104,0,0 // Invisible, needed for accessibility
-    EDITTEXT        IDC_EDIT_server,198,104,85,14,ES_AUTOHSCROLL
-    RTEXT           "&Port:",IDC_STATIC,287,107,19,8
-    EDITTEXT        IDC_EDIT_port,312,104,28,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_server,98,104,185,14,ES_AUTOHSCROLL
+    RTEXT           "&Port:",IDC_STATIC,289,107,19,8
+    EDITTEXT        IDC_EDIT_port,312,104,29,14,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Named Pipe",IDC_STATIC,97,104,0,0 // Invisible, needed for accessibility
     EDITTEXT        IDC_EDIT_socket,98,123,185,14,WS_DISABLED,ES_AUTOHSCROLL
     RTEXT           "&User:",IDC_STATIC,23,143,67,8
