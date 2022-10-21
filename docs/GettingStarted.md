@@ -7,13 +7,34 @@ You will find installers for Windows, MacOS and Linux that can be downloaded dir
 ## Installing the AWS ODBC Driver for MySQL
 
 ### Windows
+
 Download the `.msi` Windows installer for your system; execute the installer and follow the onscreen instructions. The default target installation location for the driver files is `C:\Program Files\AWS ODBC Driver for MySQL`. An ANSI driver and a Unicode driver will be installed, named respectively `AWS ODBC ANSI Driver for MySQL` and `AWS ODBC Unicode Driver for MySQL`. To uninstall the ODBC driver, open the same installer file, select the option to uninstall the driver and follow the onscreen instructions to successfully uninstall the driver.
 
 ### MacOS
+
+In order to use the Amazon ODBC Driver for MySQL, [iODBC Driver Manager](http://www.iodbc.org/dataspace/doc/iodbc/wiki/iodbcWiki/Downloads) must be installed. `iODBC Driver Manager` contains the required libraries to install, configure the driver and DSN configurations.
+
 Download the `.pkg` installer; run the installer and follow the onscreen instructions. The default target installation location for the driver folder is `/usr/local/`. Note that for a MacOS system, additional steps are required to configure the driver and Data Source Name (DSN) entries before you can use the driver(s). Initially, the installer will register two driver entries with two corresponding DSN entries. For information about [how to configure the driver and DSN settings](#configuring-the-driver-and-dsn-entries), review the configuration sample. There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 ### Linux
-Download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
+
+In order to use the Amazon ODBC Driver for MySQL, [unixODBC](http://www.unixodbc.org/) must be installed.
+
+For **Ubuntu 64 bit**:
+
+```bash
+sudo apt update
+sudo apt install unixodbc
+```
+
+For **Amazon Linux 2 64 bit**:
+
+```bash
+sudo yum update
+sudo yum install unixODBC
+```
+
+Once `unixODBC` is installed, download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 ### Configuring the Driver and DSN Entries 
 To configure the driver on Windows, use the `ODBC Data Source Administrator` tool to add or configure a DSN for either the `AWS ODBC ANSI Driver for MySQL` or `AWS ODBC Unicode Driver for MySQL`. With this DSN you can specify the options for the desired connection. Additional configuration properties are available by clicking the `Details >>` button.
