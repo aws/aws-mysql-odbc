@@ -83,11 +83,29 @@ Download the `.msi` Windows installer for your system; execute the installer and
 
 #### MacOS
 
+In order to use the MySQL Connector/ODBC Driver, [iODBC Driver Manager](http://www.iodbc.org/dataspace/doc/iodbc/wiki/iodbcWiki/Downloads) must be installed. `iODBC Driver Manager` contains the required libraries to install, configure the driver and DSN configurations.
+
 Download the `.pkg` installer; run the installer and follow the onscreen instructions. The default target installation location for the driver folder is `/usr/local/`. Note that for a MacOS system, additional steps are required to configure the driver and Data Source Name (DSN) entries before you can use the driver(s). Initially, the installer will register two driver entries with two corresponding DSN entries. For information about [how to configure the driver and DSN settings](#configuring-the-driver-and-dsn-entries), review the configuration sample. There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
 
 #### Linux
 
-Download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninstaller at this time, but all the driver files can be removed by deleting the target installation directory.
+In order to use the MySQL Connector/ODBC Driver, [unixODBC](http://www.unixodbc.org/) must be installed.
+
+For **Ubuntu 64 bit**:
+
+```bash
+sudo apt update
+sudo apt install unixodbc
+```
+
+For **Amazon Linux 2 64 bit**:
+
+```bash
+sudo yum update
+sudo yum install unixODBC
+```
+
+Once `unixODBC` is installed, download the `.tar.gz` file, and extract the contents to your desired location. For a Linux system, additional steps are required to configure the driver and Data Source Name (DSN) entries before the driver(s) can be used. For more information, see [Configuring the Driver and DSN settings](#configuring-the-driver-and-dsn-entries). There is no uninst
 
 #### Configuring the Driver and DSN Entries 
 
