@@ -30,8 +30,8 @@
 #include "mysql_proxy.h"
 
 namespace {
-    const char* SELECT_1 = "SELECT 1";
-    const int SELECT_1_LENGTH = 8;
+    const char* SELECT_1_QUERY = "SELECT 1";
+    const int SELECT_1_QUERY_LENGTH = 8;
 }
 
 MONITOR::MONITOR(
@@ -187,8 +187,8 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
 
     auto start = this->get_current_time();
-    // Function as ping
-    bool is_connection_active = this->mysql_proxy->real_query(SELECT_1, SELECT_1_LENGTH) == 0;
+    // "SELECT 1" is the query we use to ping the DB host to determine if the connection is active
+    bool is_connection_active = this->mysql_proxy->real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH) == 0;
     auto duration = this->get_current_time() - start;
     
     return CONNECTION_STATUS{

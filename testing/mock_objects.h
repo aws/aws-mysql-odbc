@@ -179,7 +179,7 @@ public:
 
     MOCK_METHOD(bool, is_connected, ());
     MOCK_METHOD(void, init, ());
-    MOCK_METHOD(int, ping, ());
+    MOCK_METHOD(int, real_query, (const char* q, unsigned long length));
     MOCK_METHOD(int, options, (enum mysql_option, const void*));
     MOCK_METHOD(bool, connect, ());
 };

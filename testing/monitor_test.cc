@@ -49,6 +49,8 @@ namespace {
     const std::chrono::milliseconds validation_interval(50);
     const std::chrono::milliseconds monitor_disposal_time(200);
     const std::chrono::steady_clock::time_point short_interval_time(short_interval);
+    const char* SELECT_1_QUERY = "SELECT 1";
+    const int SELECT_1_QUERY_LENGTH = 8;
 }
 
 class MonitorTest : public testing::Test {
@@ -141,7 +143,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
     EXPECT_CALL(*mock_proxy, connect())
         .WillOnce(Return(true));
 
-    EXPECT_CALL(*mock_proxy, ping()).Times(0);
+    EXPECT_CALL(*mock_proxy, real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH)).Times(0);
 
     CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor, short_interval);
     EXPECT_TRUE(status.is_valid);
@@ -159,7 +161,7 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
     EXPECT_CALL(*mock_proxy, connect())
         .WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_proxy, ping())
+    EXPECT_CALL(*mock_proxy, real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH))
         .WillOnce(Return(0))
         .WillOnce(Return(1));
 
@@ -184,7 +186,7 @@ TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
     EXPECT_CALL(*mock_proxy, connect())
         .WillOnce(Return(true));
 
-    EXPECT_CALL(*mock_proxy, ping())
+    EXPECT_CALL(*mock_proxy, real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH))
         .WillOnce(Return(1));
 
     CONNECTION_STATUS first_status = TEST_UTILS::check_connection_status(monitor, short_interval);
@@ -235,7 +237,7 @@ TEST_F(MonitorTest, RunWithContext) {
     EXPECT_CALL(*proxy, connect())
         .WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*proxy, ping())
+    EXPECT_CALL(*proxy, real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH))
         .WillRepeatedly(Return(0));
 
     std::shared_ptr<MONITOR> monitorA = 
