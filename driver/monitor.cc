@@ -29,6 +29,11 @@
 #include "mylog.h"
 #include "mysql_proxy.h"
 
+namespace {
+    const char* SELECT_1 = "SELECT 1";
+    const int SELECT_1_LENGTH = 8;
+}
+
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
     std::chrono::milliseconds monitor_disposal_time,
@@ -182,7 +187,8 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
 
     auto start = this->get_current_time();
-    bool is_connection_active = this->mysql_proxy->ping() == 0;
+    // Function as ping
+    bool is_connection_active = this->mysql_proxy->real_query(SELECT_1, SELECT_1_LENGTH) == 0;
     auto duration = this->get_current_time() - start;
     
     return CONNECTION_STATUS{

@@ -581,8 +581,10 @@ void MYSQL_MONITOR_PROXY::init() {
     this->mysql = mysql_init(nullptr);
 }
 
-int MYSQL_MONITOR_PROXY::ping() {
-    return mysql_ping(mysql);
+int MYSQL_MONITOR_PROXY::real_query(const char* q, unsigned long length) {
+    int ret = mysql_real_query(mysql, q, length);
+    mysql_free_result(mysql_store_result(mysql));
+    return ret;
 }
 
 int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
