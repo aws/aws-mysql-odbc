@@ -39,6 +39,7 @@
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Return;
+using ::testing::StrEq;
 
 namespace {
     const std::set<std::string> node_keys = { "any.node.domain" };
@@ -143,7 +144,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
     EXPECT_CALL(*mock_proxy, connect())
         .WillOnce(Return(true));
 
-    EXPECT_CALL(*mock_proxy, real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH)).Times(0);
+    EXPECT_CALL(*mock_proxy, real_query(StrEq(SELECT_1_QUERY), SELECT_1_QUERY_LENGTH)).Times(0);
 
     CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor, short_interval);
     EXPECT_TRUE(status.is_valid);
@@ -161,7 +162,7 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
     EXPECT_CALL(*mock_proxy, connect())
         .WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_proxy, real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH))
+    EXPECT_CALL(*mock_proxy, real_query(StrEq(SELECT_1_QUERY), SELECT_1_QUERY_LENGTH))
         .WillOnce(Return(0))
         .WillOnce(Return(1));
 
@@ -186,7 +187,7 @@ TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
     EXPECT_CALL(*mock_proxy, connect())
         .WillOnce(Return(true));
 
-    EXPECT_CALL(*mock_proxy, real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH))
+    EXPECT_CALL(*mock_proxy, real_query(StrEq(SELECT_1_QUERY), SELECT_1_QUERY_LENGTH))
         .WillOnce(Return(1));
 
     CONNECTION_STATUS first_status = TEST_UTILS::check_connection_status(monitor, short_interval);
@@ -237,7 +238,7 @@ TEST_F(MonitorTest, RunWithContext) {
     EXPECT_CALL(*proxy, connect())
         .WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*proxy, real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH))
+    EXPECT_CALL(*proxy, real_query(StrEq(SELECT_1_QUERY), SELECT_1_QUERY_LENGTH))
         .WillRepeatedly(Return(0));
 
     std::shared_ptr<MONITOR> monitorA = 
