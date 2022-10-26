@@ -45,11 +45,11 @@
   <?if $(var.odbc_64bit) = 1 ?>
     <?define odbc_platform="x64" ?>
     <?define odbc_arch="64-bit" ?>
-    <?define upgrade_code="FF073FBB-32E2-4052-B6B2-830C5ED4A809" ?>
+    <?define upgrade_code="5c230eb8-12f8-47bf-be2f-cd043ea2acb4" ?>
   <?else ?>
     <?define odbc_platform="x86" ?>
     <?define odbc_arch="32-bit" ?>
-    <?define upgrade_code="7AEDB3F3-7B9D-4FE2-8D8F-3CE3DE6F5B6B" ?>
+    <?define upgrade_code="a9e0764d-4728-4af6-b489-cb14c6b172ba" ?>
   <?endif ?>
 
   <Product Id="@CONNECTOR_PKG_ID1@" UpgradeCode="$(var.upgrade_code)" Codepage="utf-8"
@@ -62,7 +62,7 @@
     SetVersion updates: Id. Do not change it manually.
   -->
 
-    <Package Id="@CONNECTOR_PKG_ID2@" Keywords="Installer,MSI,Database"
+    <Package Keywords="Installer,MSI,Database"
       Description="AWS ODBC Driver for MySQL" Manufacturer="Amazon.com Inc. or affiliates"
       InstallerVersion="200" Platform="$(var.odbc_platform)"
       Languages="1033" SummaryCodepage="1252" Compressed='yes' />
@@ -77,6 +77,8 @@
     <!-- *****************************************************************************************
       Upgrade Information
     -->
+
+    <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A newer version of this product is already installed. Setup will now exit." />
 
     <Upgrade Id="$(var.upgrade_code)">
       <!-- !!!SetVersion updates: Minimum, Maximum -->
@@ -211,7 +213,7 @@
       <Component Id="RegKeys" Guid="0d96eb9d-5d18-4b55-ba42-f89c929f61cd" DiskId="1">
     <?endif ?>
         <RegistryKey Id="AwsMysqlKey" Root="HKLM" Key="SOFTWARE\Amazon\[ProductName]"
-                  Action="createAndRemoveOnUninstall"/>
+                  ForceDeleteOnUninstall="yes"/>
         <RegistryValue Id="Version" Root="HKLM" Key="SOFTWARE\Amazon\[ProductName]"
                   Name="Version" Type="string" Value="[ProductVersion]"/>
         <RegistryKey Root="HKLM" Key="SOFTWARE\ODBC\ODBCINST.INI\ODBC Drivers">
@@ -327,8 +329,6 @@
 
     <InstallExecuteSequence>
       <Custom Action="NewerVersionInstalled" After="FindRelatedProducts">NEWERPRODUCTFOUND</Custom>
-
-      <RemoveExistingProducts After="InstallInitialize"/>
       <SetODBCFolders Suppress="yes" />
     </InstallExecuteSequence>
 
