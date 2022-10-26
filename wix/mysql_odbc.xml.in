@@ -41,7 +41,7 @@
     SetVersion updates: Name, Id, Version. Do not change them manually.
   -->
 
-  <Product Id="@CONNECTOR_PKG_ID1@" UpgradeCode="FF073FBB-32E2-4052-B6B2-830C5ED4A809" Codepage="utf-8"
+  <Product Id="@CONNECTOR_PKG_ID1@" UpgradeCode="5c230eb8-12f8-47bf-be2f-cd043ea2acb4" Codepage="utf-8"
     Name="AWS ODBC Driver for MySQL" Version="$(var.odbc_ver_long)" Language="1033" Manufacturer="Amazon.com Inc. or affiliates">
 
   <!-- *****************************************************************************************
