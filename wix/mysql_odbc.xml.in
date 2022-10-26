@@ -72,14 +72,7 @@
       Upgrade Information
     -->
 
-    <Upgrade Id="5c230eb8-12f8-47bf-be2f-cd043ea2acb4">
-      <!-- !!!SetVersion updates: Minimum, Maximum -->
-      <UpgradeVersion Property="PREVIOUSVERSIONINSTALLED" Minimum="0.0.0" Maximum="$(var.odbc_ver_prev)" IncludeMaximum="yes"
-        IncludeMinimum="yes"  />
-      <!-- !!!SetVersion updates: Minimum, Maximum -->
-      <UpgradeVersion Property="NEWERPRODUCTFOUND" Minimum="$(var.odbc_ver_long)" Maximum="$(var.odbc_ver_short).999" OnlyDetect="yes"
-        IncludeMinimum="no" />
-    </Upgrade>
+    <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
 
     <!-- Visual Studio Redistributable Check -->
     <?if $(var.odbc_64bit) = 1 ?>
