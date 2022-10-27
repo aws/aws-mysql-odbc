@@ -178,6 +178,7 @@ public:
     virtual ~MYSQL_MONITOR_PROXY();
 
     virtual void init();
+    virtual void ping();
     virtual int real_query(const char* q, unsigned long length);
     virtual int options(enum mysql_option option, const void* arg);
     virtual bool connect();

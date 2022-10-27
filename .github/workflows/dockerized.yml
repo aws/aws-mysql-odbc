@@ -19,62 +19,62 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build-dockerized-community-tests:
-    name: Dockerized Community Tests
-    runs-on: ubuntu-latest
-    env:
-      CMAKE_GENERATOR: Unix Makefiles
+  # build-dockerized-community-tests:
+  #   name: Dockerized Community Tests
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     CMAKE_GENERATOR: Unix Makefiles
 
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v2
+  #   steps:
+  #     - name: Checkout source code
+  #       uses: actions/checkout@v2
 
-      # Configure build environment/dependencies
-      - name: Install MySQL client libs & other dependencies
-        run: sudo apt-get update && sudo apt-get install 
-                build-essential 
-                libgtk-3-dev 
-                libmysqlclient-dev 
-                unixodbc
-                unixodbc-dev
-                curl
-                libcurl4-openssl-dev
+  #     # Configure build environment/dependencies
+  #     - name: Install MySQL client libs & other dependencies
+  #       run: sudo apt-get update && sudo apt-get install 
+  #               build-essential 
+  #               libgtk-3-dev 
+  #               libmysqlclient-dev 
+  #               unixodbc
+  #               unixodbc-dev
+  #               curl
+  #               libcurl4-openssl-dev
 
-      - name: Create build environment
-        shell: bash
-        run: cmake -E make_directory ${{ github.workspace }}/build
+  #     - name: Create build environment
+  #       shell: bash
+  #       run: cmake -E make_directory ${{ github.workspace }}/build
 
-      - name: Configure CMake
-        shell: bash
-        run: cmake -S . -B build
-                -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-                -DMYSQLCLIENT_STATIC_LINKING=TRUE
-                -DENABLE_INTEGRATION_TESTS=FALSE
-                -DENABLE_PERFORMANCE_TESTS=FALSE
-                -DENABLE_UNIT_TESTS=TRUE
-                -DWITH_UNIXODBC=1
+  #     - name: Configure CMake
+  #       shell: bash
+  #       run: cmake -S . -B build
+  #               -G "$CMAKE_GENERATOR"
+  #               -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  #               -DMYSQLCLIENT_STATIC_LINKING=TRUE
+  #               -DENABLE_INTEGRATION_TESTS=FALSE
+  #               -DENABLE_PERFORMANCE_TESTS=FALSE
+  #               -DENABLE_UNIT_TESTS=TRUE
+  #               -DWITH_UNIXODBC=1
 
-      # Build driver
-      - name: Build driver
-        working-directory: ${{ github.workspace }}/build
-        shell: bash
-        run: cmake --build . --config $BUILD_TYPE
+  #     # Build driver
+  #     - name: Build driver
+  #       working-directory: ${{ github.workspace }}/build
+  #       shell: bash
+  #       run: cmake --build . --config $BUILD_TYPE
 
-      - name: 'Set up JDK 8'
-        uses: actions/setup-java@v1
-        with:
-          java-version: 8
+  #     - name: 'Set up JDK 8'
+  #       uses: actions/setup-java@v1
+  #       with:
+  #         java-version: 8
       
-      - name: 'Run Community Tests'
-        working-directory: ${{ github.workspace }}/testframework
-        run: |
-          ./gradlew --no-parallel --no-daemon test-community --info
-        env:
-          TEST_DSN: awsmysqlodbca
-          TEST_USERNAME: root
-          TEST_PASSWORD: root
-          DRIVER_PATH: ${{ github.workspace }}/build
+  #     - name: 'Run Community Tests'
+  #       working-directory: ${{ github.workspace }}/testframework
+  #       run: |
+  #         ./gradlew --no-parallel --no-daemon test-community --info
+  #       env:
+  #         TEST_DSN: awsmysqlodbca
+  #         TEST_USERNAME: root
+  #         TEST_PASSWORD: root
+  #         DRIVER_PATH: ${{ github.workspace }}/build
           
   build-dockerized-integration-tests:
     concurrency: # Cancel previous runs in the same branch
@@ -112,7 +112,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=TRUE
-                -DENABLE_PERFORMANCE_TESTS=FALSE
+                -DENABLE_PERFORMANCE_TESTS=TRUE
                 -DENABLE_UNIT_TESTS=FALSE
                 -DWITH_UNIXODBC=1
 
@@ -137,7 +137,7 @@ jobs:
       - name: 'Set up Temp AWS Credentials'
         run: |
           creds=($(aws sts get-session-token \
-            --duration-seconds 3600 \
+            --duration-seconds 10800 \
             --query 'Credentials.[AccessKeyId, SecretAccessKey, SessionToken]' \
             --output text \
           | xargs));
@@ -185,6 +185,10 @@ jobs:
           if [[ -f myodbc.log && -s myodbc.log ]]; then 
             cat myodbc.log
             cp myodbc.log ./reports/tests/myodbc.log
+          fi
+          if [[ -f perf_test.log && -s perf_test.log ]]; then 
+            cat perf_test.log
+            cp perf_test.log ./reports/tests/perf_test.log
           fi
           if [[ -f failover_performance.xlsx && -s failover_performance.xlsx ]]; then
             cp failover_performance.xlsx ./reports/tests/failover_performance.xlsx

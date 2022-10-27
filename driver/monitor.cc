@@ -183,13 +183,16 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
     }
 
      unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(shortest_detection_interval).count();
+     if (timeout_sec == 0) {
+        MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] WARNING!!! timeout_sec is 0");
+     }
      this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
      this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
      this->mysql_proxy->options(MYSQL_OPT_WRITE_TIMEOUT, &timeout_sec);
 
     auto start = this->get_current_time();
     // "SELECT 1" is the query we use to ping the DB host to determine if the connection is active
-    bool is_connection_active = this->mysql_proxy->real_query(SELECT_1_QUERY, SELECT_1_QUERY_LENGTH) == 0;
+    bool is_connection_active = this->mysql_proxy->ping() == 0;
     auto duration = this->get_current_time() - start;
     
     return CONNECTION_STATUS{
