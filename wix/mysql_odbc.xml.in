@@ -56,7 +56,7 @@
     <?define odbc_platform="x86" ?>
     <?endif ?>
 
-    <Package Id="@CONNECTOR_PKG_ID2@" Keywords="Installer,MSI,Database"
+    <Package Keywords="Installer,MSI,Database"
       Description="AWS ODBC Driver for MySQL" Manufacturer="Amazon.com Inc. or affiliates"
       InstallerVersion="200" Platform="$(var.odbc_platform)"
       Languages="1033" SummaryCodepage="1252" Compressed='yes' />
