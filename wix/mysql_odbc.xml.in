@@ -323,8 +323,6 @@
 
     <InstallExecuteSequence>
       <Custom Action="NewerVersionInstalled" After="FindRelatedProducts">NEWERPRODUCTFOUND</Custom>
-
-      <RemoveExistingProducts After="InstallInitialize"/>
       <SetODBCFolders Suppress="yes" />
     </InstallExecuteSequence>
 
