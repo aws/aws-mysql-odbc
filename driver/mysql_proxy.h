@@ -181,6 +181,7 @@ public:
     virtual int ping();
     virtual int real_query(const char* q, unsigned long length);
     virtual int options(enum mysql_option option, const void* arg);
+    virtual int get_option(enum mysql_option option, const void *arg);
     virtual bool connect();
     virtual bool is_connected();
     virtual const char* error();

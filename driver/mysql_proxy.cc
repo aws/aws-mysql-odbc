@@ -585,6 +585,9 @@ int MYSQL_MONITOR_PROXY::ping() {
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering mysql_ping()");
     int ret = mysql_ping(mysql);
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting mysql_ping() with ret = %d", ret);
+    if (ret != 0) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] ERROR!!! %s", mysql_error(mysql));
+    }
     return ret;
 }
 
@@ -604,6 +607,11 @@ int MYSQL_MONITOR_PROXY::real_query(const char* q, unsigned long length) {
 int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
     return mysql_options(mysql, option, arg);
 }
+
+int MYSQL_MONITOR_PROXY::get_option(enum mysql_option option, const void* arg) {
+    return mysql_get_option(mysql, option, arg);
+}
+
 
 bool MYSQL_MONITOR_PROXY::connect() {
     if (!ds)
