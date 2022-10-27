@@ -50,7 +50,7 @@ IF(WIN32)
   # --------------------------------------------------
 
   # -------------- find binary resources -------------
-  FIND_PATH(WIX_RESOURCE MySQLConnector.ico
+  FIND_PATH(WIX_RESOURCE AwsConnector.ico
           ./resources
           $ENV{WIX_RESOURCE}
           ${CMAKE_SOURCE_DIR}/../../../wix-installer/resources)
