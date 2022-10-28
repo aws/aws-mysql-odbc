@@ -583,11 +583,11 @@ int MYSQL_MONITOR_PROXY::ping() {
     unsigned int rto;
     unsigned int wto;
 
-    mysql_get_option(MYSQL_OPT_CONNECT_TIMEOUT, &cto);
+    mysql_get_option(mysql, MYSQL_OPT_CONNECT_TIMEOUT, &cto);
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] connect timeout is %u", cto);
-    mysql_get_option(MYSQL_OPT_READ_TIMEOUT, &rto);
+    mysql_get_option(mysql, MYSQL_OPT_READ_TIMEOUT, &rto);
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] read timeout is %u", rto);
-    mysql_get_option(MYSQL_OPT_WRITE_TIMEOUT, &wto);
+    mysql_get_option(mysql, MYSQL_OPT_WRITE_TIMEOUT, &wto);
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] write timeout is %u", wto);
 
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering mysql_ping()");
