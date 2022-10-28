@@ -582,9 +582,23 @@ void MYSQL_MONITOR_PROXY::init() {
 }
 
 int MYSQL_MONITOR_PROXY::real_query(const char* q, unsigned long length) {
+    unsigned int cto;
+    unsigned int rto;
+    unsigned int wto;
+
+    mysql_get_option(mysql, MYSQL_OPT_CONNECT_TIMEOUT, &cto);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] connect timeout is %u", cto);
+    mysql_get_option(mysql, MYSQL_OPT_READ_TIMEOUT, &rto);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] read timeout is %u", rto);
+    mysql_get_option(mysql, MYSQL_OPT_WRITE_TIMEOUT, &wto);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR] write timeout is %u", wto);
+
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering real_query(\"%s\")", q);
     int ret = mysql_real_query(mysql, q, length);
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting real_query() with ret = %d", ret);
+    if (ret != 0) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] ERROR!!! %s", mysql_error(mysql));
+    }
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering mysql_store_result");
     auto result = mysql_store_result(mysql);
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting mysql_store_result");
@@ -595,6 +609,17 @@ int MYSQL_MONITOR_PROXY::real_query(const char* q, unsigned long length) {
 }
 
 int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
+    switch (option) {
+        case MYSQL_OPT_CONNECT_TIMEOUT:
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] connect timeout %u", *(const int*)arg);
+            break;
+        case MYSQL_OPT_READ_TIMEOUT:
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] read timeout %u", *(const int*)arg);
+            break;
+        case MYSQL_OPT_WRITE_TIMEOUT:
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] write timeout %u", *(const int*)arg);
+            break;
+    }
     return mysql_options(mysql, option, arg);
 }
 
