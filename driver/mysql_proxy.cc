@@ -26,12 +26,12 @@
  *
  */
 
-#include "driver.h"
-
 #include <sstream>
 
+#include "driver.h"
+
 namespace {
-    const char* RETRIEVE_HOST_PORT_SQL = "SELECT CONCAT(@@hostname, ':', @@port)";
+const char* RETRIEVE_HOST_PORT_SQL = "SELECT CONCAT(@@hostname, ':', @@port)";
 }
 
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
@@ -138,7 +138,6 @@ bool MYSQL_PROXY::real_connect(
     const char* host, const char* user, const char* passwd,
     const char* db, unsigned int port, const char* unix_socket,
     unsigned long clientflag) {
-
     const auto context = start_monitoring();
     const MYSQL* new_mysql = mysql_real_connect(mysql, host, user, passwd, db, port, unix_socket, clientflag);
     stop_monitoring(context);
@@ -217,7 +216,6 @@ void MYSQL_PROXY::close() {
 bool MYSQL_PROXY::real_connect_dns_srv(
     const char* dns_srv_name, const char* user,
     const char* passwd, const char* db, unsigned long client_flag) {
-
     const auto context = start_monitoring();
     const MYSQL* new_mysql = mysql_real_connect_dns_srv(mysql, dns_srv_name, user, passwd, db, client_flag);
     stop_monitoring(context);
@@ -386,7 +384,6 @@ bool MYSQL_PROXY::stmt_free_result(MYSQL_STMT* stmt) {
 
 bool MYSQL_PROXY::stmt_send_long_data(MYSQL_STMT* stmt, unsigned int param_number, const char* data,
                                       unsigned long length) {
-
     const auto context = start_monitoring();
     const bool ret = mysql_stmt_send_long_data(stmt, param_number, data, length);
     stop_monitoring(context);
@@ -531,7 +528,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
 }
 
 void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    if (!ds ||!ds->enable_failure_detection || context == nullptr) {
+    if (!ds || !ds->enable_failure_detection || context == nullptr) {
         return;
     }
     monitor_service->stop_monitoring(context);
@@ -582,6 +579,17 @@ void MYSQL_MONITOR_PROXY::init() {
 }
 
 int MYSQL_MONITOR_PROXY::ping() {
+    unsigned int cto;
+    unsigned int rto;
+    unsigned int wto;
+
+    this->mysql_proxy->get_option(MYSQL_OPT_CONNECT_TIMEOUT, &cto);
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] connect timeout is %u", cto);
+    this->mysql_proxy->get_option(MYSQL_OPT_READ_TIMEOUT, &rto);
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] read timeout is %u", rto);
+    this->mysql_proxy->get_option(MYSQL_OPT_WRITE_TIMEOUT, &wto);
+    MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] write timeout is %u", wto);
+
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering mysql_ping()");
     int ret = mysql_ping(mysql);
     MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting mysql_ping() with ret = %d", ret);
@@ -605,13 +613,24 @@ int MYSQL_MONITOR_PROXY::real_query(const char* q, unsigned long length) {
 }
 
 int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
+    switch (option) {
+        case MYSQL_OPT_CONNECT_TIMEOUT:
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] connect timeout %u", *(const int*)arg);
+            break;
+        case MYSQL_OPT_READ_TIMEOUT:
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] read timeout %u", *(const int*)arg);
+            break;
+        case MYSQL_OPT_WRITE_TIMEOUT:
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] write timeout %u", *(const int*)arg);
+            break;
+    }
+
     return mysql_options(mysql, option, arg);
 }
 
 int MYSQL_MONITOR_PROXY::get_option(enum mysql_option option, const void* arg) {
     return mysql_get_option(mysql, option, arg);
 }
-
 
 bool MYSQL_MONITOR_PROXY::connect() {
     if (!ds)
@@ -629,9 +648,10 @@ bool MYSQL_MONITOR_PROXY::is_connected() {
 }
 
 const char* MYSQL_MONITOR_PROXY::error() {
-    return mysql_error(mysql); }
+    return mysql_error(mysql);
+}
 
 void MYSQL_MONITOR_PROXY::close() {
     mysql_close(mysql);
-    mysql= nullptr;
+    mysql = nullptr;
 }
