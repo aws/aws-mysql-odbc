@@ -207,7 +207,7 @@
       <Component Id="RegKeys" Guid="0d96eb9d-5d18-4b55-ba42-f89c929f61cd" DiskId="1">
     <?endif ?>
         <RegistryKey Id="AwsMysqlKey" Root="HKLM" Key="SOFTWARE\Amazon\[ProductName]"
-                  Action="createAndRemoveOnUninstall"/>
+                  ForceDeleteOnUninstall="yes"/>
         <RegistryValue Id="Version" Root="HKLM" Key="SOFTWARE\Amazon\[ProductName]"
                   Name="Version" Type="string" Value="[ProductVersion]"/>
         <RegistryKey Root="HKLM" Key="SOFTWARE\ODBC\ODBCINST.INI\ODBC Drivers">
