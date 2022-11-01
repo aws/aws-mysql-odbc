@@ -184,6 +184,7 @@ public:
     virtual bool is_connected();
     virtual const char* error();
     virtual void close();
+    virtual void close_socket();
 
 private:
     DataSource* ds = nullptr;

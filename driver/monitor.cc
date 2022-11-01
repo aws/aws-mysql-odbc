@@ -106,6 +106,7 @@ bool MONITOR::is_stopped() {
 
 void MONITOR::stop() {
     this->stopped.store(true);
+    this->mysql_proxy->close_socket();
 }
 
 void MONITOR::clear_contexts() {

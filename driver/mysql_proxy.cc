@@ -511,6 +511,7 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
 
 void MYSQL_PROXY::close_socket() {
     MYLOG_DBC_TRACE(dbc, "Closing socket");
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] close_socket!!!");
     ::closesocket(mysql->net.fd);
 }
 
@@ -644,4 +645,9 @@ const char* MYSQL_MONITOR_PROXY::error() {
 void MYSQL_MONITOR_PROXY::close() {
     mysql_close(mysql);
     mysql= nullptr;
+}
+
+void MYSQL_MONITOR_PROXY::close_socket() {
+  MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] close_socket!!!");
+  ::closesocket(this->mysql->net.fd);
 }
