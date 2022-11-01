@@ -85,7 +85,7 @@ void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> conte
 void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
     if (context == nullptr) {
         MYLOG_TRACE(
-            this->logger.get(), 0,
+            init_log_file().get(), 0,
             "[MONITOR] Invalid context passed into stop_monitoring()");
         return;
     }
@@ -106,7 +106,6 @@ bool MONITOR::is_stopped() {
 
 void MONITOR::stop() {
     this->stopped.store(true);
-    this->mysql_proxy->close_socket();
 }
 
 void MONITOR::clear_contexts() {
@@ -207,12 +206,14 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
     this->mysql_proxy->close();
     this->mysql_proxy->init();
 
-    unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
+    //unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
+    unsigned int timeout_sec = 5;
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
+    this->mysql_proxy->options(MYSQL_OPT_WRITE_TIMEOUT, &timeout_sec);
 
     if (!this->mysql_proxy->connect()) {
-        MYLOG_TRACE(this->logger.get(), 0, this->mysql_proxy->error());
+        MYLOG_TRACE(init_log_file().get(), 0, this->mysql_proxy->error());
         this->mysql_proxy->close();
         return false;
     }

@@ -25,7 +25,7 @@
  */
 
 #include "monitor_thread_container.h"
-
+#include "mylog.h"
 std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
     if (singleton) {
         return singleton;
@@ -41,6 +41,7 @@ std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance
 }
 
 void MONITOR_THREAD_CONTAINER::release_instance() {
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Entering release_instance()");
     if (!singleton) {
         return;
     }
@@ -192,6 +193,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
 
 void MONITOR_THREAD_CONTAINER::release_resources() {
     // Stop all monitors
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] About to stop every monitor");
     {
         std::unique_lock<std::mutex> lock(task_map_mutex);
         for (auto const& task_pair : task_map) {
@@ -199,10 +201,11 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
             monitor->stop();
         }
     }
-
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Finished stopping all monitors");
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] About to stop thread pool");
     // Wait for monitor threads to finish
     this->thread_pool.stop(true);
-
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_THREAD_CONTAINER] Finished stopping thread pool");
     {
         std::unique_lock<std::mutex> lock(monitor_map_mutex);
         this->monitor_map.clear();

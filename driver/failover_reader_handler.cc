@@ -198,12 +198,12 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
         }
 
         if (first_connection_result.connected) {
-            MYLOG_TRACE(logger.get(), dbc_id,
+            MYLOG_TRACE(init_log_file().get(), dbc_id,
                         "[FAILOVER_READER_HANDLER] Connected to reader: %s",
                         first_connection_result.new_host->get_host_port_pair().c_str());
             return first_connection_result;
         } else if (!odd_hosts_number && second_connection_result.connected) {
-            MYLOG_TRACE(logger.get(), dbc_id,
+            MYLOG_TRACE(init_log_file().get(), dbc_id,
                         "[FAILOVER_READER_HANDLER] Connected to reader: %s",
                         second_connection_result.new_host->get_host_port_pair().c_str());
             return second_connection_result;
@@ -234,7 +234,7 @@ void CONNECT_TO_READER_HANDLER::operator()(
     
     if (reader && !f_sync.is_completed()) {
 
-        MYLOG_TRACE(logger.get(), dbc_id,
+        MYLOG_TRACE(init_log_file().get(), dbc_id,
                     "[CONNECT_TO_READER_HANDLER] Trying to connect to reader: %s",
                     reader->get_host_port_pair().c_str());
 
@@ -247,7 +247,7 @@ void CONNECT_TO_READER_HANDLER::operator()(
                 result = READER_FAILOVER_RESULT(true, reader, std::move(this->new_connection));
                 f_sync.mark_as_complete(true);
                 MYLOG_TRACE(
-                    logger.get(), dbc_id,
+                    init_log_file().get(), dbc_id,
                     "[CONNECT_TO_READER_HANDLER] Connected to reader: %s",
                     reader->get_host_port_pair().c_str());
                 return;
@@ -255,7 +255,7 @@ void CONNECT_TO_READER_HANDLER::operator()(
         } else {
             topology_service->mark_host_down(reader);
             MYLOG_TRACE(
-                logger.get(), dbc_id,
+                init_log_file().get(), dbc_id,
                 "[CONNECT_TO_READER_HANDLER] Failed to connect to reader: %s",
                 reader->get_host_port_pair().c_str());
             if (!f_sync.is_completed()) {
