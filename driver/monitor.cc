@@ -182,7 +182,7 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
         };
     }
 
-    unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(shortest_detection_interval).count();
+    unsigned int timeout_sec = 5;
     MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] timeout_sec is %u", timeout_sec);
     if (timeout_sec == 0) {
         MYLOG_TRACE(this->logger.get(), 0, "[MONITOR] WARNING!!! timeout_sec is 0");
