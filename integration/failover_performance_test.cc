@@ -339,8 +339,16 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       const int detection_interval = std::get<3>(GetParam());
       const int detection_count = std::get<4>(GetParam());
 
+
+      const int failover_timeout = 120000;
+      const int connect_timeout = 3;
+      const int network_timeout = 1;
+
       const std::string conn_str = builder.withEnableFailureDetection(true)
                                           .withEnableClusterFailover(true)
+                                          .withFailoverTimeout(failover_timeout)
+                                          .withConnectTimeout(connect_timeout)
+                                          .withNetworkTimeout(network_timeout)
                                           .withFailureDetectionTime(detection_time)
                                           .withFailureDetectionInterval(detection_interval)
                                           .withFailureDetectionCount(detection_count).build();
@@ -362,8 +370,13 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       const int detection_interval = std::get<3>(GetParam());
       const int detection_count = std::get<4>(GetParam());
 
+      const int connect_timeout = 3;
+      const int network_timeout = 1;
+
       const std::string conn_str = builder.withEnableFailureDetection(true)
                                           .withEnableClusterFailover(false)
+                                          .withConnectTimeout(connect_timeout)
+                                          .withNetworkTimeout(network_timeout)
                                           .withFailureDetectionTime(detection_time)
                                           .withFailureDetectionInterval(detection_interval)
                                           .withFailureDetectionCount(detection_count).build();
