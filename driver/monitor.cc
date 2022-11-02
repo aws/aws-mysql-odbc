@@ -206,8 +206,8 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
     this->mysql_proxy->close();
     this->mysql_proxy->init();
 
-    //unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
-    unsigned int timeout_sec = 5;
+    unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
+    //unsigned int timeout_sec = 5;
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_WRITE_TIMEOUT, &timeout_sec);
