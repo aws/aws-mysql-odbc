@@ -37,6 +37,8 @@ MONITOR_SERVICE::MONITOR_SERVICE(bool enable_logging) {
 
     mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
     MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] constructor: mtc_use_count = %d", mtc_use_count);
+    
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE 1] enable_logging = %d", enable_logging);
     if (enable_logging)
         this->logger = init_log_file();
 }
@@ -45,21 +47,22 @@ MONITOR_SERVICE::MONITOR_SERVICE(
     std::shared_ptr<MONITOR_THREAD_CONTAINER> monitor_thread_container, bool enable_logging)
     : thread_container{std::move(monitor_thread_container)} {
  
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE 2] enable_logging = %d", enable_logging);
     if (enable_logging)
         this->logger = init_log_file();
 }
 
 MONITOR_SERVICE::~MONITOR_SERVICE() {
-    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] Destroying monitor service with address %p", this);
+    MYLOG_TRACE(logger.get(), 0, "[~MONITOR_SERVICE] Destroying monitor service with address %p", this);
     
     auto mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
-    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] destructor: mtc_use_count = %d", mtc_use_count);
+    MYLOG_TRACE(logger.get(), 0, "[~MONITOR_SERVICE] destructor: mtc_use_count = %d", mtc_use_count);
     
-    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] Reset on mtc with address %p", this->thread_container.get());
+    MYLOG_TRACE(logger.get(), 0, "[~MONITOR_SERVICE] Reset on mtc with address %p", this->thread_container.get());
     this->thread_container.reset();
     
     mtc_use_count = MONITOR_THREAD_CONTAINER::get_singleton_use_count();
-    MYLOG_TRACE(init_log_file().get(), 0, "[~MONITOR_SERVICE] destructor: after reset; mtc_use_count = %d", mtc_use_count);
+    MYLOG_TRACE(logger.get(), 0, "[~MONITOR_SERVICE] destructor: after reset; mtc_use_count = %d", mtc_use_count);
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
@@ -153,6 +156,6 @@ void MONITOR_SERVICE::notify_unused(const std::shared_ptr<MONITOR>& monitor) con
 
 void MONITOR_SERVICE::release_resources() {
     this->thread_container = nullptr;
-    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] about to call release_instance()");
+    MYLOG_TRACE(logger.get(), 0, "[MONITOR_SERVICE] about to call release_instance()");
     MONITOR_THREAD_CONTAINER::release_instance();
 }

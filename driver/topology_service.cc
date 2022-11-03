@@ -36,6 +36,8 @@ TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging)
   // TODO get better initial cluster id
   time_t now = time(0);
   cluster_id = std::to_string(now) + ctime(&now);
+
+  MYLOG_TRACE(init_log_file().get(), 0, "[TOPOLOGY_SERVICE] enable_logging = %d", enable_logging);
   if (enable_logging)
     logger = init_log_file();
 }

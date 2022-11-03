@@ -75,6 +75,7 @@ FAILOVER::FAILOVER(
       dbc_id{dbc_id},
       new_connection{nullptr} {
 
+    MYLOG_TRACE(init_log_file().get(), dbc_id, "[FAILOVER] enable_logging = %d", enable_logging);
     if (enable_logging)
         logger = init_log_file();
 }
@@ -123,7 +124,7 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
                     original_writer->get_host_port_pair().c_str());
 
         while (!f_sync.is_completed()) {
-            MYLOG_TRACE(init_log_file().get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] About to call connect().");
+            MYLOG_TRACE(logger.get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] About to call connect().");
             if (connect(original_writer)) {
                 auto latest_topology =
                     topology_service->get_topology(new_connection, true);
@@ -251,7 +252,7 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
         new_connection = reader_connection;
     }
     else {
-        MYLOG_TRACE(init_log_file().get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] About to call connect().");
+        MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] About to call connect().");
         if (!connect(writer_candidate)) {
             topology_service->mark_host_down(writer_candidate);
             return false;
@@ -285,6 +286,7 @@ FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
       reconnect_writer_interval_ms{reconnect_writer_interval_ms},
       dbc_id{dbc_id} {
 
+    MYLOG_TRACE(init_log_file().get(), dbc_id, "[FAILOVER_WRITER_HANDLER] enable_logging = %d", enable_logging);
     if (enable_logging)
         logger = init_log_file();
 }
