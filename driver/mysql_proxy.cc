@@ -585,6 +585,20 @@ int MYSQL_MONITOR_PROXY::ping() {
     return mysql_ping(mysql);
 }
 
+int MYSQL_MONITOR_PROXY::real_query(const char* q, unsigned long length) {
+    int ret = mysql_real_query(mysql, q, length);
+    if (ret != 0) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] ERROR!!! %s", mysql_error(mysql));
+    }
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering mysql_store_result");
+    auto result = mysql_store_result(mysql);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting mysql_store_result");
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering mysql_free_result");
+    mysql_free_result(result);
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Exiting mysql_free_result");
+    return ret;
+}
+
 int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
     return mysql_options(mysql, option, arg);
 }

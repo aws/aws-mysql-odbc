@@ -178,8 +178,12 @@ CONNECTION_STATUS MONITOR::check_connection_status(std::chrono::milliseconds sho
     }
 
     unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(shortest_detection_interval).count();
-    this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
-    this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
+    // this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
+    // this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
+
+    const char* q = "SET SESSION net_read_timeout=5";
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_MONITOR_PROXY] Entering real_query(\"%s\")", q);
+    int ret = this->mysql_proxy->real_query(q, 30);
 
     auto start = this->get_current_time();
     bool is_connection_active = this->mysql_proxy->ping() == 0;
@@ -196,7 +200,7 @@ bool MONITOR::connect(std::chrono::milliseconds timeout) {
     this->mysql_proxy->init();
 
     //unsigned int timeout_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
-    unsigned int timeout_sec = 5;
+    unsigned int timeout_sec = 0;
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
 
