@@ -81,6 +81,19 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         throw std::invalid_argument(msg);
     }
 
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] start_monitoring(): dbc = %d", dbc);
+    if (dbc) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] start_monitoring(): dbc->ds = %d", dbc->ds);
+        if (dbc->ds) {
+            MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] start_monitoring(): dbc->ds->save_queries = %d", dbc->ds->save_queries);
+        }
+    }
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] start_monitoring(): ds = %d", ds);
+    if (ds) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MONITOR_SERVICE] start_monitoring(): ds->save_queries = %d", ds->save_queries);
+    }
+
     std::shared_ptr<MONITOR> monitor = this->thread_container->get_or_create_monitor(
         node_keys,
         std::move(host),

@@ -960,6 +960,19 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   if (ds->save_queries && !dbc->log_file) 
     dbc->log_file = init_log_file();
 
+  MYLOG_TRACE(init_log_file().get(), 0, "[MySQLConnect] start_monitoring(): dbc = %d", dbc);
+  if (dbc) {
+      MYLOG_TRACE(init_log_file().get(), 0, "[MySQLConnect] start_monitoring(): dbc->ds = %d", dbc->ds);
+      if (dbc->ds) {
+          MYLOG_TRACE(init_log_file().get(), 0, "[MySQLConnect] start_monitoring(): dbc->ds->save_queries = %d", dbc->ds->save_queries);
+      }
+  }
+
+  MYLOG_TRACE(init_log_file().get(), 0, "[MySQLConnect] start_monitoring(): ds = %d", ds);
+  if (ds) {
+      MYLOG_TRACE(init_log_file().get(), 0, "[MySQLConnect] start_monitoring(): ds->save_queries = %d", ds->save_queries);
+  }
+  
   MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLConnect] Calling MYSQL_PROXY constructor");
   dbc->mysql_proxy = std::make_shared<MYSQL_PROXY>(dbc, ds);
   MYLOG_TRACE(init_log_file().get(), dbc->id, "[MySQLConnect] Created MYSQL_PROXY with address %p", dbc->mysql_proxy.get());

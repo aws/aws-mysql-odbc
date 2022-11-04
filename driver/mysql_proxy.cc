@@ -60,11 +60,37 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds) : dbc{dbc}, ds{ds} {
 
     this->host = get_host_info_from_ds(ds);
     generate_node_keys();
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc = %d", dbc);
+    if (dbc) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc->ds = %d", dbc->ds);
+        if (dbc->ds) {
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc->ds->save_queries = %d", dbc->ds->save_queries);
+        }
+    }
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): ds = %d", ds);
+    if (ds) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): ds->save_queries = %d", ds->save_queries);
+    }
 }
 
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service) : dbc{ dbc }, ds{ ds }, monitor_service{ monitor_service } {
     this->host = get_host_info_from_ds(ds);
     generate_node_keys();
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc = %d", dbc);
+    if (dbc) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc->ds = %d", dbc->ds);
+        if (dbc->ds) {
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc->ds->save_queries = %d", dbc->ds->save_queries);
+        }
+    }
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): ds = %d", ds);
+    if (ds) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): ds->save_queries = %d", ds->save_queries);
+    }
 }
 
 MYSQL_PROXY::~MYSQL_PROXY() {
@@ -616,6 +642,19 @@ void MYSQL_PROXY::close_socket() {
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
     if (!ds || !ds->enable_failure_detection) {
         return nullptr;
+    }
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc = %d", dbc);
+    if (dbc) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc->ds = %d", dbc->ds);
+        if (dbc->ds) {
+            MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): dbc->ds->save_queries = %d", dbc->ds->save_queries);
+        }
+    }
+
+    MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): ds = %d", ds);
+    if (ds) {
+        MYLOG_TRACE(init_log_file().get(), 0, "[MYSQL_PROXY] start_monitoring(): ds->save_queries = %d", ds->save_queries);
     }
 
     return monitor_service->start_monitoring(
