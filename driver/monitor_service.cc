@@ -58,19 +58,22 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         throw std::invalid_argument(msg);
     }
 
+    bool enable_logging = ds && ds->save_queries;
+
     std::shared_ptr<MONITOR> monitor = this->thread_container->get_or_create_monitor(
         node_keys,
         std::move(host),
         disposal_time,
         ds,
-        ds && ds->save_queries);
+        enable_logging);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         dbc,
         node_keys,
         failure_detection_time,
         failure_detection_interval,
-        failure_detection_count);
+        failure_detection_count,
+        enable_logging);
 
     monitor->start_monitoring(context);
     this->thread_container->add_task(monitor, shared_from_this());
