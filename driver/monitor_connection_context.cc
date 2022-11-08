@@ -34,14 +34,15 @@ MONITOR_CONNECTION_CONTEXT::MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
     std::set<std::string> node_keys,
     std::chrono::milliseconds failure_detection_time,
     std::chrono::milliseconds failure_detection_interval,
-    int failure_detection_count) : connection_to_abort{connection_to_abort},
+    int failure_detection_count,
+    bool enable_logging) : connection_to_abort{connection_to_abort},
                                    node_keys{node_keys},
                                    failure_detection_time{failure_detection_time},
                                    failure_detection_interval{failure_detection_interval},
                                    failure_detection_count{failure_detection_count},
                                    failure_count{0},
                                    node_unhealthy{false} {
-    if (connection_to_abort && connection_to_abort->ds && connection_to_abort->ds->save_queries)
+    if (enable_logging)
         this->logger = init_log_file();
 }
 
