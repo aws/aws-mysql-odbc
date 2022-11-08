@@ -11,7 +11,7 @@ env:
 jobs:
   build-mac:
     name: macOS
-    runs-on: macos-latest
+    runs-on: osx-arm64
     env:
       CMAKE_GENERATOR: Unix Makefiles
       MYSQL_DIR: /usr/local/opt/mysql-client
