@@ -112,7 +112,7 @@ jobs:
 
   build-mac:
     name: MacOS
-    runs-on: osx-arm64
+    runs-on: m1max
     env:
       CMAKE_GENERATOR: Unix Makefiles
       MYSQL_DIR: /usr/local/opt/mysql-client
