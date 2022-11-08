@@ -44,7 +44,8 @@ public:
                                std::set<std::string> node_keys,
                                std::chrono::milliseconds failure_detection_time,
                                std::chrono::milliseconds failure_detection_interval,
-                               int failure_detection_count);
+                               int failure_detection_count,
+                               bool enable_logging = false);
     virtual ~MONITOR_CONNECTION_CONTEXT();
 
     std::chrono::steady_clock::time_point get_start_monitor_time();
