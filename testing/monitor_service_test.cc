@@ -39,6 +39,7 @@ using ::testing::Return;
 namespace {
     const std::set<std::string> node_keys = { "any.node.domain" };
     const std::chrono::milliseconds failure_detection_time(10);
+    const std::chrono::seconds failure_detection_timeout(5);
     const std::chrono::milliseconds failure_detection_interval(100);
     const int failure_detection_count = 3;
     const std::chrono::milliseconds monitor_disposal_time(200);
@@ -59,7 +60,7 @@ protected:
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
         monitor_service = std::make_shared<MONITOR_SERVICE>(mock_thread_container);
-        mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr);
+        mock_monitor = std::make_shared<MOCK_MONITOR>(host, failure_detection_timeout, monitor_disposal_time, nullptr);
     }
 
     void TearDown() override {
@@ -80,6 +81,7 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
         node_keys,
         host,
         failure_detection_time,
+        failure_detection_timeout,
         failure_detection_interval,
         failure_detection_count,
         monitor_disposal_time);
@@ -102,6 +104,7 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
             node_keys,
             host,
             failure_detection_time,
+            failure_detection_timeout,
             failure_detection_interval,
             failure_detection_count,
             monitor_disposal_time);
@@ -122,6 +125,7 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
         node_keys,
         host,
         failure_detection_time,
+        failure_detection_timeout,
         failure_detection_interval,
         failure_detection_count,
         monitor_disposal_time);
@@ -145,6 +149,7 @@ TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
         node_keys,
         host,
         failure_detection_time,
+        failure_detection_timeout,
         failure_detection_interval,
         failure_detection_count,
         monitor_disposal_time);
@@ -166,6 +171,7 @@ TEST_F(MonitorServiceTest, EmptyNodeKeys) {
             keys,
             host,
             failure_detection_time,
+            failure_detection_timeout,
             failure_detection_interval,
             failure_detection_count,
             monitor_disposal_time),

@@ -43,6 +43,7 @@ public:
         std::set<std::string> node_keys,
         std::shared_ptr<HOST_INFO> host,
         std::chrono::milliseconds failure_detection_time,
+        std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds failure_detection_interval,
         int failure_detection_count,
         std::chrono::milliseconds disposal_time);

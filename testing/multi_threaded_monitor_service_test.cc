@@ -39,6 +39,7 @@ using ::testing::Sequence;
 
 namespace {
     const std::chrono::milliseconds failure_detection_time(10);
+    const std::chrono::seconds failure_detection_timeout(5);
     const std::chrono::milliseconds failure_detection_interval(100);
     const int failure_detection_count = 3;
     const std::chrono::milliseconds monitor_disposal_time(200);
@@ -115,6 +116,7 @@ protected:
                     node_keys,
                     host,
                     failure_detection_time,
+                    failure_detection_timeout,
                     failure_detection_interval,
                     failure_detection_count,
                     monitor_disposal_time);

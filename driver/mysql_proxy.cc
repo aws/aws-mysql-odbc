@@ -525,6 +525,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
         node_keys,
         std::make_shared<HOST_INFO>(get_host(), get_port()),
         std::chrono::milliseconds{ds->failure_detection_time},
+        std::chrono::seconds{ds->failure_detection_timeout},
         std::chrono::milliseconds{ds->failure_detection_interval},
         ds->failure_detection_count,
         std::chrono::milliseconds{ds->monitor_disposal_time});
