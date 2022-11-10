@@ -519,12 +519,20 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
         return nullptr;
     }
 
+    
+    auto failure_detection_timeout = ds->failure_detection_timeout;
+    // Use network timeout defined if failure detection timeout is not set
+    if (failure_detection_timeout == 0) {
+        failure_detection_timeout = ds->network_timeout == 0 ? failure_detection_timeout_default : ds->network_timeout;
+    }
+    
     return monitor_service->start_monitoring(
         dbc,
         ds,
         node_keys,
         std::make_shared<HOST_INFO>(get_host(), get_port()),
         std::chrono::milliseconds{ds->failure_detection_time},
+        std::chrono::seconds{failure_detection_timeout},
         std::chrono::milliseconds{ds->failure_detection_interval},
         ds->failure_detection_count,
         std::chrono::milliseconds{ds->monitor_disposal_time});

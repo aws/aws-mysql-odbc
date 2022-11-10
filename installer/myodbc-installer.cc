@@ -584,6 +584,7 @@ int list_datasource_details(DataSource *ds)
   /* Monitoring */
   if (ds->enable_failure_detection) printf("\tENABLE_FAILURE_DETECTION\n");
   if (ds->failure_detection_time) printf("\tFAILURE_DETECTION_TIME=%d\n", ds->failure_detection_time);
+  if (ds->failure_detection_timeout) printf("\tFAILURE_DETECTION_TIMEOUT=%d\n", ds->failure_detection_timeout);
   if (ds->failure_detection_interval) printf("\tFAILURE_DETECTION_INTERVAL=%d\n", ds->failure_detection_interval);
   if (ds->failure_detection_count) printf("\tFAILURE_DETECTION_COUNT=%d\n", ds->failure_detection_count);
   if (ds->monitor_disposal_time) printf("\tMONITOR_DISPOSAL_TIME=%d\n", ds->monitor_disposal_time);

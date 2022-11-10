@@ -255,6 +255,7 @@ static SQLWCHAR W_FAILURE_DETECTION_TIME[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E'
 static SQLWCHAR W_FAILURE_DETECTION_INTERVAL[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'I', 'N', 'T', 'E', 'R', 'V', 'A', 'L', 0 };
 static SQLWCHAR W_FAILURE_DETECTION_COUNT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'C', 'O', 'U', 'N', 'T', 0 };
 static SQLWCHAR W_MONITOR_DISPOSAL_TIME[] = { 'M', 'O', 'N', 'I', 'T', 'O', 'R', '_', 'D', 'I', 'S', 'P', 'O', 'S', 'A', 'L', '_', 'T', 'I', 'M', 'E', 0 };
+static SQLWCHAR W_FAILURE_DETECTION_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
 
 /* DS_PARAM */
 /* externally used strings */
@@ -307,7 +308,7 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         /* Monitoring */
                         W_ENABLE_FAILURE_DETECTION, W_FAILURE_DETECTION_TIME,
                         W_FAILURE_DETECTION_INTERVAL, W_FAILURE_DETECTION_COUNT,
-                        W_MONITOR_DISPOSAL_TIME};
+                        W_MONITOR_DISPOSAL_TIME, W_FAILURE_DETECTION_TIMEOUT};
 static const
 int dsnparamcnt= sizeof(dsnparams) / sizeof(SQLWCHAR *);
 /* DS_PARAM */
@@ -761,6 +762,7 @@ DataSource *ds_new()
   ds->failure_detection_interval = FAILURE_DETECTION_INTERVAL_MS;
   ds->failure_detection_count = FAILURE_DETECTION_COUNT;
   ds->monitor_disposal_time = MONITOR_DISPOSAL_TIME_MS;
+  ds->failure_detection_timeout = FAILURE_DETECTION_TIMEOUT_SECS;
 
   /* DS_PARAM */
 
@@ -1172,6 +1174,8 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
     *intdest = &ds->failure_detection_count;
   else if (!sqlwcharcasecmp(W_MONITOR_DISPOSAL_TIME, param))
     *intdest = &ds->monitor_disposal_time;
+  else if (!sqlwcharcasecmp(W_FAILURE_DETECTION_TIMEOUT, param))
+    *intdest = &ds->failure_detection_timeout;
 
   /* DS_PARAM */
 }
@@ -1735,6 +1739,7 @@ int ds_add(DataSource *ds)
   if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_INTERVAL, ds->failure_detection_interval)) goto error;
   if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_COUNT, ds->failure_detection_count)) goto error;
   if (ds_add_intprop(ds->name, W_MONITOR_DISPOSAL_TIME, ds->monitor_disposal_time)) goto error;
+  if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_TIMEOUT, ds->failure_detection_timeout)) goto error;
 
  /* DS_PARAM */
 
@@ -2080,4 +2085,5 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
     ds->failure_detection_interval = ds_source->failure_detection_interval;
     ds->failure_detection_count = ds_source->failure_detection_count;
     ds->monitor_disposal_time = ds_source->monitor_disposal_time;
+    ds->failure_detection_timeout = ds_source->failure_detection_timeout;
 }

@@ -73,7 +73,7 @@ TEST_F(MySQLProxyTest, NullDS) {
 TEST_F(MySQLProxyTest, FailureDetectionDisabled) {
     ds->enable_failure_detection = false;
 
-    EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _)).Times(0);
+    EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).Times(0);
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(_)).Times(0);
 
     MYSQL_PROXY mysql_proxy(dbc, ds, mock_monitor_service);
@@ -85,7 +85,7 @@ TEST_F(MySQLProxyTest, FailureDetectionEnabled) {
         nullptr, std::set<std::string>(), std::chrono::milliseconds(0),
         std::chrono::milliseconds(0), 0);
 
-    EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _)).WillOnce(Return(mock_context));
+    EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).WillOnce(Return(mock_context));
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(mock_context)).Times(1);
 
     MYSQL_PROXY mysql_proxy(dbc, ds, mock_monitor_service);
@@ -93,7 +93,7 @@ TEST_F(MySQLProxyTest, FailureDetectionEnabled) {
 }
 
 TEST_F(MySQLProxyTest, DoesNotNeedMonitoring) {
-    EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _)).Times(0);
+    EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).Times(0);
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(_)).Times(0);
 
     MYSQL_PROXY mysql_proxy(dbc, ds, mock_monitor_service);

@@ -232,8 +232,10 @@ BEGIN
     EDITTEXT        IDC_EDIT_failure_detection_interval,132,40,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
     RTEXT           "Failure detection count:",IDC_STATIC,12,57,116,8
     EDITTEXT        IDC_EDIT_failure_detection_count,132,55,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
-    RTEXT           "Monitor disposal time (ms):",IDC_STATIC,12,72,116,8
-    EDITTEXT        IDC_EDIT_monitor_disposal_time,132,70,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
+    RTEXT           "Failure detection timeout (s):",IDC_STATIC,12,72,116,8
+    EDITTEXT        IDC_EDIT_failure_detection_timeout,132,70,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
+    RTEXT           "Monitor disposal time (ms):",IDC_STATIC,12,87,116,8
+    EDITTEXT        IDC_EDIT_monitor_disposal_time,132,85,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
 END
 
 IDD_TAB5 DIALOGEX 0, 0, 209, 181

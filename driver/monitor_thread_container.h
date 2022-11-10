@@ -44,6 +44,7 @@ public:
     std::shared_ptr<MONITOR> get_or_create_monitor(
         std::set<std::string> node_keys,
         std::shared_ptr<HOST_INFO> host,
+        std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds disposal_time,
         DataSource* ds,
         bool enable_logging = false);
@@ -61,6 +62,7 @@ protected:
     std::shared_ptr<MONITOR> get_available_monitor();
     virtual std::shared_ptr<MONITOR> create_monitor(
         std::shared_ptr<HOST_INFO> host,
+        std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds disposal_time,
         DataSource* ds,
         bool enable_logging = false);

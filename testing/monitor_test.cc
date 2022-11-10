@@ -38,11 +38,16 @@
 
 using ::testing::_;
 using ::testing::AtLeast;
+using ::testing::Eq;
+using ::testing::MatcherCast;
+using ::testing::Pointee;
 using ::testing::Return;
+using ::testing::SafeMatcherCast;
 
 namespace {
     const std::set<std::string> node_keys = { "any.node.domain" };
     const std::chrono::milliseconds failure_detection_time(10);
+    const std::chrono::seconds failure_detection_timeout(5);
     const std::chrono::milliseconds short_interval(30);
     const std::chrono::milliseconds long_interval(300);
     const int failure_detection_count = 3;
@@ -66,7 +71,7 @@ protected:
     void SetUp() override {
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_proxy = new MOCK_MYSQL_MONITOR_PROXY();
-        monitor = std::make_shared<MONITOR>(host, monitor_disposal_time, mock_proxy);
+        monitor = std::make_shared<MONITOR>(host, failure_detection_timeout, monitor_disposal_time, mock_proxy);
         
         mock_context_short_interval = std::make_shared<MOCK_MONITOR_CONNECTION_CONTEXT>(
             node_keys,
@@ -143,7 +148,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
 
     EXPECT_CALL(*mock_proxy, ping()).Times(0);
 
-    CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor, short_interval);
+    CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor);
     EXPECT_TRUE(status.is_valid);
     EXPECT_TRUE(status.elapsed_time >= std::chrono::milliseconds(0));
 }
@@ -163,13 +168,13 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
         .WillOnce(Return(0))
         .WillOnce(Return(1));
 
-    CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitor, short_interval);
+    CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitor);
     EXPECT_TRUE(status1.is_valid);
 
-    CONNECTION_STATUS status2 = TEST_UTILS::check_connection_status(monitor, short_interval);
+    CONNECTION_STATUS status2 = TEST_UTILS::check_connection_status(monitor);
     EXPECT_TRUE(status2.is_valid);
 
-    CONNECTION_STATUS status3 = TEST_UTILS::check_connection_status(monitor, short_interval);
+    CONNECTION_STATUS status3 = TEST_UTILS::check_connection_status(monitor);
     EXPECT_FALSE(status3.is_valid);
 }
 
@@ -187,11 +192,11 @@ TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
     EXPECT_CALL(*mock_proxy, ping())
         .WillOnce(Return(1));
 
-    CONNECTION_STATUS first_status = TEST_UTILS::check_connection_status(monitor, short_interval);
+    CONNECTION_STATUS first_status = TEST_UTILS::check_connection_status(monitor);
     EXPECT_TRUE(first_status.is_valid);
     EXPECT_TRUE(first_status.elapsed_time >= std::chrono::milliseconds(0));
 
-    CONNECTION_STATUS second_status = TEST_UTILS::check_connection_status(monitor, short_interval);
+    CONNECTION_STATUS second_status = TEST_UTILS::check_connection_status(monitor);
     EXPECT_FALSE(second_status.is_valid);
     EXPECT_TRUE(second_status.elapsed_time >= std::chrono::milliseconds(0));
 }
@@ -239,7 +244,7 @@ TEST_F(MonitorTest, RunWithContext) {
         .WillRepeatedly(Return(0));
 
     std::shared_ptr<MONITOR> monitorA = 
-        std::make_shared<MONITOR>(host, short_interval, proxy);
+        std::make_shared<MONITOR>(host, failure_detection_timeout, short_interval, proxy);
 
     auto container = MONITOR_THREAD_CONTAINER::get_instance();
     auto monitor_service = std::make_shared<MONITOR_SERVICE>(container);
@@ -277,4 +282,72 @@ TEST_F(MonitorTest, RunWithContext) {
     // After running, monitor should be out of the maps
     EXPECT_FALSE(TEST_UTILS::has_monitor(container, node_key));
     EXPECT_FALSE(TEST_UTILS::has_task(container, monitorA));
+}
+
+// Verify that if 0 timeout is passed in, we should set it to default value
+TEST_F(MonitorTest, ZeroEFMTimeout) {
+    auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
+    
+    EXPECT_CALL(*proxy, is_connected())
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+
+    EXPECT_CALL(*proxy, init()).Times(AtLeast(1));
+    EXPECT_CALL(
+        *proxy, 
+        options(MYSQL_OPT_CONNECT_TIMEOUT,
+                MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(
+                    Pointee(Eq(failure_detection_timeout_default))))))
+        .Times(1);
+    EXPECT_CALL(
+        *proxy,
+        options(MYSQL_OPT_READ_TIMEOUT,
+                MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(
+                    Pointee(Eq(failure_detection_timeout_default))))))
+        .Times(1);
+
+    EXPECT_CALL(*proxy, connect()).WillOnce(Return(true));
+
+    EXPECT_CALL(*proxy, ping()).WillRepeatedly(Return(0));
+
+    std::chrono::seconds zero_timeout = std::chrono::seconds(0);
+
+    std::shared_ptr<MONITOR> monitorA = 
+        std::make_shared<MONITOR>(host, zero_timeout, short_interval, proxy);
+
+    CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitorA);
+    EXPECT_TRUE(status1.is_valid);
+}
+
+// Verify that if non-zero timeout is passed in, we should set it to that value
+TEST_F(MonitorTest, NonZeroEFMTimeout) {
+  auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
+  std::chrono::seconds timeout = std::chrono::seconds(1);
+
+  EXPECT_CALL(*proxy, is_connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
+
+  EXPECT_CALL(*proxy, init()).Times(AtLeast(1));
+  EXPECT_CALL(
+      *proxy,
+      options(MYSQL_OPT_CONNECT_TIMEOUT,
+              MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(Pointee(Eq(timeout.count()))))))
+      .Times(1);
+  EXPECT_CALL(
+      *proxy,
+      options(MYSQL_OPT_READ_TIMEOUT,
+              MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(Pointee(Eq(timeout.count()))))))
+      .Times(1);
+
+  EXPECT_CALL(*proxy, connect()).WillOnce(Return(true));
+
+  EXPECT_CALL(*proxy, ping()).WillRepeatedly(Return(0));
+
+
+  std::shared_ptr<MONITOR> monitorA =
+      std::make_shared<MONITOR>(host, timeout, short_interval, proxy);
+
+  CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitorA);
+  EXPECT_TRUE(status1.is_valid);
 }

@@ -63,10 +63,8 @@ std::chrono::milliseconds TEST_UTILS::get_connection_check_interval(std::shared_
     return monitor->get_connection_check_interval();
 }
 
-CONNECTION_STATUS TEST_UTILS::check_connection_status(
-    std::shared_ptr<MONITOR> monitor, std::chrono::milliseconds shortest_detection_interval) {
-
-    return monitor->check_connection_status(shortest_detection_interval);
+CONNECTION_STATUS TEST_UTILS::check_connection_status(std::shared_ptr<MONITOR> monitor) {
+    return monitor->check_connection_status();
 }
 
 void TEST_UTILS::populate_monitor_map(std::shared_ptr<MONITOR_THREAD_CONTAINER> container,

@@ -18,6 +18,7 @@ on:
 env:
   LINUX_BUILD_TYPE: Release
   WINDOWS_BUILD_TYPE: Debug
+  MAC_BUILD_TYPE: Debug
 
 jobs:
   build-windows:
@@ -199,7 +200,7 @@ jobs:
         shell: bash
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DCMAKE_BUILD_TYPE=$MAC_BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DODBC_INCLUDES=$ODBC_DM_INCLUDES
                 -DENABLE_UNIT_TESTS=TRUE
