@@ -25,6 +25,8 @@
  */
 
 #include "monitor.h"
+
+#include "installer.h"
 #include "monitor_service.h"
 #include "mylog.h"
 #include "mysql_proxy.h"
@@ -40,7 +42,15 @@ MONITOR::MONITOR(
         failure_detection_timeout,
         monitor_disposal_time,
         new MYSQL_MONITOR_PROXY(ds),
-        enable_logging) {};
+        enable_logging) {
+
+    // Use network timeout defined if failure detection timeout is not set
+    if (this->failure_detection_timeout.count() == 0) {
+        this->failure_detection_timeout = ds->network_timeout == 0
+                                              ? std::chrono::seconds(failure_detection_timeout_default)
+                                              : std::chrono::seconds(ds->network_timeout);
+    }
+};
 
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
@@ -195,6 +205,7 @@ bool MONITOR::connect() {
     this->mysql_proxy->close();
     this->mysql_proxy->init();
 
+    // Timeout shouldn't be 0 by now, but double check just in case
     unsigned int timeout_sec = this->failure_detection_timeout.count() == 0 ? failure_detection_timeout_default : this->failure_detection_timeout.count();
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);

@@ -60,16 +60,17 @@ protected:
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
         monitor_service = std::make_shared<MONITOR_SERVICE>(mock_thread_container);
-        mock_monitor = std::make_shared<MOCK_MONITOR>(host, failure_detection_timeout, monitor_disposal_time, nullptr);
+        mock_monitor = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr);
     }
 
     void TearDown() override {
         monitor_service->release_resources();
+        mock_thread_container->release_resources();
     }
 };
 
 TEST_F(MonitorServiceTest, StartMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
@@ -89,7 +90,7 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     const int runs = 5;
@@ -113,7 +114,7 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
@@ -137,7 +138,7 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);

@@ -188,11 +188,11 @@ TEST_F(MonitorThreadContainerTest, AvailableMonitorsQueue) {
     std::set<std::string> keys = { "nodeA", "nodeB", "nodeC", "nodeD" };
     auto mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
     auto monitor_service = std::make_shared<MONITOR_SERVICE>(mock_thread_container);
-    auto mock_monitor1 = std::make_shared<MOCK_MONITOR>(host, failure_detection_timeout, monitor_disposal_time, nullptr);
-    auto mock_monitor2 = std::make_shared<MOCK_MONITOR>(host, failure_detection_timeout, monitor_disposal_time, nullptr);
+    auto mock_monitor1 = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr);
+    auto mock_monitor2 = std::make_shared<MOCK_MONITOR>(host, monitor_disposal_time, nullptr);
 
     // While we have three get_or_create_monitor() calls, we only call create_monitor() twice.
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor1))
         .WillOnce(Return(mock_monitor2));
 

@@ -284,6 +284,7 @@ TEST_F(MonitorTest, RunWithContext) {
     EXPECT_FALSE(TEST_UTILS::has_task(container, monitorA));
 }
 
+// Verify that if 0 timeout is passed in, we should set it to default value
 TEST_F(MonitorTest, ZeroEFMTimeout) {
     auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
     
@@ -318,6 +319,7 @@ TEST_F(MonitorTest, ZeroEFMTimeout) {
     EXPECT_TRUE(status1.is_valid);
 }
 
+// Verify that if non-zero timeout is passed in, we should set it to that value
 TEST_F(MonitorTest, NonZeroEFMTimeout) {
   auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
   std::chrono::seconds timeout = std::chrono::seconds(1);

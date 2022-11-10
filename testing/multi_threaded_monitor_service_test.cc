@@ -166,7 +166,7 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
 
     Sequence s1;
     for (int i = 0; i < num_connections; i++) {
-        EXPECT_CALL(*mock_container, create_monitor(_, _, _, _))
+        EXPECT_CALL(*mock_container, create_monitor(_, _, _, _, _))
             .InSequence(s1)
             .WillOnce(Return(monitors[i]));
     }
@@ -198,7 +198,7 @@ TEST_F(MultiThreadedMonitorServiceTest, StartAndStopMonitoring_MultipleConnectio
 
     auto mock_monitor = std::make_shared<MOCK_MONITOR2>(host, monitor_disposal_time);
 
-    EXPECT_CALL(*mock_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, run(_)).Times(AtLeast(1));
