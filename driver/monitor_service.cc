@@ -48,6 +48,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     std::set<std::string> node_keys,
     std::shared_ptr<HOST_INFO> host,
     std::chrono::milliseconds failure_detection_time,
+    std::chrono::seconds failure_detection_timeout,
     std::chrono::milliseconds failure_detection_interval,
     int failure_detection_count,
     std::chrono::milliseconds disposal_time) {
@@ -63,6 +64,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     std::shared_ptr<MONITOR> monitor = this->thread_container->get_or_create_monitor(
         node_keys,
         std::move(host),
+        failure_detection_timeout,
         disposal_time,
         ds,
         enable_logging);

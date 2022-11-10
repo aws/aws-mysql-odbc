@@ -39,6 +39,7 @@ using ::testing::Return;
 namespace {
     const std::set<std::string> node_keys = { "any.node.domain" };
     const std::chrono::milliseconds failure_detection_time(10);
+    const std::chrono::seconds failure_detection_timeout(5);
     const std::chrono::milliseconds failure_detection_interval(100);
     const int failure_detection_count = 3;
     const std::chrono::milliseconds monitor_disposal_time(200);
@@ -64,11 +65,12 @@ protected:
 
     void TearDown() override {
         monitor_service->release_resources();
+        mock_thread_container->release_resources();
     }
 };
 
 TEST_F(MonitorServiceTest, StartMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
@@ -80,6 +82,7 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
         node_keys,
         host,
         failure_detection_time,
+        failure_detection_timeout,
         failure_detection_interval,
         failure_detection_count,
         monitor_disposal_time);
@@ -87,7 +90,7 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     const int runs = 5;
@@ -102,6 +105,7 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
             node_keys,
             host,
             failure_detection_time,
+            failure_detection_timeout,
             failure_detection_interval,
             failure_detection_count,
             monitor_disposal_time);
@@ -110,7 +114,7 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
@@ -122,6 +126,7 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
         node_keys,
         host,
         failure_detection_time,
+        failure_detection_timeout,
         failure_detection_interval,
         failure_detection_count,
         monitor_disposal_time);
@@ -133,7 +138,7 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
@@ -145,6 +150,7 @@ TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
         node_keys,
         host,
         failure_detection_time,
+        failure_detection_timeout,
         failure_detection_interval,
         failure_detection_count,
         monitor_disposal_time);
@@ -166,6 +172,7 @@ TEST_F(MonitorServiceTest, EmptyNodeKeys) {
             keys,
             host,
             failure_detection_time,
+            failure_detection_timeout,
             failure_detection_interval,
             failure_detection_count,
             monitor_disposal_time),
