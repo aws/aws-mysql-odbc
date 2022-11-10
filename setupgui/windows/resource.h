@@ -174,7 +174,8 @@
 #define IDC_EDIT_failure_detection_time        10101
 #define IDC_EDIT_failure_detection_interval    10102
 #define IDC_EDIT_failure_detection_count       10103
-#define IDC_EDIT_monitor_disposal_time         10104
+#define IDC_EDIT_failure_detection_timeout     10104
+#define IDC_EDIT_monitor_disposal_time         10105
 #define IDC_BUTTON_TEST                 11014
 #define IDC_BUTTON_HELP                 11015
 #define IDC_STATIC                      -1

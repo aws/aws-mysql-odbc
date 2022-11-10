@@ -77,6 +77,7 @@ typedef struct {
 #define FAILURE_DETECTION_INTERVAL_MS 5000
 #define FAILURE_DETECTION_COUNT 3
 #define MONITOR_DISPOSAL_TIME_MS 60000
+#define FAILURE_DETECTION_TIMEOUT_SECS 5
 
 // Default timeout settings
 #define DEFAULT_CONNECT_TIMEOUT_SECS 30
@@ -237,6 +238,7 @@ typedef struct DataSource {
   unsigned int failure_detection_time;
   unsigned int failure_detection_interval;
   unsigned int failure_detection_count;
+  unsigned int failure_detection_timeout;
   unsigned int monitor_disposal_time;
 
 } DataSource;

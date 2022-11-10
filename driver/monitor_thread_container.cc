@@ -72,6 +72,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_monitor(std::string node)
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     std::set<std::string> node_keys,
     std::shared_ptr<HOST_INFO> host,
+    std::chrono::seconds failure_detection_timeout,
     std::chrono::milliseconds disposal_time,
     DataSource* ds,
     bool enable_logging) {
@@ -87,7 +88,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_or_create_monitor(
     else {
         monitor = this->get_available_monitor();
         if (monitor == nullptr) {
-            monitor = this->create_monitor(std::move(host), disposal_time, ds, enable_logging);
+            monitor = this->create_monitor(std::move(host), failure_detection_timeout, disposal_time, ds, enable_logging);
         }
     }
 
@@ -183,11 +184,12 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
 
 std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     std::shared_ptr<HOST_INFO> host,
+    std::chrono::seconds failure_detection_timeout,
     std::chrono::milliseconds disposal_time,
     DataSource* ds,
     bool enable_logging) {
 
-    return std::make_shared<MONITOR>(host, disposal_time, ds, enable_logging);
+    return std::make_shared<MONITOR>(host, failure_detection_timeout, disposal_time, ds, enable_logging);
 }
 
 void MONITOR_THREAD_CONTAINER::release_resources() {

@@ -687,6 +687,7 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         HWND detectionInterval= GetDlgItem(monitoringTab, IDC_EDIT_failure_detection_interval);
         HWND detectionCount = GetDlgItem(monitoringTab, IDC_EDIT_failure_detection_count);
         HWND disposalTime = GetDlgItem(monitoringTab, IDC_EDIT_monitor_disposal_time);
+        HWND detectionTimeout = GetDlgItem(monitoringTab, IDC_EDIT_failure_detection_timeout);
         assert(detectionTime);
         assert(detectionInterval);
         assert(detectionCount);
@@ -696,6 +697,7 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         EnableWindow(detectionInterval, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
         EnableWindow(detectionCount, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
         EnableWindow(disposalTime, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
+        EnableWindow(detectionTimeout, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
       }
       break;
     case IDC_CHECK_cursor_prefetch_active:

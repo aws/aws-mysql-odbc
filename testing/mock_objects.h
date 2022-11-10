@@ -126,7 +126,7 @@ class MOCK_MONITOR : public MONITOR {
 public:
     MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time,
                  MYSQL_MONITOR_PROXY* monitor_proxy)
-    : MONITOR(host, disposal_time, monitor_proxy) {}
+     : MONITOR(host, std::chrono::seconds{5}, disposal_time, monitor_proxy) {}
 
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
@@ -137,8 +137,8 @@ public:
 // Meant for tests that only need to mock Monitor.run()
 class MOCK_MONITOR2 : public MONITOR {
 public:
-    MOCK_MONITOR2(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time) :
-        MONITOR(host, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr) {}
+    MOCK_MONITOR2(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time)
+        : MONITOR(host, std::chrono::seconds{5}, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr) {}
 
     MOCK_METHOD(void, run, (std::shared_ptr<MONITOR_SERVICE>));
 };
@@ -149,7 +149,7 @@ public:
   MOCK_MONITOR3(std::shared_ptr<HOST_INFO> host,
                 std::chrono::milliseconds disposal_time,
                 MYSQL_MONITOR_PROXY* monitor_proxy)
-      : MONITOR(host, disposal_time, monitor_proxy) {}
+      : MONITOR(host, std::chrono::seconds{5}, disposal_time, monitor_proxy) {}
 
     MOCK_METHOD(std::chrono::steady_clock::time_point, get_current_time, ());
 };
@@ -157,8 +157,13 @@ public:
 class MOCK_MONITOR_THREAD_CONTAINER : public MONITOR_THREAD_CONTAINER {
 public:
     MOCK_MONITOR_THREAD_CONTAINER() : MONITOR_THREAD_CONTAINER() {}
+
+    void release_resources() {
+        MONITOR_THREAD_CONTAINER::release_resources();
+    }
+
     MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, 
-        (std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, DataSource*, bool));
+        (std::shared_ptr<HOST_INFO>, std::chrono::seconds, std::chrono::milliseconds, DataSource*, bool));
 };
 
 class MOCK_MONITOR_CONNECTION_CONTEXT : public MONITOR_CONNECTION_CONTEXT {
@@ -190,8 +195,9 @@ public:
     MOCK_MONITOR_SERVICE() : MONITOR_SERVICE() {};
 
     MOCK_METHOD(std::shared_ptr<MONITOR_CONNECTION_CONTEXT>, start_monitoring,
-                (DBC*, DataSource*, std::set<std::string>, std::shared_ptr<HOST_INFO>, std::chrono::milliseconds, std::
-                    chrono::milliseconds, int, std::chrono::milliseconds));
+                (DBC*, DataSource*, std::set<std::string>,
+                    std::shared_ptr<HOST_INFO>, std::chrono::milliseconds,
+                    std::chrono::seconds, std::chrono::milliseconds, int, std::chrono::milliseconds));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring_for_all_connections, (std::set<std::string>));
 };
