@@ -42,17 +42,23 @@ struct DataSource;
 class MONITOR_SERVICE;
 class MYSQL_MONITOR_PROXY;
 
-static const std::chrono::milliseconds thread_sleep_when_inactive = std::chrono::milliseconds(100);
+
+namespace {
+    const std::chrono::milliseconds thread_sleep_when_inactive = std::chrono::milliseconds(100);
+    const unsigned int failure_detection_timeout_default = 5;
+}
 
 class MONITOR : public std::enable_shared_from_this<MONITOR> {
 public:
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
+        std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds monitor_disposal_time,
         DataSource* ds,
         bool enable_logging = false);
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
+        std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds monitor_disposal_time,
         MYSQL_MONITOR_PROXY* proxy,
         bool enable_logging = false);
@@ -69,6 +75,7 @@ private:
     std::atomic_bool stopped{true};
     std::shared_ptr<HOST_INFO> host;
     std::chrono::milliseconds connection_check_interval;
+    std::chrono::seconds failure_detection_timeout;
     std::chrono::milliseconds disposal_time;
     std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
     std::chrono::steady_clock::time_point last_context_timestamp;
@@ -77,8 +84,8 @@ private:
     std::mutex mutex_;
 
     std::chrono::milliseconds get_connection_check_interval();
-    CONNECTION_STATUS check_connection_status(std::chrono::milliseconds shortest_detection_interval);
-    bool connect(std::chrono::milliseconds timeout);
+    CONNECTION_STATUS check_connection_status();
+    bool connect();
     std::chrono::milliseconds find_shortest_interval();
     virtual std::chrono::steady_clock::time_point get_current_time();
 
