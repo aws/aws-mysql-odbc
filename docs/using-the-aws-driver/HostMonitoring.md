@@ -24,12 +24,14 @@ Enhanced Failure Monitoring is enabled by default in AWS ODBC Driver for MySQL, 
 <div style="text-align:center"><img src="../images/efm_monitor_process.png" /></div>
 
 The parameters `FAILURE_DETECTION_TIME`, `FAILURE_DETECTION_INTERVAL`, and `FAILURE_DETECTION_COUNT` are similar to TCP Keepalive parameters. Each connection has its own set of parameters. The `FAILURE_DETECTION_TIME` is how long the monitor waits after a SQL query is started to send a probe to a database node. The `FAILURE_DETECTION_INTERVAL` is how often the monitor sends a probe to a database node. The `FAILURE_DETECTION_COUNT` is how many times a monitor probe can go unacknowledged before the database node is deemed unhealthy. 
+The parameter `FAILURE_DETECTION_TIMEOUT` is how long the monitor waits for the probe finishes, and every connection to the same server endpoint will have the same timeout, which is set during the first connection to that server.
 
 To determine the health of a database node: 
 1. The monitor will first wait for a time equivalent to the `FAILURE_DETECTION_TIME`. 
 2. Then, every `FAILURE_DETECTION_INTERVAL`, the monitor will send a probe to the database node. 
-3. If the probe is not acknowledged by the database node, a counter is incremented. 
-4. If the counter reaches the `FAILURE_DETECTION_COUNT`, the database node will be deemed unhealthy and the connection will be aborted.
+3. The monitor waits for the probe coming back up to `FAILURE_DETECTION_TIMEOUT` seconds.
+4. If the probe is not acknowledged by the database node OR the monitor has timed out, a counter is incremented. 
+5. If the counter reaches the `FAILURE_DETECTION_COUNT`, the database node will be deemed unhealthy and the connection will be aborted.
 
 If a more aggressive approach to failure checking is necessary, all of these parameters can be reduced to reflect that. However, increased failure checking may also lead to an increase in false positives. For example, if the `FAILURE_DETECTION_INTERVAL` was shortened, the plugin may complete several connection checks that all fail. The database node would then be considered unhealthy, but it may have been about to recover and the connection checks were completed before that could happen.
 
@@ -41,6 +43,7 @@ To configure failure detection, you can specify the following parameters in a DS
 | `FAILURE_DETECTION_TIME`           | Interval in milliseconds between sending a SQL query to the server and the first probe to the database node.                                                                                                                                                                                                                                                                       | int    | No       | `30000`                                  |
 | `FAILURE_DETECTION_INTERVAL`       | Interval in milliseconds between probes to database node.                                                                                                                                                                                                                                                                                                                          | int    | No       | `5000`                                   |
 | `FAILURE_DETECTION_COUNT`          | Number of failed connection checks before considering database node as unhealthy.                                                                                                                                                                                                                                                                                                  | int    | No       | `3`                                      |
+| `FAILURE_DETECTION_TIMEOUT`          | Amount of time the monitor waits for the probe before timing out                                                                                                                                                                                                                                                                                                  | int    | No       | `5`                                      |
 | `MONITOR_DISPOSAL_TIME`            | Interval in milliseconds for a monitor to be considered inactive and to be disposed.                                                                                                                                                                                                                                                                                               | int    | No       | `60000`                                  |
 
 > :heavy_exclamation_mark: **Always ensure you provide a non-zero network timeout value or a connect timeout value in your DSN**
