@@ -37,8 +37,7 @@ void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_my
 class TEST_UTILS {
 public:
     static std::chrono::milliseconds get_connection_check_interval(std::shared_ptr<MONITOR> monitor);
-    static CONNECTION_STATUS check_connection_status(
-        std::shared_ptr<MONITOR> monitor, std::chrono::milliseconds shortest_detection_interval);
+    static CONNECTION_STATUS check_connection_status(std::shared_ptr<MONITOR> monitor);
     static void populate_monitor_map(std::shared_ptr<MONITOR_THREAD_CONTAINER> container,
         std::set<std::string> node_keys, std::shared_ptr<MONITOR> monitor);
     static void populate_task_map(std::shared_ptr<MONITOR_THREAD_CONTAINER> container,
