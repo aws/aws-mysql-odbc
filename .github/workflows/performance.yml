@@ -1,4 +1,4 @@
-name: Dockerized Tests
+name: Dockerized Performance Tests
 
 on: 
   workflow_dispatch:
