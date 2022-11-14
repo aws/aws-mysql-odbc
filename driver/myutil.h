@@ -47,9 +47,9 @@
 
 #define if_forward_cache(st) ((st)->stmt_options.cursor_type == SQL_CURSOR_FORWARD_ONLY && \
            (st)->dbc->ds->dont_cache_result)
-#define trans_supported(db) ((db)->mysql_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS)
-#define autocommit_on(db) ((db)->mysql_proxy->get_server_status() & SERVER_STATUS_AUTOCOMMIT)
-#define is_no_backslashes_escape_mode(db) ((db)->mysql_proxy->get_server_status() & SERVER_STATUS_NO_BACKSLASH_ESCAPES)
+#define trans_supported(db) ((db)->mysql->get_server_capabilities() & CLIENT_TRANSACTIONS)
+#define autocommit_on(db) ((db)->mysql->get_server_status() & SERVER_STATUS_AUTOCOMMIT)
+#define is_no_backslashes_escape_mode(db) ((db)->mysql->get_server_status() & SERVER_STATUS_NO_BACKSLASH_ESCAPES)
 #define reset_ptr(x) {if (x) x= 0;}
 #define digit(A) ((int) (A - '0'))
 
@@ -183,7 +183,7 @@ SQLRETURN set_desc_error  (DESC *desc, char *state,
                           const char *message, uint errcode);
 SQLRETURN handle_connection_error (STMT *stmt);
 my_bool   is_connection_lost      (uint errcode);
-void      set_mem_error           (MYSQL_PROXY *mysql_proxy);
+void      set_mem_error           (CONNECTION *mysql);
 void      translate_error         (char *save_state, myodbc_errid errid, uint mysql_err);
 
 SQLSMALLINT get_sql_data_type_from_str(const char *mysql_type_name);
@@ -192,12 +192,12 @@ SQLSMALLINT compute_sql_data_type(STMT *stmt, SQLSMALLINT sql_type,
 SQLSMALLINT get_sql_data_type           (STMT *stmt, MYSQL_FIELD *field, char *buff);
 SQLULEN     get_column_size             (STMT *stmt, MYSQL_FIELD *field);
 SQLULEN     get_column_size_from_str    (STMT *stmt, const char *size_str);
-SQLULEN     fill_column_size_buff       (char *buff, size_t buff_size, STMT *stmt, MYSQL_FIELD *field);
+SQLULEN     fill_column_size_buff       (char *buff, STMT *stmt, MYSQL_FIELD *field);
 SQLSMALLINT get_decimal_digits          (STMT *stmt, MYSQL_FIELD *field);
 SQLLEN      get_transfer_octet_length   (STMT *stmt, MYSQL_FIELD *field);
 SQLLEN      fill_transfer_oct_len_buff  (char *buff, STMT *stmt, MYSQL_FIELD *field);
 SQLLEN      get_display_size            (STMT *stmt, MYSQL_FIELD *field);
-SQLLEN      fill_display_size_buff      (char *buff, size_t buff_size, STMT *stmt, MYSQL_FIELD *field);
+SQLLEN      fill_display_size_buff      (char *buff, STMT *stmt, MYSQL_FIELD *field);
 SQLSMALLINT get_dticode_from_concise_type       (SQLSMALLINT concise_type);
 SQLSMALLINT get_concise_type_from_datetime_code (SQLSMALLINT dticode);
 SQLSMALLINT get_concise_type_from_interval_code (SQLSMALLINT dticode);
@@ -330,10 +330,10 @@ SQLUINTEGER proc_get_param_size   (SQLCHAR *ptype, int len, int sql_type_index,
                                   SQLSMALLINT *dec);
 SQLLEN      proc_get_param_octet_len  (STMT *stmt, int sql_type_index,
                                       SQLULEN col_size, SQLSMALLINT decimal_digits,
-                                      unsigned int flags, char * str_buff, size_t buff_size);
+                                      unsigned int flags, char * str_buff);
 SQLLEN      proc_get_param_col_len    (STMT *stmt, int sql_type_index, SQLULEN col_size,
                                       SQLSMALLINT decimal_digits, unsigned int flags,
-                                      char * str_buff, size_t buff_size);
+                                      char * str_buff);
 int         proc_get_param_sql_type_index (const char*ptype, int len);
 SQLTypeMap *proc_get_param_map_by_index   (int index);
 char *      proc_param_next_token         (char *str, char *str_end);
@@ -373,7 +373,7 @@ long long     binary2numeric        (long long *dst, char *src, uint srcLen);
 void          fill_ird_data_lengths (DESC *ird, ulong *lengths, uint fields);
 
 /* Functions to work with prepared and regular statements  */
-#define IS_PS_OUT_PARAMS(_stmt) ((_stmt)->dbc->mysql_proxy->get_server_status() & SERVER_PS_OUT_PARAMS)
+#define IS_PS_OUT_PARAMS(_stmt) ((_stmt)->dbc->mysql->get_server_status() & SERVER_PS_OUT_PARAMS)
 /* my_stmt.c */
 BOOL              ssps_used           (STMT *stmt);
 BOOL              returned_result     (STMT *stmt);
@@ -418,7 +418,7 @@ void stmt_result_free(STMT * stmt)
     x_free(stmt->result);
   }
   else
-    stmt->dbc->mysql_proxy->free_result(stmt->result);
+    mysql_free_result(stmt->result);
 
   stmt->result = NULL;
 }

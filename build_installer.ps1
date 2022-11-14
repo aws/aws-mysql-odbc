@@ -56,14 +56,11 @@ if ($null -eq $MYSQL_DIR) {
 }
 
 # BUILD DRIVER
-cmake -S . -G "Visual Studio 16 2019" -DMYSQL_DIR="$MYSQL_DIR" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DCMAKE_BUILD_TYPE="$CONFIGURATION"
+cmake -S . -G "Visual Studio 16 2019" -DMYSQL_DIR="$MYSQL_DIR" -DMYSQLCLIENT_STATIC_LINKING=TRUE
 cmake --build . --config "$CONFIGURATION"
 
 # CREATE INSTALLER
 # Copy dll, installer, and info files to wix folder
-New-Item -Path .\Wix\x64 -ItemType Directory -Force
-New-Item -Path .\Wix\x86 -ItemType Directory -Force
-New-Item -Path .\Wix\doc -ItemType Directory -Force
 Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x64
 Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x64
 Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x86
@@ -74,7 +71,6 @@ Copy-Item .\INFO_BIN .\Wix\doc
 Copy-Item .\INFO_SRC .\Wix\doc
 Copy-Item .\ChangeLog .\Wix\doc
 Copy-Item .\README.md .\Wix\doc
-Copy-Item .\LICENSE.txt .\Wix\doc
 
 Set-Location .\Wix
 if ($ARCHITECTURE -eq "x64") {

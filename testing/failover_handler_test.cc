@@ -30,7 +30,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "test_utils.h"
+#include "driver/driver.h"
 #include "mock_objects.h"
 
 using ::testing::_;
@@ -43,8 +43,9 @@ class FailoverHandlerTest : public testing::Test {
     static std::shared_ptr<HOST_INFO> writer_host;
     static std::shared_ptr<HOST_INFO> reader_host;
     static std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology;
-    SQLHENV env;
-    DBC* dbc;
+    SQLHENV env = SQL_NULL_HENV;
+    SQLHDBC hdbc = SQL_NULL_HDBC;
+    DBC* dbc = nullptr;
     DataSource* ds;
     std::shared_ptr<MOCK_TOPOLOGY_SERVICE> mock_ts;
     std::shared_ptr<MOCK_CONNECTION_HANDLER> mock_connection_handler;
@@ -61,8 +62,15 @@ class FailoverHandlerTest : public testing::Test {
     static void TearDownTestSuite() {}
 
     void SetUp() override {
-        allocate_odbc_handles(env, dbc, ds);
-        ds->enable_cluster_failover = true;
+        env = SQL_NULL_HENV;
+        hdbc = SQL_NULL_HDBC;
+        dbc = nullptr;
+
+        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
+        SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
+        dbc = static_cast<DBC*>(hdbc);
+        ds = ds_new();
+        ds->disable_cluster_failover = false;
         ds->gather_perf_metrics = false;
 
         mock_ts = std::make_shared<MOCK_TOPOLOGY_SERVICE>();
@@ -71,7 +79,19 @@ class FailoverHandlerTest : public testing::Test {
     }
 
     void TearDown() override {
-        cleanup_odbc_handles(env, dbc, ds);
+        if (SQL_NULL_HDBC != hdbc) {
+            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+        }
+        if (SQL_NULL_HENV != env) {
+            SQLFreeHandle(SQL_HANDLE_ENV, env);
+        }
+        if (nullptr != dbc) {
+            dbc = nullptr;
+        }
+        if (nullptr != ds) {
+            ds_delete(ds);
+            ds = nullptr;
+        }
     }
 };
 
@@ -115,7 +135,7 @@ TEST_F(FailoverHandlerTest, CustomDomain) {
 }
 
 TEST_F(FailoverHandlerTest, FailoverDisabled) {
-    ds->enable_cluster_failover = false;
+    ds->disable_cluster_failover = true;
 
     EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, false)).Times(1);
 
@@ -337,7 +357,7 @@ TEST_F(FailoverHandlerTest, RDS_MultiWriterCluster) {
 
     ds_setattr_from_utf8(&ds->server, server);
     ds->port = 1234;
-    ds->enable_cluster_failover = true;
+    ds->disable_cluster_failover = false;
 
     EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, false)).WillOnce(Return(SQL_SUCCESS));
 
@@ -348,11 +368,6 @@ TEST_F(FailoverHandlerTest, RDS_MultiWriterCluster) {
 
     EXPECT_CALL(*mock_ts, get_topology(_, false))
         .WillOnce(Return(multi_writer_topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts,
-        set_cluster_id(StrEq(
-            "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com:1234")))
-        .Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_cluster_info();

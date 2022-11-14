@@ -138,7 +138,7 @@ static void load_unidata(MY_UNIDATA_PARAM *prm, MY_UNIDATA_CHAR *chr) {
         strncpy(tok, s, (unsigned int)(e - s));
         tok[e - s] = 0;
       } else {
-        strncpy(tok, s, sizeof(tok));
+        strcpy(tok, s);
       }
 
       end = tok + strlen(tok);
@@ -217,7 +217,7 @@ static void unidata_char_set_cjk(MY_UNIDATA_CHAR *unidata, int max_char,
   if (cur_char < max_char) {
     MY_UNIDATA_CHAR *ch = &unidata[cur_char];
     ch->mysql_ctype = _MY_L | _MY_U;
-    strncpy(ch->general_category, "Lo", sizeof(ch->general_category));
+    strcpy(ch->general_category, "Lo");
   }
 }
 
@@ -320,7 +320,7 @@ static void dump_ctype(MY_UNIDATA_PARAM *prm, MY_UNIDATA_CHAR *unidata) {
     char page_name[128] = "NULL";
     int ctype;
     if ((ctype = page_ctype(unidata + page * 256, 256)) < 0) {
-      snprintf(page_name, sizeof(page_name), "uctype%s_page%02X", prm->varname, page);
+      sprintf(page_name, "uctype%s_page%02X", prm->varname, page);
       ctype = 0;
     }
     printf("\t{%d,%s}%s\n", ctype, page_name, page < max_page - 1 ? "," : "");

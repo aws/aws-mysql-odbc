@@ -30,8 +30,9 @@
 #include "cluster_aware_metrics_container.h"
 #include "topology_service.h"
 
-TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging)
-    : dbc_id{dbc_id},
+TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(FILE* log_file, unsigned long dbc_id)
+    : log_file{log_file},
+      dbc_id{dbc_id},
       cluster_instance_host{nullptr},
       refresh_rate_in_ms{DEFAULT_REFRESH_RATE_IN_MILLISECONDS},
       metrics_container{std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>()}{
@@ -39,15 +40,13 @@ TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging)
   // TODO get better initial cluster id
   time_t now = time(0);
   cluster_id = std::to_string(now) + ctime(&now);
-  if (enable_logging)
-    logger = init_log_file();
 }
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE& ts) {
     refresh_rate_in_ms = ts.refresh_rate_in_ms;
     cluster_id = ts.cluster_id;
     cluster_instance_host = ts.cluster_instance_host;
-    logger = ts.logger;
+    log_file = ts.log_file;
     dbc_id = ts.dbc_id;
     metrics_container = ts.metrics_container;
 }
@@ -58,7 +57,7 @@ TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
 }
 
 void TOPOLOGY_SERVICE::set_cluster_id(std::string cid) {
-    MYLOG_TRACE(logger.get(), dbc_id, "[TOPOLOGY_SERVICE] cluster ID=%s", cid.c_str());
+    MYLOG_TRACE(log_file, dbc_id, "[TOPOLOGY_SERVICE] cluster ID=%s", cid.c_str());
     this->cluster_id = cid;
     metrics_container->set_cluster_id(this->cluster_id);
 }
@@ -71,7 +70,7 @@ void TOPOLOGY_SERVICE::set_cluster_instance_template(std::shared_ptr<HOST_INFO> 
     if (cluster_instance_host)
         cluster_instance_host.reset();
 
-    MYLOG_TRACE(logger.get(), dbc_id,
+    MYLOG_TRACE(log_file, dbc_id,
                 "[TOPOLOGY_SERVICE] cluster instance host=%s, port=%d",
                 host_template->get_host().c_str(), host_template->get_port());
     cluster_instance_host = host_template;
@@ -167,7 +166,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
 //TODO consider the return value
 //Note to determine whether or not force_update succeeded one would compare
 // CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(MYSQL_PROXY* connection, bool force_update)
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION_INTERFACE* connection, bool force_update)
 {
     //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
@@ -219,15 +218,7 @@ void TOPOLOGY_SERVICE::put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topol
     lock.unlock();
 }
 
-MYSQL_RES* TOPOLOGY_SERVICE::try_execute_query(MYSQL_PROXY* mysql_proxy, const char* query) {
-    if (mysql_proxy != nullptr && mysql_proxy->query(query) == 0) {
-        return mysql_proxy->store_result();
-    }
-
-    return nullptr;
-}
-
-// TODO harmonize time function across objects so the times are comparable
+// TODO harmonize time function accross objects so the times are comparable
 bool TOPOLOGY_SERVICE::refresh_needed(std::time_t last_updated) {
 
     return  time(0) - last_updated > (refresh_rate_in_ms / 1000);
@@ -255,7 +246,7 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
         host_endpoint, cluster_instance_host->get_port());
 
     //TODO do case-insensitive comparison
-    // side note: how stable this is on the server side? If it changes there we will not detect a writer.
+    // side note: how stable this is on the server side? If it changes there we will not detect a writter.
     if (strcmp(row[SESSION], WRITER_SESSION_ID) == 0)
     {
         host_info->mark_as_writer(true);
@@ -270,17 +261,18 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 }
 
 // If no host information retrieved return NULL
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(MYSQL_PROXY* mysql_proxy) {
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONNECTION_INTERFACE* connection) {
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info = nullptr;
 
     std::chrono::steady_clock::time_point start_time_ms = std::chrono::steady_clock::now();
-    if (MYSQL_RES* result = try_execute_query(mysql_proxy, RETRIEVE_TOPOLOGY_SQL)) {
+
+    if (connection->try_execute_query(RETRIEVE_TOPOLOGY_SQL)) {
         topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
         std::map<std::string, std::shared_ptr<HOST_INFO>> instances;
         MYSQL_ROW row;
         int writer_count = 0;
-        while ((row = mysql_proxy->fetch_row(result))) {
+        while ((row = connection->fetch_next_row())) {
             std::shared_ptr<HOST_INFO> host_info = create_host(row);
             if (host_info) {
                 // Only mark the first/latest writer as true writer
@@ -296,11 +288,9 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(MYSQ
                 }
             }
         }
-        mysql_proxy->free_result(result);
-
-        topology_info->is_multi_writer_cluster = writer_count > 1;
+        topology_info->is_multi_writer_cluster = writer_count > 1 ? true : false;
         if (writer_count == 0) {
-            MYLOG_TRACE(logger.get(), dbc_id,
+            MYLOG_TRACE(log_file, dbc_id,
                         "[TOPOLOGY_SERVICE] The topology query returned an "
                         "invalid topology - no writer instance detected");
         }

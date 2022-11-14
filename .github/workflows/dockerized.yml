@@ -6,14 +6,11 @@ on:
       - main
   pull_request:
     branches:
-      - '*'
+      - main
     paths-ignore:
       - '**/*.md'
       - '**/*.jpg'
       - '**/README.txt'
-      - 'docs/**'
-      - 'ISSUE_TEMPLATE/**'
-      - '**/remove-old-artifacts.yml'
 
 env:
   BUILD_TYPE: Release
@@ -51,7 +48,6 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
-                -DENABLE_PERFORMANCE_TESTS=FALSE
                 -DENABLE_UNIT_TESTS=TRUE
                 -DWITH_UNIXODBC=1
 
@@ -182,18 +178,12 @@ jobs:
         run: |
           echo "Displaying logs"
           mkdir -p ./reports/tests
-          if [[ -f myodbc.log && -s myodbc.log ]]; then 
-            cat myodbc.log
-            cp myodbc.log ./reports/tests/myodbc.log
+          if [[ -f myodbc.sql && -s myodbc.sql ]]; then 
+            cat myodbc.sql
+            cp myodbc.sql ./reports/tests/myodbc.sql
           fi
           if [[ -f failover_performance.xlsx && -s failover_performance.xlsx ]]; then
             cp failover_performance.xlsx ./reports/tests/failover_performance.xlsx
-          fi
-          if [[ -f efm_performance.xlsx && -s efm_performance.xlsx ]]; then
-            cp efm_performance.xlsx ./reports/tests/efm_performance.xlsx
-          fi
-          if [[ -f efm_detection_performance.xlsx && -s efm_detection_performance.xlsx ]]; then
-            cp efm_detection_performance.xlsx ./reports/tests/efm_detection_performance.xlsx
           fi
 
       - name: 'Archive log results'

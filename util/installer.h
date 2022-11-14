@@ -71,20 +71,16 @@ typedef struct {
 #define FAILOVER_TIMEOUT_MS 60000
 #define FAILOVER_READER_CONNECT_TIMEOUT_MS 30000
 #define FAILOVER_WRITER_RECONNECT_INTERVAL_MS 5000
+#define FAILOVER_CONNECT_TIMEOUT_SECS 30
+#define FAILOVER_NETWORK_TIMEOUT_SECS 30
 
-// Monitoring default settings
-#define FAILURE_DETECTION_TIME_MS 30000
-#define FAILURE_DETECTION_INTERVAL_MS 5000
-#define FAILURE_DETECTION_COUNT 3
-#define MONITOR_DISPOSAL_TIME_MS 60000
-#define FAILURE_DETECTION_TIMEOUT_SECS 5
-
-// Default timeout settings
-#define DEFAULT_CONNECT_TIMEOUT_SECS 30
-#define DEFAULT_NETWORK_TIMEOUT_SECS 30
-
-unsigned int get_connect_timeout(unsigned int seconds);
-unsigned int get_network_timeout(unsigned int seconds);
+unsigned int get_topology_refresh_rate(unsigned int milliseconds);
+unsigned int get_failover_timeout(unsigned int milliseconds);
+unsigned int get_failover_toplogy_refresh_rate(unsigned int milliseconds);
+unsigned int get_failover_reader_connect_timeout(unsigned int milliseconds);
+unsigned int get_failover_writer_reconnect_interval(unsigned int milliseconds);
+unsigned int get_failover_connect_timeout(unsigned int seconds);
+unsigned int get_failover_network_timeout(unsigned int seconds);
 
 Driver *driver_new();
 void driver_delete(Driver *driver);
@@ -208,7 +204,7 @@ typedef struct DataSource {
   BOOL multi_host;
 
   /* Failover */
-  BOOL enable_cluster_failover;
+  BOOL disable_cluster_failover;
   BOOL allow_reader_connections;
   BOOL gather_perf_metrics;
   BOOL gather_metrics_per_instance;
@@ -223,14 +219,6 @@ typedef struct DataSource {
   unsigned int failover_reader_connect_timeout;
   unsigned int connect_timeout;
   unsigned int network_timeout;
-
-  /* Monitoring */
-  BOOL enable_failure_detection;
-  unsigned int failure_detection_time;
-  unsigned int failure_detection_interval;
-  unsigned int failure_detection_count;
-  unsigned int failure_detection_timeout;
-  unsigned int monitor_disposal_time;
 
 } DataSource;
 

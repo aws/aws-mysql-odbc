@@ -109,9 +109,9 @@ BEGIN
     CONTROL         "TCP/IP &Server:",IDC_RADIO_tcp,"Button",BS_AUTORADIOBUTTON | BS_RIGHT,32,105,60,13
     CONTROL         "Named &Pipe:",IDC_RADIO_pipe,"Button",BS_AUTORADIOBUTTON | BS_RIGHT,32,122,60,13
     RTEXT           "Server",IDC_STATIC,97,104,0,0 // Invisible, needed for accessibility
-    EDITTEXT        IDC_EDIT_server,98,104,185,14,ES_AUTOHSCROLL
-    RTEXT           "&Port:",IDC_STATIC,289,107,19,8
-    EDITTEXT        IDC_EDIT_port,312,104,29,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_server,198,104,85,14,ES_AUTOHSCROLL
+    RTEXT           "&Port:",IDC_STATIC,287,107,19,8
+    EDITTEXT        IDC_EDIT_port,312,104,28,14,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Named Pipe",IDC_STATIC,97,104,0,0 // Invisible, needed for accessibility
     EDITTEXT        IDC_EDIT_socket,98,123,185,14,WS_DISABLED,ES_AUTOHSCROLL
     RTEXT           "&User:",IDC_STATIC,23,143,67,8
@@ -191,7 +191,7 @@ IDD_TAB2 DIALOGEX 0, 0, 209, 281
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "&Enable Cluster Failover",IDC_CHECK_enable_cluster_failover,
+    CONTROL         "&Disable Cluster Failover",IDC_CHECK_disable_cluster_failover,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 12, 89, 10
     CONTROL         "&Allow reader connections", IDC_CHECK_allow_reader_connections,
                     "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 12, 27, 100, 10
@@ -227,28 +227,6 @@ IDD_TAB3 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "&Enable failure detection",IDC_CHECK_enable_failure_detection,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 12, 100, 10
-    RTEXT           "Failure detection time (ms):",IDC_STATIC,12,27,116,8
-    EDITTEXT        IDC_EDIT_failure_detection_time,132,25,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
-    RTEXT           "Failure detection interval (ms):",IDC_STATIC,12,42,116,8
-    EDITTEXT        IDC_EDIT_failure_detection_interval,132,40,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
-    RTEXT           "Failure detection count:",IDC_STATIC,12,57,116,8
-    EDITTEXT        IDC_EDIT_failure_detection_count,132,55,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
-    RTEXT           "Failure detection timeout (s):",IDC_STATIC,12,72,116,8
-    EDITTEXT        IDC_EDIT_failure_detection_timeout,132,70,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
-    RTEXT           "Monitor disposal time (ms):",IDC_STATIC,12,87,116,8
-    EDITTEXT        IDC_EDIT_monitor_disposal_time,132,85,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
-END
-
-#if MFA_ENABLED
-IDD_TAB5 DIALOGEX 0, 0, 209, 181
-#else
-IDD_TAB4 DIALOGEX 0, 0, 209, 181
-#endif
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
     CONTROL         "&Treat BIGINT columns as INT columns",IDC_CHECK_change_bigint_columns_to_int,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,135,10
     CONTROL         "&Always handle binary function results as character data",IDC_CHECK_handle_binary_as_char,
@@ -267,9 +245,9 @@ BEGIN
 END
 
 #if MFA_ENABLED
-IDD_TAB6 DIALOGEX 0, 0, 209, 181
-#else
 IDD_TAB5 DIALOGEX 0, 0, 209, 181
+#else
+IDD_TAB4 DIALOGEX 0, 0, 209, 181
 #endif
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -298,21 +276,21 @@ BEGIN
 END
 
 #if MFA_ENABLED
-IDD_TAB7 DIALOGEX 0, 0, 209, 181
-#else
 IDD_TAB6 DIALOGEX 0, 0, 209, 181
+#else
+IDD_TAB5 DIALOGEX 0, 0, 209, 181
 #endif
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "&Log driver activity to %TEMP%\\myodbc.log",IDC_CHECK_save_queries,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,160,10
+    CONTROL         "&Log queries to %TEMP%\\myodbc.sql",IDC_CHECK_save_queries,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,148,10
 END
 
 #if MFA_ENABLED
-IDD_TAB8 DIALOGEX 0, 0, 509, 181
-#else
 IDD_TAB7 DIALOGEX 0, 0, 509, 181
+#else
+IDD_TAB6 DIALOGEX 0, 0, 509, 181
 #endif
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -342,9 +320,9 @@ END
 
 
 #if MFA_ENABLED
-IDD_TAB9 DIALOGEX 0, 0, 209, 181
-#else
 IDD_TAB8 DIALOGEX 0, 0, 209, 181
+#else
+IDD_TAB7 DIALOGEX 0, 0, 209, 181
 #endif
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -422,9 +400,9 @@ IDB_LOGO                BITMAP                  "aws_connector_odbc_header.bmp"
 GUIDELINES DESIGNINFO
 BEGIN
 #if MFA_ENABLED
-    IDD_TAB8, DIALOG
-#else
     IDD_TAB7, DIALOG
+#else
+    IDD_TAB6, DIALOG
 #endif
     BEGIN
         VERTGUIDE, 85

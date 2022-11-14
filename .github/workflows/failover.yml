@@ -6,19 +6,15 @@ on:
       - main
   pull_request:
     branches:
-      - '*'
+      - main
     paths-ignore:
       - '**/*.md'
       - '**/*.jpg'
       - '**/README.txt'
-      - 'docs/**'
-      - 'ISSUE_TEMPLATE/**'
-      - '**/remove-old-artifacts.yml'
 
 env:
   LINUX_BUILD_TYPE: Release
   WINDOWS_BUILD_TYPE: Debug
-  MAC_BUILD_TYPE: Debug
 
 jobs:
   build-windows:
@@ -64,7 +60,7 @@ jobs:
                 -DENABLE_INTEGRATION_TESTS=FALSE
 
       # Configure test environment
-      - name: Build Driver
+      - name: Build Driver and Copy files
         shell: bash
         working-directory: ${{ github.workspace }}/build
         run: |
@@ -200,7 +196,7 @@ jobs:
         shell: bash
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$MAC_BUILD_TYPE
+                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DODBC_INCLUDES=$ODBC_DM_INCLUDES
                 -DENABLE_UNIT_TESTS=TRUE
