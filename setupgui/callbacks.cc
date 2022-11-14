@@ -363,7 +363,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
 #endif
 
   /* 3 - Failover */
-  GET_BOOL_TAB(FAILOVER_TAB, disable_cluster_failover);
+  GET_BOOL_TAB(FAILOVER_TAB, enable_cluster_failover);
   GET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
   GET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
   if (READ_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics))
@@ -381,7 +381,19 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_UNSIGNED_TAB(FAILOVER_TAB, connect_timeout);
   GET_UNSIGNED_TAB(FAILOVER_TAB, network_timeout);
 
-  /* 4 - Metadata*/
+  /* 4 - Monitoring */
+  GET_BOOL_TAB(MONITORING_TAB, enable_failure_detection);
+  if (READ_BOOL_TAB(MONITORING_TAB, enable_failure_detection))
+  {
+    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_time);
+    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_timeout);
+    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_interval);
+    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_count);
+    GET_UNSIGNED_TAB(MONITORING_TAB, monitor_disposal_time);
+  }
+
+
+  /* 5 - Metadata */
   GET_BOOL_TAB(METADATA_TAB, change_bigint_columns_to_int);
   GET_BOOL_TAB(METADATA_TAB, handle_binary_as_char);
   GET_BOOL_TAB(METADATA_TAB, return_table_names_for_SqlDescribeCol);
@@ -390,7 +402,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_BOOL_TAB(METADATA_TAB, limit_column_size);
   GET_BOOL_TAB(METADATA_TAB, no_information_schema);
 
-  /* 5 - Cursors/Results */
+  /* 6 - Cursors/Results */
   GET_BOOL_TAB(CURSORS_TAB, return_matching_rows);
   GET_BOOL_TAB(CURSORS_TAB, auto_increment_null_search);
   GET_BOOL_TAB(CURSORS_TAB, dynamic_cursor);
@@ -408,10 +420,10 @@ void syncTabsData(HWND hwnd, DataSource *params)
   {
     params->cursor_prefetch_number= 0;
   }
-  /* 6 - debug*/
+  /* 7 - debug*/
   GET_BOOL_TAB(DEBUG_TAB,save_queries);
 
-  /* 7 - ssl related */
+  /* 8 - ssl related */
   GET_STRING_TAB(SSL_TAB, sslkey);
   GET_STRING_TAB(SSL_TAB, sslcert);
   GET_STRING_TAB(SSL_TAB, sslca);
@@ -424,7 +436,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_BOOL_TAB(SSL_TAB, no_tls_1_2);
   GET_BOOL_TAB(SSL_TAB, no_tls_1_3);
 
-  /* 8 - Misc*/
+  /* 9 - Misc*/
   GET_BOOL_TAB(MISC_TAB, safe);
   GET_BOOL_TAB(MISC_TAB, dont_use_set_locale);
   GET_BOOL_TAB(MISC_TAB, ignore_space_after_function_names);
@@ -463,10 +475,10 @@ void syncTabs(HWND hwnd, DataSource *params)
 #endif
   {
     SET_COMBO_TAB(CONNECTION_TAB, charset);
-    SET_STRING_TAB(CONNECTION_TAB,initstmt);
-    SET_STRING_TAB(CONNECTION_TAB,plugin_dir);
-    SET_STRING_TAB(CONNECTION_TAB,default_auth);
-    SET_STRING_TAB(CONNECTION_TAB,oci_config_file);
+    SET_STRING_TAB(CONNECTION_TAB, initstmt);
+    SET_STRING_TAB(CONNECTION_TAB, plugin_dir);
+    SET_STRING_TAB(CONNECTION_TAB, default_auth);
+    SET_STRING_TAB(CONNECTION_TAB, oci_config_file);
   }
 
 #if MFA_ENABLED
@@ -476,7 +488,7 @@ void syncTabs(HWND hwnd, DataSource *params)
 #endif
 
   /* 3 - Failover */
-  SET_BOOL_TAB(FAILOVER_TAB, disable_cluster_failover);
+  SET_BOOL_TAB(FAILOVER_TAB, enable_cluster_failover);
   SET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
   SET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
   if(READ_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics))
@@ -526,7 +538,24 @@ void syncTabs(HWND hwnd, DataSource *params)
      SET_UNSIGNED_TAB(FAILOVER_TAB, network_timeout);
   }
 
-  /* 4 - Metadata*/
+  /* 4 - Monitoring */
+  SET_BOOL_TAB(MONITORING_TAB, enable_failure_detection);
+  if (READ_BOOL_TAB(MONITORING_TAB, enable_failure_detection)) {
+#ifdef _WIN32
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_time, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_interval, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_count, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_monitor_disposal_time, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_timeout, TRUE);
+#endif
+    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_time);
+    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_interval);
+    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_count);
+    SET_UNSIGNED_TAB(MONITORING_TAB, monitor_disposal_time);
+    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_timeout);
+  }
+
+  /* 5 - Metadata */
   SET_BOOL_TAB(METADATA_TAB, change_bigint_columns_to_int);
   SET_BOOL_TAB(METADATA_TAB, handle_binary_as_char);
   SET_BOOL_TAB(METADATA_TAB, return_table_names_for_SqlDescribeCol);
@@ -535,7 +564,7 @@ void syncTabs(HWND hwnd, DataSource *params)
   SET_BOOL_TAB(METADATA_TAB, limit_column_size);
   SET_BOOL_TAB(METADATA_TAB, no_information_schema);
 
-  /* 5 - Cursors/Results */
+  /* 6 - Cursors/Results */
   SET_BOOL_TAB(CURSORS_TAB, return_matching_rows);
   SET_BOOL_TAB(CURSORS_TAB, auto_increment_null_search);
   SET_BOOL_TAB(CURSORS_TAB, dynamic_cursor);
@@ -554,10 +583,10 @@ void syncTabs(HWND hwnd, DataSource *params)
     SET_UNSIGNED_TAB(CURSORS_TAB, cursor_prefetch_number);
   }
 
-  /* 6 - debug*/
+  /* 7 - debug*/
   SET_BOOL_TAB(DEBUG_TAB,save_queries);
 
-  /* 7 - ssl related */
+  /* 8 - ssl related */
 #ifdef _WIN32
   if ( getTabCtrlTabPages(SSL_TAB-1) )
 #endif
@@ -587,7 +616,7 @@ void syncTabs(HWND hwnd, DataSource *params)
     SET_BOOL_TAB(SSL_TAB, no_tls_1_3);
   }
 
-  /* 8 - Misc*/
+  /* 9 - Misc*/
   SET_BOOL_TAB(MISC_TAB, safe);
   SET_BOOL_TAB(MISC_TAB, dont_use_set_locale);
   SET_BOOL_TAB(MISC_TAB, ignore_space_after_function_names);

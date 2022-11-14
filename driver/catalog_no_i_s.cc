@@ -96,8 +96,8 @@ static my_bool check_table_type(const SQLCHAR *TableType,
     */
 
     type= strstr(table_type,",");
-    sprintf(req_type_quoted,"'%s'",req_type);
-    sprintf(req_type_quoted1,"`%s`",req_type);
+    snprintf(req_type_quoted, sizeof(req_type_quoted), "'%s'", req_type);
+    snprintf(req_type_quoted1, sizeof(req_type_quoted1), "`%s`", req_type);
     while ( type )
     {
         while ( isspace(*(table_type)) ) ++table_type;
@@ -143,7 +143,7 @@ static MYSQL_RES *server_list_dbkeys(STMT *stmt,
                                      SQLSMALLINT table_len)
 {
     DBC   *dbc = stmt->dbc;
-    CONNECTION *mysql= dbc->mysql;
+    MYSQL_PROXY *mysql_proxy= dbc->mysql_proxy;
     char  tmpbuff[1024];
     std::string query;
     query.reserve(1024);
@@ -167,7 +167,7 @@ static MYSQL_RES *server_list_dbkeys(STMT *stmt,
     MYLOG_DBC_TRACE(dbc, query.c_str());
     if (exec_stmt_query(stmt, query.c_str(), query.length(), FALSE))
         return NULL;
-    return mysql->store_result();
+    return mysql_proxy->store_result();
 }
 
 
@@ -191,7 +191,7 @@ server_list_dbcolumns(STMT *stmt,
                       SQLCHAR *szColumn, SQLSMALLINT cbColumn)
 {
   DBC *dbc= stmt->dbc;
-  CONNECTION *mysql= dbc->mysql;
+  MYSQL_PROXY *mysql_proxy= dbc->mysql_proxy;
   MYSQL_RES *result;
   char buff[NAME_LEN * 2 + 64], column_buff[NAME_LEN * 2 + 64];
 
@@ -208,7 +208,7 @@ server_list_dbcolumns(STMT *stmt,
     strncpy(buff, (const char*)szCatalog, cbCatalog);
     buff[cbCatalog]= '\0';
 
-    if (mysql->select_db(buff))
+    if (mysql_proxy->select_db(buff))
     {
       return NULL;
     }
@@ -219,15 +219,15 @@ server_list_dbcolumns(STMT *stmt,
   strncpy(column_buff, (const char*)szColumn, cbColumn);
   column_buff[cbColumn]= '\0';
 
-  result= mysql->list_fields(buff, column_buff);
+  result = mysql_proxy->list_fields(buff, column_buff);
 
   /* If before this call no database were selected - we cannot revert that */
   if (cbCatalog && !dbc->database.empty())
   {
-    if (mysql->select_db(dbc->database.c_str()))
+    if (mysql_proxy->select_db(dbc->database.c_str()))
     {
       /* Well, probably have to return error here */
-      mysql_free_result(result);
+      mysql_proxy->free_result(result);
       return NULL;
     }
   }
@@ -275,7 +275,7 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
   res= table_status(stmt, (SQLCHAR*)db.c_str(), db.length(),
                     table, table_len, TRUE, TRUE, TRUE);
 
-  if (!res && stmt->dbc->mysql->error_code())
+  if (!res && stmt->dbc->mysql_proxy->error_code())
   {
     SQLRETURN rc= handle_connection_error(stmt);
     return rc;
@@ -293,14 +293,14 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
   stmt->result= res;
   alloc= &stmt->alloc_root;
 
-  while ((table_row= mysql_fetch_row(res)))
+  while ((table_row= stmt->dbc->mysql_proxy->fetch_row(res)))
   {
     MYSQL_FIELD *field;
     MYSQL_RES *table_res;
     int count= 0;
 
     /* Get list of columns matching column for each table. */
-    lengths= mysql_fetch_lengths(res);
+    lengths= stmt->dbc->mysql_proxy->fetch_lengths(res);
     table_res= server_list_dbcolumns(stmt, (SQLCHAR*)db.c_str(), db.length(),
                                      (SQLCHAR *)table_row[0],
                                      (SQLSMALLINT)lengths[0],
@@ -311,7 +311,7 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
       return handle_connection_error(stmt);
     }
 
-    rows+= mysql_num_fields(table_res);
+    rows += stmt->dbc->mysql_proxy->num_fields(table_res);
 
     if (!stmt->m_row_storage.is_valid())
       x_free(stmt->result_array);
@@ -320,7 +320,7 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
     stmt->m_row_storage.set_size(rows, SQLCOLUMNS_FIELDS);
     auto &data = stmt->m_row_storage;
 
-    while (field = mysql_fetch_field(table_res))
+    while (field = stmt->dbc->mysql_proxy->fetch_field(table_res))
     {
       SQLSMALLINT type;
       char buff[255]; /* @todo justify the size of this buffer */
@@ -357,7 +357,7 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
       }
 
       /* COLUMN_SIZE */
-      fill_column_size_buff(buff, stmt, field);
+      fill_column_size_buff(buff, sizeof(buff), stmt, field);
       data[6]= buff;
 
       /* BUFFER_LENGTH */
@@ -469,7 +469,7 @@ columns_no_i_s(STMT * stmt, SQLCHAR *catalog, SQLSMALLINT catalog_len,
     }
     stmt->result_array = (MYSQL_ROW)data.data();
 
-    mysql_free_result(table_res);
+    stmt->dbc->mysql_proxy->free_result(table_res);
   }
 
   set_row_count(stmt, rows);
@@ -527,7 +527,7 @@ static MYSQL_RES *table_privs_raw_data( STMT *      stmt,
                                         SQLSMALLINT table_len)
 {
   DBC *dbc= stmt->dbc;
-  CONNECTION *mysql= dbc->mysql;
+  MYSQL_PROXY *mysql_proxy= dbc->mysql_proxy;
   char   tmpbuff[1024];
   std::string query;
   size_t cnt = 0;
@@ -536,7 +536,7 @@ static MYSQL_RES *table_privs_raw_data( STMT *      stmt,
   query = "SELECT Db,User,Table_name,Grantor,Table_priv "
           "FROM mysql.tables_priv WHERE Table_name LIKE '";
 
-  cnt = mysql->real_escape_string(tmpbuff, (char *)table, table_len);
+  cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)table, table_len);
   query.append(tmpbuff, cnt);
 
   query.append("' AND Db = ");
@@ -544,7 +544,7 @@ static MYSQL_RES *table_privs_raw_data( STMT *      stmt,
   if (catalog_len)
   {
     query.append("'");
-    cnt = mysql->real_escape_string(tmpbuff, (char *)catalog, catalog_len);
+    cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)catalog, catalog_len);
     query.append(tmpbuff, cnt);
     query.append("'");
   }
@@ -557,7 +557,7 @@ static MYSQL_RES *table_privs_raw_data( STMT *      stmt,
   if (exec_stmt_query(stmt, query.c_str(), query.length(), FALSE))
     return NULL;
 
-  return mysql->store_result();
+  return mysql_proxy->store_result();
 }
 
 
@@ -625,7 +625,7 @@ list_table_priv_no_i_s(SQLHSTMT hstmt,
 
     row_count= 0;
 
-    while ( (row= mysql_fetch_row(stmt->result)) )
+    while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
     {
       const char  *grants= row[4];
       char  token[NAME_LEN+1];
@@ -686,7 +686,7 @@ static MYSQL_RES *column_privs_raw_data(STMT *      stmt,
                                         SQLSMALLINT column_len)
 {
   DBC   *dbc = stmt->dbc;
-  CONNECTION *mysql = dbc->mysql;
+  MYSQL_PROXY *mysql_proxy = dbc->mysql_proxy;
 
   char tmpbuff[1024];
   std::string query;
@@ -699,14 +699,14 @@ static MYSQL_RES *column_privs_raw_data(STMT *      stmt,
           "FROM mysql.columns_priv AS c, mysql.tables_priv AS t "
           "WHERE c.Table_name = '";
 
-  cnt = mysql->real_escape_string(tmpbuff, (char *)table, table_len);
+  cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)table, table_len);
   query.append(tmpbuff, cnt);
 
   query.append("' AND c.Db = ");
   if (catalog_len)
   {
     query.append("'");
-    cnt = mysql->real_escape_string(tmpbuff, (char *)catalog, catalog_len);
+    cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)catalog, catalog_len);
     query.append(tmpbuff, cnt);
     query.append("'");
   }
@@ -714,7 +714,7 @@ static MYSQL_RES *column_privs_raw_data(STMT *      stmt,
     query.append("DATABASE()");
 
   query.append("AND c.Column_name LIKE '");
-  cnt = mysql->real_escape_string(tmpbuff, (char *)column, column_len);
+  cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)column, column_len);
   query.append(tmpbuff, cnt);
 
   query.append("' AND c.Table_name = t.Table_name "
@@ -723,7 +723,7 @@ static MYSQL_RES *column_privs_raw_data(STMT *      stmt,
   if (exec_stmt_query(stmt, query.c_str(), query.length(), FALSE))
     return NULL;
 
-  return mysql->store_result();
+  return mysql_proxy->store_result();
 }
 
 
@@ -790,7 +790,7 @@ list_column_priv_no_i_s(SQLHSTMT hstmt,
   auto &data = stmt->m_row_storage;
 
   row_count= 0;
-  while ( (row= mysql_fetch_row(stmt->result)) )
+  while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
   {
     const char  *grants = row[5];
     char  token[NAME_LEN+1];
@@ -844,7 +844,7 @@ Lengths may not be SQL_NTS.
 @param[in] wildcard       Whether the table name is a wildcard
 
 @return Result of SHOW TABLE STATUS, or NULL if there is an error
-or empty result (check mysql_errno(stmt->dbc->mysql) != 0)
+or empty result (check stmt->dbc->mysql_proxy->error_code() != 0)
 */
 MYSQL_RES *table_status_no_i_s(STMT        *stmt,
                                SQLCHAR     *catalog,
@@ -853,7 +853,7 @@ MYSQL_RES *table_status_no_i_s(STMT        *stmt,
                                SQLSMALLINT  table_length,
                                my_bool      wildcard)
 {
-	CONNECTION *mysql= stmt->dbc->mysql;
+	MYSQL_PROXY *mysql_proxy= stmt->dbc->mysql_proxy;
 
 	char tmpbuff[1024];
   std::string query;
@@ -883,7 +883,7 @@ MYSQL_RES *table_status_no_i_s(STMT        *stmt,
 	{
 		query.append("LIKE '");
 		if (wildcard)
-			cnt = mysql->real_escape_string(tmpbuff, (char *)table, table_length);
+			cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)table, table_length);
 		else
 			cnt = myodbc_escape_string(stmt, tmpbuff, (ulong)sizeof(tmpbuff),
 			(char *)table, table_length, 0);
@@ -898,7 +898,7 @@ MYSQL_RES *table_status_no_i_s(STMT        *stmt,
     return NULL;
   }
 
-  return mysql->store_result();
+  return mysql_proxy->store_result();
 }
 
 
@@ -913,7 +913,7 @@ Lengths may not be SQL_NTS.
 @param[in] table_length   Length of table name
 
 @return Result of SHOW CREATE TABLE , or NULL if there is an error
-or empty result (check mysql_errno(stmt->dbc->mysql) != 0)
+or empty result (check stmt->dbc->mysql_proxy->error_code() != 0)
 */
 MYSQL_RES *server_show_create_table(STMT        *stmt,
                                     SQLCHAR     *catalog,
@@ -949,7 +949,7 @@ MYSQL_RES *server_show_create_table(STMT        *stmt,
     return NULL;
   }
 
-  return stmt->dbc->mysql->store_result();
+  return stmt->dbc->mysql_proxy->store_result();
 }
 
 
@@ -1131,7 +1131,7 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
 
   local_res= table_status(stmt, (SQLCHAR*)pk_db.c_str(), pk_db.length(),
                     fk_table, fk_table_name, FALSE, TRUE, TRUE);
-  if (!local_res && stmt->dbc->mysql->error_code())
+  if (!local_res && stmt->dbc->mysql_proxy->error_code())
   {
     rc= handle_connection_error(stmt);
     throw ODBCEXCEPTION(EXCEPTION_TYPE::CONN_ERR);
@@ -1142,11 +1142,11 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
   }
   free_internal_result_buffers(stmt);
 
-  while ((table_row = mysql_fetch_row(local_res)))
+  while ((table_row = stmt->dbc->mysql_proxy->fetch_row(local_res)))
   {
-    lengths = mysql_fetch_lengths(local_res);
+    lengths = stmt->dbc->mysql_proxy->fetch_lengths(local_res);
     if (stmt->result)
-      mysql_free_result(stmt->result);
+      stmt->dbc->mysql_proxy->free_result(stmt->result);
     stmt->result= server_show_create_table(stmt,
                                            (SQLCHAR*)pk_db.c_str(), pk_db.length(),
                                            (SQLCHAR*)table_row[0],
@@ -1154,7 +1154,7 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
 
     if (!stmt->result)
     {
-      if (stmt->dbc->mysql->error_code())
+      if (stmt->dbc->mysql_proxy->error_code())
       {
         rc= handle_connection_error(stmt);
         throw ODBCEXCEPTION(EXCEPTION_TYPE::CONN_ERR);
@@ -1165,9 +1165,9 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
     /* Convert mysql fields to data that odbc wants */
     alloc= &stmt->alloc_root;
 
-    while (row= mysql_fetch_row(stmt->result))
+    while (row = stmt->dbc->mysql_proxy->fetch_row(stmt->result))
     {
-      lengths= mysql_fetch_lengths(stmt->result);
+      lengths = stmt->dbc->mysql_proxy->fetch_lengths(stmt->result);
       if (lengths[1])
       {
         const char Fk_keywords[2][12]= {"FOREIGN KEY", "REFERENCES"};
@@ -1461,13 +1461,13 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
     ++index;
   }
   delete_dynamic(&records);
-  mysql_free_result(local_res);
+  stmt->dbc->mysql_proxy->free_result(local_res);
 
   stmt->result_array = (MYSQL_ROW)data.data();
 
   if (!stmt->result_array)
   {
-    set_mem_error(stmt->dbc->mysql);
+    set_mem_error(stmt->dbc->mysql_proxy);
     return handle_connection_error(stmt);
   }
 
@@ -1482,11 +1482,11 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
     {
       case EXCEPTION_TYPE::EMPTY_SET:
       delete_dynamic(&records);
-      mysql_free_result(local_res);
+      stmt->dbc->mysql_proxy->free_result(local_res);
       free_internal_result_buffers(stmt);
       if (stmt->result)
       {
-        mysql_free_result(stmt->result);
+        stmt->dbc->mysql_proxy->free_result(stmt->result);
         stmt->result = nullptr;
       }
       return create_empty_fake_resultset(stmt, SQLFORE_KEYS_values,
@@ -1495,20 +1495,20 @@ SQLRETURN foreign_keys_no_i_s(SQLHSTMT hstmt,
                                          SQLFORE_KEYS_FIELDS);
 
     case EXCEPTION_TYPE::CONN_ERR:
-      mysql_free_result(local_res);
+      stmt->dbc->mysql_proxy->free_result(local_res);
       local_res = nullptr;
       delete_dynamic(&records);
       free_internal_result_buffers(stmt);
       if (stmt->result)
       {
-        mysql_free_result(stmt->result);
+        stmt->dbc->mysql_proxy->free_result(stmt->result);
         stmt->result = nullptr;
       }
     }
   }
 
   if (local_res)
-    mysql_free_result(local_res);
+    stmt->dbc->mysql_proxy->free_result(local_res);
 
   return rc;
 }
@@ -1573,7 +1573,7 @@ primary_keys_no_i_s(SQLHSTMT hstmt,
                                             MYF(MY_ZEROFILL));
     if (!stmt->result_array)
     {
-      set_mem_error(stmt->dbc->mysql);
+      set_mem_error(stmt->dbc->mysql_proxy);
       return handle_connection_error(stmt);
     }
     */
@@ -1590,12 +1590,12 @@ primary_keys_no_i_s(SQLHSTMT hstmt,
 
     if (!stmt->lengths)
     {
-      set_mem_error(stmt->dbc->mysql);
+      set_mem_error(stmt->dbc->mysql_proxy);
       return handle_connection_error(stmt);
     }
 
     row_count= 0;
-    while ( (row= mysql_fetch_row(stmt->result)) )
+    while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
     {
         if ( row[1][0] == '0' )     /* If unique index */
         {
@@ -1685,23 +1685,23 @@ static MYSQL_RES *server_list_proc_params(STMT *stmt,
                                           SQLSMALLINT par_name_len)
 {
   DBC   *dbc = stmt->dbc;
-  CONNECTION *mysql= dbc->mysql;
+  MYSQL_PROXY *mysql_proxy= dbc->mysql_proxy;
   char   tmpbuf[1024];
   std::string qbuff;
   qbuff.reserve(2048);
 
-  auto append_escaped_string = [&mysql, &tmpbuf](std::string &outstr,
+  auto append_escaped_string = [&mysql_proxy, &tmpbuf](std::string &outstr,
                                         SQLCHAR* str,
                                         SQLSMALLINT len)
   {
     tmpbuf[0] = '\0';
     outstr.append("'");
-    mysql->real_escape_string(tmpbuf, (char *)str, len);
+    mysql_proxy->real_escape_string(tmpbuf, (char *)str, len);
     outstr.append(tmpbuf).append("'");
   };
 
 
-  if((is_minimum_version(dbc->mysql->get_server_version(), "5.7")))
+  if((is_minimum_version(dbc->mysql_proxy->get_server_version(), "5.7")))
   {
     qbuff = "select SPECIFIC_NAME, (IF(ISNULL(PARAMETER_NAME), "
             "concat('OUT RETURN_VALUE ', DTD_IDENTIFIER), "
@@ -1754,7 +1754,7 @@ static MYSQL_RES *server_list_proc_params(STMT *stmt,
   if (exec_stmt_query(stmt, qbuff.c_str(), qbuff.length(), FALSE))
     return NULL;
 
-  return mysql->store_result();
+  return mysql_proxy->store_result();
 }
 
 
@@ -1803,7 +1803,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
                                SQLPROCEDURECOLUMNS_FIELDS);
   auto &data = stmt->m_row_storage;
 
-  while ((row= mysql_fetch_row(proc_list_res)))
+  while ((row = stmt->dbc->mysql_proxy->fetch_row(proc_list_res)))
   {
     char *token;
     char *param_str;
@@ -1854,7 +1854,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
 
       param_size= proc_get_param_size(param_dbtype, (int)strlen((const char*)param_dbtype), sql_type_index, &dec);
 
-      proc_get_param_octet_len(stmt, sql_type_index, param_size, dec, flags, (char*)param_buffer_len);
+      proc_get_param_octet_len(stmt, sql_type_index, param_size, dec, flags, (char*)param_buffer_len, sizeof(param_buffer_len));
 
       /* PROCEDURE_CAT and PROCEDURE_SCHEMA */
       CAT_SCHEMA_SET(data[mypcPROCEDURE_CAT], data[mypcPROCEDURE_SCHEM], row[2]);
@@ -1885,7 +1885,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
         data[mypcTYPE_NAME]= (const char*)type_map->type_name;
       }
 
-      proc_get_param_col_len(stmt, sql_type_index, param_size, dec, flags, (char*)param_size_buf);
+      proc_get_param_col_len(stmt, sql_type_index, param_size, dec, flags, (char*)param_size_buf, sizeof(param_size_buf));
       data[mypcCOLUMN_SIZE] = (const char*)param_size_buf;
       data[mypcBUFFER_LENGTH] = (const char*)param_buffer_len;
 
@@ -1956,7 +1956,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
             SQLPROCEDURECOLUMNS_fields,
             SQLPROCEDURECOLUMNS_FIELDS);
         free_internal_result_buffers(stmt);
-        mysql_free_result(proc_list_res);
+        stmt->dbc->mysql_proxy->free_result(proc_list_res);
       case EXCEPTION_TYPE::GENERAL:
         break;
     }
@@ -2042,8 +2042,8 @@ special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
                             (SQLSMALLINT colType)
     {
       uint f_count = 0;
-      mysql_field_seek(result,0);
-      while(field = mysql_fetch_field(result))
+      stmt->dbc->mysql_proxy->field_seek(result, 0);
+      while (field = stmt->dbc->mysql_proxy->fetch_field(result))
       {
         if(colType == SQL_ROWVER)
         {
@@ -2078,7 +2078,7 @@ special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
         data[3] = buff;
 
         /* COLUMN_SIZE */
-        fill_column_size_buff(buff, stmt, field);
+        fill_column_size_buff(buff, sizeof(buff), stmt, field);
         data[4] = buff;
 
         /* BUFFER_LENGTH */
@@ -2126,7 +2126,7 @@ special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
 
     /* Check if there is a primary (unique) key */
     primary_key= 0;
-    while ( (field= mysql_fetch_field(result)) )
+    while ((field = stmt->dbc->mysql_proxy->fetch_field(result)))
     {
         if ( field->flags & PRI_KEY_FLAG )
         {
@@ -2209,7 +2209,7 @@ statistics_no_i_s(SQLHSTMT hstmt,
                                        sizeof(SQLSTAT_values),MYF(0));
     if (!stmt->array)
     {
-      set_mem_error(stmt->dbc->mysql);
+      set_mem_error(stmt->dbc->mysql_proxy);
       return handle_connection_error(stmt);
     }
 
@@ -2234,7 +2234,7 @@ statistics_no_i_s(SQLHSTMT hstmt,
             }
         }
         (*prev)= 0;
-        mysql_data_seek(stmt->result,0);  /* Restore pointer */
+        stmt->dbc->mysql_proxy->data_seek(stmt->result,0);  /* Restore pointer */
     }
 
     set_row_count(stmt, stmt->result->row_count);
@@ -2386,7 +2386,7 @@ tables_no_i_s(SQLHSTMT hstmt,
         through all database to fetch table list inside database
       */
       while (is_info_schema ||
-             (db_res && (db_row = mysql_fetch_row(db_res))))
+             (db_res && (db_row = stmt->dbc->mysql_proxy->fetch_row(db_res))))
       {
 
         if ((is_info_schema || all_dbs) && db_res)
@@ -2405,10 +2405,10 @@ tables_no_i_s(SQLHSTMT hstmt,
                                       user_tables, views);
         }
 
-        if (!stmt->result && stmt->dbc->mysql->error_code())
+        if (!stmt->result && stmt->dbc->mysql_proxy->error_code())
         {
           /* unknown DB will return empty set from SQLTables */
-          switch (stmt->dbc->mysql->error_code())
+          switch (stmt->dbc->mysql_proxy->error_code())
           {
           case ER_BAD_DB_ERROR:
             throw ODBCEXCEPTION(EXCEPTION_TYPE::EMPTY_SET);
@@ -2431,7 +2431,7 @@ tables_no_i_s(SQLHSTMT hstmt,
             free_internal_result_buffers(stmt);
             if (stmt->result)
             {
-              mysql_free_result(stmt->result);
+              stmt->dbc->mysql_proxy->free_result(stmt->result);
               stmt->result = nullptr;
             }
 
@@ -2445,7 +2445,7 @@ tables_no_i_s(SQLHSTMT hstmt,
           stmt->m_row_storage.set_size(row_count, SQLTABLES_FIELDS);
 
           int name_index = 0;
-          while ((row= mysql_fetch_row(stmt->result)))
+          while ((row = stmt->dbc->mysql_proxy->fetch_row(stmt->result)))
           {
             int type_index = 2;
             int comment_index = 1;

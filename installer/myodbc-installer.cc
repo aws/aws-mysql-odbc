@@ -564,7 +564,7 @@ int list_datasource_details(DataSource *ds)
   if (ds->enable_dns_srv) printf("\tENABLE_DNS_SRV\n");
   if (ds->multi_host) printf("\tMULTI_HOST\n");
   /* Failover */
-  if (ds->disable_cluster_failover) printf("\tDISABLE_CLUSTER_FAILOVER\n");
+  if (ds->enable_cluster_failover) printf("\tENABLE_CLUSTER_FAILOVER\n");
   if (ds->allow_reader_connections) printf("\tALLOW_READER_CONNECTIONS\n");
   if (ds->gather_perf_metrics) printf("\tGATHER_PERF_METRICS\n");
   if (ds->gather_metrics_per_instance) printf("\tGATHER_METRICS_PER_INSTANCE\n");
@@ -575,6 +575,13 @@ int list_datasource_details(DataSource *ds)
   if (ds->failover_reader_connect_timeout) printf("\tFAILOVER_READER_CONNECT_TIMEOUT=%d\n", ds->failover_reader_connect_timeout);
   if (ds->connect_timeout) printf("\tCONNECT_TIMEOUT=%d\n", ds->connect_timeout);
   if (ds->network_timeout) printf("\tNETWORK_TIMEOUT=%d\n", ds->network_timeout);
+  /* Monitoring */
+  if (ds->enable_failure_detection) printf("\tENABLE_FAILURE_DETECTION\n");
+  if (ds->failure_detection_time) printf("\tFAILURE_DETECTION_TIME=%d\n", ds->failure_detection_time);
+  if (ds->failure_detection_timeout) printf("\tFAILURE_DETECTION_TIMEOUT=%d\n", ds->failure_detection_timeout);
+  if (ds->failure_detection_interval) printf("\tFAILURE_DETECTION_INTERVAL=%d\n", ds->failure_detection_interval);
+  if (ds->failure_detection_count) printf("\tFAILURE_DETECTION_COUNT=%d\n", ds->failure_detection_count);
+  if (ds->monitor_disposal_time) printf("\tMONITOR_DISPOSAL_TIME=%d\n", ds->monitor_disposal_time);
 
   return 0;
 }

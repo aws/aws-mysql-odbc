@@ -402,7 +402,7 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
              SQLPOINTER rgbValue, SQLLEN cbValueMax, SQLLEN *pcbValue,
              char *value, ulong length, DESCREC *arrec)
 {
-  MYSQL_FIELD *field= mysql_fetch_field_direct(stmt->result, column_number);
+  MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(stmt->result, column_number);
   SQLLEN    temp;
   long long numericValue = 0;
   my_bool   convert= 1;
@@ -945,7 +945,7 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
                If it couldn't happen we have to scale/unscale number - we would
                just reverse binary data */
             char _value[21]; /* max string length of 64bit number */
-            sprintf(_value, "%llu", numericValue);
+            snprintf(_value, sizeof(_value), "%llu", numericValue);
 
             sqlnum_from_str(_value, sqlnum, &overflow);
             *pcbValue = sizeof(ulonglong);
@@ -1633,7 +1633,7 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hStmt )
   /* call to next_result() failed */
   if (nRetVal > 0)
   {
-    nRetVal= stmt->dbc->mysql->error_code();
+    nRetVal= stmt->dbc->mysql_proxy->error_code();
 
     switch ( nRetVal )
     {
@@ -1646,7 +1646,7 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hStmt )
         if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
           nReturn = stmt->set_error(error_code, error_msg, 0);
         else
-          nReturn = stmt->set_error(error_code, stmt->dbc->mysql->error(), nRetVal);
+          nReturn = stmt->set_error(error_code, stmt->dbc->mysql_proxy->error(), nRetVal);
         goto exitSQLMoreResults;
       case CR_COMMANDS_OUT_OF_SYNC:
       case CR_UNKNOWN_ERROR:
@@ -2066,7 +2066,7 @@ SQLRETURN SQL_API myodbc_single_fetch( SQLHSTMT             hstmt,
             stmt->set_error("01S07", "One or more row has error.", 0);
             return SQL_SUCCESS_WITH_INFO; //SQL_NO_DATA_FOUND
           case SQL_ERROR:   return stmt->set_error(MYERR_S1000,
-                                            stmt->dbc->mysql->error(), 0);
+                                            stmt->dbc->mysql_proxy->error(), 0);
         }
       }
       else
@@ -2212,7 +2212,7 @@ exitSQLSingleFetch:
     stmt->rows_found_in_set= 1;
     *pcrow= cur_row;
 
-    disconnected= is_connection_lost(stmt->dbc->mysql->error_code())
+    disconnected= is_connection_lost(stmt->dbc->mysql_proxy->error_code())
       && handle_connection_error(stmt);
 
     if ( upd_status && stmt->ird->rows_processed_ptr )
@@ -2304,7 +2304,7 @@ SQLRETURN SQL_API my_SQLExtendedFetch( SQLHSTMT             hstmt,
         return SQL_NO_DATA_FOUND;
       case OPS_STREAMS_PENDING:
         /* Magical out params fetch */
-        mysql_stmt_fetch(stmt->ssps);
+        stmt->dbc->mysql_proxy->stmt_fetch(stmt->ssps);
       default:
         /* TODO: Need to remember real fetch' result */
         /* just in case... */
@@ -2501,7 +2501,7 @@ SQLRETURN SQL_API my_SQLExtendedFetch( SQLHSTMT             hstmt,
     stmt->rows_found_in_set= i;
     *pcrow= i;
 
-    disconnected= is_connection_lost(stmt->dbc->mysql->error_code())
+    disconnected= is_connection_lost(stmt->dbc->mysql_proxy->error_code())
       && handle_connection_error(stmt);
 
     if ( upd_status && stmt->ird->rows_processed_ptr )

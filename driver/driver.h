@@ -43,7 +43,7 @@
 #include "../MYODBC_ODBC.h"
 #include "util/installer.h"
 #include "failover.h"
-#include "connection.h"
+#include "mysql_proxy.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -109,15 +109,15 @@
 
 #if defined(__APPLE__)
 
-#define DRIVER_LOG_FILE "/tmp/myodbc.sql"
+#define DRIVER_LOG_FILE "/tmp/myodbc.log"
 
 #elif defined(__UNIX__)
 
-#define DRIVER_LOG_FILE "/tmp/myodbc.sql"
+#define DRIVER_LOG_FILE "/tmp/myodbc.log"
 
 #else
 
-#define DRIVER_LOG_FILE "myodbc.sql"
+#define DRIVER_LOG_FILE "myodbc.log"
 
 #endif
 
@@ -285,6 +285,8 @@ struct Srv_host_detail {
 
 std::vector<Srv_host_detail> parse_host_list(const char *hosts_str,
                                              unsigned int default_port);
+
+std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource* ds);
 
 typedef struct {
   int perms;
@@ -593,7 +595,7 @@ static std::atomic_ulong last_dbc_id{1};
 struct DBC
 {
   ENV              *env;
-  CONNECTION       *mysql;
+  MYSQL_PROXY      *mysql_proxy;
   std::list<STMT*> stmt_list;
   std::list<DESC*> desc_list; // Explicit descriptors
   STMT_OPTIONS     stmt_options;
@@ -636,11 +638,13 @@ struct DBC
   void execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
     MYSQL_BIND *param_bind, MYSQL_BIND *result_bind);
 
-  inline bool transactions_supported()
-  { return mysql->get_server_capabilities() & CLIENT_TRANSACTIONS; }
+  inline bool transactions_supported() {
+    return mysql_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS;
+  }
 
-  inline bool autocommit_is_on()
-  { return mysql->get_server_status() & SERVER_STATUS_AUTOCOMMIT; }
+  inline bool autocommit_is_on() {
+    return mysql_proxy->get_server_status() & SERVER_STATUS_AUTOCOMMIT;
+  }
 
   void close();
   ~DBC();
@@ -760,7 +764,7 @@ struct ODBC_RESULTSET
   {}
 
   void reset(MYSQL_RES *r = nullptr)
-  { if (res) mysql_free_result(res); res = r; }
+  { if (res) mysql_free_result(res); res = r; } // TODO Replace with proxy call
 
   MYSQL_RES *release()
   {
@@ -941,9 +945,9 @@ struct ODBC_STMT
 {
   MYSQL_STMT *m_stmt;
 
-  ODBC_STMT(CONNECTION *mysql) { m_stmt = mysql->stmt_init(); }
+  ODBC_STMT(MYSQL_PROXY *mysql_proxy) { m_stmt = mysql_proxy->stmt_init(); }
   operator MYSQL_STMT*() { return m_stmt; }
-  ~ODBC_STMT() { mysql_stmt_close(m_stmt); }
+  ~ODBC_STMT() { mysql_stmt_close(m_stmt); } // TODO Replace with proxy call
 };
 
 

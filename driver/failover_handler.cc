@@ -57,18 +57,19 @@ const std::regex IPV6_COMPRESSED_PATTERN(
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
     : FAILOVER_HANDLER(
           dbc, ds, std::make_shared<FAILOVER_CONNECTION_HANDLER>(dbc),
-          std::make_shared<TOPOLOGY_SERVICE>(
-              dbc ? dbc->log_file.get() : nullptr, dbc ? dbc->id : 0),
+          std::make_shared<TOPOLOGY_SERVICE>(dbc ? dbc->id : 0, ds ? ds->save_queries : false),
           std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds)) {}
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
                                    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
-                                   std::shared_ptr<TOPOLOGY_SERVICE_INTERFACE> topology_service,
+                                   std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
                                    std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container) {
-    std::stringstream err;
-    if (!dbc || !ds) {
-        err << "Internal error.";
-        throw std::runtime_error(err.str());
+    if (!dbc) {
+        throw std::runtime_error("DBC cannot be null.");
+    }
+
+    if (!ds) {
+        throw std::runtime_error("DataSource cannot be null.");
     }
 
     this->dbc = dbc;
@@ -80,12 +81,12 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
         this->topology_service, this->connection_handler, ds->failover_timeout,
-        ds->failover_reader_connect_timeout, dbc->log_file.get(), dbc->id);
+        ds->failover_reader_connect_timeout, dbc->id, ds->save_queries);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
         this->connection_handler, ds->failover_timeout,
         ds->failover_topology_refresh_rate,
-        ds->failover_writer_reconnect_interval, dbc->log_file.get(), dbc->id);
+        ds->failover_writer_reconnect_interval, dbc->id, ds->save_queries);
     this->metrics_container = metrics_container;
 }
 
@@ -97,7 +98,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
         return rc;
     }
     
-    if (ds->disable_cluster_failover) {
+    if (!ds->enable_cluster_failover) {
         // Use a standard default connection - no further initialization required
         rc = connection_handler->do_connect(dbc, ds, false);
         initialized = true;
@@ -106,26 +107,9 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
     std::stringstream err;
     // Cluster-aware failover is enabled
 
-    std::vector<Srv_host_detail> hosts;
-    try {
-        hosts = parse_host_list(
-            ds_get_utf8attr(ds->server, &ds->server8), ds->port);
-    } catch (std::string&) {
-        err << "Invalid server '" << ds->server8 << "'.";
-        MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw std::runtime_error(err.str());
-    }
-
-    if (hosts.size() == 0) {
-        err << "Empty server host.";
-        MYLOG_DBC_TRACE(dbc, err.str().c_str());
-        throw std::runtime_error(err.str());
-    }
-
-    std::string main_host(hosts[0].name);
-    unsigned int main_port = hosts[0].port;
-
-    this->current_host = std::make_shared<HOST_INFO>(main_host, main_port);
+    this->current_host = get_host_info_from_ds(ds);
+    std::string main_host = this->current_host->get_host();
+    unsigned int main_port = this->current_host->get_port();
 
     const char* hp =
         ds_get_utf8attr(ds->host_pattern, &ds->host_pattern8);
@@ -362,7 +346,7 @@ std::string FAILOVER_HANDLER::get_rds_instance_host_pattern(std::string host) {
 
 bool FAILOVER_HANDLER::is_failover_enabled() {
     return (dbc != nullptr && ds != nullptr &&
-            !ds->disable_cluster_failover &&
+            ds->enable_cluster_failover &&
             m_is_cluster_topology_available &&
             !m_is_rds_proxy &&
             !m_is_multi_writer_cluster);
@@ -384,7 +368,7 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
     }
 
     metrics_container->register_invalid_initial_connection(false);
-    current_topology = topology_service->get_topology(dbc->mysql, false);
+    current_topology = topology_service->get_topology(dbc->mysql_proxy, false);
     if (current_topology) {
         m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster;
         m_is_cluster_topology_available = current_topology->total_hosts() > 0;
@@ -395,8 +379,8 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
         // Since we can't determine whether failover should be enabled
         // before we connect, there is a possibility we need to reconnect
         // again with the correct connection settings for failover.
-        const unsigned int connect_timeout = get_failover_connect_timeout(ds->connect_timeout);
-        const unsigned int network_timeout = get_failover_network_timeout(ds->network_timeout);
+        const unsigned int connect_timeout = get_connect_timeout(ds->connect_timeout);
+        const unsigned int network_timeout = get_network_timeout(ds->network_timeout);
 
         if (is_failover_enabled() && (connect_timeout != dbc->login_timeout ||
                                       network_timeout != ds->read_timeout ||
@@ -409,7 +393,7 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
 }
 
 SQLRETURN FAILOVER_HANDLER::reconnect(bool failover_enabled) {
-    if (dbc->mysql != nullptr && dbc->mysql->is_connected()) {
+    if (dbc->mysql_proxy != nullptr && dbc->mysql_proxy->is_connected()) {
         dbc->close();
     }
     return connection_handler->do_connect(dbc, ds, failover_enabled);
@@ -440,6 +424,10 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
 
     if (ec.rfind("08", 0) == 0) {  // start with "08"
 
+        // disable failure detection during failover
+        auto failure_detection_old_state = ds->enable_failure_detection;
+        ds->enable_failure_detection = false;
+
         // invalidate current connection
         current_host = nullptr;
         // close transaction if needed
@@ -469,6 +457,9 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
             new_error_code = "08007";
             error_msg = "Connection failure during transaction.";
         }
+
+        ds->enable_failure_detection = failure_detection_old_state;
+
         return true;
     }
 

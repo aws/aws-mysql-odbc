@@ -54,6 +54,7 @@
 #define IDD_TAB5                        136
 #define IDD_TAB6                        137
 #define IDD_TAB7                        138
+#define IDD_TAB8                        139
 #define IDC_LOGO                        1000
 #define IDC_EDIT_DRVNAME                1004
 #define IDC_EDIT_DRVDESC                1005
@@ -149,7 +150,7 @@
 #define IDC_EDIT_pwd3                   10070
 #define IDC_EDIT_oci_config_file        10071
 #define IDC_CHOOSER_oci_config_file     10072
-#define IDC_CHECK_disable_cluster_failover 10073
+#define IDC_CHECK_enable_cluster_failover 10073
 #define IDC_CHECK_gather_perf_metrics   10074
 #define IDC_CHECK_gather_metrics_per_instance 10075
 #define IDC_EDIT_host_pattern           10076
@@ -162,6 +163,12 @@
 #define IDC_EDIT_connect_timeout		10083
 #define IDC_EDIT_network_timeout        10084
 #define IDC_CHECK_allow_reader_connections 10085
+#define IDC_CHECK_enable_failure_detection     10100
+#define IDC_EDIT_failure_detection_time        10101
+#define IDC_EDIT_failure_detection_interval    10102
+#define IDC_EDIT_failure_detection_count       10103
+#define IDC_EDIT_failure_detection_timeout     10104
+#define IDC_EDIT_monitor_disposal_time         10105
 #define IDC_BUTTON_TEST                 11014
 #define IDC_BUTTON_HELP                 11015
 #define IDC_STATIC                      -1
