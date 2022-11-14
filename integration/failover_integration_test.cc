@@ -65,9 +65,7 @@ protected:
     reader_endpoint = get_proxied_endpoint(reader_id);
 
     builder = ConnectionStringBuilder();
-    builder.withPort(MYSQL_PORT)
-        .withLogQuery(true)
-        .withEnableFailureDetection(true);
+    builder.withPort(MYSQL_PORT).withLogQuery(true);
   }
 
   void TearDown() override {

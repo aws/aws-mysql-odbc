@@ -85,11 +85,11 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
     if ( !is_server_alive( stmt->dbc ) )
     {
       stmt->set_error("08S01" /* "HYT00" */,
-                      stmt->dbc->mysql_proxy->error(),
-                      stmt->dbc->mysql_proxy->error_code());
+                      stmt->dbc->mysql->error(),
+                      stmt->dbc->mysql->error_code());
 
       translate_error(stmt->error.sqlstate, MYERR_08S01 /* S1000 */,
-                      stmt->dbc->mysql_proxy->error_code());
+                      stmt->dbc->mysql->error_code());
       goto exit;
     }
 
@@ -131,21 +131,21 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
        this is a batch of queries */
     else if (ssps_used(stmt))
     {
-      native_error= stmt->dbc->mysql_proxy->stmt_bind_param(stmt->ssps,
+      native_error= mysql_stmt_bind_param(stmt->ssps,
                                         (MYSQL_BIND*)stmt->param_bind->buffer);
       if (native_error == 0)
       {
-        native_error = stmt->dbc->mysql_proxy->stmt_execute(stmt->ssps);
+        native_error= mysql_stmt_execute(stmt->ssps);
       }
       else
       {
         stmt->set_error("HY000",
-                       stmt->dbc->mysql_proxy->stmt_error(stmt->ssps),
-                       stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps));
+                       mysql_stmt_error(stmt->ssps),
+                       mysql_stmt_errno(stmt->ssps));
 
         /* For some errors - translating to more appropriate status */
         translate_error(stmt->error.sqlstate, MYERR_S1000,
-                        stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps));
+                        mysql_stmt_errno(stmt->ssps));
         goto exit;
       }
       MYLOG_STMT_TRACE(stmt, "ssps has been executed");
@@ -195,10 +195,10 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     if (native_error)
     {
-      const auto error_code = stmt->dbc->mysql_proxy->error_code();
+      const auto error_code = stmt->dbc->mysql->error_code();
       if (error_code)
       {
-          MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql_proxy->error());
+          MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql->error());
           stmt->set_error("HY000");
 
           // For some errors - translating to more appropriate status
@@ -594,7 +594,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
 
 
         if (has_utf8_maxlen4 &&
-            !is_minimum_version(stmt->dbc->mysql_proxy->get_server_version(), "5.5.3"))
+            !is_minimum_version(stmt->dbc->mysql->get_server_version(), "5.5.3"))
         {
           return stmt->set_error("HY000",
                                 "Server does not support 4-byte encoded "
@@ -643,24 +643,24 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
     case SQL_C_FLOAT:
       if ( iprec->concise_type != SQL_NUMERIC && iprec->concise_type != SQL_DECIMAL )
       {
-        snprintf(buff, buff_max, "%.17e", *((float*) *res));
+        sprintf(buff, "%.17e", *((float*) *res));
       }
       else
       {
         /* We should perpare this data for string comparison */
-        snprintf(buff, buff_max, "%.15e", *((float*) *res));
+        sprintf(buff, "%.15e", *((float*) *res));
       }
       *length= strlen(*res= buff);
       break;
     case SQL_C_DOUBLE:
       if ( iprec->concise_type != SQL_NUMERIC && iprec->concise_type != SQL_DECIMAL )
       {
-        snprintf(buff, buff_max, "%.17e", *((double*) *res));
+        sprintf(buff,"%.17e",*((double*) *res));
       }
       else
       {
         /* We should perpare this data for string comparison */
-        snprintf(buff, buff_max, "%.15e",*((double*) *res));
+        sprintf(buff,"%.15e",*((double*) *res));
       }
       *length= strlen(*res= buff);
       break;
@@ -671,11 +671,11 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
         if (stmt->dbc->ds->min_date_to_zero && !date->year
           && (date->month == date->day == 1))
         {
-          *length= snprintf(buff, buff_max, "0000-00-00");
+          *length= sprintf(buff, "0000-00-00");
         }
         else
         {
-          *length= snprintf(buff, buff_max, "%04d-%02d-%02d", date->year, date->month, date->day);
+          *length= sprintf(buff, "%04d-%02d-%02d", date->year, date->month, date->day);
         }
         *res= buff;
         break;
@@ -690,8 +690,8 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
           return stmt->set_error("22008", "Not a valid time value supplied", 0);
         }
 
-        *length = snprintf(buff, buff_max, "%02d:%02d:%02d",
-                           time->hour, time->minute, time->second);
+        *length= sprintf(buff, "%02d:%02d:%02d",
+                                time->hour, time->minute, time->second);
         *res= buff;
         break;
       }
@@ -703,14 +703,14 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
         if (stmt->dbc->ds->min_date_to_zero &&
             !time->year && (time->month == time->day == 1))
         {
-          *length= snprintf(buff, buff_max, "0000-00-00 %02d:%02d:%02d", time->hour,
-                            time->minute, time->second);
+          *length= sprintf(buff, "0000-00-00 %02d:%02d:%02d", time->hour,
+                  time->minute, time->second);
         }
         else
         {
-          *length= snprintf(buff, buff_max, "%04d-%02d-%02d %02d:%02d:%02d",
-                            time->year, time->month, time->day,
-                            time->hour, time->minute, time->second);
+          *length= sprintf(buff, "%04d-%02d-%02d %02d:%02d:%02d",
+                    time->year, time->month, time->day,
+                    time->hour, time->minute, time->second);
         }
 
         if (time->fraction)
@@ -720,7 +720,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
           /* Start cleaning from the end */
           int tmp_pos= 9;
 
-          snprintf(tmp_buf, buff_max - *length, ".%09d", time->fraction);
+          sprintf(tmp_buf, ".%09d", time->fraction);
 
           /*
             ODBC specification defines nanoseconds granularity for
@@ -1311,7 +1311,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
           goto memerror;
         }
 
-        size_t added = dbc->mysql_proxy->real_escape_string(stmt->endbuf(), data, length);
+        size_t added = dbc->mysql->real_escape_string(stmt->endbuf(), data, length);
         stmt->buf_add_pos(added);
         stmt->add_to_buffer("'", 1);
       }
@@ -1818,7 +1818,7 @@ static SQLRETURN find_next_out_stream(STMT *stmt, SQLPOINTER *token)
   else
   {
     /* Magical out params fetch */
-    stmt->dbc->mysql_proxy->stmt_fetch(stmt->ssps);
+    mysql_stmt_fetch(stmt->ssps);
     stmt->out_params_state = OPS_PREFETCHED;
 
     return SQL_SUCCESS;
@@ -2002,7 +2002,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
   {
     char buff[40];
     /* buff is always big enough because max length of %lu is 15 */
-    snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->mysql_proxy->thread_id());
+    sprintf(buff, "KILL /*!50000 QUERY */ %lu", dbc->mysql->thread_id());
     if (mysql_real_query(second, buff, strlen(buff)))
     {
       mysql_close(second);

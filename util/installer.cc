@@ -223,27 +223,20 @@ static SQLWCHAR W_OCI_CONFIG_FILE[] =
 { 'O', 'C', 'I', '_', 'C', 'O', 'N', 'F', 'I', 'G', '_', 'F', 'I', 'L', 'E', 0 };
 
 /* Failover */
-static SQLWCHAR W_ENABLE_CLUSTER_FAILOVER[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
+static SQLWCHAR W_DISABLE_CLUSTER_FAILOVER[] = { 'D', 'I', 'S', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
 static SQLWCHAR W_ALLOW_READER_CONNECTIONS[] = { 'A', 'L', 'L', 'O', 'W', '_', 'R', 'E', 'A', 'D', 'E', 'R', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', 'I', 'O', 'N', 'S', 0 };
 static SQLWCHAR W_GATHER_PERF_METRICS[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', 0 };
 static SQLWCHAR W_GATHER_PERF_METRICS_PER_INSTANCE[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', '_','P','E','R','_','I','N','S','T','A','N', 'C', 'E', 0 };
 static SQLWCHAR W_HOST_PATTERN[] = { 'H', 'O', 'S', 'T', '_', 'P', 'A', 'T', 'T', 'E', 'R', 'N', 0 };
 static SQLWCHAR W_CLUSTER_ID[] = { 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'I', 'D', 0 };
-static SQLWCHAR W_TOPOLOGY_REFRESH_RATE[] = { 'T', 'O', 'P', 'O', 'L', 'O', 'G', 'Y', '_', 'R', 'E', 'F', 'R', 'E', 'S', 'H', '_', 'R', 'A', 'T', 'E', 0 };
-static SQLWCHAR W_FAILOVER_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
-static SQLWCHAR W_FAILOVER_TOPOLOGY_REFRESH_RATE[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'T', 'O', 'P', 'O', 'L', 'O', 'G', 'Y', '_', 'R', 'E', 'F', 'R', 'E', 'S', 'H', '_', 'R', 'A', 'T', 'E', 0 };
-static SQLWCHAR W_FAILOVER_WRITER_RECONNECT_INTERVAL[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'W', 'R', 'I', 'T', 'E', 'R', '_', 'R', 'E', 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 'I', 'N', 'T', 'E', 'R', 'V', 'A', 'L', 0 };
-static SQLWCHAR W_FAILOVER_READER_CONNECT_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'R', 'E', 'A', 'D', 'E', 'R', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
+static SQLWCHAR W_TOPOLOGY_REFRESH_RATE[] = { 'T', 'O', 'P', 'O', 'L', 'O', 'G', 'Y', '_', 'R', 'R', 0 };
+static SQLWCHAR W_FAILOVER_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'T', 0 };
+static SQLWCHAR W_FAILOVER_TOPOLOGY_REFRESH_RATE[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'T', 'R', 'R', 0 };
+static SQLWCHAR W_FAILOVER_WRITER_RECONNECT_INTERVAL[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'W', 'R', 'I', 0 };
+static SQLWCHAR W_FAILOVER_READER_CONNECT_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'R', 'C', 'T', 0 };
 static SQLWCHAR W_CONNECT_TIMEOUT[] = { 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
 static SQLWCHAR W_NETWORK_TIMEOUT[] = { 'N', 'E', 'T', 'W', 'O', 'R', 'K', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
 
-/* Monitoring */
-static SQLWCHAR W_ENABLE_FAILURE_DETECTION[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', 0 };
-static SQLWCHAR W_FAILURE_DETECTION_TIME[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 0 };
-static SQLWCHAR W_FAILURE_DETECTION_INTERVAL[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'I', 'N', 'T', 'E', 'R', 'V', 'A', 'L', 0 };
-static SQLWCHAR W_FAILURE_DETECTION_COUNT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'C', 'O', 'U', 'N', 'T', 0 };
-static SQLWCHAR W_MONITOR_DISPOSAL_TIME[] = { 'M', 'O', 'N', 'I', 'T', 'O', 'R', '_', 'D', 'I', 'S', 'P', 'O', 'S', 'A', 'L', '_', 'T', 'I', 'M', 'E', 0 };
-static SQLWCHAR W_FAILURE_DETECTION_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
 
 /* DS_PARAM */
 /* externally used strings */
@@ -285,17 +278,13 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         W_SSLMODE, W_NO_DATE_OVERFLOW, W_LOAD_DATA_LOCAL_DIR,
                         W_OCI_CONFIG_FILE,
                         /* Failover */
-                        W_ENABLE_CLUSTER_FAILOVER, W_ALLOW_READER_CONNECTIONS, 
+                        W_DISABLE_CLUSTER_FAILOVER, W_ALLOW_READER_CONNECTIONS, 
                         W_GATHER_PERF_METRICS, W_GATHER_PERF_METRICS_PER_INSTANCE,
                         W_HOST_PATTERN, W_CLUSTER_ID, W_TOPOLOGY_REFRESH_RATE,
                         W_FAILOVER_TIMEOUT, W_FAILOVER_TOPOLOGY_REFRESH_RATE,
                         W_FAILOVER_WRITER_RECONNECT_INTERVAL, 
                         W_FAILOVER_READER_CONNECT_TIMEOUT, W_CONNECT_TIMEOUT,
-                        W_NETWORK_TIMEOUT,
-                        /* Monitoring */
-                        W_ENABLE_FAILURE_DETECTION, W_FAILURE_DETECTION_TIME,
-                        W_FAILURE_DETECTION_INTERVAL, W_FAILURE_DETECTION_COUNT,
-                        W_MONITOR_DISPOSAL_TIME, W_FAILURE_DETECTION_TIMEOUT};
+                        W_NETWORK_TIMEOUT};
 static const
 int dsnparamcnt= sizeof(dsnparams) / sizeof(SQLWCHAR *);
 /* DS_PARAM */
@@ -362,23 +351,64 @@ UWORD config_set(UWORD mode)
   return current;
 }
 
-unsigned int get_connect_timeout(unsigned int seconds) {
-  if (seconds && seconds > 0) {
-    return seconds;
+unsigned int get_topology_refresh_rate(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
   }
 
-  return DEFAULT_CONNECT_TIMEOUT_SECS;
+  return TOPOLOGY_REFRESH_RATE_MS;
 }
 
-unsigned int get_network_timeout(unsigned int seconds) {
+unsigned int get_failover_timeout(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return FAILOVER_TIMEOUT_MS;
+}
+
+unsigned int get_failover_toplogy_refresh_rate(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return FAILOVER_TOPOLOGY_REFRESH_RATE_MS;
+}
+
+unsigned int get_failover_reader_connect_timeout(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return FAILOVER_READER_CONNECT_TIMEOUT_MS;
+}
+
+unsigned int get_failover_writer_reconnect_interval(unsigned int milliseconds) {
+  if (milliseconds && milliseconds > 0) {
+    return milliseconds;
+  }
+
+  return FAILOVER_WRITER_RECONNECT_INTERVAL_MS;
+}
+
+unsigned int get_failover_connect_timeout(unsigned int seconds) {
   if (seconds && seconds > 0) {
     return seconds;
   }
 
-  return DEFAULT_NETWORK_TIMEOUT_SECS;
+  return FAILOVER_CONNECT_TIMEOUT_SECS;
+}
+
+unsigned int get_failover_network_timeout(unsigned int seconds) {
+  if (seconds && seconds > 0) {
+    return seconds;
+  }
+
+  return FAILOVER_NETWORK_TIMEOUT_SECS;
 }
 
 /* ODBC Installer Driver Wrapper */
+
 
 /*
  * Create a new driver object. All string data is pre-allocated.
@@ -733,23 +763,16 @@ DataSource *ds_new()
   ds->port = 3306;
   ds->has_port = false;
   ds->no_schema = 1;
-  ds->enable_cluster_failover = true;
+  ds->disable_cluster_failover = false;
   ds->allow_reader_connections = false;
   ds->gather_perf_metrics = false;
-  ds->topology_refresh_rate = TOPOLOGY_REFRESH_RATE_MS;
-  ds->failover_timeout = FAILOVER_TIMEOUT_MS;
-  ds->failover_reader_connect_timeout = FAILOVER_READER_CONNECT_TIMEOUT_MS;
-  ds->failover_topology_refresh_rate = FAILOVER_TOPOLOGY_REFRESH_RATE_MS;
-  ds->failover_writer_reconnect_interval = FAILOVER_WRITER_RECONNECT_INTERVAL_MS;
-  ds->connect_timeout = DEFAULT_CONNECT_TIMEOUT_SECS;
-  ds->network_timeout = DEFAULT_NETWORK_TIMEOUT_SECS;
-
-  ds->enable_failure_detection = ds->enable_cluster_failover;
-  ds->failure_detection_time = FAILURE_DETECTION_TIME_MS;
-  ds->failure_detection_interval = FAILURE_DETECTION_INTERVAL_MS;
-  ds->failure_detection_count = FAILURE_DETECTION_COUNT;
-  ds->monitor_disposal_time = MONITOR_DISPOSAL_TIME_MS;
-  ds->failure_detection_timeout = FAILURE_DETECTION_TIMEOUT_SECS;
+  ds->topology_refresh_rate = get_topology_refresh_rate(0);
+  ds->failover_timeout = get_failover_timeout(0);
+  ds->failover_reader_connect_timeout = get_failover_reader_connect_timeout(0);
+  ds->failover_topology_refresh_rate = get_failover_toplogy_refresh_rate(0);
+  ds->failover_writer_reconnect_interval = get_failover_writer_reconnect_interval(0);
+  ds->connect_timeout = get_failover_connect_timeout(0);
+  ds->network_timeout = get_failover_network_timeout(0);
 
   /* DS_PARAM */
 
@@ -1089,8 +1112,8 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
     *strdest= &ds->oci_config_file;
   
   /* Failover*/
-  else if (!sqlwcharcasecmp(W_ENABLE_CLUSTER_FAILOVER, param))
-    *booldest = &ds->enable_cluster_failover;
+  else if (!sqlwcharcasecmp(W_DISABLE_CLUSTER_FAILOVER, param))
+    *booldest = &ds->disable_cluster_failover;
   else if (!sqlwcharcasecmp(W_ALLOW_READER_CONNECTIONS, param))
     *booldest = &ds->allow_reader_connections;  
   else if (!sqlwcharcasecmp(W_GATHER_PERF_METRICS, param))
@@ -1115,20 +1138,6 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
     *intdest = &ds->connect_timeout;
   else if (!sqlwcharcasecmp(W_NETWORK_TIMEOUT, param))
     *intdest = &ds->network_timeout;
-
-  /* Monitoring */
-  else if (!sqlwcharcasecmp(W_ENABLE_FAILURE_DETECTION, param))
-    *booldest = &ds->enable_failure_detection;
-  else if (!sqlwcharcasecmp(W_FAILURE_DETECTION_TIME, param))
-    *intdest = &ds->failure_detection_time;
-  else if (!sqlwcharcasecmp(W_FAILURE_DETECTION_INTERVAL, param))
-    *intdest = &ds->failure_detection_interval;
-  else if (!sqlwcharcasecmp(W_FAILURE_DETECTION_COUNT, param))
-    *intdest = &ds->failure_detection_count;
-  else if (!sqlwcharcasecmp(W_MONITOR_DISPOSAL_TIME, param))
-    *intdest = &ds->monitor_disposal_time;
-  else if (!sqlwcharcasecmp(W_FAILURE_DETECTION_TIMEOUT, param))
-    *intdest = &ds->failure_detection_timeout;
 
   /* DS_PARAM */
 }
@@ -1176,9 +1185,9 @@ int ds_lookup(DataSource *ds)
   OutputDebugString("Dumping SQLGetPrivateProfileStringW result");
   for (i= 0; i < size; ++i)
   {
-    snprintf(dbuf, sizeof(dbuf), "[%d] = %wc - 0x%x\n", i,
-             (entries[i] < 0x7f && isalpha(entries[i]) ? entries[i] : 'X'),
-             entries[i]);
+    sprintf(dbuf, "[%d] = %wc - 0x%x\n", i,
+            (entries[i] < 0x7f && isalpha(entries[i]) ? entries[i] : 'X'),
+            entries[i]);
     OutputDebugString(dbuf);
   }
   }
@@ -1650,7 +1659,7 @@ int ds_add(DataSource *ds)
   if (ds_add_strprop(ds->name, W_OCI_CONFIG_FILE, ds->oci_config_file)) goto error;
 
   /* Failover */
-  if (ds_add_intprop(ds->name, W_ENABLE_CLUSTER_FAILOVER, ds->enable_cluster_failover, true)) goto error;
+  if (ds_add_intprop(ds->name, W_DISABLE_CLUSTER_FAILOVER, ds->disable_cluster_failover)) goto error;
   if (ds_add_intprop(ds->name, W_ALLOW_READER_CONNECTIONS, ds->allow_reader_connections)) goto error;
   if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS, ds->gather_perf_metrics)) goto error;
   if (ds_add_intprop(ds->name, W_GATHER_PERF_METRICS_PER_INSTANCE, ds->gather_metrics_per_instance)) goto error;
@@ -1663,14 +1672,6 @@ int ds_add(DataSource *ds)
   if (ds_add_intprop(ds->name, W_FAILOVER_READER_CONNECT_TIMEOUT, ds->failover_reader_connect_timeout)) goto error;
   if (ds_add_intprop(ds->name, W_CONNECT_TIMEOUT, ds->connect_timeout)) goto error;
   if (ds_add_intprop(ds->name, W_NETWORK_TIMEOUT, ds->network_timeout)) goto error;
-
-  /* Monitoring */
-  if (ds_add_intprop(ds->name, W_ENABLE_FAILURE_DETECTION, ds->enable_failure_detection, true)) goto error;
-  if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_TIME, ds->failure_detection_time)) goto error;
-  if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_INTERVAL, ds->failure_detection_interval)) goto error;
-  if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_COUNT, ds->failure_detection_count)) goto error;
-  if (ds_add_intprop(ds->name, W_MONITOR_DISPOSAL_TIME, ds->monitor_disposal_time)) goto error;
-  if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_TIMEOUT, ds->failure_detection_timeout)) goto error;
 
  /* DS_PARAM */
 
@@ -2001,7 +2002,7 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
                          sqlwcharlen(ds_source->cluster_id));
     }
 
-    ds->enable_cluster_failover = ds_source->enable_cluster_failover;
+    ds->disable_cluster_failover = ds_source->disable_cluster_failover;
     ds->allow_reader_connections = ds_source->allow_reader_connections;
     ds->gather_perf_metrics = ds_source->gather_perf_metrics;
     ds->gather_metrics_per_instance = ds_source->gather_metrics_per_instance;
@@ -2015,10 +2016,4 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
         ds_source->failover_reader_connect_timeout;
     ds->connect_timeout = ds_source->connect_timeout;
     ds->network_timeout = ds_source->network_timeout;
-    ds->enable_failure_detection = ds_source->enable_failure_detection;
-    ds->failure_detection_time = ds_source->failure_detection_time;
-    ds->failure_detection_interval = ds_source->failure_detection_interval;
-    ds->failure_detection_count = ds_source->failure_detection_count;
-    ds->monitor_disposal_time = ds_source->monitor_disposal_time;
-    ds->failure_detection_timeout = ds_source->failure_detection_timeout;
 }

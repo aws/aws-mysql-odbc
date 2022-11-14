@@ -74,7 +74,7 @@ bool ENV::has_connections()
 DBC::DBC(ENV *p_env)
     : id{last_dbc_id++},
       env(p_env),
-      mysql_proxy(nullptr),
+      mysql(nullptr),
       txn_isolation(DEFAULT_TXN_ISOLATION),
       last_query_time((time_t)time((time_t *)0))
 {
@@ -108,7 +108,11 @@ void DBC::free_explicit_descriptors()
 
 void DBC::close()
 {
-  mysql_proxy->close();
+  if (mysql) 
+  {
+    delete mysql;
+    mysql = nullptr;
+  }
 }
 
 DBC::~DBC()
@@ -119,11 +123,8 @@ DBC::~DBC()
   if (ds)
     ds_delete(ds);
 
-  if (mysql_proxy) 
-    delete mysql_proxy;
-
   if (fh)
-    delete fh;
+      delete fh;
 
   free_explicit_descriptors();
 }
@@ -140,7 +141,7 @@ SQLRETURN DBC::set_error(char * state, const char * message, uint errcode)
 
 SQLRETURN DBC::set_error(char * state)
 {
-  return set_error(state, mysql_proxy->error(), mysql_proxy->error_code());
+  return set_error(state, mysql->error(), mysql->error_code());
 }
 
 
@@ -192,10 +193,10 @@ SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
 {
     ENV *env= (ENV *) henv;
     delete env;
-#ifdef _UNIX_
+#ifndef _UNIX_
+#else
     myodbc_end();
 #endif /* _UNIX_ */
-    MONITOR_THREAD_CONTAINER::release_instance();
     return(SQL_SUCCESS);
 }
 
@@ -248,12 +249,10 @@ SQLRETURN SQL_API my_SQLAllocConnect(SQLHENV henv, SQLHDBC *phdbc)
 
     ++thread_count;
 
-    if (MYSQL_PROXY::get_client_version() < MIN_MYSQL_VERSION)
+    if (mysql_get_client_version() < MIN_MYSQL_VERSION)
     {
         char buff[255];
-        snprintf(buff, sizeof(buff), 
-                 "Wrong libmysqlclient library version: %ld.  MyODBC needs at least version: %ld",
-                 MYSQL_PROXY::get_client_version(), MIN_MYSQL_VERSION);
+        sprintf(buff, "Wrong libmysqlclient library version: %ld.  MyODBC needs at least version: %ld", mysql_get_client_version(), MIN_MYSQL_VERSION);
         return(set_env_error((ENV*)henv, MYERR_S1000, buff, 0));
     }
 
@@ -316,7 +315,7 @@ int wakeup_connection(DBC *dbc)
   {
     ds_get_utf8attr(ds->pwd1, &ds->pwd18);
     int fator = 2;
-    dbc->mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
+    dbc->mysql->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
                          ds->pwd18);
   }
@@ -325,7 +324,7 @@ int wakeup_connection(DBC *dbc)
   {
     ds_get_utf8attr(ds->pwd2, &ds->pwd28);
     int fator = 2;
-    dbc->mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
+    dbc->mysql->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
                          ds->pwd28);
   }
@@ -334,13 +333,13 @@ int wakeup_connection(DBC *dbc)
   {
     ds_get_utf8attr(ds->pwd3, &ds->pwd38);
     int fator = 3;
-    dbc->mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
+    dbc->mysql->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
                          ds->pwd38);
   }
 #endif
 
-  if (dbc->mysql_proxy->change_user(ds_get_utf8attr(ds->uid, &ds->uid8),
+  if (dbc->mysql->change_user(ds_get_utf8attr(ds->uid, &ds->uid8),
                               ds_get_utf8attr(ds->pwd, &ds->pwd8),
                               ds_get_utf8attr(ds->database, &ds->database8)))
   {
