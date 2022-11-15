@@ -1,3 +1,5 @@
+# Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
 # Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
 # 
 # This program is free software; you can redistribute it and/or modify 
@@ -50,7 +52,7 @@ IF(WIN32)
   # --------------------------------------------------
 
   # -------------- find binary resources -------------
-  FIND_PATH(WIX_RESOURCE MySQLConnector.ico
+  FIND_PATH(WIX_RESOURCE AwsConnector.ico
           ./resources
           $ENV{WIX_RESOURCE}
           ${CMAKE_SOURCE_DIR}/../../../wix-installer/resources)
