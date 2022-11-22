@@ -42,14 +42,14 @@ class ConnectionString {
                          m_uid(""), m_pwd(""), m_db(""), m_log_query(true), m_allow_reader_connections(false),
                          m_multi_statements(false), m_enable_cluster_failover(true), m_failover_timeout(-1),
                          m_connect_timeout(-1), m_network_timeout(-1), m_host_pattern(""),
-                         m_enable_failure_detection(true), m_failure_detection_time(-1), m_failure_detection_interval(-1),
-                         m_failure_detection_count(-1), m_monitor_disposal_time(-1),
+                         m_enable_failure_detection(true), m_failure_detection_time(-1), m_failure_detection_timeout(-1),
+                         m_failure_detection_interval(-1), m_failure_detection_count(-1), m_monitor_disposal_time(-1),
                          
                          is_set_uid(false), is_set_pwd(false), is_set_db(false), is_set_log_query(false),
                          is_set_allow_reader_connections(false), is_set_multi_statements(false), is_set_enable_cluster_failover(false),
                          is_set_failover_timeout(false), is_set_connect_timeout(false), is_set_network_timeout(false), is_set_host_pattern(false),
-                         is_set_enable_failure_detection(false), is_set_failure_detection_time(false), is_set_failure_detection_interval(false),
-                         is_set_failure_detection_count(false), is_set_monitor_disposal_time(false) {};
+                         is_set_enable_failure_detection(false), is_set_failure_detection_time(false), is_set_failure_detection_timeout(false),
+                         is_set_failure_detection_interval(false), is_set_failure_detection_count(false), is_set_monitor_disposal_time(false) {};
 
     std::string get_connection_string() const {
       char conn_in[4096] = "\0";
@@ -95,6 +95,9 @@ class ConnectionString {
       if (is_set_failure_detection_time) {
         length += sprintf(conn_in + length, "FAILURE_DETECTION_TIME=%d;", m_failure_detection_time);
       }
+      if (is_set_failure_detection_timeout) {
+        length += sprintf(conn_in + length, "FAILURE_DETECTION_TIMEOUT=%d;", m_failure_detection_timeout);
+      }
       if (is_set_failure_detection_interval) {
         length += sprintf(conn_in + length, "FAILURE_DETECTION_INTERVAL=%d;", m_failure_detection_interval);
       }
@@ -121,7 +124,7 @@ class ConnectionString {
     int m_failover_timeout, m_connect_timeout, m_network_timeout;
     std::string m_host_pattern;
     bool m_enable_failure_detection;
-    int m_failure_detection_time, m_failure_detection_interval, m_failure_detection_count, m_monitor_disposal_time;
+    int m_failure_detection_time, m_failure_detection_timeout, m_failure_detection_interval, m_failure_detection_count, m_monitor_disposal_time;
 
     bool is_set_uid, is_set_pwd, is_set_db;
     bool is_set_log_query, is_set_allow_reader_connections, is_set_multi_statements;
@@ -129,7 +132,7 @@ class ConnectionString {
     bool is_set_failover_timeout, is_set_connect_timeout, is_set_network_timeout;
     bool is_set_host_pattern;
     bool is_set_enable_failure_detection;
-    bool is_set_failure_detection_time, is_set_failure_detection_interval, is_set_failure_detection_count;
+    bool is_set_failure_detection_time, is_set_failure_detection_timeout, is_set_failure_detection_interval, is_set_failure_detection_count;
     bool is_set_monitor_disposal_time;
 
     void set_dsn(const std::string& dsn) {
@@ -207,6 +210,11 @@ class ConnectionString {
     void set_failure_detection_time(const int& failure_detection_time) {
       m_failure_detection_time = failure_detection_time;
       is_set_failure_detection_time = true;
+    }
+
+    void set_failure_detection_timeout(const int& failure_detection_timeout) {
+      m_failure_detection_timeout = failure_detection_timeout;
+      is_set_failure_detection_timeout = true;
     }
 
     void set_failure_detection_interval(const int& failure_detection_interval) {
@@ -308,6 +316,11 @@ class ConnectionStringBuilder {
 
     ConnectionStringBuilder& withFailureDetectionTime(const int& failure_detection_time) {
       connection_string->set_failure_detection_time(failure_detection_time);
+      return *this;
+    }
+
+    ConnectionStringBuilder& withFailureDetectionTimeout(const int& failure_detection_timeout) {
+      connection_string->set_failure_detection_timeout(failure_detection_timeout);
       return *this;
     }
 
