@@ -79,6 +79,9 @@ jobs:
           echo "TEMP_AWS_ACCESS_KEY_ID=${creds[0]}" >> $GITHUB_ENV
           echo "TEMP_AWS_SECRET_ACCESS_KEY=${creds[1]}" >> $GITHUB_ENV
           echo "TEMP_AWS_SESSION_TOKEN=${creds[2]}" >> $GITHUB_ENV
+
+      - name: Debugging with ssh
+        uses: lhotari/action-upterm@v1
       
       - name: 'Run Performance Tests'
         working-directory: ${{ github.workspace }}/testframework
