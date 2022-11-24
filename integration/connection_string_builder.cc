@@ -44,7 +44,7 @@ class ConnectionString {
                          m_connect_timeout(-1), m_network_timeout(-1), m_host_pattern(""),
                          m_enable_failure_detection(true), m_failure_detection_time(-1), m_failure_detection_timeout(-1),
                          m_failure_detection_interval(-1), m_failure_detection_count(-1), m_monitor_disposal_time(-1),
-                         m_read_timeout(-1), m_write_timeout(-1); 
+                         m_read_timeout(-1), m_write_timeout(-1), 
                          
                          is_set_uid(false), is_set_pwd(false), is_set_db(false), is_set_log_query(false),
                          is_set_allow_reader_connections(false), is_set_multi_statements(false), is_set_enable_cluster_failover(false),
