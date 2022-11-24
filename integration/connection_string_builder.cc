@@ -44,12 +44,14 @@ class ConnectionString {
                          m_connect_timeout(-1), m_network_timeout(-1), m_host_pattern(""),
                          m_enable_failure_detection(true), m_failure_detection_time(-1), m_failure_detection_timeout(-1),
                          m_failure_detection_interval(-1), m_failure_detection_count(-1), m_monitor_disposal_time(-1),
+                         m_read_timeout(-1), m_write_timeout(-1); 
                          
                          is_set_uid(false), is_set_pwd(false), is_set_db(false), is_set_log_query(false),
                          is_set_allow_reader_connections(false), is_set_multi_statements(false), is_set_enable_cluster_failover(false),
                          is_set_failover_timeout(false), is_set_connect_timeout(false), is_set_network_timeout(false), is_set_host_pattern(false),
                          is_set_enable_failure_detection(false), is_set_failure_detection_time(false), is_set_failure_detection_timeout(false),
-                         is_set_failure_detection_interval(false), is_set_failure_detection_count(false), is_set_monitor_disposal_time(false) {};
+                         is_set_failure_detection_interval(false), is_set_failure_detection_count(false), is_set_monitor_disposal_time(false),
+                         is_set_read_timeout(false), is_set_write_timeout(false) {};
 
     std::string get_connection_string() const {
       char conn_in[4096] = "\0";
@@ -107,6 +109,12 @@ class ConnectionString {
       if (is_set_monitor_disposal_time) {
         length += sprintf(conn_in + length, "MONITOR_DISPOSAL_TIME=%d;", m_monitor_disposal_time);
       }
+      if (is_set_read_timeout) {
+        length += sprintf(conn_in + length, "READTIMEOUT=%d;", m_read_timeout);
+      }
+      if (is_set_write_timeout) {
+        length += sprintf(conn_in + length, "WRITETIMEOUT=%d;", m_write_timeout);
+      }
       snprintf(conn_in + length, sizeof(conn_in) - length, "\0");
 
       std::string connection_string(conn_in);
@@ -124,7 +132,7 @@ class ConnectionString {
     int m_failover_timeout, m_connect_timeout, m_network_timeout;
     std::string m_host_pattern;
     bool m_enable_failure_detection;
-    int m_failure_detection_time, m_failure_detection_timeout, m_failure_detection_interval, m_failure_detection_count, m_monitor_disposal_time;
+    int m_failure_detection_time, m_failure_detection_timeout, m_failure_detection_interval, m_failure_detection_count, m_monitor_disposal_time, m_read_timeout, m_write_timeout;
 
     bool is_set_uid, is_set_pwd, is_set_db;
     bool is_set_log_query, is_set_allow_reader_connections, is_set_multi_statements;
@@ -134,6 +142,7 @@ class ConnectionString {
     bool is_set_enable_failure_detection;
     bool is_set_failure_detection_time, is_set_failure_detection_timeout, is_set_failure_detection_interval, is_set_failure_detection_count;
     bool is_set_monitor_disposal_time;
+    bool is_set_read_timeout, is_set_write_timeout;
 
     void set_dsn(const std::string& dsn) {
       m_dsn = dsn;
@@ -230,6 +239,16 @@ class ConnectionString {
     void set_monitor_disposal_time(const int& monitor_disposal_time) {
       m_monitor_disposal_time = monitor_disposal_time;
       is_set_monitor_disposal_time = true;
+    }
+
+    void set_read_timeout(const int& read_timeout) {
+      m_read_timeout = read_timeout;
+      is_set_read_timeout = true;
+    }
+
+    void set_write_timeout(const int& write_timeout) {
+      m_write_timeout = write_timeout;
+      is_set_write_timeout = true;
     }
 };
 
@@ -336,6 +355,16 @@ class ConnectionStringBuilder {
 
     ConnectionStringBuilder& withMonitorDisposalTime(const int& monitor_disposal_time) {
       connection_string->set_monitor_disposal_time(monitor_disposal_time);
+      return *this;
+    }
+
+    ConnectionStringBuilder& withReadTimeout(const int& read_timeout) {
+      connection_string->set_read_timeout(read_timeout);
+      return *this;
+    }
+    
+    ConnectionStringBuilder& withWriteTimeout(const int& write_timeout) {
+      connection_string->set_write_timeout(write_timeout);
       return *this;
     }
 
