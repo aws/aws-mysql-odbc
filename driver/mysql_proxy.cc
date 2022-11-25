@@ -523,7 +523,7 @@ void MYSQL_PROXY::close_socket() {
     #else
         int rc = shutdown(mysql->net.fd, SHUT_RDWR);
         MYLOG_DBC_TRACE(dbc, "shutdown with return code %d", rc);
-        rc = ::closeclosesocket(mysql->net.fd);
+        rc = ::closesocket(mysql->net.fd);
         MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
     #endif
 }
