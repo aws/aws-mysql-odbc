@@ -28,6 +28,11 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include "driver.h"
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+#include <fcntl.h>
+#endif // _WIN32
 
 #include <sstream>
 
