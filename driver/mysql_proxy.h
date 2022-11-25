@@ -186,7 +186,7 @@ public:
     virtual bool connect();
     virtual bool is_connected();
     virtual const char* error();
-    virtual void close();
+    virtual void mysqlclose();
 
 private:
     DataSource* ds = nullptr;

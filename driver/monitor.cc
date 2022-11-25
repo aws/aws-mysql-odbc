@@ -195,7 +195,7 @@ CONNECTION_STATUS MONITOR::check_connection_status() {
 }
 
 bool MONITOR::connect() {
-    this->mysql_proxy->close();
+    this->mysql_proxy->mysqlclose();
     this->mysql_proxy->init();
 
     // Timeout shouldn't be 0 by now, but double check just in case
@@ -205,7 +205,7 @@ bool MONITOR::connect() {
 
     if (!this->mysql_proxy->connect()) {
         MYLOG_TRACE(this->logger.get(), 0, this->mysql_proxy->error());
-        this->mysql_proxy->close();
+        this->mysql_proxy->mysqlclose();
         return false;
     }
 

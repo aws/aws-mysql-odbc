@@ -512,7 +512,15 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
 
 void MYSQL_PROXY::close_socket() {
     MYLOG_DBC_TRACE(dbc, "Closing socket");
-    ::closesocket(mysql->net.fd);
+    #ifdef _WIN32
+        int rc = closesocket(mysql->net.fd);
+        MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
+    #else
+        int rc = shutdown(conn->net.fd, SHUT_RDWR);
+        MYLOG_DBC_TRACE(dbc, "shutdown with return code %d", rc);
+        rc = close(conn->net.fd);
+        MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
+    #endif
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
@@ -616,7 +624,7 @@ bool MYSQL_MONITOR_PROXY::is_connected() {
 const char* MYSQL_MONITOR_PROXY::error() {
     return mysql_error(mysql); }
 
-void MYSQL_MONITOR_PROXY::close() {
+void MYSQL_MONITOR_PROXY::mysqlclose() {
     mysql_close(mysql);
     mysql= nullptr;
 }
