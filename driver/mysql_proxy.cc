@@ -516,9 +516,9 @@ void MYSQL_PROXY::close_socket() {
         int rc = closesocket(mysql->net.fd);
         MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
     #else
-        int rc = shutdown(conn->net.fd, SHUT_RDWR);
+        int rc = shutdown(mysql->net.fd, SHUT_RDWR);
         MYLOG_DBC_TRACE(dbc, "shutdown with return code %d", rc);
-        rc = close(conn->net.fd);
+        rc = close(mysql->net.fd);
         MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
     #endif
 }
