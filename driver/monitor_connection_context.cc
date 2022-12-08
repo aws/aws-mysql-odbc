@@ -188,6 +188,7 @@ void MONITOR_CONNECTION_CONTEXT::abort_connection() {
     if ((!get_connection_to_abort()) || (!is_active_context())) {
         return;
     }
+    MYLOG_TRACE(logger.get(), get_dbc_id(), "close_socket() within abort_connection()");
     connection_to_abort->mysql_proxy->close_socket();
 }
 

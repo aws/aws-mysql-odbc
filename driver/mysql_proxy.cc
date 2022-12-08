@@ -558,6 +558,7 @@ void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> co
     }
     monitor_service->stop_monitoring(context);
     if (context->is_node_unhealthy() && is_connected()) {
+        MYLOG_DBC_TRACE(dbc, "close_socket() within stop_monitoring");
         close_socket();
     }
 }
