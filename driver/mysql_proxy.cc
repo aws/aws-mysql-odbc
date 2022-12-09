@@ -525,6 +525,7 @@ void MYSQL_PROXY::close_socket() {
         MYLOG_DBC_TRACE(dbc, "shutdown with return code %d", rc);
         rc = ::closesocket(mysql->net.fd);
         MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
+        close(mysql);
     #endif
 }
 
