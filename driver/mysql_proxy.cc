@@ -521,11 +521,16 @@ void MYSQL_PROXY::close_socket() {
         int rc = closesocket(mysql->net.fd);
         MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
     #else
-        int rc = shutdown(mysql->net.fd, SHUT_RDWR);
-        MYLOG_DBC_TRACE(dbc, "shutdown with return code %d", rc);
-        rc = ::closesocket(mysql->net.fd);
+        int rc = 0;
+        if (rc = shutdown(mysql->net.fd, SHUT_WR)) {
+            MYLOG_DBC_TRACE(dbc, "shutdown with error message: %s,", strerror(errno));
+        }
+        MYLOG_DBC_TRACE(dbc, "shutdown write side only with return code %d,", rc);
+
+        if (rc = ::closesocket(mysql->net.fd)) {
+            MYLOG_DBC_TRACE(dbc, "close socket with error message: %s,", strerror(errno));
+        }
         MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
-        close();
     #endif
 }
 

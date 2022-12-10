@@ -361,7 +361,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   }
   else
   {
-      connect_timeout = get_connect_timeout(login_timeout);
+      connect_timeout = get_connect_timeout(600);
       read_timeout = get_network_timeout(dsrc->read_timeout);
       write_timeout = get_network_timeout(dsrc->write_timeout);
   }

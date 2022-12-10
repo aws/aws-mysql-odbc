@@ -185,6 +185,7 @@ CONNECTION_STATUS MONITOR::check_connection_status() {
     }
 
     auto start = this->get_current_time();
+    MYLOG_TRACE(this->logger.get(), 0, "Pinging");
     bool is_connection_active = this->mysql_proxy->ping() == 0;
     auto duration = this->get_current_time() - start;
     
@@ -201,8 +202,11 @@ bool MONITOR::connect() {
     // Timeout shouldn't be 0 by now, but double check just in case
     unsigned int timeout_sec = this->failure_detection_timeout.count() == 0 ? failure_detection_timeout_default : this->failure_detection_timeout.count();
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
+    MYLOG_TRACE(this->logger.get(), 0, "connect timeout %u", timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
+    this->mysql_proxy->options(MYSQL_OPT_WRITE_TIMEOUT, &timeout_sec);
 
+    MYLOG_TRACE(this->logger.get(), 0, "Start monitoring connection");
     if (!this->mysql_proxy->connect()) {
         MYLOG_TRACE(this->logger.get(), 0, this->mysql_proxy->error());
         this->mysql_proxy->mysqlclose();
