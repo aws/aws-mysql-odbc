@@ -528,6 +528,8 @@ void MYSQL_PROXY::close_socket() {
             }
             MYLOG_DBC_TRACE(dbc, "shutdown both sides with return code %d,", rc);
 
+            std::this_thread::sleep_for(1000ms);
+
             if (rc = ::closesocket(mysql->net.fd)) {
                 MYLOG_DBC_TRACE(dbc, "close socket with error message: %s,", strerror(errno));
             }
