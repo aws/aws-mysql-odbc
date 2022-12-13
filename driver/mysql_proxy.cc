@@ -519,25 +519,19 @@ void MYSQL_PROXY::close_socket() {
     MYLOG_DBC_TRACE(dbc, "Closing socket");
     #ifdef _WIN32
         int rc = closesocket(mysql->net.fd);
-        MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
+        MYLOG_DBC_TRACE(dbc, "Closed socket with return code: %d, error code: %d", rc, socket_errno);
     #else
         if (mysql->net.fd != INVALID_SOCKET) {
             int rc = 0;
             if (rc = shutdown(mysql->net.fd, SHUT_RDWR)) {
-                MYLOG_DBC_TRACE(dbc, "shutdown with error message: %s,", strerror(errno));
+                MYLOG_DBC_TRACE(dbc, "shutdown() with return code: %d, error message: %s,", rc, strerror(socket_errno));
             }
-            MYLOG_DBC_TRACE(dbc, "shutdown both sides with return code %d,", rc);
-
+            // Yield to main thread to handle socket shutdown
             std::this_thread::yield();
-
             if (rc = ::closesocket(mysql->net.fd)) {
-                MYLOG_DBC_TRACE(dbc, "close socket with error message: %s,", strerror(errno));
+                MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", rc, strerror(socket_errno));
             }
-            MYLOG_DBC_TRACE(dbc, "Closed socket with return code %d", rc);
-            mysql->net.error = 2;
-            mysql->net.fd= INVALID_SOCKET;
         }
-
     #endif
 }
 
@@ -571,7 +565,6 @@ void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> co
     }
     monitor_service->stop_monitoring(context);
     if (context->is_node_unhealthy() && is_connected()) {
-        MYLOG_DBC_TRACE(dbc, "close_socket() within stop_monitoring");
         close_socket();
     }
 }
@@ -643,7 +636,7 @@ bool MYSQL_MONITOR_PROXY::is_connected() {
 const char* MYSQL_MONITOR_PROXY::error() {
     return mysql_error(mysql); }
 
-void MYSQL_MONITOR_PROXY::mysqlclose() {
+void MYSQL_MONITOR_PROXY::close() {
     mysql_close(mysql);
     mysql= nullptr;
 }

@@ -361,21 +361,10 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
   }
   else
   {
-      connect_timeout = get_connect_timeout(600);
+      connect_timeout = get_connect_timeout(login_timeout);
       read_timeout = get_network_timeout(dsrc->read_timeout);
       write_timeout = get_network_timeout(dsrc->write_timeout);
   }
-
-  MYLOG_DBC_TRACE(this, failover_enabled ? "Failover Enabled" : "Failover Disabled");
-  MYLOG_DBC_TRACE(this, dsrc->enable_failure_detection ? "EFM Enabled" : "EFM Disabled");
-
-  MYLOG_DBC_TRACE(this, "failure_detection_time : %u", dsrc->failure_detection_time);
-  MYLOG_DBC_TRACE(this, "failure_detection_count : %u", dsrc->failure_detection_count);
-  MYLOG_DBC_TRACE(this, "failure_detection_interval : %u", dsrc->failure_detection_interval);
-
-  MYLOG_DBC_TRACE(this, "connect_timeout : %u", connect_timeout);
-  MYLOG_DBC_TRACE(this, "read_timeout : %u", read_timeout);
-  MYLOG_DBC_TRACE(this, "write_timeout : %u", write_timeout);
 
   mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
   mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &read_timeout);
