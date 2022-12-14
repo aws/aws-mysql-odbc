@@ -528,10 +528,10 @@ void MYSQL_PROXY::close_socket() {
                 MYLOG_DBC_TRACE(dbc, "shutdown() with return code: %d, error message: %s,", rc, strerror(socket_errno));
             }
             // Yield to main thread to handle socket shutdown
-            std::this_thread::sleep_for(SOCKET_CLOSE_DELAY);
-            if (rc = ::closesocket(mysql->net.fd)) {
-                MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", rc, strerror(socket_errno));
-            }
+            // std::this_thread::sleep_for(SOCKET_CLOSE_DELAY);
+            // if (rc = ::closesocket(mysql->net.fd)) {
+            //     MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", rc, strerror(socket_errno));
+            // }
         }
     #endif
 }
