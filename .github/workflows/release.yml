@@ -11,7 +11,7 @@ env:
 jobs:
   build-mac:
     name: macOS
-    runs-on: macos-latest
+    runs-on: macos-11
     env:
       CMAKE_GENERATOR: Unix Makefiles
       MYSQL_DIR: /usr/local/opt/mysql-client
@@ -59,7 +59,7 @@ jobs:
 
   build-linux:
     name: Linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
     steps:
@@ -144,7 +144,7 @@ jobs:
 
   draft-release:
     name: Create Draft Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [build-mac, build-linux, build-windows]
     steps:
       - name: Download all installers
