@@ -41,6 +41,7 @@
 #define SOCKET_TIMEOUT_TEST_ID 1
 #define EFM_FAILOVER_TEST_ID 2
 #define EFM_DETECTION_TEST_ID 3
+#define DEFAULT_FAILURE_DETECTION_TIMEOUT 5
 
 struct BASE_PERFORMANCE_DATA {
   int network_outage_delay;
@@ -97,13 +98,13 @@ struct EFM_PERFORMANCE_DATA : BASE_PERFORMANCE_DATA {
   int detection_time, detection_interval, detection_count;
 
   void write_header(std::ofstream& data_stream) override {
-    data_stream << "Outage Delay (ms), Detection Time (?), Detection Interval (?), Detection Count, Min Failover Time (ms), Max Failover Time (ms), Avg Failover Time (ms)\n";
+    data_stream << "Outage Delay (ms), Detection Time (ms), Detection Interval (ms), Detection Count, Min Failover Time (ms), Max Failover Time (ms), Avg Failover Time (ms)\n";
   }
 
   void write_header_xlsx(const OpenXLSX::XLWorksheet worksheet, int row) {
     worksheet.cell(row, 1).value() = "Outage Delay (ms)";
-    worksheet.cell(row, 2).value() = "Detection Time (?)";
-    worksheet.cell(row, 3).value() = "Detection Interval (?)";
+    worksheet.cell(row, 2).value() = "Detection Time (ms)";
+    worksheet.cell(row, 3).value() = "Detection Interval (ms)";
     worksheet.cell(row, 4).value() = "Detection Count";
     worksheet.cell(row, 5).value() = "Min Failover Time (ms)";
     worksheet.cell(row, 6).value() = "Max Failover Time (ms)";
@@ -343,10 +344,15 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       const int detection_count = std::get<4>(GetParam());
 
       const std::string conn_str = builder.withEnableFailureDetection(true)
-                                          .withEnableClusterFailover(true)
                                           .withFailureDetectionTime(detection_time)
                                           .withFailureDetectionInterval(detection_interval)
-                                          .withFailureDetectionCount(detection_count).build();
+                                          .withFailureDetectionCount(detection_count)
+                                          .withFailureDetectionTimeout(DEFAULT_FAILURE_DETECTION_TIMEOUT)
+                                          .withEnableClusterFailover(true)
+                                          .withFailoverTimeout(60000)
+                                          .withConnectTimeout(120)
+                                          .withNetworkTimeout(120)
+                                          .withLogQuery(true).build();
 
       EFM_PERFORMANCE_DATA data;
       data.network_outage_delay = sleep_delay;
@@ -366,10 +372,14 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
       const int detection_count = std::get<4>(GetParam());
 
       const std::string conn_str = builder.withEnableFailureDetection(true)
-                                          .withEnableClusterFailover(false)
                                           .withFailureDetectionTime(detection_time)
                                           .withFailureDetectionInterval(detection_interval)
-                                          .withFailureDetectionCount(detection_count).build();
+                                          .withFailureDetectionCount(detection_count)
+                                          .withFailureDetectionTimeout(DEFAULT_FAILURE_DETECTION_TIMEOUT)
+                                          .withEnableClusterFailover(false)
+                                          .withReadTimeout(120)
+                                          .withWriteTimeout(120)
+                                          .withLogQuery(true).build();
 
       EFM_PERFORMANCE_DATA data;
       data.network_outage_delay = sleep_delay;

@@ -21,7 +21,7 @@ env:
 jobs:
   build-dockerized-community-tests:
     name: Dockerized Community Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
 
@@ -81,7 +81,7 @@ jobs:
       group: environment-${{ github.ref }}
       cancel-in-progress: true
     name: Dockerized Integration Tests 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
 
