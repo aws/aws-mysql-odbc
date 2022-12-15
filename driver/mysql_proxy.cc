@@ -33,6 +33,7 @@
 
 namespace {
     const char* RETRIEVE_HOST_PORT_SQL = "SELECT CONCAT(@@hostname, ':', @@port)";
+    const auto SOCKET_CLOSE_DELAY = std::chrono::milliseconds(100);
 }
 
 MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
@@ -512,7 +513,15 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
 
 void MYSQL_PROXY::close_socket() {
     MYLOG_DBC_TRACE(dbc, "Closing socket");
-    ::closesocket(mysql->net.fd);
+    int ret = 0;
+    if (mysql->net.fd != INVALID_SOCKET && (ret = shutdown(mysql->net.fd, SHUT_RDWR))) {
+        MYLOG_DBC_TRACE(dbc, "shutdown() with return code: %d, error message: %s,", ret, strerror(socket_errno));
+    }
+    // Yield to main thread to handle socket shutdown
+    std::this_thread::sleep_for(SOCKET_CLOSE_DELAY);
+    if (mysql->net.fd != INVALID_SOCKET && (ret = ::closesocket(mysql->net.fd))) {
+        MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", ret, strerror(socket_errno));
+    }
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
