@@ -13,7 +13,7 @@ jobs:
       group: environment-${{ github.ref }}
       cancel-in-progress: true
     name: Dockerized Performance Tests 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
 
@@ -79,7 +79,7 @@ jobs:
           echo "TEMP_AWS_ACCESS_KEY_ID=${creds[0]}" >> $GITHUB_ENV
           echo "TEMP_AWS_SECRET_ACCESS_KEY=${creds[1]}" >> $GITHUB_ENV
           echo "TEMP_AWS_SESSION_TOKEN=${creds[2]}" >> $GITHUB_ENV
-      
+
       - name: 'Run Performance Tests'
         working-directory: ${{ github.workspace }}/testframework
         run: |
