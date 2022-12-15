@@ -202,7 +202,6 @@ bool MONITOR::connect() {
     unsigned int timeout_sec = this->failure_detection_timeout.count() == 0 ? failure_detection_timeout_default : this->failure_detection_timeout.count();
     this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
     this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
-    this->mysql_proxy->options(MYSQL_OPT_WRITE_TIMEOUT, &timeout_sec);
 
     if (!this->mysql_proxy->connect()) {
         MYLOG_TRACE(this->logger.get(), 0, this->mysql_proxy->error());

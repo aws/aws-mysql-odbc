@@ -28,11 +28,6 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include "driver.h"
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#include <fcntl.h>
-#endif // _WIN32
 
 #include <sstream>
 
@@ -518,22 +513,15 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
 
 void MYSQL_PROXY::close_socket() {
     MYLOG_DBC_TRACE(dbc, "Closing socket");
-    #ifdef _WIN32
-        int rc = closesocket(mysql->net.fd);
-        MYLOG_DBC_TRACE(dbc, "Closed socket with return code: %d, error code: %d", rc, socket_errno);
-    #else
-        if (mysql->net.fd != INVALID_SOCKET) {
-            int rc = 0;
-            if (rc = shutdown(mysql->net.fd, SHUT_RDWR)) {
-                MYLOG_DBC_TRACE(dbc, "shutdown() with return code: %d, error message: %s,", rc, strerror(socket_errno));
-            }
-            // Yield to main thread to handle socket shutdown
-            std::this_thread::sleep_for(SOCKET_CLOSE_DELAY);
-            if (rc = ::closesocket(mysql->net.fd)) {
-                MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", rc, strerror(socket_errno));
-            }
-        }
-    #endif
+    int ret = 0;
+    if (mysql->net.fd != INVALID_SOCKET && (ret = shutdown(mysql->net.fd, SHUT_RDWR))) {
+        MYLOG_DBC_TRACE(dbc, "shutdown() with return code: %d, error message: %s,", ret, strerror(socket_errno));
+    }
+    // Yield to main thread to handle socket shutdown
+    std::this_thread::sleep_for(SOCKET_CLOSE_DELAY);
+    if (mysql->net.fd != INVALID_SOCKET && (ret = closesocket(mysql->net.fd))) {
+        MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", ret, strerror(socket_errno));
+    }
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
