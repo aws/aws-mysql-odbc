@@ -141,7 +141,6 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
         .WillRepeatedly(Return(true));
     
     EXPECT_CALL(*mock_proxy, init()).Times(1);
-    EXPECT_CALL(*mock_proxy, options(_, _)).Times(2);
     
     EXPECT_CALL(*mock_proxy, connect())
         .WillOnce(Return(true));
@@ -305,6 +304,12 @@ TEST_F(MonitorTest, ZeroEFMTimeout) {
                 MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(
                     Pointee(Eq(failure_detection_timeout_default))))))
         .Times(1);
+    EXPECT_CALL(
+        *proxy,
+        options(MYSQL_OPT_WRITE_TIMEOUT,
+                MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(
+                    Pointee(Eq(failure_detection_timeout_default))))))
+        .Times(1);
 
     EXPECT_CALL(*proxy, connect()).WillOnce(Return(true));
 
@@ -337,6 +342,11 @@ TEST_F(MonitorTest, NonZeroEFMTimeout) {
   EXPECT_CALL(
       *proxy,
       options(MYSQL_OPT_READ_TIMEOUT,
+              MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(Pointee(Eq(timeout.count()))))))
+      .Times(1);
+  EXPECT_CALL(
+      *proxy,
+      options(MYSQL_OPT_WRITE_TIMEOUT,
               MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(Pointee(Eq(timeout.count()))))))
       .Times(1);
 
