@@ -775,7 +775,7 @@ The resulting log file, named `myodbc.log`, can be found under `%temp%`.
 
 #### Enabling Logs On MacOS and Linux
 
-When connecting the MySQL Connector/ODBC Driver using a MacOS or Linux system, use the `LOG_QUERY` parameter in the connection string with the value of `1` to enable logging (`DSN=XXX;LOG_QUERY=1;...`). The log file, named `myodbc.log`, can be found in the current working directory.
+When connecting the MySQL Connector/ODBC Driver using a MacOS or Linux system, include the `LOG_QUERY` parameter in the connection string with the value of `1` to enable logging (`DSN=XXX;LOG_QUERY=1;...`). A log file, named `myodbc.log`, will be produced. On MacOS, the log file can be located in `/tmp`. On Linux, the log file can be found in the current working directory.
 
 ## License
 
