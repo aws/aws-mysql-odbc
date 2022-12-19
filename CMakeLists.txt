@@ -909,6 +909,8 @@ macro(bundle_plugins ignored)
       DESTINATION "${LIB_SUBDIR}/plugin"
       COMPONENT JDBCDll  # FIXME: use ODBC name
     )
+     
+    configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/plugin/${lib_name}.dll COPYONLY)
 
     configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/plugin/${lib_name}.dll COPYONLY)
 

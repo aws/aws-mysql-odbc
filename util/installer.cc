@@ -249,6 +249,29 @@ static SQLWCHAR W_FAILURE_DETECTION_COUNT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E
 static SQLWCHAR W_MONITOR_DISPOSAL_TIME[] = { 'M', 'O', 'N', 'I', 'T', 'O', 'R', '_', 'D', 'I', 'S', 'P', 'O', 'S', 'A', 'L', '_', 'T', 'I', 'M', 'E', 0 };
 static SQLWCHAR W_FAILURE_DETECTION_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
 
+/* Failover */
+static SQLWCHAR W_ENABLE_CLUSTER_FAILOVER[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
+static SQLWCHAR W_ALLOW_READER_CONNECTIONS[] = { 'A', 'L', 'L', 'O', 'W', '_', 'R', 'E', 'A', 'D', 'E', 'R', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', 'I', 'O', 'N', 'S', 0 };
+static SQLWCHAR W_GATHER_PERF_METRICS[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', 0 };
+static SQLWCHAR W_GATHER_PERF_METRICS_PER_INSTANCE[] = { 'G', 'A', 'T', 'H', 'E', 'R', '_', 'P', 'E', 'R', 'F', '_', 'M', 'E', 'T', 'R', 'I', 'C', 'S', '_','P','E','R','_','I','N','S','T','A','N', 'C', 'E', 0 };
+static SQLWCHAR W_HOST_PATTERN[] = { 'H', 'O', 'S', 'T', '_', 'P', 'A', 'T', 'T', 'E', 'R', 'N', 0 };
+static SQLWCHAR W_CLUSTER_ID[] = { 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'I', 'D', 0 };
+static SQLWCHAR W_TOPOLOGY_REFRESH_RATE[] = { 'T', 'O', 'P', 'O', 'L', 'O', 'G', 'Y', '_', 'R', 'E', 'F', 'R', 'E', 'S', 'H', '_', 'R', 'A', 'T', 'E', 0 };
+static SQLWCHAR W_FAILOVER_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
+static SQLWCHAR W_FAILOVER_TOPOLOGY_REFRESH_RATE[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'T', 'O', 'P', 'O', 'L', 'O', 'G', 'Y', '_', 'R', 'E', 'F', 'R', 'E', 'S', 'H', '_', 'R', 'A', 'T', 'E', 0 };
+static SQLWCHAR W_FAILOVER_WRITER_RECONNECT_INTERVAL[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'W', 'R', 'I', 'T', 'E', 'R', '_', 'R', 'E', 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 'I', 'N', 'T', 'E', 'R', 'V', 'A', 'L', 0 };
+static SQLWCHAR W_FAILOVER_READER_CONNECT_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'R', 'E', 'A', 'D', 'E', 'R', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
+static SQLWCHAR W_CONNECT_TIMEOUT[] = { 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
+static SQLWCHAR W_NETWORK_TIMEOUT[] = { 'N', 'E', 'T', 'W', 'O', 'R', 'K', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
+
+/* Monitoring */
+static SQLWCHAR W_ENABLE_FAILURE_DETECTION[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', 0 };
+static SQLWCHAR W_FAILURE_DETECTION_TIME[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 0 };
+static SQLWCHAR W_FAILURE_DETECTION_INTERVAL[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'I', 'N', 'T', 'E', 'R', 'V', 'A', 'L', 0 };
+static SQLWCHAR W_FAILURE_DETECTION_COUNT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'C', 'O', 'U', 'N', 'T', 0 };
+static SQLWCHAR W_MONITOR_DISPOSAL_TIME[] = { 'M', 'O', 'N', 'I', 'T', 'O', 'R', '_', 'D', 'I', 'S', 'P', 'O', 'S', 'A', 'L', '_', 'T', 'I', 'M', 'E', 0 };
+static SQLWCHAR W_FAILURE_DETECTION_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
+
 /* DS_PARAM */
 /* externally used strings */
 const SQLWCHAR W_DRIVER_PARAM[]= {';', 'D', 'R', 'I', 'V', 'E', 'R', '=', 0};
