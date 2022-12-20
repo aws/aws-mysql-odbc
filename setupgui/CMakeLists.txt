@@ -36,6 +36,14 @@ else(UNICODE OR NOT ANSI)
   add_definitions(-DDRIVER_ANSI)
 endif(UNICODE OR NOT ANSI)
 
+include(FetchContent)
+FetchContent_Declare(
+  ctpl
+  URL https://github.com/vit-vit/CTPL/archive/refs/tags/ctpl_v.0.0.2.zip
+)
+
+FetchContent_MakeAvailable(ctpl)
+
 # Sources
 
 if(WIN32)
@@ -119,6 +127,7 @@ if(WITH_NODEFAULTLIB)
   )
 endif()
 
+target_include_directories(awsmysqlodbcS PUBLIC "${ctpl_SOURCE_DIR}")
 
 # GTK GUI modules
 # Note: These are dlopened by the main awsmysqlodbcS module after detecting
