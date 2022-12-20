@@ -336,7 +336,6 @@ MYSQL_FIELD SQLTABLES_priv_fields[]=
 
 const uint SQLTABLES_PRIV_FIELDS= array_elements(SQLTABLES_priv_values);
 
-
 /*
 ****************************************************************************
 SQLColumnPrivileges

@@ -915,7 +915,6 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
             else
               snprintf(_value, sizeof(_value), "%llu", u_numeric_value);
 
-
             sqlnum_from_str(_value, sqlnum, &overflow);
             *pcbValue = sizeof(ulonglong);
           }

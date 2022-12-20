@@ -750,7 +750,6 @@ DECLARE_TEST(t_bug55870)
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL, NULL,
                                         NULL, (SQLCHAR*)"", (SQLCHAR*)""));
 
-
   sprintf((char*)query, "grant Insert, Select on bug55870 to '%s'@'localhost'", myuid);
   ok_stmt(hstmt, SQLExecDirect(hstmt, query, SQL_NTS));
   sprintf((char*)query, "grant Insert (c), Select (c), Update (c) on bug55870 to '%s'@'localhost'", myuid);
