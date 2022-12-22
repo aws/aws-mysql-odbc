@@ -98,7 +98,7 @@ void DBC::set_charset(std::string charset)
   std::string query = "SET NAMES " + charset;
   if (odbc_stmt(this, query.c_str(), query.length(), TRUE))
   {
-    throw MYERROR("HY000", "Error setting character set");
+    throw MYERROR("HY000", mysql_proxy);
   }
 }
 
