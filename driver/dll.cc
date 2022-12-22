@@ -84,7 +84,7 @@ void myodbc_init(void)
   if (myodbc_inited > 1)
     return;
 
-  mysql_library_init(0, nullptr, nullptr);
+  //mysql_library_init(0, nullptr, nullptr);
 
   if(!mysys_inited)
   {
