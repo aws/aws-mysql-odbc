@@ -26,7 +26,7 @@ jobs:
     runs-on: windows-2019
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
-      MYSQL_DIR: C:/mysql-8.0.28-winx64
+      MYSQL_DIR: C:/mysql-8.0.30-winx64
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -37,18 +37,18 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            C:/mysql-8.0.28-winx64/
+            C:/mysql-8.0.30-winx64/
           key: ${{ runner.os }}-mysql-${{ hashFiles('**/VersionInfo.h') }}
 
       - name: Install MySQL client libs and include files
         if: steps.cache-mysql.outputs.cache-hit != 'true'
         run: |
-          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.28-winx64.zip -o mysql.zip
-          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.28-winx64-debug-test.zip -o mysql-debug.zip
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.30-winx64.zip -o mysql.zip
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.30-winx64-debug-test.zip -o mysql-debug.zip
           unzip -d C:/ mysql.zip
-          mkdir C:/mysql-8.0.28-winx64-debug
-          unzip -d C:/mysql-8.0.28-winx64-debug mysql-debug.zip
-          mv -Force C:/mysql-8.0.28-winx64-debug/mysql-8.0.28-winx64/lib/debug/mysqlclient.lib C:/mysql-8.0.28-winx64/lib/mysqlclient.lib
+          mkdir C:/mysql-8.0.30-winx64-debug
+          unzip -d C:/mysql-8.0.30-winx64-debug mysql-debug.zip
+          mv -Force C:/mysql-8.0.30-winx64-debug/mysql-8.0.30-winx64/lib/debug/mysqlclient.lib C:/mysql-8.0.30-winx64/lib/mysqlclient.lib
             
       - name: Create build environment
         shell: bash

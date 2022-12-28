@@ -88,7 +88,7 @@ jobs:
 
       - name: Install MySQL client libs and include files
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.30-linux-glibc2.12-x86_64.tar.xz -o mysql.tar.gz
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-linux-glibc2.12-x86_64.tar.xz -o mysql.tar.gz
           tar xf mysql.tar.gz
 
       - name: Create build environment
@@ -103,7 +103,7 @@ jobs:
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DWITH_UNIXODBC=1
                 -DCONNECTOR_PLATFORM=linux
-                -DMYSQL_DIR=./mysql-8.0.30-linux-glibc2.12-x86_64/
+                -DMYSQL_DIR=./mysql-8.0.31-linux-glibc2.12-x86_64/
 
       # Build driver
       - name: Build driver
