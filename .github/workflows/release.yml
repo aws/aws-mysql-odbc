@@ -136,7 +136,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.30-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Setup nmake
@@ -144,7 +144,7 @@ jobs:
 
       - name: Run build installer script
         run: |
-          .\build_installer.ps1 x64 $BUILD_TYPE C:/mysql-8.0.31-winx64
+          .\build_installer.ps1 x64 $BUILD_TYPE C:/mysql-8.0.30-winx64
       
       - name: Upload Windows installer as artifact
         if: success()
