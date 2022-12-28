@@ -72,13 +72,13 @@ jobs:
 
       - name: Run failover tests
         if: always()
-        working-directory: ${{ github.workspace }}/build/testing
+        working-directory: ${{ github.workspace }}/build/unit_testing
         shell: bash
         run: ctest -C $WINDOWS_BUILD_TYPE --output-on-failure
 
       - name: Check memory leaks
         if: always()
-        working-directory: ${{ github.workspace }}/build/testing/Testing/Temporary
+        working-directory: ${{ github.workspace }}/build/unit_testing/Testing/Temporary
         run:  |
           $is_leaking = Select-String -Path ./LastTest.log -Pattern 'leak' -SimpleMatch
           if ($is_leaking) {echo $is_leaking; exit 1;}
@@ -107,7 +107,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: windows-failover-results
-          path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
+          path: ${{ github.workspace }}/build/unit_testing/Testing/Temporary/LastTest.log
 
   build-linux:
     name: Linux
@@ -150,7 +150,7 @@ jobs:
       # Test driver
       - name: Run failover tests on Linux
         if: success()
-        working-directory: ${{ github.workspace }}/build/testing
+        working-directory: ${{ github.workspace }}/build/unit_testing
         shell: bash
         run: ctest --output-on-failure
 
@@ -172,7 +172,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: linux-failover-results
-          path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
+          path: ${{ github.workspace }}/build/unit_testing/Testing/Temporary/LastTest.log
 
   build-mac:
     name: MacOS
@@ -229,15 +229,15 @@ jobs:
       # Test driver
       - name: Run driver tests
         if: success()
-        working-directory: ${{ github.workspace }}/build/testing
+        working-directory: ${{ github.workspace }}/build/unit_testing
         shell: bash
         run: ctest
 
       - name: Check memory leaks
         if: always()
-        working-directory: ${{ github.workspace }}/build/testing/bin
+        working-directory: ${{ github.workspace }}/build/unit_testing/bin
         run:  |
-          leaks -atExit -- ./testing > ../leaks_testing.txt
+          leaks -atExit -- ./unit_testing > ../leaks_unit_testing.txt
           export is_leaking=$?
           if (( $is_leaking != 0 )); then echo $is_leaking; exit 1; else echo "no memory leaks"; fi;
 
@@ -259,10 +259,10 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: macos-failover-results
-          path: ${{ github.workspace }}/build/testing/Testing/Temporary/LastTest.log
+          path: ${{ github.workspace }}/build/unit_testing/Testing/Temporary/LastTest.log
       - name: Upload memory leaks check
         if: always()
         uses: actions/upload-artifact@v2
         with:
           name: macos-memory-leaks-results
-          path: ${{ github.workspace }}/build/testing/leaks_testing.txt
+          path: ${{ github.workspace }}/build/unit_testing/leaks_unit_testing.txt
