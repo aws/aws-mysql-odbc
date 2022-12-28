@@ -547,7 +547,7 @@ IF(ENABLE_INTEGRATION_TESTS OR ENABLE_PERFORMANCE_TESTS)
 ENDIF()
 
 IF(ENABLE_UNIT_TESTS)
-  ADD_SUBDIRECTORY(testing)
+  ADD_SUBDIRECTORY(unit_testing)
 ENDIF()
 
 # For dynamic linking use the built-in sys and strings

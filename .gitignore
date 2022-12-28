@@ -19,8 +19,8 @@ test/*
 !test/*.h
 !test/*.in
 !test/unit.pl
-testing/build/**
-testing/bin/**
+unit_testing/build/**
+unit_testing/bin/**
 integration/bin/**
 
 # Test dependencies
