@@ -47,7 +47,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(
-  testing
+  unit_testing
 
   mock_objects.h
   test_utils.h
@@ -69,14 +69,14 @@ add_executable(
 )
 
 target_link_libraries(
-  testing
+  unit_testing
   gtest_main
   gmock_main
   awsmysqlodbca
 )
 
 include(GoogleTest)
-gtest_discover_tests(testing PROPERTIES DISCOVERY_TIMEOUT 30)
+gtest_discover_tests(unit_testing PROPERTIES DISCOVERY_TIMEOUT 30)
 
-set_target_properties(testing PROPERTIES
+set_target_properties(unit_testing PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
