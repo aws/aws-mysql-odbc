@@ -632,13 +632,13 @@ export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl@1.1/lib/
         cmake --build build --config Release
         ```
 2. There are two options to run the unit tests:
-    - Run `ctest` directly from the `testing` directory.
-    - Navigate to `testing/bin/Release` and run `testing.exe`. To specify a particular test or test suite, include `--gtest_filter` in the command.
+    - Run `ctest` directly from the `unit_testing` directory.
+    - Navigate to `unit_testing/bin/Release` and run `unit_testing.exe`. To specify a particular test or test suite, include `--gtest_filter` in the command.
 
-The following example demonstrates running all the tests in the `TopologyServiceTest` suite with the `.\testing.exe --gtest_filter=TopologyServiceTest.*` command:
+The following example demonstrates running all the tests in the `TopologyServiceTest` suite with the `.\unit_testing.exe --gtest_filter=TopologyServiceTest.*` command:
 
 ```
-PS C:\Other\dev\mysql-connector-odbc\testing\bin\Release> .\testing.exe --gtest_filter=TopologyServiceTest.*
+PS C:\Other\dev\mysql-connector-odbc\unit_testing\bin\Release> .\unit_testing.exe --gtest_filter=TopologyServiceTest.*
 Running main() from C:\Other\dev\mysql-connector-odbc\_deps\googletest-src\googletest\src\gtest_main.cc
 Note: Google Test filter = TopologyServiceTest.*
 [==========] Running 7 tests from 1 test suite.
