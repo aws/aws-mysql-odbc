@@ -1,10 +1,21 @@
-# MySQL Connector/ODBC Driver
+# Amazon Web Services (AWS) ODBC Driver for MySQL
 
-You can get the latest stable release from the [MySQL downloads](https://dev.mysql.com/downloads/connector/odbc/).
+[![build_status](https://github.com/awslabs/aws-mysql-odbc/actions/workflows/main.yml/badge.svg)](https://github.com/awslabs/aws-mysql-odbc/actions/workflows/main.yml)
+[![License](https://img.shields.io/badge/license-GPLv2-blue)](LICENSE)
 
-For detailed information please visit the official [MySQL Connector/ODBC documentation](https://dev.mysql.com/doc/connector-odbc/en/).
+**The Amazon Web Services (AWS) ODBC Driver for MySQL** allows an application to take advantage of the features of clustered MySQL databases. It is based on and can be used as a drop-in compatible for the [MySQL Connector/ODBC driver](https://github.com/mysql/mysql-connector-odbc/), and is compatible with all MySQL deployments.
 
-Source packages are available from our [github releases page](https://github.com/mysql/mysql-connector-odbc/releases).
+## Table of Contents
+- [Amazon Web Services (AWS) ODBC Driver for MySQL](#amazon-web-services-aws-odbc-driver-for-mysql)
+  - [Table of Contents](#table-of-contents)
+  - [About the Driver](#about-the-driver)
+    - [What is Failover?](#what-is-failover)
+    - [Benefits of the AWS ODBC Driver for MySQL](#benefits-of-the-aws-odbc-driver-for-mysql)
+  - [Getting Started](#getting-started)
+  - [Using the Driver](#using-the-driver)
+  - [Documentation](#documentation)
+  - [Getting Help and Opening Issues](#getting-help-and-opening-issues)
+  - [License](#license)
 
 **The MySQL Connector/ODBC Driver** allows an application to take advantage of the features of clustered MySQL databases.
 

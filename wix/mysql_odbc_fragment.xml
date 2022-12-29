@@ -67,10 +67,14 @@
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
             </Component>
-            <Component Id="setup" Guid="3A92E95A-AF9C-4A4F-A36D-E0052405C278" SharedDllRefCount="yes" Win64="yes">
-              <File Id="myodbc8S.dll" Name="myodbc8S.dll" KeyPath="yes" DiskId="1" Source="x64\myodbc8S.dll" />
+            <Component Id="setup" Guid="e706b738-01f6-4a7c-bf4a-eb4599a4abb4" SharedDllRefCount="yes" Win64="yes">
+              <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbcS.dll" />
+              <File Id="awsmysqlodbcS.lib" Name="awsmysqlodbcS.lib" DiskId="1" Source="x64\awsmysqlodbcS.lib"/>
+              <?if $(var.odbc_pdb) = 1 ?>
+                <File Id="awsmysqlodbcS.lib.pdb" Name="awsmysqlodbcS.pdb" DiskId="1" Source="x64\awsmysqlodbcS.pdb"/>
+              <?endif?>
             </Component>
-            <Component Id="installer" Guid="EB5E7FB3-F6DD-4424-A54A-DD07213E67ED" SharedDllRefCount="yes" Win64="yes">
+            <Component Id="installer" Guid="4d743672-e573-45e2-8002-8d32866a5ae2" SharedDllRefCount="yes" Win64="yes">
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x64\myodbc-installer.exe" />
             </Component>
             <Component Id="ssl" Guid="39342019-EE47-4414-A69D-D442C2FA0241" SharedDllRefCount="yes" Win64="yes">
@@ -91,10 +95,14 @@
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
             </Component>
-            <Component Id="setup" Guid="428232BA-9D94-4DB5-87CD-C939D1347664" SharedDllRefCount="yes">
-              <File Id="myodbc8S.dll" Name="myodbc8S.dll" KeyPath="yes" DiskId="1" Source="x86\myodbc8S.dll" />
+            <Component Id="setup" Guid="80e53cdf-b4fc-4911-a9c2-17853a6c83a8" SharedDllRefCount="yes">
+              <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbcS.dll" />
+              <File Id="awsmysqlodbcS.lib" Name="awsmysqlodbcS.lib" DiskId="1" Source="x86\awsmysqlodbcS.lib"/>
+              <?if $(var.odbc_pdb) = 1 ?>
+                <File Id="awsmysqlodbcS.lib.pdb" Name="awsmysqlodbcS.pdb" DiskId="1" Source="x86\awsmysqlodbcS.pdb"/>
+              <?endif?>
             </Component>
-            <Component Id="installer" Guid="75754F93-A6F5-4575-A6AA-C64CA053386F" SharedDllRefCount="yes">
+            <Component Id="installer" Guid="dcf4dd91-f481-4333-a276-a0a11cce51ca" SharedDllRefCount="yes">
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x86\myodbc-installer.exe" />
             </Component>
             <Component Id="ssl" Guid="80FD9287-2DF7-4609-B1A2-863ED313FB21" SharedDllRefCount="yes">

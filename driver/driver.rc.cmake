@@ -74,13 +74,13 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "Comments", "provides core driver functionality\0"
-            VALUE "CompanyName", "Oracle Corporation\0"
+            VALUE "CompanyName", "Amazon.com Inc. or affiliates.\0"
 	          VALUE "FileDescription", "MySQL ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ @DRIVER_TYPE@ Driver\0"
             VALUE "FileVersion", MYODBC_STRFILEVER
-            VALUE "InternalName", "myodbc8@CONNECTOR_DRIVER_TYPE_SHORT@\0"
+            VALUE "InternalName", "awsmysqlodbc@CONNECTOR_DRIVER_TYPE_SHORT@\0"
             VALUE "LegalCopyright", "Copyright (c) 1995, 2018, Oracle and/or its affiliates.\0"
             VALUE "LegalTrademarks", "MySQL, MyODBC, Connector/ODBC are trademarks of Oracle Corporation\0"
-            VALUE "OriginalFilename", "myodbc8@CONNECTOR_DRIVER_TYPE_SHORT@.dll\0"
+            VALUE "OriginalFilename", "awsmysqlodbc@CONNECTOR_DRIVER_TYPE_SHORT@.dll\0"
             VALUE "PrivateBuild", "Production\0"
 	          VALUE "ProductName", "Connector/ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@\0"
             VALUE "ProductVersion", MYODBC_STRPRODUCTVER

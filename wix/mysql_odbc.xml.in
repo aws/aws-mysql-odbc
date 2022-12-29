@@ -202,15 +202,27 @@
 
     <?if $(var.odbc_64bit) = 1 ?>
       <DirectoryRef Id="ProgramFiles64Folder">
-      <Component Id="RegKeys" Guid="92FEC72B-EB44-4E4D-B301-A915C80D067B" DiskId="1" Win64="yes">
+      <Component Id="RegKeys" Guid="33a46aaf-5684-431d-824f-cee1f606985e" DiskId="1" Win64="yes">
     <?else ?>
       <DirectoryRef Id="ProgramFilesFolder">
-      <Component Id="RegKeys" Guid="AECCA4A7-9405-466A-8393-4F0876DCD21A" DiskId="1">
+      <Component Id="RegKeys" Guid="0d96eb9d-5d18-4b55-ba42-f89c929f61cd" DiskId="1">
     <?endif ?>
         <RegistryKey Id="MysqlKey" Root="HKLM" Key="SOFTWARE\MySQL AB\[ProductName]"
                   ForceDeleteOnUninstall="yes"/>
         <RegistryValue Id="Version" Root="HKLM" Key="SOFTWARE\MySQL AB\[ProductName]"
                   Name="Version" Type="string" Value="[ProductVersion]"/>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\ODBC\ODBCINST.INI\ODBC Drivers">
+          <RegistryValue Type="string" Name="AWS ODBC ANSI Driver for MySQL" Value="Installed" />
+          <RegistryValue Type="string" Name="AWS ODBC Unicode Driver for MySQL" Value="Installed" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\ODBC\ODBCINST.INI\AWS ODBC ANSI Driver for MySQL">
+          <RegistryValue Type="string" Name="Driver" Value="[INSTALLDIR]awsmysqlodbca.dll" />
+          <RegistryValue Type="string" Name="Setup" Value="[INSTALLDIR]awsmysqlodbcS.dll" />
+        </RegistryKey>
+        <RegistryKey Root="HKLM" Key="SOFTWARE\ODBC\ODBCINST.INI\AWS ODBC Unicode Driver for MySQL">
+          <RegistryValue Type="string" Name="Driver" Value="[INSTALLDIR]awsmysqlodbcw.dll" />
+          <RegistryValue Type="string" Name="Setup" Value="[INSTALLDIR]awsmysqlodbcS.dll" />
+        </RegistryKey>
     <!--Need these to make candle happy -->
     <?if $(var.odbc_64bit) = 1 ?>
       </Component>
@@ -229,9 +241,9 @@
     -->
 
     <?if $(var.odbc_64bit) = 1 ?>
-    <Feature Id="ODBC" Title="MySQL Connector/ODBC $(var.odbc_ver_long) 64-bit drivers" Level="1" Description="Installs the MySQL ODBC $(var.odbc_ver_long) 64-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
+    <Feature Id="ODBC" Title="AWS ODBC Driver for MySQL $(var.odbc_ver_long) 64-bit" Level="1" Description="Installs the AWS ODBC Driver for MySQL $(var.odbc_ver_long) 64-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
     <?else ?>
-    <Feature Id="ODBC" Title="MySQL Connector/ODBC $(var.odbc_ver_long) 32-bit drivers" Level="1" Description="Installs the MySQL ODBC $(var.odbc_ver_long) 32-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
+    <Feature Id="ODBC" Title="AWS ODBC Driver for MySQL $(var.odbc_ver_long) 32-bit" Level="1" Description="Installs the AWS ODBC Driver for MySQL $(var.odbc_ver_long) 32-bit Unicode and ANSI drivers."  ConfigurableDirectory="INSTALLDIR">
     <?endif ?>
       <ComponentRef Id="RegKeys" />
       <ComponentRef Id="driver" />
@@ -245,7 +257,7 @@
     </Feature>
     <?endif ?>
 
-    <!--Feature Id="Help" Title="MySQL Connector/ODBC $(var.odbc_ver_long) Documentation" Level="1" Description="Installs the MySQL ODBC driver help.">
+    <!--Feature Id="Help" Title="AWS ODBC Driver for MySQL $(var.odbc_ver_long) Documentation" Level="1" Description="Installs the MySQL ODBC driver help.">
         <ComponentRef Id="help" />
     </Feature-->
 
@@ -276,8 +288,8 @@
     <Property Id="ProgressType1">Installing</Property>
     <Property Id="ProgressType0">install</Property>
 
-    <Property Id="QualifiedProductName">MySQL Connector/ODBC $(var.odbc_ver_long)($(var.odbc_driver_type_suffix))</Property>
-    <Property Id="InstallationDirectory">MySQL Connector-ODBC</Property>
+    <Property Id="QualifiedProductName">AWS ODBC Driver for MySQL $(var.odbc_ver_long)($(var.odbc_driver_type_suffix))</Property>
+    <Property Id="InstallationDirectory">AWS ODBC Driver for MySQL</Property>
 
     <Property Id="ReinstallFileVersion">o</Property>
     <Property Id="RebootYesNo">Yes</Property>
@@ -289,7 +301,7 @@
 
     <!-- The Guid has to be the same as in the mysql_odbc_fragment.xml -->
     <Property Id="SVRCNFWIZINSTALLED"><ComponentSearch Id="SvrCnfWizCompSearch"
-      Guid="782B3E4D-FCB1-42F4-BF45-06C159A49A0D" /></Property>
+      Guid="57792803-fbd7-433c-b6b5-60fddf34e0ce" /></Property>
 
     <!-- *****************************************************************************************
       Admin UI Sequence
