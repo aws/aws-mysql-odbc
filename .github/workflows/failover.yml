@@ -44,8 +44,8 @@ jobs:
       - name: Install MySQL client libs and include files
         if: steps.cache-mysql.outputs.cache-hit != 'true'
         run: |
-          wget https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-winx64.zip -o mysql.zip
-          wget https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-winx64-debug-test.zip -o mysql-debug.zip
+          Invoke-WebRequest https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-winx64.zip -OutFile mysql.zip
+          Invoke-WebRequest https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-winx64-debug-test.zip -OutFile mysql-debug.zip
           unzip -d C:/ mysql.zip
           mkdir C:/mysql-8.0.31-winx64-debug
           unzip -d C:/mysql-8.0.31-winx64-debug mysql-debug.zip
