@@ -33,7 +33,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          Invoke-WebRequest https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-winx64.zip -OutFile mysql.zip
+          Invoke-WebRequest -Uri "https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-winx64.zip" -OutFile "mysql.zip"
           unzip -d C:/ mysql.zip
             
       - name: Create build environment
