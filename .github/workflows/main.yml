@@ -40,7 +40,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Unzip MySQL client libs
         run: |
-          unzip -d C:/ mysql.zip
+          unzip -d C:/ mysql
             
       - name: Create build environment
         shell: bash
