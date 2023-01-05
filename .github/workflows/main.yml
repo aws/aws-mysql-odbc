@@ -30,17 +30,11 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
       
-      - uses: suisei-cn/actions-download-file@v1.3.0
-        id: mysql
-        name: Download MySQL client libs
-        with:
-          url: "https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.31-winx64.zip"
-          target: ./
-
       # Configure build environment/dependencies
-      - name: Unzip MySQL client libs
+      - name: Install MySQL client libs
         run: |
-          unzip -d C:/ mysql
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.30-winx64.zip -o mysql.zip
+          unzip -d C:/ mysql.zip
             
       - name: Create build environment
         shell: bash
