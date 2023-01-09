@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - myodbc
   pull_request:
     branches:
       - '*'
@@ -30,15 +31,6 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
-
-      # Configure build environment/dependencies
-      - name: Cache MySQL client libs and include files
-        id: cache-mysql
-        uses: actions/cache@v3
-        with:
-          path: |
-            C:/mysql-8.0.30-winx64/
-          key: ${{ runner.os }}-mysql-${{ hashFiles('**/VersionInfo.h') }}
 
       - name: Install MySQL client libs and include files
         if: steps.cache-mysql.outputs.cache-hit != 'true'

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <!-- *****************************************************************************************
- Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
- 
  Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
 
  This program is free software; you can redistribute it and/or modify
@@ -42,7 +40,7 @@
     SetVersion updates: Name, Id, Version. Do not change them manually.
   -->
 
-  <Product Id="@CONNECTOR_PKG_ID1@" UpgradeCode="5c230eb8-12f8-47bf-be2f-cd043ea2acb4" Codepage="utf-8"
+  <Product Id="@CONNECTOR_PKG_ID1@" UpgradeCode="FF073FBB-32E2-4052-B6B2-830C5ED4A809" Codepage="utf-8"
     Name="MySQL Connector/ODBC $(var.odbc_ver_short)" Version="$(var.odbc_ver_long)" Language="1033" Manufacturer="Oracle Corporation">
 
   <!-- *****************************************************************************************
@@ -57,7 +55,7 @@
     <?define odbc_platform="x86" ?>
     <?endif ?>
 
-    <Package Keywords="Installer,MSI,Database"
+    <Package Id="@CONNECTOR_PKG_ID2@" Keywords="Installer,MSI,Database"
       Description="MySQL Connector/ODBC" Manufacturer="Oracle Corporation"
       InstallerVersion="200" Platform="$(var.odbc_platform)"
       Languages="1033" SummaryCodepage="1252" Compressed='yes' />
@@ -73,11 +71,9 @@
       Upgrade Information
     -->
 
-    <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A newer version of this product is already installed. Setup will now exit." />
-
-    <Upgrade Id="5c230eb8-12f8-47bf-be2f-cd043ea2acb4">
+    <Upgrade Id="FF073FBB-32E2-4052-B6B2-830C5ED4A809">
       <!-- !!!SetVersion updates: Minimum, Maximum -->
-      <UpgradeVersion Property="PREVIOUSVERSIONINSTALLED" Minimum="0.0.0" Maximum="$(var.odbc_ver_prev)" IncludeMaximum="yes"
+      <UpgradeVersion Property="PREVIOUSVERSIONINSTALLED" Minimum="5.0.999" Maximum="$(var.odbc_ver_prev)" IncludeMaximum="yes"
         IncludeMinimum="yes"  />
       <!-- !!!SetVersion updates: Minimum, Maximum -->
       <UpgradeVersion Property="NEWERPRODUCTFOUND" Minimum="$(var.odbc_ver_long)" Maximum="$(var.odbc_ver_short).999" OnlyDetect="yes"
@@ -208,7 +204,7 @@
       <Component Id="RegKeys" Guid="AECCA4A7-9405-466A-8393-4F0876DCD21A" DiskId="1">
     <?endif ?>
         <RegistryKey Id="MysqlKey" Root="HKLM" Key="SOFTWARE\MySQL AB\[ProductName]"
-                  ForceDeleteOnUninstall="yes"/>
+                  Action="createAndRemoveOnUninstall"/>
         <RegistryValue Id="Version" Root="HKLM" Key="SOFTWARE\MySQL AB\[ProductName]"
                   Name="Version" Type="string" Value="[ProductVersion]"/>
     <!--Need these to make candle happy -->
@@ -284,7 +280,7 @@
     <Property Id="ReinstallModeText">omus</Property>
     <Property Id="ReinstallRepair">r</Property>
 
-    <Property Id="SetupType">Complete</Property>
+    <Property Id="SetupType">Typical</Property>
     <Property Id="ConfigureServer">1</Property>
 
     <!-- The Guid has to be the same as in the mysql_odbc_fragment.xml -->
@@ -311,6 +307,8 @@
 
     <InstallExecuteSequence>
       <Custom Action="NewerVersionInstalled" After="FindRelatedProducts">NEWERPRODUCTFOUND</Custom>
+
+      <RemoveExistingProducts After="InstallInitialize"/>
       <SetODBCFolders Suppress="yes" />
     </InstallExecuteSequence>
 

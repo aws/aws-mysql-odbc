@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - myodbc
   pull_request:
     branches:
       - '*'

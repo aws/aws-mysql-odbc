@@ -1,6 +1,4 @@
 <!-- *****************************************************************************************
- Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-
  Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved. 
  
  This program is free software; you can redistribute it and/or modify 
@@ -30,7 +28,6 @@
  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA 
 -->
 
-<!-- TODO: change links -->
 <Include>
   <Property Id="ARPCOMMENTS" Value="MySQL Connector/ODBC 8.0 is a MySQL database connector for ODBC." />
   <Property Id="ARPCONTACT" Value="http://www.mysql.com/about/contact/" />

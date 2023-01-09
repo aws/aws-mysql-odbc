@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - myodbc
   pull_request:
     branches:
       - '*'
@@ -28,7 +29,7 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
-
+      
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
