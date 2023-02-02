@@ -139,6 +139,7 @@ jobs:
           brew update
           brew unlink unixodbc
           brew install libiodbc mysql mysql-client
+          brew link --overwrite --force libiodbc
       
       - name: Create build environment
         shell: bash
