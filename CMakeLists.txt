@@ -512,6 +512,14 @@ ELSE(WIN32)
 
 ENDIF(WIN32)
 
+#------------ find the AWS SDK for C++ package---------
+IF(MSVC)
+  LIST(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/aws_sdk/install")
+ELSE(MSVC)
+ENDIF(MSVC)
+
+FIND_PACKAGE(AWSSDK REQUIRED COMPONENTS rds secretsmanager)
+
 #-----------------------------------------------------
 
 SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
