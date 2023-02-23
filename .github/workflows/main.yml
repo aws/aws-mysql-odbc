@@ -51,7 +51,7 @@ jobs:
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
         run: |
-          .\build_aws_sdk_win.ps1 x64 $BUILD_TYPE "$CMAKE_GENERATOR"
+          .\build_aws_sdk_win.ps1 x64 ${BUILD_TYPE} "${CMAKE_GENERATOR}"
             
       - name: Create build environment
         shell: bash
