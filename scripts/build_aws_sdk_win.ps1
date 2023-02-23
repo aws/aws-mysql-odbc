@@ -50,7 +50,8 @@ $INSTALL_DIR = "${BUILD_DIR}\..\install"
 
 $WIN_ARCH = $args[0]
 $CONFIGURATION = $args[1]
-$GENERATOR = $args[2]
+$BUILD_SHARED_LIBS = $args[2]
+$GENERATOR = $args[3]
 
 Write-Host $args
 
@@ -72,7 +73,7 @@ cmake $SRC_DIR `
     -D CMAKE_BUILD_TYPE=$CONFIGURATION `
     -D BUILD_ONLY="rds;secretsmanager" `
     -D ENABLE_TESTING="OFF" `
-    -D BUILD_SHARED_LIBS="ON" `
+    -D BUILD_SHARED_LIBS=$BUILD_SHARED_LIBS `
     -D CPP_STANDARD="17"
 
 # Build AWS SDK and install to $INSTALL_DIR 
