@@ -32,18 +32,17 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Cache MySQL client libs and include files
-        id: cache-mysql
+        id: cache-mysql-debug
         uses: actions/cache@v3
         with:
           path: |
             C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/
-            C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug/
 
-          key: ${{ runner.os }}-mysql-${{ vars.MYSQL_VERSION }}
+          key: ${{ runner.os }}-mysql-${{ vars.MYSQL_VERSION }}-${{ env.WINDOWS_BUILD_TYPE }}
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs and include files
-        if: steps.cache-mysql.outputs.cache-hit != 'true'
+        if: steps.cache-mysql-debug.outputs.cache-hit != 'true'
         run: |
           curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug-test.zip -o mysql-debug.zip
@@ -55,8 +54,18 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
+      - name: Cache AWS SDK libraries
+        id: cache-static-aws-sdk
+        uses: actions/cache@v3
+        with:
+          path: |
+            aws_sdk
+
+          key: ${{ runner.os }}-aws-sdk-static-lib
+
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
+        if: steps.cache-static-aws-sdk.outputs.cache-hit != 'true'
         run: |
           .\build_aws_sdk_win.ps1 x64 ${{ env.WINDOWS_BUILD_TYPE}} OFF "${{env.CMAKE_GENERATOR}}"
 
