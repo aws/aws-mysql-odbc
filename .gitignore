@@ -84,7 +84,6 @@ testframework/src/test/resources/*.ini
 *.gradle
 *.idea
 testframework/hs_err_pid*.log
-*.sh
 
 # Wix files
 *.wixobj

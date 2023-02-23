@@ -213,7 +213,7 @@ if((CMAKE_VERSION VERSION_LESS 3.1) OR (CMAKE_CXX_COMPILER_ID MATCHES "SunPro"))
 
 else()
 
-  # use C++14
+  # use C++17
   set(CMAKE_CXX_STANDARD 17)
   # error out if not supported
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
