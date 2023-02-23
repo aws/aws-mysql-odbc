@@ -49,7 +49,6 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
 
       - name: Build and install AWS SDK C++
-        shell: pwsh
         working-directory: ./scripts
         run: |
           .\build_aws_sdk_win.ps1 x64 $BUILD_TYPE "$CMAKE_GENERATOR"
