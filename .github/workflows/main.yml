@@ -176,6 +176,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DODBC_INCLUDES=$ODBC_DM_INCLUDES
+                -DCMAKE_PREFIX_PATH="./aws_sdk/install"
 
       # Build driver
       - name: Build driver
