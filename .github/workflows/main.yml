@@ -45,6 +45,9 @@ jobs:
           curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
       - name: Build and install AWS SDK C++
         shell: pwsh
         working-directory: ./scripts

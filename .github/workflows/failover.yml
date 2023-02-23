@@ -52,6 +52,9 @@ jobs:
           unzip -d C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug mysql-debug.zip
           mv -Force C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/debug/mysqlclient.lib C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/mysqlclient.lib
 
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
       - name: Build and install AWS SDK C++
         shell: pwsh
         working-directory: ./scripts
@@ -134,6 +137,7 @@ jobs:
                 libmysqlclient-dev 
                 unixodbc
                 unixodbc-dev
+                libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
 
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
