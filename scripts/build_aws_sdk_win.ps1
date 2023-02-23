@@ -52,6 +52,8 @@ $WIN_ARCH = $args[0]
 $CONFIGURATION = $args[1]
 $GENERATOR = $args[2]
 
+Write-Host $args
+
 # Make AWS SDK source directory
 New-Item -Path $SRC_DIR -ItemType Directory -Force | Out-Null
 # Clone the AWS SDK CPP repo

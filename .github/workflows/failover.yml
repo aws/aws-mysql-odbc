@@ -163,7 +163,7 @@ jobs:
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: cmake --build . --config $LINUX_BUILD_TYPE
+        run: cmake --build . --config $LINUX_BUILD_TYPE -DCMAKE_PREFIX_PATH="./aws_sdk/install"
 
       # Test driver
       - name: Run failover tests on Linux
