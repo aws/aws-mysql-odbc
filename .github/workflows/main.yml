@@ -24,7 +24,7 @@ jobs:
     runs-on: windows-2019
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
-      MYSQL_DIR: C:/mysql-${{ env.MYSQL_VERSION }}-winx64
+      MYSQL_DIR: C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -34,15 +34,15 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            C:/mysql-${{ env.MYSQL_VERSION }}-winx64/
+            C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/
 
-          key: ${{ runner.os }}-mysql-${{ env.MYSQL_VERSION }}
+          key: ${{ runner.os }}-mysql-${{ vars.MYSQL_VERSION }}
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         if: steps.cache-mysql.outputs.cache-hit != 'true'
         run: |
-          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ env.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Build and install AWS SDK C++
@@ -59,7 +59,7 @@ jobs:
         shell: bash
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
-                -DMYSQL_SQL="C:/mysql-${{ env.MYSQL_VERSION }}-winx64"
+                -DMYSQL_SQL="C:/mysql-${{ vars.MYSQL_VERSION }}-winx64"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
 
