@@ -139,7 +139,7 @@ jobs:
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
         run: |
-          ./build_aws_sdk_unix.sh LINUX $LINUX_BUILD_TYPE
+          ./build_aws_sdk_unix.sh $LINUX_BUILD_TYPE
 
       - name: Create build environment
         shell: bash
@@ -231,7 +231,7 @@ jobs:
         working-directory: ./scripts
         if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
         run: |
-          ./build_aws_sdk_unix.sh APPLE $MAC_BUILD_TYPE
+          ./build_aws_sdk_unix.sh $MAC_BUILD_TYPE
       
       - name: Create build environment
         shell: bash

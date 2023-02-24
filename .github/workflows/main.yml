@@ -170,7 +170,7 @@ jobs:
         working-directory: ./scripts
         if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
         run: |
-          ./build_aws_sdk_unix.sh APPLE $BUILD_TYPE
+          ./build_aws_sdk_unix.sh $BUILD_TYPE
       
       - name: Create build environment
         shell: bash
@@ -191,6 +191,10 @@ jobs:
         run: |
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
           cmake --build .
+
+      - name: copy AWS SDK libraries to driver library
+        run: |
+          cp ./aws_sdk/install/lib/*.dylib ./build/lib/
 
       # Configure test environment
       - name: Start MySQL server for tests

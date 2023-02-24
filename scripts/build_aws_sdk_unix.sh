@@ -28,8 +28,7 @@
 #along with this program. If not, see 
 #http://www.gnu.org/licenses/gpl-2.0.html.
 
-TARGET_ARCH=$1
-CONFIGURATION=$2
+CONFIGURATION=$1
 
 # Build AWS SDK
 
@@ -43,7 +42,7 @@ mkdir -p $AWS_SRC_DIR $AWS_BUILD_DIR $AWS_INSTALL_DIR
 
 git clone --recurse-submodules -b "1.11.21" "https://github.com/aws/aws-sdk-cpp.git" $AWS_SRC_DIR
 
-cmake -S $AWS_SRC_DIR -B $AWS_BUILD_DIR -DTARGET_ARCH="${TARGET_ARCH}" -DCMAKE_INSTALL_PREFIX="${AWS_INSTALL_DIR}" -DCMAKE_BUILD_TYPE="${CONFIGURATION}" -DBUILD_ONLY="rds;secretsmanager" -DENABLE_TESTING="OFF" -DBUILD_SHARED_LIBS="ON" -DCPP_STANDARD="14"
+cmake -S $AWS_SRC_DIR -B $AWS_BUILD_DIR -DCMAKE_INSTALL_PREFIX="${AWS_INSTALL_DIR}" -DCMAKE_BUILD_TYPE="${CONFIGURATION}" -DBUILD_ONLY="rds;secretsmanager" -DENABLE_TESTING="OFF" -DBUILD_SHARED_LIBS="ON" -DCPP_STANDARD="14"
 cd $AWS_BUILD_DIR
 make -j 4
 make install
