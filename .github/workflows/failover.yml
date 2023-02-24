@@ -136,8 +136,17 @@ jobs:
                 unixodbc-dev
                 libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
 
+      - name: Cache AWS SDK libraries
+        id: cache-dynamic-aws-sdk
+        uses: actions/cache@v3
+        with:
+          path: |
+            aws_sdk
+          key: ${{ runner.os }}-aws-sdk-dynamic-lib
+
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
+        if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
         run: |
           ./build_aws_sdk_unix.sh $LINUX_BUILD_TYPE
 
