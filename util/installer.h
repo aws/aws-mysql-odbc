@@ -219,6 +219,11 @@ typedef struct DataSource {
   unsigned int auth_port;
   unsigned int auth_expiration;
   SQLWCHAR     *auth_secret_id;
+
+  SQLCHAR *auth_mode8;
+  SQLCHAR* auth_region8;
+  SQLCHAR* auth_host8;
+  SQLCHAR* auth_secret_id8;
   
   /* Failover */
   BOOL enable_cluster_failover;
