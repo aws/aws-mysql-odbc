@@ -37,7 +37,6 @@ jobs:
         with:
           path: |
             C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/
-
           key: ${{ runner.os }}-mysql-${{ vars.MYSQL_VERSION }}-${{ env.WINDOWS_BUILD_TYPE }}
 
       # Configure build environment/dependencies
@@ -60,7 +59,6 @@ jobs:
         with:
           path: |
             aws_sdk
-
           key: ${{ runner.os }}-aws-sdk-static-lib
 
       - name: Build and install AWS SDK C++
@@ -165,7 +163,6 @@ jobs:
                 -DWITH_UNIXODBC=1
                 -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
-                -DCMAKE_PREFIX_PATH="./aws_sdk/install"
 
       # Build driver
       - name: Build driver
@@ -231,8 +228,17 @@ jobs:
           brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
 
+      - name: Cache AWS SDK libraries
+        id: cache-dynamic-aws-sdk
+        uses: actions/cache@v3
+        with:
+          path: |
+            aws_sdk
+          key: ${{ runner.os }}-aws-sdk-dynamic-lib
+
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
+        if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
         run: |
           ./build_aws_sdk_unix.sh APPLE $MAC_BUILD_TYPE
       
@@ -249,7 +255,6 @@ jobs:
                 -DODBC_INCLUDES=$ODBC_DM_INCLUDES
                 -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
-                -DCMAKE_PREFIX_PATH="./aws_sdk/install"
 
       # Build driver
       - name: Build driver
@@ -264,7 +269,7 @@ jobs:
         if: success()
         working-directory: ${{ github.workspace }}/build/unit_testing
         shell: bash
-        run: ctest
+        run: ctest --output-on-failure
 
       - name: Check memory leaks
         if: always()
