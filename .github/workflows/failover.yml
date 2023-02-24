@@ -31,17 +31,8 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
 
-      - name: Cache MySQL client libs and include files
-        id: cache-mysql-debug
-        uses: actions/cache@v3
-        with:
-          path: |
-            C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/
-          key: ${{ runner.os }}-mysql-${{ vars.MYSQL_VERSION }}-${{ env.WINDOWS_BUILD_TYPE }}
-
       # Configure build environment/dependencies
       - name: Install MySQL client libs and include files
-        if: steps.cache-mysql-debug.outputs.cache-hit != 'true'
         run: |
           curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug-test.zip -o mysql-debug.zip
