@@ -51,10 +51,6 @@ FetchContent_Declare(
   URL https://github.com/google/googletest/archive/refs/tags/v1.13.0.zip
 )
 FetchContent_Declare(
-  awssdk
-  GIT_REPOSITORY https://github.com/aws/aws-sdk-cpp
-)
-FetchContent_Declare(
   toxiproxy
   GIT_REPOSITORY https://github.com/Bit-Quill/toxiproxy-cpp
   GIT_TAG main
@@ -66,10 +62,6 @@ FetchContent_Declare(
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-# Only builds the RDS SDK
-set(BUILD_ONLY "rds" CACHE INTERNAL "")
-set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 
 # OpenXLSX
 set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -90,11 +82,8 @@ mark_as_advanced(
   CMAKE_C_FLAGS_DEBUGOPT
   CMAKE_EXE_LINKER_FLAGS_DEBUGOPT
   CMAKE_SHARED_LINKER_FLAGS_DEBUGOPT)
-set(AWS_SDK_DEPENDENCIES aws-c-auth aws-c-cal aws-c-common aws-c-compression
-  aws-c-event-stream aws-checksums aws-c-http aws-c-io aws-c-mqtt
-  aws-crt-cpp aws-c-s3 aws-cpp-sdk-core aws-cpp-sdk-rds)
 
-FetchContent_MakeAvailable(googletest toxiproxy awssdk)
+FetchContent_MakeAvailable(googletest toxiproxy)
 
 if(ENABLE_PERFORMANCE_TESTS)
   FetchContent_MakeAvailable(openxlsx)
@@ -120,7 +109,7 @@ include(GoogleTest)
 
 gtest_discover_tests(integration)
 
-target_include_directories(integration PUBLIC "${httplib_SOURCE_DIR}")
+target_include_directories(integration PUBLIC "${httplib_SOURCE_DIR}" ${AWSSDK_INCLUDE_DIR})
 
 target_link_libraries(
   integration
@@ -128,7 +117,7 @@ target_link_libraries(
   ${ODBCLIB}
   gtest_main
   toxiproxy
-  ${AWS_SDK_DEPENDENCIES}
+  ${AWSSDK_LINK_LIBRARIES}
 )
 
 if(ENABLE_PERFORMANCE_TESTS)
