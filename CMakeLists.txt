@@ -565,7 +565,7 @@ ENDIF()
 IF(ENABLE_UNIT_TESTS OR ENABLE_INTEGRATION_TESTS)
   SET(ODBC_PATH ${CMAKE_SOURCE_DIR}/testframework/src/test/resources/)
   SET(TEST_DRIVER "MyODBCa")
-  SET(DRIVER_PATH "/app/lib/awsmysqlodbca.so")
+  SET(DRIVER_PATH "/app/build/lib/awsmysqlodbca.so")
   SET(DRIVER_DESCRIPTION "AWS ANSI Driver for connecting to MySQL database server")
   SET(DESCRIPTION "AWS MySQL ODBC ${CONNECTOR_MAJOR}.${CONNECTOR_MINOR} ANSI Driver for Dockerized tests")
 
