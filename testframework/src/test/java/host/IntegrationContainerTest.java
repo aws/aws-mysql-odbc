@@ -122,7 +122,7 @@ public class IntegrationContainerTest {
       fail("Test container was not initialized correctly");
     }
 
-    containerHelper.runCTest(testContainer, "test");
+    containerHelper.runCTest(testContainer, "build/test");
   }
 
   @Test
@@ -130,7 +130,7 @@ public class IntegrationContainerTest {
       throws UnsupportedOperationException, IOException, InterruptedException {
     setupFailoverIntegrationTests(NETWORK);
     
-    containerHelper.runExecutable(testContainer, "integration/bin", "integration");
+    containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
   }
 
   protected static GenericContainer<?> createTestContainer(final Network network) {

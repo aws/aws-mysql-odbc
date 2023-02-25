@@ -88,7 +88,7 @@ jobs:
           TEST_DSN: awsmysqlodbca
           TEST_USERNAME: root
           TEST_PASSWORD: root
-          DRIVER_PATH: ${{ github.workspace }}/build
+          DRIVER_PATH: ${{ github.workspace }}
           
   build-dockerized-integration-tests:
     concurrency: # Cancel previous runs in the same branch
@@ -188,7 +188,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.TEMP_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.TEMP_AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.TEMP_AWS_SESSION_TOKEN }}
-          DRIVER_PATH: ${{ github.workspace }}/build
+          DRIVER_PATH: ${{ github.workspace }}
 
       - name: 'Get Github Action IP'
         id: ip
