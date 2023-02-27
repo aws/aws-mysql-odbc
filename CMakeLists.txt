@@ -517,7 +517,7 @@ LIST(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/aws_sdk/install")
 
 FIND_PACKAGE(AWSSDK REQUIRED COMPONENTS rds secretsmanager)
 
-#-----------------------------------------------------
+#------------------------------------------------------
 
 SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 SET(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")

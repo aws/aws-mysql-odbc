@@ -752,8 +752,8 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     dsrc->port = port;
 
     Aws::SDKOptions options;
-    Aws::InitAPI(options);
-    Aws::ShutdownAPI(options);
+    //Aws::InitAPI(options); TODO: causing SSL connection error: SSL_CTX_new failed
+    //Aws::ShutdownAPI(options);
 
     const bool connect_result = dsrc->enable_dns_srv ?
                             mysql_proxy->real_connect_dns_srv(host,

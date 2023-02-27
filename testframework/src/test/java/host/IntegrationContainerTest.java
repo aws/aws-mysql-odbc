@@ -129,7 +129,8 @@ public class IntegrationContainerTest {
   public void testRunFailoverTestInContainer()
       throws UnsupportedOperationException, IOException, InterruptedException {
     setupFailoverIntegrationTests(NETWORK);
-    
+    containerHelper.runExecutable(testContainer, "build/lib", "ls -l");
+    containerHelper.runExecutable(testContainer, "build/lib", "ldd ./awsmysqlodbca.so");
     containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
   }
 
