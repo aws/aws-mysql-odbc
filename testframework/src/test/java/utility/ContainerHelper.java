@@ -71,6 +71,15 @@ public class ContainerHelper {
     assertEquals(0, exitCode, "Some tests failed.");
   }
 
+    public void runCommand(GenericContainer<?> container, String... command)
+      throws IOException, InterruptedException {
+    System.out.println("==== Container console feed ==== >>>>");
+    Consumer<OutputFrame> consumer = new ConsoleConsumer();
+    Long exitCode = execInContainer(container, consumer, command);
+    System.out.println("==== Container console feed ==== <<<<");
+    assertEquals(0, exitCode, "Some tests failed.");
+  }
+
   public void runCTest(GenericContainer<?> container, String testDir)
       throws IOException, InterruptedException {
     System.out.println("==== Container console feed ==== >>>>");
