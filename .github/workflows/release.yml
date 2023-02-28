@@ -107,7 +107,6 @@ jobs:
                 -DWITH_UNIXODBC=1
                 -DCONNECTOR_PLATFORM=linux
                 -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64/
-                -DCMAKE_PREFIX_PATH="./aws_sdk/install"
 
       # Build driver
       - name: Build driver

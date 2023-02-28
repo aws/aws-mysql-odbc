@@ -100,6 +100,8 @@ else()
   set(TEST_SOURCES ${TEST_SOURCES} failover_performance_test.cc)
 endif()
 
+find_package(AWSSDK REQUIRED COMPONENTS rds)
+
 add_executable(
   integration
   ${TEST_SOURCES}

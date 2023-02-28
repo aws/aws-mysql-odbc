@@ -117,7 +117,7 @@ public class IntegrationContainerTest {
 
     try {
       // Allow the non root user to access this folder which contains log files. Required to run tests
-      testContainer.execInContainer("chown", DOCKER_UID, "/app/test/Testing/Temporary");
+      testContainer.execInContainer("chown", DOCKER_UID, "/app/build/test/Testing/Temporary");
     } catch (Exception e) {
       fail("Test container was not initialized correctly");
     }
@@ -131,6 +131,7 @@ public class IntegrationContainerTest {
     setupFailoverIntegrationTests(NETWORK);
     containerHelper.runCommand(testContainer, "ls", "-l", "/app/build/lib");
     containerHelper.runCommand(testContainer, "ldd", "/app/build/lib/awsmysqlodbca.so");
+    containerHelper.runCommand(testContainer, "ldd", "/app/build/integration/bin/integration");
     containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
   }
 
