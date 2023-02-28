@@ -100,7 +100,7 @@ else()
   set(TEST_SOURCES ${TEST_SOURCES} failover_performance_test.cc)
 endif()
 
-find_package(AWSSDK REQUIRED COMPONENTS rds)
+set(CMAKE_INSTALL_RPATH ${CMAKE_PREFIX_PATH})
 
 add_executable(
   integration
@@ -128,5 +128,5 @@ endif()
 
 set_target_properties(integration PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
-message(STATUS "Copying AWS SDK libraries to ${PROJECT_BINARY_DIR}/bin")
-AWSSDK_CPY_DYN_LIBS(SERVICE_LIST "" "${PROJECT_BINARY_DIR}/bin")
+#message(STATUS "Copying AWS SDK libraries to ${PROJECT_BINARY_DIR}/bin")
+#AWSSDK_CPY_DYN_LIBS(SERVICE_LIST "" "${PROJECT_BINARY_DIR}/bin")
