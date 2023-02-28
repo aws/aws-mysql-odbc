@@ -131,6 +131,7 @@ public class IntegrationContainerTest {
     setupFailoverIntegrationTests(NETWORK);
     containerHelper.runCommand(testContainer, "ls", "-l", "/app/build/lib");
     containerHelper.runCommand(testContainer, "ldd", "/app/build/lib/awsmysqlodbca.so");
+    containerHelper.runCommand(testContainer, "ls", "-l", "/app/build/integration/bin/");
     containerHelper.runCommand(testContainer, "ldd", "/app/build/integration/bin/integration");
     containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
   }
