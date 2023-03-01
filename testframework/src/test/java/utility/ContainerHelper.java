@@ -103,10 +103,10 @@ public class ContainerHelper {
                 builder
                     .from(testContainerImageName)
                     .run("mkdir", "app")
-                    .run("export", "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/app/aws_sdk/install/lib")
                     .workDir("/app")
                     .entryPoint("/bin/sh -c \"while true; do sleep 30; done;\"")
                     .build()))
+        .withEnv("LD_LIBRARY_PATH", "$LD_LIBRARY_PATH:/app/aws_sdk/install/lib")
         .withFileSystemBind(driverPath, "/app", BindMode.READ_WRITE)
         .withPrivilegedMode(true) // it's needed to control Linux core settings like TcpKeepAlive
         .withCopyFileToContainer(MountableFile.forHostPath("./gradlew"), "app/gradlew")
