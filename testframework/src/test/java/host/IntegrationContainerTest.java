@@ -133,7 +133,9 @@ public class IntegrationContainerTest {
     containerHelper.runCommand(testContainer, "ldd", "/app/build/lib/awsmysqlodbca.so");
     containerHelper.runCommand(testContainer, "ls", "-l", "/app/build/integration/bin/");
     containerHelper.runCommand(testContainer, "ldd", "/app/build/integration/bin/integration");
-    containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
+    containerHelper.runCommand(testContainer, "ldd", "/app/build/integration/bin/integration");
+    containerHelper.runCommand(testContainer,"LD_LIBRARY_PATH=/app/aws_sdk/install/lib" "/app/build/integration/bin/integration");
+    //containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
   }
 
   protected static GenericContainer<?> createTestContainer(final Network network) {

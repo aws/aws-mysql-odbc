@@ -100,11 +100,6 @@ else()
   set(TEST_SOURCES ${TEST_SOURCES} failover_performance_test.cc)
 endif()
 
-set(CMAKE_INSTALL_RPATH ${CMAKE_PREFIX_PATH})
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-message(STATUS "CMAKE_INSTALL_RPATH: ${CMAKE_INSTALL_RPATH}")
-
 add_executable(
   integration
   ${TEST_SOURCES}
