@@ -375,7 +375,7 @@ protected:
     failover_cluster(client, cluster_id, target_writer_id);
     
     int remaining_attempts = 3;
-    while (!has_writer_changed(client, cluster_id, initial_writer_id, std::chrono_literals::3min)) {
+    while (!has_writer_changed(client, cluster_id, initial_writer_id, std::chrono::minutes(3))) {
       // if writer is not changed, try triggering failover again
       remaining_attempts--;
       if (remaining_attempts == 0) {
