@@ -355,6 +355,9 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   const std::string initial_writer_id = writer_id;
   const std::string initial_reader_id = reader_id;
   const std::string initial_reader_endpoint = get_proxied_endpoint(initial_reader_id);
+  std::cerr << "[          ]  initial reader " << initial_reader_id << std::endl;
+  std::cerr << "[          ]  initial reader endpoint " << initial_reader_endpoint << std::endl;
+  std::cerr << "[          ]  initial writer " << initial_writer_id << std::endl;
 
   SQLCHAR conn_out[4096];
   SQLSMALLINT len;
@@ -363,10 +366,10 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   proxied_builder.withDSN(dsn).withUID(user).withPWD(pwd).withConnectTimeout(10).withNetworkTimeout(10);
   proxied_builder.withPort(MYSQL_PROXY_PORT).withHostPattern(PROXIED_CLUSTER_TEMPLATE).withLogQuery(true);
   connection_string = proxied_builder.withServer(initial_reader_endpoint).withAllowReaderConnections(true).build();
-  std::cerr << "[          ]  SQLDriverConnect " << std::endl;
+  std::cerr << "[          ]  SQLDriverConnect " << connection_string << std::endl;
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-  std::cerr << "[          ]  disable_instance " << initial_reader_id << std::endl;
+  std::cerr << "[          ]  disable_instance initial_reader_id " << initial_reader_id << std::endl;
   disable_instance(initial_reader_id);
 
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
@@ -378,7 +381,7 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   // Re-enable 2 readers (Second & Third reader)
   const std::string second_reader_id = readers[1];
   const std::string third_reader_id = readers[2];
-  std::cerr << "[          ]  enable_instance " << second_reader_id << third_reader_id << std::endl;
+  std::cerr << "[          ]  Re-enable 2 readers (Second & Third reader) " << second_reader_id << third_reader_id << std::endl;
   enable_instance(second_reader_id);
   enable_instance(third_reader_id);
 
