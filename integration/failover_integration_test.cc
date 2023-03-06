@@ -366,7 +366,6 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   proxied_builder.withDSN(dsn).withUID(user).withPWD(pwd).withConnectTimeout(10).withNetworkTimeout(10);
   proxied_builder.withPort(MYSQL_PROXY_PORT).withHostPattern(PROXIED_CLUSTER_TEMPLATE).withLogQuery(true);
   connection_string = proxied_builder.withServer(initial_reader_endpoint).withAllowReaderConnections(true).build();
-  std::cerr << "[          ]  SQLDriverConnect " << connection_string << std::endl;
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   std::cerr << "[          ]  disable_instance initial_reader_id " << initial_reader_id << std::endl;
