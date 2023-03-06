@@ -356,7 +356,6 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   const std::string initial_reader_id = reader_id;
   const std::string initial_reader_endpoint = get_proxied_endpoint(initial_reader_id);
   std::cerr << "[          ]  initial reader " << initial_reader_id << std::endl;
-  std::cerr << "[          ]  initial reader endpoint " << initial_reader_endpoint << std::endl;
   std::cerr << "[          ]  initial writer " << initial_writer_id << std::endl;
 
   SQLCHAR conn_out[4096];
