@@ -86,7 +86,6 @@ protected:
 * writer. Driver failover occurs when executing a method against the connection
 */
 TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionInvocation) {
-  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
@@ -103,7 +102,6 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
 }
 
 TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
-  GTEST_SKIP();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
 
@@ -137,7 +135,6 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
 
 /** Writer fails within a transaction. Open transaction with "SET autocommit = 0" */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSqlZero) {
-  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
@@ -189,7 +186,6 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
 
 /** Writer fails within a transaction. Open transaction with SQLSetConnectAttr */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFalse) {
-  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
@@ -243,7 +239,6 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
 
 /** Writer fails within a transaction. Open transaction with "START TRANSACTION". */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransaction) {
-  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
@@ -295,7 +290,6 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
 
 /* Writer fails within NO transaction. */
 TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
-  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
