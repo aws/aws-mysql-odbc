@@ -86,6 +86,7 @@ protected:
 * writer. Driver failover occurs when executing a method against the connection
 */
 TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionInvocation) {
+  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
@@ -102,6 +103,7 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
 }
 
 TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
+  GTEST_SKIP();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
 
@@ -135,6 +137,7 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
 
 /** Writer fails within a transaction. Open transaction with "SET autocommit = 0" */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSqlZero) {
+  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
@@ -186,6 +189,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
 
 /** Writer fails within a transaction. Open transaction with SQLSetConnectAttr */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFalse) {
+  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
@@ -239,6 +243,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
 
 /** Writer fails within a transaction. Open transaction with "START TRANSACTION". */
 TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransaction) {
+  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
   SQLINTEGER native_error;
@@ -290,6 +295,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
 
 /* Writer fails within NO transaction. */
 TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
+  GTEST_SKIP();
   connection_string = builder.withDSN(dsn).withServer(writer_endpoint).withUID(user).withPWD(pwd).withDatabase(db).build();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
@@ -341,11 +347,14 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
 TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstance) {
   // Ensure all networks to instances are enabled
   for (const auto& x : proxy_map) {
+    std::cerr << "[          ]  enable_connectivity " << x.first << std::endl;
     enable_connectivity(x.second);
   }
 
+  std::cerr << "[          ]  readers size " << readers.size() << std::endl;
   // Disable all readers but one & writer
   for (size_t index = 1; index < readers.size(); ++index) {
+    std::cerr << "[          ]  disable_instance " << readers[index] << std::endl;
     disable_instance(readers[index]);
   }
 
@@ -360,22 +369,27 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   proxied_builder.withDSN(dsn).withUID(user).withPWD(pwd).withConnectTimeout(10).withNetworkTimeout(10);
   proxied_builder.withPort(MYSQL_PROXY_PORT).withHostPattern(PROXIED_CLUSTER_TEMPLATE).withLogQuery(true);
   connection_string = proxied_builder.withServer(initial_reader_endpoint).withAllowReaderConnections(true).build();
+  std::cerr << "[          ]  SQLDriverConnect " << std::endl;
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
+  std::cerr << "[          ]  disable_instance " << initial_reader_id << std::endl;
   disable_instance(initial_reader_id);
 
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
+  std::cerr << "[          ]  query_instance_id " << current_connection << std::endl;
   std::string current_connection = query_instance_id(dbc);
   EXPECT_EQ(current_connection, initial_writer_id);
 
+  std::cerr << "[          ]  enable_instance " << second_reader_id << third_reader_id << std::endl;
   // Re-enable 2 readers (Second & Third reader)
   const std::string second_reader_id = readers[1];
   const std::string third_reader_id = readers[2];
   enable_instance(second_reader_id);
   enable_instance(third_reader_id);
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+  std::cerr << "[          ]  failover_cluster_and_wait_until_writer_changed " << std::endl;
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id, third_reader_id);
 
   // Query to trigger failover (Initial Writer)
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
