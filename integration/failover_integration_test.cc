@@ -63,6 +63,7 @@ protected:
     readers = get_readers(cluster_instances);
     reader_id = get_first_reader_id(cluster_instances);
     reader_endpoint = get_proxied_endpoint(reader_id);
+    target_writer_id = get_random_DB_cluster_reader_instance_id(readers);
 
     builder = ConnectionStringBuilder();
     builder.withPort(MYSQL_PORT)
@@ -90,7 +91,7 @@ TEST_F(FailoverIntegrationTest, test_failFromWriterToNewWriter_failOnConnectionI
   SQLSMALLINT len;
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, target_writer_id);
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   const std::string current_connection_id = query_instance_id(dbc);
@@ -121,7 +122,7 @@ TEST_F(FailoverIntegrationTest, test_takeOverConnectionProperties) {
   // Verify that connection accepts multi-statement sql
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, query, SQL_NTS));
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, target_writer_id);
 
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
@@ -158,7 +159,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutocommitSq
   const auto insert_query_a = AS_SQLCHAR("INSERT INTO test3_1 VALUES (1, 'test field string 1')");
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_a, SQL_NTS));
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, target_writer_id);
 
   // If there is an active transaction (The insert queries), roll it back and return an error 08007.
   EXPECT_EQ(SQL_ERROR, SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT));
@@ -211,7 +212,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_setAutoCommitFa
   const auto insert_query_a = AS_SQLCHAR("INSERT INTO test3_2 VALUES (1, 'test field string 1')");
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_a, SQL_NTS));
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, target_writer_id);
 
   // If there is an active transaction, roll it back and return an error 08007.
   EXPECT_EQ(SQL_ERROR, SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT));
@@ -262,7 +263,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithinTransaction_startTransactio
   const auto insert_query_a = AS_SQLCHAR("INSERT INTO test3_3 VALUES (1, 'test field string 1')");
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_a, SQL_NTS));
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, target_writer_id);
 
   // If there is an active transaction (The insert queries), roll it back and return an error 08007.
   EXPECT_EQ(SQL_ERROR, SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT));
@@ -309,7 +310,7 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
   const auto insert_query_a = AS_SQLCHAR("INSERT INTO test3_4 VALUES (1, 'test field string 1')");
   EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(handle, insert_query_a, SQL_NTS));
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, writer_id, target_writer_id);
 
   // Query expected to fail and rollback things in transaction
   const auto insert_query_b = AS_SQLCHAR("INSERT INTO test3_4 VALUES (2, 'test field string 2')");
@@ -374,7 +375,7 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   enable_instance(second_reader_id);
   enable_instance(third_reader_id);
 
-  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id);
+  failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id, third_reader_id);
 
   // Query to trigger failover (Initial Writer)
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
