@@ -43,11 +43,20 @@
 
 #include <gtest/gtest.h>
 #include <cassert>
+#include <chrono>
 #include <climits>
 #include <cstdlib>
+#include <iostream>
+#include <random>
 #include <stdexcept>
 #include <sql.h>
 #include <sqlext.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "connection_string_builder.cc"
 
@@ -141,6 +150,7 @@ protected:
   std::vector<std::string> readers;
   std::string reader_id;
   std::string reader_endpoint;
+  std::string target_writer_id;
 
   // Queries
   SQLCHAR* SERVER_ID_QUERY = AS_SQLCHAR("SELECT @@aurora_server_id");
@@ -304,11 +314,87 @@ protected:
     auto outcome = client.FailoverDBCluster(rds_req);
   }
 
+  static Aws::String get_random_DB_cluster_reader_instance_id(std::vector<std::string> readers) {
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<> distribution(0, readers.size() - 1); // define the range of random numbers
+    return readers.at(distribution(generator));
+  }
+
+  static std::string host_to_IP(Aws::String hostname) {
+    int status;
+    struct addrinfo hints;
+    struct addrinfo *servinfo;
+    struct addrinfo *p;
+    char ipstr[INET_ADDRSTRLEN];
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET; //IPv4
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((status = getaddrinfo(hostname.c_str(), NULL, &hints, &servinfo)) != 0) {
+      ADD_FAILURE() << "The IP address of host " << hostname << " could not be determined."
+              << "getaddrinfo error:" << gai_strerror(status);
+      return {};
+    }
+
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+      void* addr;
+
+      struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
+      addr = &(ipv4->sin_addr);
+      inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
+    }
+
+    freeaddrinfo(servinfo);
+    return std::string(ipstr);
+  }
+
+  static bool has_writer_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, std::string initial_writer_id, std::chrono::nanoseconds timeout) {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    std::string current_writer_id = get_DB_cluster_writer_instance_id(client, cluster_id);
+    while (initial_writer_id == current_writer_id) {
+      if (std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count() > timeout.count()) {
+        return false;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+      // Calling the RDS API to get writer Id.
+      current_writer_id = get_DB_cluster_writer_instance_id(client, cluster_id);
+    }
+    return true;
+  }
+
   static void failover_cluster_and_wait_until_writer_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id,
-                            const Aws::String& cluster_writer_id,
+                            const Aws::String& initial_writer_id,
                             const Aws::String& target_writer_id = "") {
+    
+    auto cluster_endpoint = get_DB_cluster(client, cluster_id).GetEndpoint();
+    std::string initial_writer_ip = host_to_IP(cluster_endpoint);
+
     failover_cluster(client, cluster_id, target_writer_id);
-    wait_until_writer_instance_changed(client, cluster_id, cluster_writer_id);
+    
+    int remaining_attempts = 3;
+    while (!has_writer_changed(client, cluster_id, initial_writer_id, std::chrono::minutes(3))) {
+      // if writer is not changed, try triggering failover again
+      remaining_attempts--;
+      if (remaining_attempts == 0) {
+        throw std::runtime_error("Failover cluster request was not successful.");
+      }
+      failover_cluster(client, cluster_id, target_writer_id);
+    }
+    
+    // Failover has finished, wait for DNS to be updated so cluster endpoint resolves to the correct writer instance.
+    std::string current_writer_ip = host_to_IP(cluster_endpoint);
+    while (initial_writer_ip == current_writer_ip) {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      current_writer_ip = host_to_IP(cluster_endpoint);
+    }
+
+    // Wait for target instance to be verified as a writer
+    while (!is_DB_instance_writer(client, cluster_id, target_writer_id)) {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
   }
 
   static Aws::RDS::Model::DBClusterMember get_matched_DBClusterMember(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id,
