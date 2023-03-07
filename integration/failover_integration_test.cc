@@ -341,22 +341,17 @@ TEST_F(FailoverIntegrationTest, test_writerFailWithNoTransaction) {
 TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstance) {
   // Ensure all networks to instances are enabled
   for (const auto& x : proxy_map) {
-    std::cerr << "[          ]  enable_connectivity " << x.first << std::endl;
     enable_connectivity(x.second);
   }
 
-  std::cerr << "[          ]  readers size " << readers.size() << std::endl;
   // Disable all readers but one & writer
   for (size_t index = 1; index < readers.size(); ++index) {
-    std::cerr << "[          ]  disable_instance " << readers[index] << std::endl;
     disable_instance(readers[index]);
   }
 
   const std::string initial_writer_id = writer_id;
   const std::string initial_reader_id = reader_id;
   const std::string initial_reader_endpoint = get_proxied_endpoint(initial_reader_id);
-  std::cerr << "[          ]  initial reader " << initial_reader_id << std::endl;
-  std::cerr << "[          ]  initial writer " << initial_writer_id << std::endl;
 
   SQLCHAR conn_out[4096];
   SQLSMALLINT len;
@@ -367,23 +362,19 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   connection_string = proxied_builder.withServer(initial_reader_endpoint).withAllowReaderConnections(true).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-  std::cerr << "[          ]  disable_instance initial_reader_id " << initial_reader_id << std::endl;
   disable_instance(initial_reader_id);
 
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
   std::string current_connection = query_instance_id(dbc);
-  std::cerr << "[          ]  query_instance_id " << current_connection << std::endl;
   EXPECT_EQ(current_connection, initial_writer_id);
 
   // Re-enable 2 readers (Second & Third reader)
   const std::string second_reader_id = readers[1];
   const std::string third_reader_id = readers[2];
-  std::cerr << "[          ]  Re-enable 2 readers (Second & Third reader) " << second_reader_id << third_reader_id << std::endl;
   enable_instance(second_reader_id);
   enable_instance(third_reader_id);
 
-  std::cerr << "[          ]  failover_cluster_and_wait_until_writer_changed " << std::endl;
   failover_cluster_and_wait_until_writer_changed(rds_client, cluster_id, initial_writer_id, third_reader_id);
 
   // Query to trigger failover (Initial Writer)
