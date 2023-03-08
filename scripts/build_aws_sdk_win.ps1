@@ -43,46 +43,41 @@ Note that building the installer requires the following:
 - CMake 2.4.6 (http://www.cmake.org)
 #>
 
-$ARCHITECTURE = $args[0]
+$CURRENT_DIR = (Get-Location).Path
+$SRC_DIR = "${PSScriptRoot}\..\aws_sdk\aws_sdk_cpp"
+$BUILD_DIR = "${SRC_DIR}\..\build"
+$INSTALL_DIR = "${BUILD_DIR}\..\install"
+
+$WIN_ARCH = $args[0]
 $CONFIGURATION = $args[1]
-$MYSQL_DIR = $args[2]
+$BUILD_SHARED_LIBS = $args[2]
+$GENERATOR = $args[3]
 
-# Set default values
-if ($null -eq $CONFIGURATION) {
-    $CONFIGURATION = "Release"
-}
-if ($null -eq $MYSQL_DIR) {
-    $MYSQL_DIR = "C:\Program Files\MySQL\MySQL Server 8.0"
-}
+Write-Host $args
 
-# BUILD DRIVER
-cmake -S . -G "Visual Studio 16 2019" -DMYSQL_DIR="$MYSQL_DIR" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DCMAKE_BUILD_TYPE="$CONFIGURATION" -DBUNDLE_DEPENDENCIES=TRUE
-cmake --build . --config "$CONFIGURATION"
+# Make AWS SDK source directory
+New-Item -Path $SRC_DIR -ItemType Directory -Force | Out-Null
+# Clone the AWS SDK CPP repo
+git clone --recurse-submodules -b "1.11.21" "https://github.com/aws/aws-sdk-cpp.git" $SRC_DIR
 
-# CREATE INSTALLER
-# Copy dll, installer, and info files to wix folder
-New-Item -Path .\Wix\x64 -ItemType Directory -Force
-New-Item -Path .\Wix\x86 -ItemType Directory -Force
-New-Item -Path .\Wix\doc -ItemType Directory -Force
-Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x64
-Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x64
-Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x86
-Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x86
-Copy-Item .\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x64
-Copy-Item .\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x86
-Copy-Item .\INFO_BIN .\Wix\doc
-Copy-Item .\INFO_SRC .\Wix\doc
-Copy-Item .\ChangeLog .\Wix\doc
-Copy-Item .\README.md .\Wix\doc
-Copy-Item .\LICENSE.txt .\Wix\doc
+# Make and move to build directory
+New-Item -Path $BUILD_DIR -ItemType Directory -Force | Out-Null
+Set-Location $BUILD_DIR
 
-Set-Location .\Wix
-if ($ARCHITECTURE -eq "x64") {
-    cmake -DMSI_64=1 -G "NMake Makefiles"
-}
-else {
-    cmake -DMSI_64=0 -G "NMake Makefiles"
-}
-nmake
+# Configure and build 
+cmake $SRC_DIR `
+    -A $WIN_ARCH `
+    -G $GENERATOR `
+    -D TARGET_ARCH="WINDOWS" `
+    -D CMAKE_INSTALL_PREFIX=$INSTALL_DIR `
+    -D CMAKE_BUILD_TYPE=$CONFIGURATION `
+    -D BUILD_ONLY="rds;secretsmanager" `
+    -D ENABLE_TESTING="OFF" `
+    -D BUILD_SHARED_LIBS=$BUILD_SHARED_LIBS `
+    -D CPP_STANDARD="17"
 
-Set-Location ..\
+# Build AWS SDK and install to $INSTALL_DIR 
+msbuild ALL_BUILD.vcxproj /m /p:Configuration=$CONFIGURATION
+msbuild INSTALL.vcxproj /m /p:Configuration=$CONFIGURATION
+
+Set-Location $CURRENT_DIR

@@ -30,7 +30,21 @@ jobs:
                 unixodbc
                 unixodbc-dev
                 curl
-                libcurl4-openssl-dev
+                libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
+
+      - name: Cache AWS SDK libraries
+        id: cache-dynamic-aws-sdk
+        uses: actions/cache@v3
+        with:
+          path: |
+            aws_sdk
+          key: ${{ runner.os }}-aws-sdk-dynamic-lib
+
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
+        run: |
+          ./build_aws_sdk_unix.sh $BUILD_TYPE
 
       - name: Create build environment
         shell: bash
@@ -92,7 +106,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.TEMP_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.TEMP_AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.TEMP_AWS_SESSION_TOKEN }}
-          DRIVER_PATH: ${{ github.workspace }}/build
+          DRIVER_PATH: ${{ github.workspace }}
 
       - name: 'Get Github Action IP'
         id: ip

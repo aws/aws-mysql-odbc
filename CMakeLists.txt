@@ -213,7 +213,7 @@ if((CMAKE_VERSION VERSION_LESS 3.1) OR (CMAKE_CXX_COMPILER_ID MATCHES "SunPro"))
 
 else()
 
-  # use C++14
+  # use C++17
   set(CMAKE_CXX_STANDARD 17)
   # error out if not supported
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -512,7 +512,12 @@ ELSE(WIN32)
 
 ENDIF(WIN32)
 
-#-----------------------------------------------------
+#------------ find the AWS SDK for C++ package---------
+LIST(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/aws_sdk/install")
+
+FIND_PACKAGE(AWSSDK REQUIRED COMPONENTS rds secretsmanager)
+
+#------------------------------------------------------
 
 SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 SET(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")
@@ -560,7 +565,7 @@ ENDIF()
 IF(ENABLE_UNIT_TESTS OR ENABLE_INTEGRATION_TESTS)
   SET(ODBC_PATH ${CMAKE_SOURCE_DIR}/testframework/src/test/resources/)
   SET(TEST_DRIVER "MyODBCa")
-  SET(DRIVER_PATH "/app/lib/awsmysqlodbca.so")
+  SET(DRIVER_PATH "/app/build/lib/awsmysqlodbca.so")
   SET(DRIVER_DESCRIPTION "AWS ANSI Driver for connecting to MySQL database server")
   SET(DESCRIPTION "AWS MySQL ODBC ${CONNECTOR_MAJOR}.${CONNECTOR_MINOR} ANSI Driver for Dockerized tests")
 
