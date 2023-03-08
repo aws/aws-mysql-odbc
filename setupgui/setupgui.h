@@ -37,13 +37,14 @@
 
 #define CONNECTION_TAB  1
 #define AUTH_TAB        2
-#define FAILOVER_TAB    3
-#define MONITORING_TAB  4
-#define METADATA_TAB    5
-#define CURSORS_TAB     6
-#define DEBUG_TAB       7
-#define SSL_TAB         8
-#define MISC_TAB        9
+#define AWS_AUTH_TAB    3
+#define FAILOVER_TAB    4
+#define MONITORING_TAB  5
+#define METADATA_TAB    6
+#define CURSORS_TAB     7
+#define DEBUG_TAB       8
+#define SSL_TAB         9
+#define MISC_TAB        10
 
 #else
 # include <gtk/gtk.h>

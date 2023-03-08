@@ -569,6 +569,13 @@ int list_datasource_details(DataSource *ds)
   if (ds->get_server_public_key) printf("\tGET_SERVER_PUBLIC_KEY\n");
   if (ds->enable_dns_srv) printf("\tENABLE_DNS_SRV\n");
   if (ds->multi_host) printf("\tMULTI_HOST\n");
+  /* AWS Authentication */
+  if (ds->auth_mode) printf("\tAUTH_MODE");
+  if (ds->auth_region) printf("\tAUTH_REGION");
+  if (ds->auth_host) printf("\tAUTH_HOST");
+  if (ds->auth_port) printf("\tAUTH_PORT");
+  if (ds->auth_expiration) printf("\tAUTH_EXPIRATION");
+  if (ds->auth_secret_id) printf("\tAUTH_SECRET_ID");
   /* Failover */
   if (ds->enable_cluster_failover) printf("\tENABLE_CLUSTER_FAILOVER\n");
   if (ds->allow_reader_connections) printf("\tALLOW_READER_CONNECTIONS\n");
