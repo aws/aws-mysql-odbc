@@ -56,6 +56,7 @@
 #define IDD_TAB7                        138
 #define IDD_TAB8                        139
 #define IDD_TAB9                        140
+#define IDD_TAB10                       141
 #define IDC_LOGO                        1000
 #define IDC_EDIT_DRVNAME                1004
 #define IDC_EDIT_DRVDESC                1005
@@ -177,6 +178,12 @@
 #define IDC_EDIT_failure_detection_count       10103
 #define IDC_EDIT_failure_detection_timeout     10104
 #define IDC_EDIT_monitor_disposal_time         10105
+#define IDC_EDIT_auth_mode              11001
+#define IDC_EDIT_auth_region            11002
+#define IDC_EDIT_auth_host              11003
+#define IDC_EDIT_auth_port              11004
+#define IDC_EDIT_auth_expiration        11005
+#define IDC_EDIT_auth_secret_id         11006
 #define IDC_BUTTON_TEST                 11014
 #define IDC_BUTTON_HELP                 11015
 #define IDC_STATIC                      -1

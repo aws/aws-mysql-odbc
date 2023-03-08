@@ -216,6 +216,19 @@ typedef struct DataSource {
   BOOL enable_dns_srv;
   BOOL multi_host;
 
+  /* AWS Authentication */
+  SQLWCHAR     *auth_mode;
+  SQLWCHAR     *auth_region;
+  SQLWCHAR     *auth_host;
+  unsigned int auth_port;
+  unsigned int auth_expiration;
+  SQLWCHAR     *auth_secret_id;
+
+  SQLCHAR *auth_mode8;
+  SQLCHAR* auth_region8;
+  SQLCHAR* auth_host8;
+  SQLCHAR* auth_secret_id8;
+  
   /* Failover */
   BOOL enable_cluster_failover;
   BOOL allow_reader_connections;
@@ -276,6 +289,9 @@ void ds_copy(DataSource *ds, DataSource *ds_source);
 extern const SQLWCHAR W_DRIVER_PARAM[];
 extern const SQLWCHAR W_DRIVER_NAME[];
 extern const SQLWCHAR W_INVALID_ATTR_STR[];
+
+#define AUTH_MODE_IAM              "IAM"
+#define AUTH_MODE_SECRETS_MANAGER  "SECRETS MANAGER"
 
 /*
  * Deprecated connection parameters

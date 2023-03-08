@@ -304,7 +304,15 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_STRING_TAB(AUTH_TAB, oci_config_file);
   GET_STRING_TAB(AUTH_TAB, oci_config_profile);
 
-  /* 3 - Failover */
+  /* 3 - AWS Authentication */
+  GET_COMBO_TAB(AWS_AUTH_TAB, auth_mode);
+  GET_STRING_TAB(AWS_AUTH_TAB, auth_region);
+  GET_STRING_TAB(AWS_AUTH_TAB, auth_host);
+  GET_UNSIGNED_TAB(AWS_AUTH_TAB, auth_port);
+  GET_UNSIGNED_TAB(AWS_AUTH_TAB, auth_expiration);
+  GET_STRING_TAB(AWS_AUTH_TAB, auth_secret_id);
+  
+  /* 4 - Failover */
   GET_BOOL_TAB(FAILOVER_TAB, enable_cluster_failover);
   GET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
   GET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
@@ -323,7 +331,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_UNSIGNED_TAB(FAILOVER_TAB, connect_timeout);
   GET_UNSIGNED_TAB(FAILOVER_TAB, network_timeout);
 
-  /* 4 - Monitoring */
+  /* 5 - Monitoring */
   GET_BOOL_TAB(MONITORING_TAB, enable_failure_detection);
   if (READ_BOOL_TAB(MONITORING_TAB, enable_failure_detection))
   {
@@ -335,7 +343,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
   }
 
 
-  /* 5 - Metadata */
+  /* 6 - Metadata */
   GET_BOOL_TAB(METADATA_TAB, change_bigint_columns_to_int);
   GET_BOOL_TAB(METADATA_TAB, handle_binary_as_char);
   GET_BOOL_TAB(METADATA_TAB, return_table_names_for_SqlDescribeCol);
@@ -343,7 +351,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_BOOL_TAB(METADATA_TAB, no_schema);
   GET_BOOL_TAB(METADATA_TAB, limit_column_size);
 
-  /* 6 - Cursors/Results */
+  /* 7 - Cursors/Results */
   GET_BOOL_TAB(CURSORS_TAB, return_matching_rows);
   GET_BOOL_TAB(CURSORS_TAB, auto_increment_null_search);
   GET_BOOL_TAB(CURSORS_TAB, dynamic_cursor);
@@ -361,10 +369,10 @@ void syncTabsData(HWND hwnd, DataSource *params)
   {
     params->cursor_prefetch_number= 0;
   }
-  /* 7 - debug*/
+  /* 8 - debug*/
   GET_BOOL_TAB(DEBUG_TAB,save_queries);
 
-  /* 8 - ssl related */
+  /* 9 - ssl related */
   GET_STRING_TAB(SSL_TAB, sslkey);
   GET_STRING_TAB(SSL_TAB, sslcert);
   GET_STRING_TAB(SSL_TAB, sslca);
@@ -379,7 +387,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
   GET_STRING_TAB(SSL_TAB, ssl_crl);
   GET_STRING_TAB(SSL_TAB, ssl_crlpath);
 
-  /* 9 - Misc*/
+  /* 10 - Misc*/
   GET_BOOL_TAB(MISC_TAB, safe);
   GET_BOOL_TAB(MISC_TAB, dont_use_set_locale);
   GET_BOOL_TAB(MISC_TAB, ignore_space_after_function_names);
@@ -434,7 +442,15 @@ void syncTabs(HWND hwnd, DataSource *params)
   SET_STRING_TAB(AUTH_TAB, oci_config_file);
   SET_STRING_TAB(AUTH_TAB, oci_config_profile);
 
-  /* 3 - Failover */
+  /* 3 - AWS Authentication */
+  SET_COMBO_TAB(AWS_AUTH_TAB, auth_mode);
+  SET_STRING_TAB(AWS_AUTH_TAB, auth_region);
+  SET_STRING_TAB(AWS_AUTH_TAB, auth_host);
+  SET_UNSIGNED_TAB(AWS_AUTH_TAB, auth_port);
+  SET_UNSIGNED_TAB(AWS_AUTH_TAB, auth_expiration);
+  SET_STRING_TAB(AWS_AUTH_TAB, auth_secret_id);
+
+  /* 4 - Failover */
   SET_BOOL_TAB(FAILOVER_TAB, enable_cluster_failover);
   SET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
   SET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
@@ -485,7 +501,7 @@ void syncTabs(HWND hwnd, DataSource *params)
      SET_UNSIGNED_TAB(FAILOVER_TAB, network_timeout);
   }
 
-  /* 4 - Monitoring */
+  /* 5 - Monitoring */
   SET_BOOL_TAB(MONITORING_TAB, enable_failure_detection);
   if (READ_BOOL_TAB(MONITORING_TAB, enable_failure_detection)) {
 #ifdef _WIN32
@@ -502,7 +518,7 @@ void syncTabs(HWND hwnd, DataSource *params)
     SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_timeout);
   }
 
-  /* 5 - Metadata */
+  /* 6 - Metadata */
   SET_BOOL_TAB(METADATA_TAB, change_bigint_columns_to_int);
   SET_BOOL_TAB(METADATA_TAB, handle_binary_as_char);
   SET_BOOL_TAB(METADATA_TAB, return_table_names_for_SqlDescribeCol);
@@ -510,7 +526,7 @@ void syncTabs(HWND hwnd, DataSource *params)
   SET_BOOL_TAB(METADATA_TAB, no_schema);
   SET_BOOL_TAB(METADATA_TAB, limit_column_size);
 
-  /* 6 - Cursors/Results */
+  /* 7 - Cursors/Results */
   SET_BOOL_TAB(CURSORS_TAB, return_matching_rows);
   SET_BOOL_TAB(CURSORS_TAB, auto_increment_null_search);
   SET_BOOL_TAB(CURSORS_TAB, dynamic_cursor);
@@ -529,10 +545,10 @@ void syncTabs(HWND hwnd, DataSource *params)
     SET_UNSIGNED_TAB(CURSORS_TAB, cursor_prefetch_number);
   }
 
-  /* 7 - debug*/
+  /* 8 - debug*/
   SET_BOOL_TAB(DEBUG_TAB,save_queries);
 
-  /* 8 - ssl related */
+  /* 9 - ssl related */
 #ifdef _WIN32
   if ( getTabCtrlTabPages(SSL_TAB-1) )
 #endif
@@ -570,7 +586,7 @@ void syncTabs(HWND hwnd, DataSource *params)
     SET_STRING_TAB(SSL_TAB, tls_versions);
   }
 
-  /* 9 - Misc*/
+  /* 10 - Misc*/
   SET_BOOL_TAB(MISC_TAB, safe);
   SET_BOOL_TAB(MISC_TAB, dont_use_set_locale);
   SET_BOOL_TAB(MISC_TAB, ignore_space_after_function_names);
