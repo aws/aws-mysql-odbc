@@ -380,6 +380,7 @@ void btnDetails_Click (HWND hwnd)
 #if MFA_ENABLED
       L"MFA",
 #endif
+      L"AWS Authentication",
       L"Cluster Failover",
       L"Monitoring",
       L"Metadata",
@@ -397,8 +398,9 @@ void btnDetails_Click (HWND hwnd)
                     MAKEINTRESOURCE(IDD_TAB6),
                     MAKEINTRESOURCE(IDD_TAB7),
                     MAKEINTRESOURCE(IDD_TAB8),
-#if MFA_ENABLED
                     MAKEINTRESOURCE(IDD_TAB9),
+#if MFA_ENABLED
+                    MAKEINTRESOURCE(IDD_TAB10),
 #endif
                     0};
 
@@ -412,17 +414,26 @@ void btnDetails_Click (HWND hwnd)
     flag = true;
 
 
+    HWND auth_tab = TabCtrl_1.hTabPages[AWS_AUTH_TAB - 1];
+    HWND auth_mode_dlg = GetDlgItem(auth_tab, IDC_EDIT_auth_mode);
+
+    ComboBox_ResetContent(auth_mode_dlg);
+
+    ComboBox_AddString(auth_mode_dlg, L"");
+    ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_IAM));
+    ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
+    
     HWND ssl_tab = TabCtrl_1.hTabPages[SSL_TAB-1];
-    HWND combo = GetDlgItem(ssl_tab, IDC_EDIT_sslmode);
+    HWND sslmode_dlg = GetDlgItem(ssl_tab, IDC_EDIT_sslmode);
 
-    ComboBox_ResetContent(combo);
+    ComboBox_ResetContent(sslmode_dlg);
 
-    ComboBox_AddString(combo, L"");
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_DISABLED));
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_PREFERRED));
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_REQUIRED));
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_VERIFY_CA));
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_VERIFY_IDENTITY));
+    ComboBox_AddString(sslmode_dlg, L"");
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_DISABLED));
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_PREFERRED));
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_REQUIRED));
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_VERIFY_CA));
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_VERIFY_IDENTITY));
 
     syncTabs(hwnd, pParams);
 	}
@@ -670,6 +681,32 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
     case IDC_RADIO_tcp:
     case IDC_RADIO_pipe:
       SwitchTcpOrPipe(hwnd, !!Button_GetCheck(GetDlgItem(hwnd, IDC_RADIO_pipe)));
+      break;
+    case IDC_EDIT_auth_mode:
+      {
+        HWND authTab = TabCtrl_1.hTabPages[AWS_AUTH_TAB - 1];
+        assert(authTab);
+
+        HWND host = GetDlgItem(authTab, IDC_EDIT_auth_host);
+        HWND port = GetDlgItem(authTab, IDC_EDIT_auth_port);
+        HWND expiration = GetDlgItem(authTab, IDC_EDIT_auth_expiration);
+        HWND secret_id = GetDlgItem(authTab, IDC_EDIT_auth_secret_id);
+        assert(port);
+        assert(host);
+        assert(expiration);
+        assert(secret_id);
+
+        wchar_t authMode[20];
+        ComboBox_GetText(GetDlgItem(authTab, IDC_EDIT_auth_mode), authMode, sizeof(authMode));
+
+        BOOL usingIAM = wcscmp(authMode, L"IAM") == 0;
+        EnableWindow(port, usingIAM);
+        EnableWindow(host, usingIAM);
+        EnableWindow(expiration, usingIAM);
+
+        BOOL usingSecretsManager = wcscmp(authMode, L"SECRETS MANAGER") == 0;
+        EnableWindow(secret_id, usingSecretsManager);
+      }
       break;
     case IDC_CHECK_gather_perf_metrics:
       {

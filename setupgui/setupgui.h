@@ -39,6 +39,16 @@
 
 #if MFA_ENABLED
 #define MFA_TAB         2
+#define AWS_AUTH_TAB    3
+#define FAILOVER_TAB    4
+#define MONITORING_TAB  5
+#define METADATA_TAB    6
+#define CURSORS_TAB     7
+#define DEBUG_TAB       8
+#define SSL_TAB         9
+#define MISC_TAB        10
+#else
+#define AWS_AUTH_TAB    2
 #define FAILOVER_TAB    3
 #define MONITORING_TAB  4
 #define METADATA_TAB    5
@@ -46,14 +56,6 @@
 #define DEBUG_TAB       7
 #define SSL_TAB         8
 #define MISC_TAB        9
-#else
-#define FAILOVER_TAB    2
-#define MONITORING_TAB  3
-#define METADATA_TAB    4
-#define CURSORS_TAB     5
-#define DEBUG_TAB       6
-#define SSL_TAB         7
-#define MISC_TAB        8
 #endif
 
 #else

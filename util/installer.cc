@@ -229,6 +229,14 @@ static SQLWCHAR W_SSL_CRL[] =
 static SQLWCHAR W_SSL_CRLPATH[] =
 { 'S', 'S', 'L', '-', 'C', 'R', 'L', 'P', 'A', 'T', 'H', 0};
 
+/* AWS Authentication */
+static SQLWCHAR W_AUTH_MODE[] = { 'A', 'U', 'T', 'H', 'E', 'N', 'T', 'I', 'C', 'A', 'T', 'I', 'O', 'N', '_', 'M', 'O', 'D', 'E', 0};
+static SQLWCHAR W_AUTH_REGION[] = { 'I', 'A', 'M', '_', 'R', 'E', 'G', 'I', 'O', 'N', 0 };
+static SQLWCHAR W_AUTH_HOST[] = { 'I', 'A', 'M', '_', 'H', 'O', 'S', 'T', 0 };
+static SQLWCHAR W_AUTH_PORT[] = { 'I', 'A', 'M', '_', 'P', 'O', 'R', 'T', 0 };
+static SQLWCHAR W_AUTH_EXPIRATION[] = { 'E', 'X', 'P', 'I', 'R', 'A', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 0 };
+static SQLWCHAR W_AUTH_SECRET_ID[] = { 'S', 'E', 'C', 'R', 'E', 'T', '_', 'I', 'D', 0 };
+
 /* Failover */
 static SQLWCHAR W_ENABLE_CLUSTER_FAILOVER[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
 static SQLWCHAR W_ALLOW_READER_CONNECTIONS[] = { 'A', 'L', 'L', 'O', 'W', '_', 'R', 'E', 'A', 'D', 'E', 'R', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', 'I', 'O', 'N', 'S', 0 };
@@ -741,6 +749,12 @@ DataSource *ds_new()
   ds->port = 3306;
   ds->has_port = false;
   ds->no_schema = 1;
+  ds->auth_mode = 0;
+  ds->auth_region = 0;
+  ds->auth_host = 0;
+  ds->auth_port = 0;
+  ds->auth_expiration = 0;
+  ds->auth_secret_id = 0;
   ds->enable_cluster_failover = true;
   ds->allow_reader_connections = false;
   ds->gather_perf_metrics = false;
@@ -1119,10 +1133,23 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
   else if (!sqlwcharcasecmp(W_TLS_VERSIONS, param))
     *strdest= &ds->tls_versions;
   else if (!sqlwcharcasecmp(W_SSL_CRL, param))
-  *strdest = &ds->ssl_crl;
+    *strdest = &ds->ssl_crl;
   else if (!sqlwcharcasecmp(W_SSL_CRLPATH, param))
-  *strdest = &ds->ssl_crlpath;
-  /* Failover*/
+    *strdest = &ds->ssl_crlpath;
+  /* AWS Authentication*/
+  else if (!sqlwcharcasecmp(W_AUTH_MODE, param))
+    *strdest = &ds->auth_mode;
+  else if (!sqlwcharcasecmp(W_AUTH_REGION, param))
+    *strdest = &ds->auth_region;
+  else if (!sqlwcharcasecmp(W_AUTH_HOST, param))
+      *strdest = &ds->auth_host;
+  else if (!sqlwcharcasecmp(W_AUTH_PORT, param))
+    *intdest = &ds->auth_port;
+  else if (!sqlwcharcasecmp(W_AUTH_EXPIRATION, param))
+    *intdest = &ds->auth_expiration;
+  else if (!sqlwcharcasecmp(W_AUTH_SECRET_ID, param))
+    *strdest = &ds->auth_secret_id;
+  /* Failover */
   else if (!sqlwcharcasecmp(W_ENABLE_CLUSTER_FAILOVER, param))
     *booldest = &ds->enable_cluster_failover;
   else if (!sqlwcharcasecmp(W_ALLOW_READER_CONNECTIONS, param))
@@ -1149,7 +1176,6 @@ void ds_map_param(DataSource *ds, const SQLWCHAR *param,
     *intdest = &ds->connect_timeout;
   else if (!sqlwcharcasecmp(W_NETWORK_TIMEOUT, param))
     *intdest = &ds->network_timeout;
-
   /* Monitoring */
   else if (!sqlwcharcasecmp(W_ENABLE_FAILURE_DETECTION, param))
     *booldest = &ds->enable_failure_detection;
@@ -1703,6 +1729,13 @@ int ds_add(DataSource *ds)
   if (ds_add_strprop(ds->name, W_TLS_VERSIONS, ds->tls_versions)) goto error;
   if (ds_add_strprop(ds->name, W_SSL_CRL, ds->ssl_crl)) goto error;
   if (ds_add_strprop(ds->name, W_SSL_CRLPATH, ds->ssl_crlpath)) goto error;
+  /* AWS Authentication */
+  if (ds_add_strprop(ds->name, W_AUTH_MODE, ds->auth_mode)) goto error;
+  if (ds_add_strprop(ds->name, W_AUTH_REGION, ds->auth_region)) goto error;
+  if (ds_add_strprop(ds->name, W_AUTH_HOST, ds->auth_host)) goto error;
+  if (ds_add_intprop(ds->name, W_AUTH_PORT, ds->auth_port)) goto error;
+  if (ds_add_intprop(ds->name, W_AUTH_EXPIRATION, ds->auth_expiration)) goto error;
+  if (ds_add_strprop(ds->name, W_AUTH_SECRET_ID, ds->auth_secret_id)) goto error;
   /* Failover */
   if (ds_add_intprop(ds->name, W_ENABLE_CLUSTER_FAILOVER, ds->enable_cluster_failover, true)) goto error;
   if (ds_add_intprop(ds->name, W_ALLOW_READER_CONNECTIONS, ds->allow_reader_connections)) goto error;
@@ -1717,7 +1750,6 @@ int ds_add(DataSource *ds)
   if (ds_add_intprop(ds->name, W_FAILOVER_READER_CONNECT_TIMEOUT, ds->failover_reader_connect_timeout)) goto error;
   if (ds_add_intprop(ds->name, W_CONNECT_TIMEOUT, ds->connect_timeout)) goto error;
   if (ds_add_intprop(ds->name, W_NETWORK_TIMEOUT, ds->network_timeout)) goto error;
-
   /* Monitoring */
   if (ds_add_intprop(ds->name, W_ENABLE_FAILURE_DETECTION, ds->enable_failure_detection, true)) goto error;
   if (ds_add_intprop(ds->name, W_FAILURE_DETECTION_TIME, ds->failure_detection_time)) goto error;
@@ -2051,6 +2083,12 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
                          sqlwcharlen(ds_source->cluster_id));
     }
 
+    ds->auth_mode = ds_source->auth_mode;
+    ds->auth_region = ds_source->auth_region;
+    ds->auth_host = ds_source->auth_host;
+    ds->auth_port = ds_source->auth_port;
+    ds->auth_expiration = ds_source->auth_expiration;
+    ds->auth_secret_id = ds_source->auth_secret_id;
     ds->enable_cluster_failover = ds_source->enable_cluster_failover;
     ds->allow_reader_connections = ds_source->allow_reader_connections;
     ds->gather_perf_metrics = ds_source->gather_perf_metrics;
