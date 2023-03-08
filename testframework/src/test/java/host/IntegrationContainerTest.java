@@ -117,12 +117,12 @@ public class IntegrationContainerTest {
 
     try {
       // Allow the non root user to access this folder which contains log files. Required to run tests
-      testContainer.execInContainer("chown", DOCKER_UID, "/app/test/Testing/Temporary");
+      testContainer.execInContainer("chown", DOCKER_UID, "/app/build/test/Testing/Temporary");
     } catch (Exception e) {
       fail("Test container was not initialized correctly");
     }
 
-    containerHelper.runCTest(testContainer, "test");
+    containerHelper.runCTest(testContainer, "build/test");
   }
 
   @Test
@@ -130,7 +130,7 @@ public class IntegrationContainerTest {
       throws UnsupportedOperationException, IOException, InterruptedException {
     setupFailoverIntegrationTests(NETWORK);
     
-    containerHelper.runExecutable(testContainer, "integration/bin", "integration");
+    containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
   }
 
   protected static GenericContainer<?> createTestContainer(final Network network) {
@@ -147,7 +147,7 @@ public class IntegrationContainerTest {
         .withEnv("ODBCINI", "/etc/odbc.ini")
         .withEnv("ODBCINST", "/etc/odbcinst.ini")
         .withEnv("ODBCSYSINI", "/etc")
-        .withEnv("TEST_DRIVER", "/app/lib/awsmysqlodbca.so");
+        .withEnv("TEST_DRIVER", "/app/build/lib/awsmysqlodbca.so");
   }
 
   private void setupFailoverIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
