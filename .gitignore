@@ -1,4 +1,4 @@
-﻿# Build artifacts
+# Build artifacts
 build/
 bin/
 lib/
@@ -7,6 +7,7 @@ x64/
 x86/
 **/*.dir
 *.pkg
+aws_sdk/
 
 # Test artifacts
 test/Testing/**
@@ -83,7 +84,6 @@ testframework/src/test/resources/*.ini
 *.gradle
 *.idea
 testframework/hs_err_pid*.log
-*.sh
 
 # Wix files
 *.wixobj

@@ -26,30 +26,38 @@ jobs:
     runs-on: windows-2019
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
-      MYSQL_DIR: C:/mysql-8.0.30-winx64
+      MYSQL_DIR: C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
 
       # Configure build environment/dependencies
-      - name: Cache MySQL client libs and include files
-        id: cache-mysql
+      - name: Install MySQL client libs and include files
+        run: |
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug-test.zip -o mysql-debug.zip
+          unzip -d C:/ mysql.zip
+          mkdir C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug
+          unzip -d C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug mysql-debug.zip
+          mv -Force C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/debug/mysqlclient.lib C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/mysqlclient.lib
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Cache AWS SDK libraries
+        id: cache-static-aws-sdk
         uses: actions/cache@v3
         with:
           path: |
-            C:/mysql-8.0.30-winx64/
-          key: ${{ runner.os }}-mysql-${{ hashFiles('**/VersionInfo.h') }}
+            aws_sdk
+          key: ${{ runner.os }}-aws-sdk-static-lib
 
-      - name: Install MySQL client libs and include files
-        if: steps.cache-mysql.outputs.cache-hit != 'true'
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        if: steps.cache-static-aws-sdk.outputs.cache-hit != 'true'
         run: |
-          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.30-winx64.zip -o mysql.zip
-          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.30-winx64-debug-test.zip -o mysql-debug.zip
-          unzip -d C:/ mysql.zip
-          mkdir C:/mysql-8.0.30-winx64-debug
-          unzip -d C:/mysql-8.0.30-winx64-debug mysql-debug.zip
-          mv -Force C:/mysql-8.0.30-winx64-debug/mysql-8.0.30-winx64/lib/debug/mysqlclient.lib C:/mysql-8.0.30-winx64/lib/mysqlclient.lib
-            
+          .\build_aws_sdk_win.ps1 x64 ${{ env.WINDOWS_BUILD_TYPE}} OFF "${{env.CMAKE_GENERATOR}}"
+
       - name: Create build environment
         shell: bash
         run: cmake -E make_directory ${{ github.workspace }}/build
@@ -126,6 +134,21 @@ jobs:
                 libmysqlclient-dev 
                 unixodbc
                 unixodbc-dev
+                libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
+
+      - name: Cache AWS SDK libraries
+        id: cache-dynamic-aws-sdk
+        uses: actions/cache@v3
+        with:
+          path: |
+            aws_sdk
+          key: ${{ runner.os }}-aws-sdk-dynamic-lib
+
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
+        run: |
+          ./build_aws_sdk_unix.sh $LINUX_BUILD_TYPE
 
       - name: Create build environment
         shell: bash
@@ -145,7 +168,7 @@ jobs:
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: cmake --build . --config $LINUX_BUILD_TYPE
+        run: make -j4
 
       # Test driver
       - name: Run failover tests on Linux
@@ -204,6 +227,20 @@ jobs:
           brew unlink unixodbc
           brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
+
+      - name: Cache AWS SDK libraries
+        id: cache-dynamic-aws-sdk
+        uses: actions/cache@v3
+        with:
+          path: |
+            aws_sdk
+          key: ${{ runner.os }}-aws-sdk-dynamic-lib
+
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
+        run: |
+          ./build_aws_sdk_unix.sh $MAC_BUILD_TYPE
       
       - name: Create build environment
         shell: bash
@@ -232,7 +269,7 @@ jobs:
         if: success()
         working-directory: ${{ github.workspace }}/build/unit_testing
         shell: bash
-        run: ctest
+        run: ctest --output-on-failure
 
       - name: Check memory leaks
         if: always()
