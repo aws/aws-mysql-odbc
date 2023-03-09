@@ -116,7 +116,7 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
             dbc_clone = static_cast<DBC*>(hdbc);
             dbc_clone->ds = ds_new();
             ds_copy(dbc_clone->ds, source_dbc->ds);
-            dbc_clone->mysql_proxy = new MYSQL_PROXY(dbc_clone, dbc_clone->ds);
+            dbc_clone->init_proxy_chain(dbc_clone->ds);
         } else {
             const char* err = "Cannot allocate connection handle when cloning DBC in writer failover process";
             MYLOG_DBC_TRACE(dbc, err);

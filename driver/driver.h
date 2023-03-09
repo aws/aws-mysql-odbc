@@ -44,6 +44,7 @@
 #include "util/installer.h"
 #include "failover.h"
 #include "mysql_proxy.h"
+#include "efm_proxy.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -654,6 +655,7 @@ struct DBC
   SQLRETURN connect(DataSource *dsrc, bool failover_enabled);
   void execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
     MYSQL_BIND *param_bind, MYSQL_BIND *result_bind);
+  void init_proxy_chain(DataSource *dsrc);
 
   inline bool transactions_supported() {
     return mysql_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS;

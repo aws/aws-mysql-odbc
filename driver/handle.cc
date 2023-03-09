@@ -111,6 +111,33 @@ void DBC::close()
   mysql_proxy->close();
 }
 
+// construct a proxy chain, example: iam->efm->mysql
+void DBC::init_proxy_chain(DataSource* dsrc)
+{
+    MYSQL_PROXY *head = new MYSQL_PROXY(this, dsrc);
+
+    if (dsrc->enable_cluster_failover) {
+        MYSQL_PROXY* efm_proxy = new EFM_PROXY(this, dsrc);
+        efm_proxy->set_next_proxy(head);
+        head = efm_proxy;
+    }
+
+    ds_get_utf8attr(dsrc->auth_mode, &dsrc->auth_mode8);
+    if (!myodbc_strcasecmp(AUTH_MODE_IAM, reinterpret_cast<const char*>(dsrc->auth_mode8))) {
+        // MYSQL_PROXY* iam_proxy = new IAM_PROXY();
+        // iam_proxy->set_next_proxy(head);
+        // head = iam_proxy;
+    }
+
+    if (!myodbc_strcasecmp(AUTH_MODE_SECRETS_MANAGER, reinterpret_cast<const char*>(dsrc->auth_mode8))) {
+        // MYSQL_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY();
+        // secrets_manager_proxy->set_next_proxy(head);
+        // head = secrets_manager_proxy;
+    }
+
+    this->mysql_proxy = head;
+}
+
 DBC::~DBC()
 {
   if (env)
