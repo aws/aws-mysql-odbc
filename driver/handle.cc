@@ -123,6 +123,7 @@ void DBC::init_proxy_chain(DataSource* dsrc)
     }
 
     ds_get_utf8attr(dsrc->auth_mode, &dsrc->auth_mode8);
+
     if (!myodbc_strcasecmp(AUTH_MODE_IAM, reinterpret_cast<const char*>(dsrc->auth_mode8))) {
         // MYSQL_PROXY* iam_proxy = new IAM_PROXY(his, dsrc);
         // iam_proxy->set_next_proxy(head);

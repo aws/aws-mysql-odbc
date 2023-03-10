@@ -159,6 +159,8 @@ public:
 
     void close_socket() override;
 
+    void set_next_proxy(MYSQL_PROXY* next_proxy) override;
+
 private:
     std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;
     std::set<std::string> node_keys;

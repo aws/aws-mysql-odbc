@@ -161,7 +161,7 @@ public:
 
     virtual void close_socket();
 
-    void set_next_proxy(MYSQL_PROXY* next_proxy);
+    virtual void set_next_proxy(MYSQL_PROXY* next_proxy);
 
 protected:
     DBC* dbc = nullptr;

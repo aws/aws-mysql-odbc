@@ -45,7 +45,6 @@ EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy,
       monitor_service{std::move(monitor_service)} {
 
     this->next_proxy = next_proxy;
-    generate_node_keys();
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> EFM_PROXY::start_monitoring() {
@@ -104,6 +103,25 @@ void EFM_PROXY::generate_node_keys() {
     }
 }
 
+void EFM_PROXY::set_next_proxy(MYSQL_PROXY* next_proxy) {
+    MYSQL_PROXY::set_next_proxy(next_proxy);
+    generate_node_keys();
+}
+
+void EFM_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
+    next_proxy->set_connection(mysql_proxy);
+
+    if (monitor_service != nullptr && !node_keys.empty()) {
+        monitor_service->stop_monitoring_for_all_connections(node_keys);
+    }
+
+    generate_node_keys();
+}
+
+void EFM_PROXY::close_socket() {
+    next_proxy->close_socket();
+}
+
 void EFM_PROXY::delete_ds() {
     next_proxy->delete_ds();
 }
@@ -156,9 +174,7 @@ int EFM_PROXY::set_character_set(const char* csname) {
 }
 
 void EFM_PROXY::init() {
-    const auto context = start_monitoring();
     next_proxy->init();
-    stop_monitoring(context);
 }
 
 bool EFM_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
@@ -179,9 +195,11 @@ bool EFM_PROXY::real_connect(
     const char* host, const char* user, const char* passwd,
     const char* db, unsigned int port, const char* unix_socket,
     unsigned long clientflag) {
-    const auto context = start_monitoring();
+
     const bool ret = next_proxy->real_connect(host, user, passwd, db, port, unix_socket, clientflag);
-    stop_monitoring(context);
+
+    generate_node_keys();
+
     return ret;
 }
 
@@ -256,9 +274,11 @@ void EFM_PROXY::close() {
 bool EFM_PROXY::real_connect_dns_srv(
     const char* dns_srv_name, const char* user,
     const char* passwd, const char* db, unsigned long client_flag) {
-    const auto context = start_monitoring();
+
     const bool ret = next_proxy->real_connect_dns_srv(dns_srv_name, user, passwd, db, client_flag);
-    stop_monitoring(context);
+
+    generate_node_keys();
+
     return ret;
 }
 
@@ -530,18 +550,4 @@ unsigned long EFM_PROXY::get_server_capabilities() const {
 
 unsigned EFM_PROXY::get_server_status() const {
     return next_proxy->get_server_status();
-}
-
-void EFM_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
-    next_proxy->set_connection(mysql_proxy);
-
-    if (monitor_service != nullptr && !node_keys.empty()) {
-        monitor_service->stop_monitoring_for_all_connections(node_keys);
-    }
-
-    generate_node_keys();
-}
-
-void EFM_PROXY::close_socket() {
-    next_proxy->close_socket();
 }
