@@ -38,6 +38,8 @@
 class EFM_PROXY : public MYSQL_PROXY {
 public:
     EFM_PROXY(DBC* dbc, DataSource* ds);
+    EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy);
+    EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy, std::shared_ptr<MONITOR_SERVICE> monitor_service);
 
     void delete_ds() override;
     uint64_t num_rows(MYSQL_RES* res) override;

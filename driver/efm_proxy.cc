@@ -33,8 +33,18 @@ namespace {
     const char* RETRIEVE_HOST_PORT_SQL = "SELECT CONCAT(@@hostname, ':', @@port)";
 }
 
-EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {
-    this->monitor_service = std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries);
+EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds) : EFM_PROXY(
+    dbc, ds, nullptr, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
+
+EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy) : EFM_PROXY(
+    dbc, ds, next_proxy, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
+
+EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy,
+                     std::shared_ptr<MONITOR_SERVICE> monitor_service)
+    : MYSQL_PROXY(dbc, ds),
+      monitor_service{std::move(monitor_service)} {
+
+    this->next_proxy = next_proxy;
     generate_node_keys();
 }
 

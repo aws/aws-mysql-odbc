@@ -77,6 +77,8 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
     MOCK_METHOD(void, free_result, (MYSQL_RES*));
     MOCK_METHOD(void, close_socket, ());
     MOCK_METHOD(void, mock_mysql_proxy_destructor, ());
+    MOCK_METHOD(void, close, ());
+    MOCK_METHOD(void, init, ());
 };
 
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
