@@ -32,6 +32,8 @@
 
 #include <mysql.h>
 
+#include "host_info.h"
+
 struct DBC;
 struct DataSource;
 
