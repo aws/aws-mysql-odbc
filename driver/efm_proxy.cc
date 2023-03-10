@@ -174,9 +174,7 @@ int EFM_PROXY::set_character_set(const char* csname) {
 }
 
 void EFM_PROXY::init() {
-    const auto context = start_monitoring();
     next_proxy->init();
-    stop_monitoring(context);
 }
 
 bool EFM_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
@@ -303,10 +301,7 @@ int EFM_PROXY::get_option(mysql_option option, const void* arg) {
 }
 
 int EFM_PROXY::options(mysql_option option, const void* arg) {
-    const auto context = start_monitoring();
-    const int ret = next_proxy->options(option, arg);
-    stop_monitoring(context);
-    return ret;
+    return next_proxy->options(option, arg);
 }
 
 void EFM_PROXY::free_result(MYSQL_RES* result) {

@@ -38,13 +38,13 @@
 
 #include <atomic>
 
-#include "../MYODBC_MYSQL.h"
 #include "../MYODBC_CONF.h"
+#include "../MYODBC_MYSQL.h"
 #include "../MYODBC_ODBC.h"
-#include "util/installer.h"
+#include "efm_proxy.h"
 #include "failover.h"
 #include "mysql_proxy.h"
-#include "efm_proxy.h"
+#include "util/installer.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
