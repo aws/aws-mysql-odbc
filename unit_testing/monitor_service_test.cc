@@ -71,7 +71,7 @@ protected:
 };
 
 TEST_F(MonitorServiceTest, StartMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
@@ -91,7 +91,7 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     const int runs = 5;
@@ -115,7 +115,7 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
@@ -139,7 +139,7 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);

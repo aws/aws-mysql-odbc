@@ -94,11 +94,11 @@ TEST_F(EFMProxyTest, FailureDetectionEnabled) {
 
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).WillOnce(Return(mock_context));
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(mock_context)).Times(1);
-    EXPECT_CALL(*mock_mysql_proxy, init());
+    EXPECT_CALL(*mock_mysql_proxy, query(""));
     EXPECT_CALL(*mock_mysql_proxy, mock_mysql_proxy_destructor());
 
     EFM_PROXY efm_proxy(dbc, ds, mock_mysql_proxy, mock_monitor_service);
-    efm_proxy.init();
+    efm_proxy.query("");
 }
 
 TEST_F(EFMProxyTest, DoesNotNeedMonitoring) {
