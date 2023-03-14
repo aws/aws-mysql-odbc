@@ -173,22 +173,4 @@ private:
     std::shared_ptr<HOST_INFO> host = nullptr;
 };
 
-class MYSQL_MONITOR_PROXY {
-public:
-    MYSQL_MONITOR_PROXY(DataSource* ds);
-    virtual ~MYSQL_MONITOR_PROXY();
-
-    virtual void init();
-    virtual int ping();
-    virtual int options(enum mysql_option option, const void* arg);
-    virtual bool connect();
-    virtual bool is_connected();
-    virtual const char* error();
-    virtual void close();
-
-private:
-    DataSource* ds = nullptr;
-    MYSQL* mysql = nullptr;
-};
-
 #endif /* __MYSQL_PROXY__ */

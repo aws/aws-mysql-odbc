@@ -42,9 +42,9 @@ struct CONNECTION_STATUS {
 };
 
 struct DataSource;
+class CONNECTION_HANDLER;
 class MONITOR_SERVICE;
-class MYSQL_MONITOR_PROXY;
-
+class MYSQL_PROXY;
 
 namespace {
     const std::chrono::milliseconds thread_sleep_when_inactive = std::chrono::milliseconds(100);
@@ -55,15 +55,18 @@ class MONITOR : public std::enable_shared_from_this<MONITOR> {
 public:
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
+        std::shared_ptr<CONNECTION_HANDLER> connection_handler,
         std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds monitor_disposal_time,
         DataSource* ds,
         bool enable_logging = false);
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
+        std::shared_ptr<CONNECTION_HANDLER> connection_handler,
         std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds monitor_disposal_time,
-        MYSQL_MONITOR_PROXY* proxy,
+        DataSource* ds,
+        MYSQL_PROXY* proxy,
         bool enable_logging = false);
     virtual ~MONITOR();
 
@@ -77,12 +80,14 @@ public:
 private:
     std::atomic_bool stopped{true};
     std::shared_ptr<HOST_INFO> host;
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler;
     std::chrono::milliseconds connection_check_interval;
     std::chrono::seconds failure_detection_timeout;
     std::chrono::milliseconds disposal_time;
     std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
     std::chrono::steady_clock::time_point last_context_timestamp;
-    MYSQL_MONITOR_PROXY* mysql_proxy = nullptr;
+    MYSQL_PROXY* mysql_proxy = nullptr;
+    DataSource* ds = nullptr;
     std::shared_ptr<FILE> logger;
     std::mutex mutex_;
 

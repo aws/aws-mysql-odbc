@@ -50,6 +50,7 @@ public:
         std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds disposal_time,
         DataSource* ds,
+        std::shared_ptr<CONNECTION_HANDLER> connection_handler,
         bool enable_logging = false);
     virtual void add_task(const std::shared_ptr<MONITOR>& monitor, const std::shared_ptr<MONITOR_SERVICE>& service);
     void reset_resource(const std::shared_ptr<MONITOR>& monitor);
@@ -65,6 +66,7 @@ protected:
     std::shared_ptr<MONITOR> get_available_monitor();
     virtual std::shared_ptr<MONITOR> create_monitor(
         std::shared_ptr<HOST_INFO> host,
+        std::shared_ptr<CONNECTION_HANDLER> connection_handler,
         std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds disposal_time,
         DataSource* ds,

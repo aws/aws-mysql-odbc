@@ -644,6 +644,7 @@ struct DBC
   fido_callback_func fido_callback = nullptr;
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
+  std::shared_ptr<CONNECTION_HANDLER> connection_handler = nullptr;
 
   DBC(ENV *p_env);
   void free_explicit_descriptors();

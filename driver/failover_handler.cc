@@ -56,12 +56,12 @@ const std::regex IPV6_COMPRESSED_PATTERN(
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
     : FAILOVER_HANDLER(
-          dbc, ds, std::make_shared<FAILOVER_CONNECTION_HANDLER>(dbc),
-          std::make_shared<TOPOLOGY_SERVICE>(dbc ? dbc->id : 0, ds ? ds->save_queries : false),
-          std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds)) {}
+        dbc, ds, dbc ? dbc->connection_handler : nullptr,
+        std::make_shared<TOPOLOGY_SERVICE>(dbc ? dbc->id : 0, ds ? ds->save_queries : false),
+        std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds)) {}
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
-                                   std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+                                   std::shared_ptr<CONNECTION_HANDLER> connection_handler,
                                    std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
                                    std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container) {
     if (!dbc) {

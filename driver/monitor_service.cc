@@ -70,6 +70,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         failure_detection_timeout,
         disposal_time,
         ds,
+        dbc ? dbc->connection_handler : nullptr,
         enable_logging);
 
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(

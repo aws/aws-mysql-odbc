@@ -396,8 +396,8 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     close();
     this->mysql = mysql_proxy->mysql;
     mysql_proxy->mysql = nullptr;
-
-    ds_delete(mysql_proxy->ds);
+    // delete the ds initialized in CONNECTION_HANDLER::clone_dbc()
+    mysql_proxy->delete_ds();
     delete mysql_proxy;
 }
 
@@ -420,53 +420,4 @@ void MYSQL_PROXY::set_next_proxy(MYSQL_PROXY* next_proxy) {
     }
 
     this->next_proxy = next_proxy;
-}
-
-MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) {
-    this->ds = ds_new();
-    ds_copy(this->ds, ds);
-}
-
-MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
-    if (this->mysql) {
-        mysql_close(this->mysql);
-    }
-    if (this->ds) {
-        ds_delete(this->ds);
-    }
-}
-
-void MYSQL_MONITOR_PROXY::init() {
-    this->mysql = mysql_init(nullptr);
-}
-
-int MYSQL_MONITOR_PROXY::ping() {
-    return mysql_ping(mysql);
-}
-
-int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
-    return mysql_options(mysql, option, arg);
-}
-
-bool MYSQL_MONITOR_PROXY::connect() {
-    if (!ds)
-        return false;
-
-    const auto host = get_host_info_from_ds(ds);
-
-    return mysql_real_connect(mysql, host->get_host().c_str(), ds_get_utf8attr(ds->uid, &ds->uid8),
-                              ds_get_utf8attr(ds->pwd, &ds->pwd8), nullptr, host->get_port(),
-                              ds_get_utf8attr(ds->socket, &ds->socket8), 0) != nullptr;
-}
-
-bool MYSQL_MONITOR_PROXY::is_connected() {
-    return this->mysql != nullptr && this->mysql->net.vio;
-}
-
-const char* MYSQL_MONITOR_PROXY::error() {
-    return mysql_error(mysql); }
-
-void MYSQL_MONITOR_PROXY::close() {
-    mysql_close(mysql);
-    mysql= nullptr;
 }
