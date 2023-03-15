@@ -226,7 +226,10 @@ bool MONITOR::connect() {
         this->ds->read_timeout = timeout_sec;
     }
 
-    this->mysql_proxy = this->connection_handler->connect(this->host, ds);
+    this->ds->enable_cluster_failover = false;
+    this->ds->enable_failure_detection= false;
+
+    this->mysql_proxy = this->connection_handler->connect(this->host, this->ds);
     if (!this->mysql_proxy) {
         return false;
     }
