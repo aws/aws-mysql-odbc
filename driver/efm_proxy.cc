@@ -178,10 +178,7 @@ void EFM_PROXY::init() {
 }
 
 bool EFM_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    const auto context = start_monitoring();
-    const bool ret = next_proxy->ssl_set(key, cert, ca, capath, cipher);
-    stop_monitoring(context);
-    return ret;
+    return next_proxy->ssl_set(key, cert, ca, capath, cipher);
 }
 
 bool EFM_PROXY::change_user(const char* user, const char* passwd, const char* db) {
@@ -287,10 +284,7 @@ int EFM_PROXY::ping() {
 }
 
 int EFM_PROXY::options4(mysql_option option, const void* arg1, const void* arg2) {
-    const auto context = start_monitoring();
-    const int ret = next_proxy->options4(option, arg1, arg2);
-    stop_monitoring(context);
-    return ret;
+    return next_proxy->options4(option, arg1, arg2);;
 }
 
 int EFM_PROXY::get_option(mysql_option option, const void* arg) {
