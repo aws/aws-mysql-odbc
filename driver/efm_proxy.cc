@@ -244,10 +244,7 @@ void EFM_PROXY::get_character_set_info(MY_CHARSET_INFO* charset) {
 }
 
 bool EFM_PROXY::autocommit(bool auto_mode) {
-    const auto context = start_monitoring();
-    const bool ret = next_proxy->autocommit(auto_mode);
-    stop_monitoring(context);
-    return ret;
+    return next_proxy->autocommit(auto_mode);
 }
 
 int EFM_PROXY::next_result() {
