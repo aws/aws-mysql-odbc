@@ -74,7 +74,6 @@ protected:
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
         host = std::make_shared<HOST_INFO>("host", 1234);
-        mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
         mock_connection_handler = std::make_shared<MOCK_CONNECTION_HANDLER>();
         monitor = std::make_shared<MONITOR>(host, mock_connection_handler, failure_detection_timeout, monitor_disposal_time, ds, nullptr, false);
 
@@ -143,6 +142,8 @@ TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
+    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+
     EXPECT_CALL(*mock_connection_handler, connect(host, _))
         .WillOnce(Return(mock_proxy));
 
@@ -155,6 +156,8 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
+    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+
     EXPECT_CALL(*mock_connection_handler, connect(host, _))
         .WillRepeatedly(Return(mock_proxy));
 
@@ -176,6 +179,8 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
+    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+
     EXPECT_CALL(*mock_connection_handler, connect(host, _))
         .WillOnce(Return(mock_proxy));
 
