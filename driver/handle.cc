@@ -218,12 +218,13 @@ SQLRETURN SQL_API SQLAllocEnv(SQLHENV *phenv)
 
 SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
 {
+    MONITOR_THREAD_CONTAINER::release_instance();
+    
     ENV *env= (ENV *) henv;
     delete env;
 #ifdef _UNIX_
     myodbc_end();
 #endif /* _UNIX_ */
-    MONITOR_THREAD_CONTAINER::release_instance();
     return(SQL_SUCCESS);
 }
 
