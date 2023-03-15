@@ -48,6 +48,9 @@ namespace {
 
 class MultiThreadedMonitorServiceTest : public testing::Test {
 protected:
+    SQLHENV env;
+    DBC* dbc;
+    DataSource* ds;
     const int num_connections = 10;
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MOCK_MONITOR_THREAD_CONTAINER> mock_container;
@@ -58,6 +61,7 @@ protected:
     static void TearDownTestSuite() {}
 
     void SetUp() override {
+        allocate_odbc_handles(env, dbc, ds);
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
         services = generate_services(num_connections);
@@ -68,6 +72,7 @@ protected:
             service->release_resources();
         }
         MONITOR_THREAD_CONTAINER::release_instance();
+        cleanup_odbc_handles(env, dbc, ds);
     }
 
     std::vector<std::shared_ptr<MONITOR_SERVICE>> generate_services(int num_services) {
@@ -110,10 +115,10 @@ protected:
             auto service = services.at(i);
             auto node_keys = node_key_list.at(i);
 
-            auto thread = std::thread([&service, node_keys, host]() {
+            auto thread = std::thread([&service, node_keys, host, this]() {
                 service->start_monitoring(
-                    nullptr,
-                    nullptr,
+                    dbc,
+                    ds,
                     node_keys,
                     host,
                     failure_detection_time,

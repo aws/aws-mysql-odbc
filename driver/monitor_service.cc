@@ -56,6 +56,12 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
     int failure_detection_count,
     std::chrono::milliseconds disposal_time) {
 
+    if (!dbc || !ds) {
+        auto msg = "[MONITOR_SERVICE] Parameter dbc or ds cannot be null";
+        MYLOG_TRACE(this->logger.get(), dbc ? dbc->id : 0, msg);
+        throw std::invalid_argument(msg);
+    }
+
     if (node_keys.empty()) {
         auto msg = "[MONITOR_SERVICE] Parameter node_keys cannot be empty";
         MYLOG_TRACE(this->logger.get(), dbc ? dbc->id : 0, msg);
