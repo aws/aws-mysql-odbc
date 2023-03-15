@@ -247,9 +247,15 @@ TEST_F(MonitorThreadContainerTest, AvailableMonitorsQueue) {
 }
 
 TEST_F(MonitorThreadContainerTest, PopulateAndRemoveMappings) {
+    SQLHENV env;
+    DBC* dbc;
+    DataSource* ds;
+    allocate_odbc_handles(env, dbc, ds);
+    dbc->connection_handler = std::make_shared<MOCK_CONNECTION_HANDLER>();
+
     auto context = service->start_monitoring(
-        nullptr,
-        nullptr,
+        dbc,
+        ds,
         node_keys,
         host,
         failure_detection_time,
@@ -267,4 +273,6 @@ TEST_F(MonitorThreadContainerTest, PopulateAndRemoveMappings) {
 
     EXPECT_FALSE(TEST_UTILS::has_monitor(thread_container, node_key));
     EXPECT_FALSE(TEST_UTILS::has_any_tasks(thread_container));
+
+    cleanup_odbc_handles(env, dbc, ds);
 }

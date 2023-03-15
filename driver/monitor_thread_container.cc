@@ -194,6 +194,10 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::create_monitor(
     DataSource* ds,
     bool enable_logging) {
 
+    if (!connection_handler) {
+        return nullptr;
+    }
+
     return std::make_shared<MONITOR>(host, connection_handler, failure_detection_timeout, disposal_time, ds, enable_logging);
 }
 
