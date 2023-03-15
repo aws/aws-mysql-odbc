@@ -475,10 +475,7 @@ unsigned EFM_PROXY::stmt_field_count(MYSQL_STMT* stmt) {
 }
 
 st_mysql_client_plugin* EFM_PROXY::client_find_plugin(const char* name, int type) {
-    const auto context = start_monitoring();
-    st_mysql_client_plugin* ret = next_proxy->client_find_plugin(name, type);
-    stop_monitoring(context);
-    return ret;
+    return next_proxy->client_find_plugin(name, type);
 }
 
 bool EFM_PROXY::is_connected() {
