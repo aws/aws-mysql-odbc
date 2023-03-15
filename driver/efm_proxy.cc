@@ -283,10 +283,7 @@ bool EFM_PROXY::real_connect_dns_srv(
 }
 
 int EFM_PROXY::ping() {
-    const auto context = start_monitoring();
-    const int ret = next_proxy->ping();
-    stop_monitoring(context);
-    return ret;
+    return next_proxy->ping();
 }
 
 int EFM_PROXY::options4(mysql_option option, const void* arg1, const void* arg2) {
