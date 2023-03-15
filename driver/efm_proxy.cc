@@ -281,7 +281,7 @@ int EFM_PROXY::ping() {
 }
 
 int EFM_PROXY::options4(mysql_option option, const void* arg1, const void* arg2) {
-    return next_proxy->options4(option, arg1, arg2);;
+    return next_proxy->options4(option, arg1, arg2);
 }
 
 int EFM_PROXY::get_option(mysql_option option, const void* arg) {

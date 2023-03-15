@@ -751,7 +751,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     ds_set_strnattr(&dsrc->server8, (SQLCHAR*)host, strlen(host));
     dsrc->port = port;
 
-    Aws::SDKOptions options;
+    //Aws::SDKOptions options;
     //Aws::InitAPI(options); TODO: causing SSL connection error: SSL_CTX_new failed
     //Aws::ShutdownAPI(options);
 
