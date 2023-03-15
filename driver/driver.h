@@ -38,8 +38,8 @@
 
 #include <atomic>
 
-#include "../MYODBC_CONF.h"
 #include "../MYODBC_MYSQL.h"
+#include "../MYODBC_CONF.h"
 #include "../MYODBC_ODBC.h"
 #include "efm_proxy.h"
 #include "failover.h"

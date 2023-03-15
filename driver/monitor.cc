@@ -211,6 +211,10 @@ CONNECTION_STATUS MONITOR::check_connection_status() {
 }
 
 bool MONITOR::connect() {
+    if (this->mysql_proxy) {
+        this->mysql_proxy->close();
+        delete this->mysql_proxy;
+    }
     // Timeout shouldn't be 0 by now, but double check just in case
     unsigned int timeout_sec = this->failure_detection_timeout.count() == 0 ? failure_detection_timeout_default : this->failure_detection_timeout.count();
 
