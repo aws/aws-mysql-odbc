@@ -86,7 +86,7 @@ void myodbc_init(void)
 
   // This library_init call is causing the test my_data to crash on mac.
   // TODO: Find alternate solution
-  mysql_library_init(0, nullptr, nullptr);
+  // mysql_library_init(0, nullptr, nullptr);
 
   if(!mysys_inited)
   {
