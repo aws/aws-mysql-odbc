@@ -47,7 +47,7 @@ MYSQL_PROXY::~MYSQL_PROXY() {
 }
 
 uint64_t MYSQL_PROXY::num_rows(MYSQL_RES* res) {
-    return mysql_num_rows(res);
+    return next_proxy->num_rows(res);
 }
 
 unsigned int MYSQL_PROXY::num_fields(MYSQL_RES* res) {

@@ -96,6 +96,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     prepare.cc
     query_parsing.cc
     results.cc
+    secrets_manager_proxy.cc
     topology_service.cc
     transact.cc
     utility.cc)
@@ -140,6 +141,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    myutil.h
                                    parse.h
                                    query_parsing.h
+                                   secrets_manager_proxy.h
                                    topology_service.h
                                    ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
   ENDIF(WIN32)
