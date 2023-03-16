@@ -36,12 +36,14 @@
 using testing::_;
 using testing::Return;
 
-class MySQLProxyTest : public testing::Test {
+class EFMProxyTest : public testing::Test {
 protected:
     SQLHENV env;
     DBC* dbc;
     DataSource* ds;
     std::shared_ptr<MOCK_MONITOR_SERVICE> mock_monitor_service;
+    MOCK_MYSQL_PROXY* mock_mysql_proxy;
+
 
     static void SetUpTestSuite() {}
 
@@ -55,6 +57,7 @@ protected:
         ds->enable_failure_detection = true;
 
         mock_monitor_service = std::make_shared<MOCK_MONITOR_SERVICE>();
+        mock_mysql_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
     }
 
     void TearDown() override {
@@ -62,40 +65,48 @@ protected:
     }
 };
 
-TEST_F(MySQLProxyTest, NullDBC) {
-    EXPECT_THROW(MYSQL_PROXY mysql_proxy(nullptr, ds), std::runtime_error);
+TEST_F(EFMProxyTest, NullDBC) {
+    EXPECT_THROW(EFM_PROXY efm_proxy(nullptr, ds, mock_mysql_proxy), std::runtime_error);
+    delete mock_mysql_proxy;
 }
 
-TEST_F(MySQLProxyTest, NullDS) {
-    EXPECT_THROW(MYSQL_PROXY mysql_proxy(dbc, nullptr), std::runtime_error);
+TEST_F(EFMProxyTest, NullDS) {
+    EXPECT_THROW(EFM_PROXY efm_proxy(dbc, nullptr, mock_mysql_proxy), std::runtime_error);
+    delete mock_mysql_proxy;
 }
 
-TEST_F(MySQLProxyTest, FailureDetectionDisabled) {
+TEST_F(EFMProxyTest, FailureDetectionDisabled) {
     ds->enable_failure_detection = false;
 
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).Times(0);
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(_)).Times(0);
+    EXPECT_CALL(*mock_mysql_proxy, init());
+    EXPECT_CALL(*mock_mysql_proxy, mock_mysql_proxy_destructor());
 
-    MYSQL_PROXY mysql_proxy(dbc, ds, mock_monitor_service);
-    mysql_proxy.init();
+    EFM_PROXY efm_proxy(dbc, ds, mock_mysql_proxy, mock_monitor_service);
+    efm_proxy.init();
 }
 
-TEST_F(MySQLProxyTest, FailureDetectionEnabled) {
+TEST_F(EFMProxyTest, FailureDetectionEnabled) {
     auto mock_context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         nullptr, std::set<std::string>(), std::chrono::milliseconds(0),
         std::chrono::milliseconds(0), 0);
 
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).WillOnce(Return(mock_context));
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(mock_context)).Times(1);
+    EXPECT_CALL(*mock_mysql_proxy, query(""));
+    EXPECT_CALL(*mock_mysql_proxy, mock_mysql_proxy_destructor());
 
-    MYSQL_PROXY mysql_proxy(dbc, ds, mock_monitor_service);
-    mysql_proxy.init();
+    EFM_PROXY efm_proxy(dbc, ds, mock_mysql_proxy, mock_monitor_service);
+    efm_proxy.query("");
 }
 
-TEST_F(MySQLProxyTest, DoesNotNeedMonitoring) {
+TEST_F(EFMProxyTest, DoesNotNeedMonitoring) {
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).Times(0);
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(_)).Times(0);
+    EXPECT_CALL(*mock_mysql_proxy, close());
+    EXPECT_CALL(*mock_mysql_proxy, mock_mysql_proxy_destructor());
 
-    MYSQL_PROXY mysql_proxy(dbc, ds, mock_monitor_service);
-    mysql_proxy.close();
+    EFM_PROXY efm_proxy(dbc, ds, mock_mysql_proxy, mock_monitor_service);
+    efm_proxy.close();
 }

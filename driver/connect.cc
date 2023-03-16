@@ -825,7 +825,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     ds_set_strnattr(&dsrc->server8, (SQLCHAR*)host, strlen(host));
     dsrc->port = port;
 
-    Aws::SDKOptions options;
+    //Aws::SDKOptions options;
     //Aws::InitAPI(options); TODO: causing SSL connection error: SSL_CTX_new failed
     //Aws::ShutdownAPI(options);
 
@@ -1130,7 +1130,8 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   if (ds->save_queries && !dbc->log_file) 
     dbc->log_file = init_log_file();
 
-  dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
+  dbc->init_proxy_chain(ds);
+  dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (!dbc->ds)
@@ -1247,7 +1248,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     if (ds->save_queries && !dbc->log_file) 
       dbc->log_file = init_log_file();
 
-    dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
+    dbc->init_proxy_chain(ds);
+    dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
     rc = dbc->fh->init_cluster_info();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
@@ -1426,7 +1428,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   if (ds->save_queries && !dbc->log_file) 
       dbc->log_file = init_log_file();
 
-  dbc->mysql_proxy = new MYSQL_PROXY(dbc, ds);
+  dbc->init_proxy_chain(ds);
+  dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_cluster_info();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
