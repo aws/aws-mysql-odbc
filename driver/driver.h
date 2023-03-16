@@ -41,9 +41,11 @@
 #include "../MYODBC_MYSQL.h"
 #include "../MYODBC_CONF.h"
 #include "../MYODBC_ODBC.h"
-#include "util/installer.h"
+#include "connection_handler.h"
+#include "efm_proxy.h"
 #include "failover.h"
 #include "mysql_proxy.h"
+#include "util/installer.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -643,6 +645,7 @@ struct DBC
   fido_callback_func fido_callback = nullptr;
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
+  std::shared_ptr<CONNECTION_HANDLER> connection_handler = nullptr;
 
   DBC(ENV *p_env);
   void free_explicit_descriptors();
@@ -654,6 +657,7 @@ struct DBC
   SQLRETURN connect(DataSource *dsrc, bool failover_enabled);
   void execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
     MYSQL_BIND *param_bind, MYSQL_BIND *result_bind);
+  void init_proxy_chain(DataSource *dsrc);
 
   inline bool transactions_supported() {
     return mysql_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS;

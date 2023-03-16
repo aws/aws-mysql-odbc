@@ -33,11 +33,9 @@
 #include "cluster_aware_metrics_container.h"
 #include "cluster_topology_info.h"
 #include "mysql_proxy.h"
-#include "mylog.h"
 
 #include <map>
 #include <mutex>
-#include <cstring>
 #include <chrono>
 #include <ctime>
 

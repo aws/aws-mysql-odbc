@@ -220,7 +220,7 @@ TEST_F(FailoverReaderHandlerTest, BuildHostsList) {
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Failure) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
     
-    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));
 
     EXPECT_CALL(*mock_ts, mark_host_down(reader_a_host)).Times(1);
     EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(1);
@@ -244,8 +244,8 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Reader) {
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));    
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Return(mock_reader_a_proxy));
+    EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));    
+    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr)).WillRepeatedly(Return(mock_reader_a_proxy));
 
     // Reader C will not be used as it is put at the end. Will only try to connect to A and B
     EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(1);
@@ -271,8 +271,8 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Writer) {
 
     EXPECT_CALL(*mock_writer_proxy, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host)).WillRepeatedly(Return(mock_writer_proxy));
+    EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr)).WillRepeatedly(Return(mock_writer_proxy));
 
     EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).Times(1);
 
@@ -306,9 +306,9 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Return(mock_reader_a_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Invoke([&]() {
+    EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr)).WillRepeatedly(Return(mock_reader_a_proxy));
+    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host, nullptr)).WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_reader_b_proxy;
         }));
@@ -339,12 +339,12 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Timeout) {
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_reader_b_proxy, mock_mysql_proxy_destructor());
     
-    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(Invoke([&]() {
+    EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr)).WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_reader_a_proxy;
         }));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Invoke([&]() {
+    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host, nullptr)).WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_reader_b_proxy;
         }));
@@ -365,7 +365,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Timeout) {
 TEST_F(FailoverReaderHandlerTest, Failover_Failure) {
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
-    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));
 
     EXPECT_CALL(*mock_ts, mark_host_down(reader_a_host)).Times(1);
     EXPECT_CALL(*mock_ts, mark_host_down(reader_b_host)).Times(1);
@@ -401,10 +401,10 @@ TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_reader_b_proxy, mock_mysql_proxy_destructor());
 
-    EXPECT_CALL(*mock_connection_handler, connect(_)).WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host)).WillRepeatedly(
+    EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr)).WillRepeatedly(
         Return(mock_reader_a_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host)).WillRepeatedly(Invoke([&]() {
+    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host, nullptr)).WillRepeatedly(Invoke([&]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         return mock_reader_b_proxy;
     }));

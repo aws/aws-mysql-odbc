@@ -70,7 +70,7 @@ bool FAILOVER_SYNC::is_completed() {
 // ************* FAILOVER ***********************************
 // Base class of two writer failover task handlers
 FAILOVER::FAILOVER(
-    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     unsigned long dbc_id, bool enable_logging)
     : connection_handler{connection_handler},
@@ -87,7 +87,7 @@ bool FAILOVER::is_writer_connected() {
 }
 
 bool FAILOVER::connect(const std::shared_ptr<HOST_INFO>& host_info) {
-    new_connection = connection_handler->connect(host_info);
+    new_connection = connection_handler->connect(host_info, nullptr);
     return is_writer_connected();
 }
 
@@ -107,7 +107,7 @@ void FAILOVER::release_new_connection() {
 // ************************ RECONNECT_TO_WRITER_HANDLER
 // handler reconnecting to a given host, e.g. reconnect to a current writer
 RECONNECT_TO_WRITER_HANDLER::RECONNECT_TO_WRITER_HANDLER(
-    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     int connection_interval, unsigned long dbc_id, bool enable_logging)
     : FAILOVER{connection_handler, topology_service, dbc_id, enable_logging},
@@ -168,7 +168,7 @@ bool RECONNECT_TO_WRITER_HANDLER::is_current_host_writer(
 // handler getting the latest cluster topology and connecting to a newly elected
 // writer
 WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(
-    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology,
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
@@ -274,7 +274,7 @@ void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
 FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
-    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     int writer_failover_timeout_ms, int read_topology_interval_ms,
     int reconnect_writer_interval_ms, unsigned long dbc_id, bool enable_logging)
     : connection_handler{connection_handler},

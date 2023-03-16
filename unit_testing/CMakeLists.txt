@@ -54,6 +54,7 @@ add_executable(
   test_utils.cc
 
   cluster_aware_metrics_test.cc
+  efm_proxy_test.cc
   failover_handler_test.cc
   failover_reader_handler_test.cc
   failover_writer_handler_test.cc
@@ -62,7 +63,6 @@ add_executable(
   monitor_test.cc
   monitor_thread_container_test.cc
   multi_threaded_monitor_service_test.cc
-  mysql_proxy_test.cc
   query_parsing_test.cc
   main.cc
   topology_service_test.cc
