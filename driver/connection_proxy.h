@@ -40,6 +40,15 @@ public:
     CONNECTION_PROXY(DBC* dbc, DataSource* ds);
     virtual ~CONNECTION_PROXY();
 
+    virtual bool connect(
+        const char* host,
+        const char* user,
+        const char* password,
+        const char* database,
+        unsigned int port,
+        const char* socket,
+        unsigned long flags);
+
     virtual void delete_ds();
     virtual uint64_t num_rows(MYSQL_RES* res);
     virtual unsigned int num_fields(MYSQL_RES* res);

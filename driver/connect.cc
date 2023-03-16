@@ -749,20 +749,12 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     ds_set_strnattr(&dsrc->server8, (SQLCHAR*)host, strlen(host));
     dsrc->port = port;
 
-    const bool connect_result = dsrc->enable_dns_srv ?
-                            connection_proxy->real_connect_dns_srv(host,
-                              ds_get_utf8attr(dsrc->uid,      &dsrc->uid8),
-                              ds_get_utf8attr(dsrc->pwd,      &dsrc->pwd8),
-                              ds_get_utf8attr(dsrc->database, &dsrc->database8),
-                              flags)
-                            :
-                            connection_proxy->real_connect(host,
-                              ds_get_utf8attr(dsrc->uid,      &dsrc->uid8),
-                              ds_get_utf8attr(dsrc->pwd,      &dsrc->pwd8),
-                              ds_get_utf8attr(dsrc->database, &dsrc->database8),
-                              port, 
-                              ds_get_utf8attr(dsrc->socket,   &dsrc->socket8),
-                              flags);
+    const char* user = ds_get_utf8attr(dsrc->uid, &dsrc->uid8);
+    const char* password = ds_get_utf8attr(dsrc->pwd, &dsrc->pwd8);
+    const char* database = ds_get_utf8attr(dsrc->database, &dsrc->database8);
+    const char* socket = ds_get_utf8attr(dsrc->socket, &dsrc->socket8);
+
+    const bool connect_result = connection_proxy->connect(host, user, password, database, port, socket, flags);
     if (!connect_result)
     {
       unsigned int native_error= connection_proxy->error_code();

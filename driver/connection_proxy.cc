@@ -45,6 +45,16 @@ CONNECTION_PROXY::~CONNECTION_PROXY() {
     }
 }
 
+bool CONNECTION_PROXY::connect(const char* host, const char* user, const char* password,
+    const char* database, unsigned int port, const char* socket, unsigned long flags) {
+
+    if (ds->enable_dns_srv) {
+        return this->real_connect_dns_srv(host, user, password, database, flags);
+    }
+
+    return this->real_connect(host, user, password, database, port, socket, flags);
+}
+
 void CONNECTION_PROXY::delete_ds() {
     next_proxy->delete_ds();
 }
