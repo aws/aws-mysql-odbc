@@ -754,12 +754,8 @@ DataSource *ds_new()
   ds->port = 3306;
   ds->has_port = false;
   ds->no_schema = 1;
-  ds->auth_mode = 0;
-  ds->auth_region = 0;
-  ds->auth_host = 0;
   ds->auth_port = 0;
   ds->auth_expiration = 0;
-  ds->auth_secret_id = 0;
   ds->enable_cluster_failover = true;
   ds->allow_reader_connections = false;
   ds->gather_perf_metrics = false;
@@ -854,6 +850,15 @@ void ds_delete(DataSource *ds)
   x_free(ds->ssl_crl8);
   x_free(ds->ssl_crlpath8);
   x_free(ds->load_data_local_dir8);
+
+  x_free(ds->auth_mode);
+  x_free(ds->auth_region);
+  x_free(ds->auth_host);
+  x_free(ds->auth_secret_id);
+  x_free(ds->auth_mode8);
+  x_free(ds->auth_region8);
+  x_free(ds->auth_host8);
+  x_free(ds->auth_secret_id8);
 
   x_free(ds->host_pattern);
   x_free(ds->cluster_id);
@@ -2098,12 +2103,6 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
                          sqlwcharlen(ds_source->cluster_id));
     }
 
-    ds->auth_mode = ds_source->auth_mode;
-    ds->auth_region = ds_source->auth_region;
-    ds->auth_host = ds_source->auth_host;
-    ds->auth_port = ds_source->auth_port;
-    ds->auth_expiration = ds_source->auth_expiration;
-    ds->auth_secret_id = ds_source->auth_secret_id;
     ds->enable_cluster_failover = ds_source->enable_cluster_failover;
     ds->allow_reader_connections = ds_source->allow_reader_connections;
     ds->gather_perf_metrics = ds_source->gather_perf_metrics;
@@ -2124,4 +2123,24 @@ void ds_copy(DataSource *ds, DataSource *ds_source) {
     ds->failure_detection_count = ds_source->failure_detection_count;
     ds->monitor_disposal_time = ds_source->monitor_disposal_time;
     ds->failure_detection_timeout = ds_source->failure_detection_timeout;
+
+    /* AWS Authentication */
+    if (ds_source->auth_mode != nullptr) {
+        ds_set_wstrnattr(&ds->auth_mode, ds_source->auth_mode,
+            sqlwcharlen(ds_source->auth_mode));
+    }
+    if (ds_source->auth_region != nullptr) {
+        ds_set_wstrnattr(&ds->auth_region, ds_source->auth_region,
+            sqlwcharlen(ds_source->auth_region));
+    }
+    if (ds_source->auth_host != nullptr) {
+        ds_set_wstrnattr(&ds->auth_host, ds_source->auth_host,
+            sqlwcharlen(ds_source->auth_host));
+    }
+    ds->auth_port = ds_source->auth_port;
+    ds->auth_expiration = ds_source->auth_expiration;
+    if (ds_source->auth_secret_id != nullptr) {
+        ds_set_wstrnattr(&ds->auth_secret_id, ds_source->auth_secret_id,
+            sqlwcharlen(ds_source->auth_secret_id));
+    }
 }

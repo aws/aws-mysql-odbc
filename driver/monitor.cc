@@ -27,34 +27,45 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
+
+#include "driver.h"
 #include "monitor.h"
+
 #include "monitor_service.h"
 #include "mylog.h"
 #include "mysql_proxy.h"
 
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     std::chrono::seconds failure_detection_timeout,
     std::chrono::milliseconds monitor_disposal_time,
     DataSource* ds,
     bool enable_logging)
     : MONITOR(
         std::move(host_info),
+        std::move(connection_handler),
         failure_detection_timeout,
         monitor_disposal_time,
-        new MYSQL_MONITOR_PROXY(ds),
+        ds,
+        nullptr,
         enable_logging) {};
 
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     std::chrono::seconds failure_detection_timeout,
     std::chrono::milliseconds monitor_disposal_time,
-    MYSQL_MONITOR_PROXY* proxy,
+    DataSource* ds,
+    MYSQL_PROXY* proxy,
     bool enable_logging) {
 
     this->host = std::move(host_info);
+    this->connection_handler = std::move(connection_handler);
     this->failure_detection_timeout = failure_detection_timeout;
     this->disposal_time = monitor_disposal_time;
+    this->ds = ds_new();
+    ds_copy(this->ds, ds);
     this->mysql_proxy = proxy;
     this->connection_check_interval = (std::chrono::milliseconds::max)();
     if (enable_logging)
@@ -62,6 +73,11 @@ MONITOR::MONITOR(
 }
 
 MONITOR::~MONITOR() {
+    if (this->ds) {
+        ds_delete(this->ds);
+        this->ds = nullptr;
+    }
+
     if (this->mysql_proxy) {
         delete this->mysql_proxy;
         this->mysql_proxy = nullptr;
@@ -195,21 +211,31 @@ CONNECTION_STATUS MONITOR::check_connection_status() {
 }
 
 bool MONITOR::connect() {
-    this->mysql_proxy->close();
-    this->mysql_proxy->init();
-
+    if (this->mysql_proxy) {
+        this->mysql_proxy->close();
+        delete this->mysql_proxy;
+    }
     // Timeout shouldn't be 0 by now, but double check just in case
     unsigned int timeout_sec = this->failure_detection_timeout.count() == 0 ? failure_detection_timeout_default : this->failure_detection_timeout.count();
-    this->mysql_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &timeout_sec);
-    this->mysql_proxy->options(MYSQL_OPT_READ_TIMEOUT, &timeout_sec);
 
-    if (!this->mysql_proxy->connect()) {
-        MYLOG_TRACE(this->logger.get(), 0, this->mysql_proxy->error());
-        this->mysql_proxy->close();
+    // timeout should be set in DBC::connect()
+    if (this->ds->enable_cluster_failover) {
+        this->ds->connect_timeout = timeout_sec;
+        this->ds->network_timeout = timeout_sec;
+    } else {
+        // cannot change login_timeout here because no access to dbc
+        this->ds->read_timeout = timeout_sec;
+    }
+
+    this->ds->enable_cluster_failover = false;
+    this->ds->enable_failure_detection= false;
+
+    this->mysql_proxy = this->connection_handler->connect(this->host, this->ds);
+    if (!this->mysql_proxy) {
         return false;
     }
 
-    return true;
+    return this->mysql_proxy->is_connected();
 }
 
 std::chrono::milliseconds MONITOR::find_shortest_interval() {

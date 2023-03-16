@@ -32,14 +32,10 @@
 #include <sstream>
 
 namespace {
-    const char* RETRIEVE_HOST_PORT_SQL = "SELECT CONCAT(@@hostname, ':', @@port)";
     const auto SOCKET_CLOSE_DELAY = std::chrono::milliseconds(100);
 }
 
-MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds)
-    : MYSQL_PROXY(dbc, ds, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
-
-MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVICE> monitor_service) : dbc{dbc}, ds{ds} {
+MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds) : dbc{dbc}, ds{ds} {
     if (!this->dbc) {
         throw std::runtime_error("DBC cannot be null.");
     }
@@ -48,17 +44,16 @@ MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds, std::shared_ptr<MONITOR_SERVI
         throw std::runtime_error("DataSource cannot be null.");
     }
 
-    if (this->ds->enable_failure_detection) {
-        this->monitor_service = std::move(monitor_service);
-    }
-
     this->host = get_host_info_from_ds(ds);
-    generate_node_keys();
 }
 
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
         close();
+    }
+
+    if (this->next_proxy) {
+        delete next_proxy;
     }
 }
 
@@ -110,30 +105,19 @@ unsigned long MYSQL_PROXY::thread_id() {
 }
 
 int MYSQL_PROXY::set_character_set(const char* csname) {
-    const auto context = start_monitoring();
-    const int ret = mysql_set_character_set(mysql, csname);
-    stop_monitoring(context);
-    return ret;
+    return mysql_set_character_set(mysql, csname);
 }
 
 void MYSQL_PROXY::init() {
-    const auto context = start_monitoring();
     this->mysql = mysql_init(nullptr);
-    stop_monitoring(context);
 }
 
 bool MYSQL_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
-    stop_monitoring(context);
-    return ret;
+    return mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
 }
 
 bool MYSQL_PROXY::change_user(const char* user, const char* passwd, const char* db) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_change_user(mysql, user, passwd, db);
-    stop_monitoring(context);
-    return ret;
+    return mysql_change_user(mysql, user, passwd, db);
 }
 
 bool MYSQL_PROXY::real_connect(
@@ -141,45 +125,28 @@ bool MYSQL_PROXY::real_connect(
     const char* db, unsigned int port, const char* unix_socket,
     unsigned long clientflag) {
 
-    const auto context = start_monitoring();
     const MYSQL* new_mysql = mysql_real_connect(mysql, host, user, passwd, db, port, unix_socket, clientflag);
-    stop_monitoring(context);
     return new_mysql != nullptr;
 }
 
 int MYSQL_PROXY::select_db(const char* db) {
-    const auto context = start_monitoring();
-    const int ret = mysql_select_db(mysql, db);
-    stop_monitoring(context);
-    return ret;
+    return mysql_select_db(mysql, db);
 }
 
 int MYSQL_PROXY::query(const char* q) {
-    const auto context = start_monitoring();
-    const int ret = mysql_query(mysql, q);
-    stop_monitoring(context);
-    return ret;
+    return mysql_query(mysql, q);
 }
 
 int MYSQL_PROXY::real_query(const char* q, unsigned long length) {
-    const auto context = start_monitoring();
-    const int ret = mysql_real_query(mysql, q, length);
-    stop_monitoring(context);
-    return ret;
+    return mysql_real_query(mysql, q, length);
 }
 
 MYSQL_RES* MYSQL_PROXY::store_result() {
-    const auto context = start_monitoring();
-    MYSQL_RES* ret = mysql_store_result(mysql);
-    stop_monitoring(context);
-    return ret;
+    return mysql_store_result(mysql);
 }
 
 MYSQL_RES* MYSQL_PROXY::use_result() {
-    const auto context = start_monitoring();
-    MYSQL_RES* ret = mysql_use_result(mysql);
-    stop_monitoring(context);
-    return ret;
+    return mysql_use_result(mysql);
 }
 
 struct CHARSET_INFO* MYSQL_PROXY::get_character_set() const {
@@ -191,24 +158,15 @@ void MYSQL_PROXY::get_character_set_info(MY_CHARSET_INFO* charset) {
 }
 
 bool MYSQL_PROXY::autocommit(bool auto_mode) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_autocommit(mysql, auto_mode);
-    stop_monitoring(context);
-    return ret;
+    return mysql_autocommit(mysql, auto_mode);
 }
 
 int MYSQL_PROXY::next_result() {
-    const auto context = start_monitoring();
-    const int ret = mysql_next_result(mysql);
-    stop_monitoring(context);
-    return ret;
+    return mysql_next_result(mysql);
 }
 
 int MYSQL_PROXY::stmt_next_result(MYSQL_STMT* stmt) {
-    const auto context = start_monitoring();
-    const int ret = mysql_stmt_next_result(stmt);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_next_result(stmt);
 }
 
 void MYSQL_PROXY::close() {
@@ -220,17 +178,12 @@ bool MYSQL_PROXY::real_connect_dns_srv(
     const char* dns_srv_name, const char* user,
     const char* passwd, const char* db, unsigned long client_flag) {
 
-    const auto context = start_monitoring();
     const MYSQL* new_mysql = mysql_real_connect_dns_srv(mysql, dns_srv_name, user, passwd, db, client_flag);
-    stop_monitoring(context);
     return new_mysql != nullptr;
 }
 
 int MYSQL_PROXY::ping() {
-    const auto context = start_monitoring();
-    const int ret = mysql_ping(mysql);
-    stop_monitoring(context);
-    return ret;
+    return mysql_ping(mysql);
 }
 
 unsigned long MYSQL_PROXY::get_client_version(void) {
@@ -242,23 +195,15 @@ int MYSQL_PROXY::get_option(mysql_option option, const void* arg) {
 }
 
 int MYSQL_PROXY::options4(mysql_option option, const void* arg1, const void* arg2) {
-    const auto context = start_monitoring();
-    const int ret = mysql_options4(mysql, option, arg1, arg2);
-    stop_monitoring(context);
-    return ret;
+    return mysql_options4(mysql, option, arg1, arg2);
 }
 
 int MYSQL_PROXY::options(mysql_option option, const void* arg) {
-    const auto context = start_monitoring();
-    const int ret = mysql_options(mysql, option, arg);
-    stop_monitoring(context);
-    return ret;
+    return mysql_options(mysql, option, arg);
 }
 
 void MYSQL_PROXY::free_result(MYSQL_RES* result) {
-    const auto context = start_monitoring();
     mysql_free_result(result);
-    stop_monitoring(context);
 }
 
 void MYSQL_PROXY::data_seek(MYSQL_RES* result, uint64_t offset) {
@@ -274,10 +219,7 @@ MYSQL_FIELD_OFFSET MYSQL_PROXY::field_seek(MYSQL_RES* result, MYSQL_FIELD_OFFSET
 }
 
 MYSQL_ROW MYSQL_PROXY::fetch_row(MYSQL_RES* result) {
-    const auto context = start_monitoring();
-    const MYSQL_ROW ret = mysql_fetch_row(result);
-    stop_monitoring(context);
-    return ret;
+    return mysql_fetch_row(result);
 }
 
 unsigned long* MYSQL_PROXY::fetch_lengths(MYSQL_RES* result) {
@@ -289,117 +231,73 @@ MYSQL_FIELD* MYSQL_PROXY::fetch_field(MYSQL_RES* result) {
 }
 
 MYSQL_RES* MYSQL_PROXY::list_fields(const char* table, const char* wild) {
-    const auto context = start_monitoring();
-    MYSQL_RES* ret = mysql_list_fields(mysql, table, wild);
-    stop_monitoring(context);
-    return ret;
+    return mysql_list_fields(mysql, table, wild);
 }
 
 unsigned long MYSQL_PROXY::real_escape_string(char* to, const char* from, unsigned long length) {
-    const auto context = start_monitoring();
-    const unsigned long ret = mysql_real_escape_string(mysql, to, from, length);
-    stop_monitoring(context);
-    return ret;
+    return mysql_real_escape_string(mysql, to, from, length);
 }
 
 bool MYSQL_PROXY::bind_param(unsigned n_params, MYSQL_BIND* binds, const char** names) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_bind_param(mysql, n_params, binds, names);
-    stop_monitoring(context);
-    return ret;
+    return mysql_bind_param(mysql, n_params, binds, names);
 }
 
 MYSQL_STMT* MYSQL_PROXY::stmt_init() {
-    const auto context = start_monitoring();
-    MYSQL_STMT* ret = mysql_stmt_init(mysql);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_init(mysql);
 }
 
 int MYSQL_PROXY::stmt_prepare(MYSQL_STMT* stmt, const char* query, unsigned long length) {
-    const auto context = start_monitoring();
-    const int ret = mysql_stmt_prepare(stmt, query, length);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_prepare(stmt, query, length);
 }
 
 int MYSQL_PROXY::stmt_execute(MYSQL_STMT* stmt) {
-    const auto context = start_monitoring();
-    const int ret = mysql_stmt_execute(stmt);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_execute(stmt);
 }
 
 int MYSQL_PROXY::stmt_fetch(MYSQL_STMT* stmt) {
-    const auto context = start_monitoring();
-    const int ret = mysql_stmt_fetch(stmt);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_fetch(stmt);
 }
 
 int MYSQL_PROXY::stmt_fetch_column(MYSQL_STMT* stmt, MYSQL_BIND* bind_arg, unsigned int column, unsigned long offset) {
-    const auto context = start_monitoring();
-    const int ret = mysql_stmt_fetch_column(stmt, bind_arg, column, offset);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_fetch_column(stmt, bind_arg, column, offset);
 }
 
 int MYSQL_PROXY::stmt_store_result(MYSQL_STMT* stmt) {
-    const auto context = start_monitoring();
-    const int ret = mysql_stmt_store_result(stmt);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_store_result(stmt);
+}
+
+unsigned long MYSQL_PROXY::stmt_param_count(MYSQL_STMT* stmt) {
+    return mysql_stmt_param_count(stmt);
 }
 
 bool MYSQL_PROXY::stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_stmt_bind_param(stmt, bnd);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_bind_param(stmt, bnd);
 }
 
 bool MYSQL_PROXY::stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_stmt_bind_result(stmt, bnd);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_bind_result(stmt, bnd);
 }
 
 bool MYSQL_PROXY::stmt_close(MYSQL_STMT* stmt) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_stmt_close(stmt);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_close(stmt);
 }
 
 bool MYSQL_PROXY::stmt_reset(MYSQL_STMT* stmt) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_stmt_reset(stmt);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_reset(stmt);
 }
 
 bool MYSQL_PROXY::stmt_free_result(MYSQL_STMT* stmt) {
-    const auto context = start_monitoring();
-    const bool ret = mysql_stmt_free_result(stmt);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_free_result(stmt);
 }
 
 bool MYSQL_PROXY::stmt_send_long_data(MYSQL_STMT* stmt, unsigned int param_number, const char* data,
                                       unsigned long length) {
 
-    const auto context = start_monitoring();
-    const bool ret = mysql_stmt_send_long_data(stmt, param_number, data, length);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_send_long_data(stmt, param_number, data, length);
 }
 
 MYSQL_RES* MYSQL_PROXY::stmt_result_metadata(MYSQL_STMT* stmt) {
-    const auto context = start_monitoring();
-    MYSQL_RES* ret = mysql_stmt_result_metadata(stmt);
-    stop_monitoring(context);
-    return ret;
+    return mysql_stmt_result_metadata(stmt);
 }
 
 unsigned int MYSQL_PROXY::stmt_errno(MYSQL_STMT* stmt) {
@@ -435,10 +333,7 @@ unsigned int MYSQL_PROXY::stmt_field_count(MYSQL_STMT* stmt) {
 }
 
 st_mysql_client_plugin* MYSQL_PROXY::client_find_plugin(const char* name, int type) {
-    const auto context = start_monitoring();
-    st_mysql_client_plugin* ret = mysql_client_find_plugin(mysql, name, type);
-    stop_monitoring(context);
-    return ret;
+    return mysql_client_find_plugin(mysql, name, type);
 }
 
 bool MYSQL_PROXY::is_connected() {
@@ -501,14 +396,9 @@ void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     close();
     this->mysql = mysql_proxy->mysql;
     mysql_proxy->mysql = nullptr;
-
-    ds_delete(mysql_proxy->ds);
+    // delete the ds initialized in CONNECTION_HANDLER::clone_dbc()
+    mysql_proxy->delete_ds();
     delete mysql_proxy;
-
-    if (monitor_service != nullptr && !node_keys.empty()) {
-        monitor_service->stop_monitoring_for_all_connections(node_keys);
-    }
-    generate_node_keys();
 }
 
 void MYSQL_PROXY::close_socket() {
@@ -524,108 +414,10 @@ void MYSQL_PROXY::close_socket() {
     }
 }
 
-std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MYSQL_PROXY::start_monitoring() {
-    if (!ds || !ds->enable_failure_detection) {
-        return nullptr;
+void MYSQL_PROXY::set_next_proxy(MYSQL_PROXY* next_proxy) {
+    if (this->next_proxy) {
+        throw std::runtime_error("There is already a next proxy present!");
     }
 
-    
-    auto failure_detection_timeout = ds->failure_detection_timeout;
-    // Use network timeout defined if failure detection timeout is not set
-    if (failure_detection_timeout == 0) {
-        failure_detection_timeout = ds->network_timeout == 0 ? failure_detection_timeout_default : ds->network_timeout;
-    }
-    
-    return monitor_service->start_monitoring(
-        dbc,
-        ds,
-        node_keys,
-        std::make_shared<HOST_INFO>(get_host(), get_port()),
-        std::chrono::milliseconds{ds->failure_detection_time},
-        std::chrono::seconds{failure_detection_timeout},
-        std::chrono::milliseconds{ds->failure_detection_interval},
-        ds->failure_detection_count,
-        std::chrono::milliseconds{ds->monitor_disposal_time});
-}
-
-void MYSQL_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    if (!ds ||!ds->enable_failure_detection || context == nullptr) {
-        return;
-    }
-    monitor_service->stop_monitoring(context);
-    if (context->is_node_unhealthy() && is_connected()) {
-        close_socket();
-    }
-}
-
-void MYSQL_PROXY::generate_node_keys() {
-    node_keys.clear();
-    node_keys.insert(std::string(get_host()) + ":" + std::to_string(get_port()));
-
-    if (is_connected()) {
-        // Temporarily turn off failure detection if on
-        const auto failure_detection_old_state = ds->enable_failure_detection;
-        ds->enable_failure_detection = false;
-
-        const auto error = query(RETRIEVE_HOST_PORT_SQL);
-        if (error == 0) {
-            MYSQL_RES* result = store_result();
-            MYSQL_ROW row;
-            while ((row = fetch_row(result))) {
-                node_keys.insert(std::string(row[0]));
-            }
-            free_result(result);
-        }
-
-        ds->enable_failure_detection = failure_detection_old_state;
-    }
-}
-
-MYSQL_MONITOR_PROXY::MYSQL_MONITOR_PROXY(DataSource* ds) {
-    this->ds = ds_new();
-    ds_copy(this->ds, ds);
-}
-
-MYSQL_MONITOR_PROXY::~MYSQL_MONITOR_PROXY() {
-    if (this->mysql) {
-        mysql_close(this->mysql);
-    }
-    if (this->ds) {
-        ds_delete(this->ds);
-    }
-}
-
-void MYSQL_MONITOR_PROXY::init() {
-    this->mysql = mysql_init(nullptr);
-}
-
-int MYSQL_MONITOR_PROXY::ping() {
-    return mysql_ping(mysql);
-}
-
-int MYSQL_MONITOR_PROXY::options(enum mysql_option option, const void* arg) {
-    return mysql_options(mysql, option, arg);
-}
-
-bool MYSQL_MONITOR_PROXY::connect() {
-    if (!ds)
-        return false;
-
-    const auto host = get_host_info_from_ds(ds);
-
-    return mysql_real_connect(mysql, host->get_host().c_str(), ds_get_utf8attr(ds->uid, &ds->uid8),
-                              ds_get_utf8attr(ds->pwd, &ds->pwd8), nullptr, host->get_port(),
-                              ds_get_utf8attr(ds->socket, &ds->socket8), 0) != nullptr;
-}
-
-bool MYSQL_MONITOR_PROXY::is_connected() {
-    return this->mysql != nullptr && this->mysql->net.vio;
-}
-
-const char* MYSQL_MONITOR_PROXY::error() {
-    return mysql_error(mysql); }
-
-void MYSQL_MONITOR_PROXY::close() {
-    mysql_close(mysql);
-    mysql= nullptr;
+    this->next_proxy = next_proxy;
 }
