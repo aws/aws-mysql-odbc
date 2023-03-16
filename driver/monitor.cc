@@ -218,9 +218,10 @@ bool MONITOR::connect() {
     // Timeout shouldn't be 0 by now, but double check just in case
     unsigned int timeout_sec = this->failure_detection_timeout.count() == 0 ? failure_detection_timeout_default : this->failure_detection_timeout.count();
 
+    // timeout should be set in DBC::connect()
     if (this->ds->enable_cluster_failover) {
         this->ds->connect_timeout = timeout_sec;
-        this->ds->network_timeout= timeout_sec;
+        this->ds->network_timeout = timeout_sec;
     } else {
         // cannot change login_timeout here because no access to dbc
         this->ds->read_timeout = timeout_sec;

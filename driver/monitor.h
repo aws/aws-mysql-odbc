@@ -30,6 +30,7 @@
 #ifndef __MONITOR_H__
 #define __MONITOR_H__
 
+#include "connection_handler.h"
 #include "host_info.h"
 #include "monitor_connection_context.h"
 
@@ -42,7 +43,6 @@ struct CONNECTION_STATUS {
 };
 
 struct DataSource;
-class CONNECTION_HANDLER;
 class MONITOR_SERVICE;
 class MYSQL_PROXY;
 

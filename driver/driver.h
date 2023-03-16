@@ -41,6 +41,7 @@
 #include "../MYODBC_MYSQL.h"
 #include "../MYODBC_CONF.h"
 #include "../MYODBC_ODBC.h"
+#include "connection_handler.h"
 #include "efm_proxy.h"
 #include "failover.h"
 #include "mysql_proxy.h"

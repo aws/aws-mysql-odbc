@@ -30,6 +30,7 @@
 #ifndef __MONITORTHREADCONTAINER_H__
 #define __MONITORTHREADCONTAINER_H__
 
+#include "connection_handler.h"
 #include "monitor.h"
 
 #include <ctpl_stl.h>

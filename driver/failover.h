@@ -30,37 +30,15 @@
 #ifndef __FAILOVER_H__
 #define __FAILOVER_H__
 
+#include "connection_handler.h"
 #include "topology_service.h"
 #include "mylog.h"
 
-#include <functional>
 #include <condition_variable>
-
-#ifdef __linux__
-typedef std::u16string sqlwchar_string;
-#else
-typedef std::wstring sqlwchar_string;
-#endif
-
-sqlwchar_string to_sqlwchar_string(const std::string& src);
 
 struct DBC;
 struct DataSource;
 typedef short SQLRETURN;
-
-class CONNECTION_HANDLER {
-    public:
-        CONNECTION_HANDLER(DBC* dbc);
-        virtual ~CONNECTION_HANDLER();
-
-        virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled);
-        virtual MYSQL_PROXY* connect(const std::shared_ptr<HOST_INFO>& host_info, DataSource* ds);
-        void update_connection(MYSQL_PROXY* new_connection, const std::string& new_host_name);
-
-    private:
-        DBC* dbc;
-        DBC* clone_dbc(DBC* source_dbc, DataSource* ds);
-};
 
 struct READER_FAILOVER_RESULT {
     bool connected = false;

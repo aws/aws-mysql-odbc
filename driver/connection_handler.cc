@@ -28,12 +28,13 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 /**
-  @file  failover_connection_handler.c
-  @brief Failover connection functions.
+  @file  connection_handler.c
+  @brief connection functions.
 */
 
+#include "connection_handler.h"
 #include "driver.h"
-#include "failover.h"
+#include "mysql_proxy.h"
 
 #include <codecvt>
 #include <locale>
