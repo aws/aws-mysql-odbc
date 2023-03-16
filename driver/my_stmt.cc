@@ -462,7 +462,7 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
         return SQL_ERROR;
       }
 
-      stmt->param_count= mysql_stmt_param_count(stmt->ssps);
+      stmt->param_count= stmt->dbc->mysql_proxy->stmt_param_count(stmt->ssps);
 
       free_internal_result_buffers(stmt);
       /* make sure we free the result from the previous time */

@@ -28,12 +28,13 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 /**
-  @file  failover_connection_handler.c
-  @brief Failover connection functions.
+  @file  connection_handler.c
+  @brief connection functions.
 */
 
+#include "connection_handler.h"
 #include "driver.h"
-#include "failover.h"
+#include "mysql_proxy.h"
 
 #include <codecvt>
 #include <locale>
@@ -51,32 +52,36 @@
     }
 #endif
 
-FAILOVER_CONNECTION_HANDLER::FAILOVER_CONNECTION_HANDLER(DBC* dbc) : dbc{dbc} {}
+CONNECTION_HANDLER::CONNECTION_HANDLER(DBC* dbc) : dbc{dbc} {}
 
-FAILOVER_CONNECTION_HANDLER::~FAILOVER_CONNECTION_HANDLER() {}
+CONNECTION_HANDLER::~CONNECTION_HANDLER() = default;
 
-SQLRETURN FAILOVER_CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled) {
+SQLRETURN CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled) {
     return dbc_ptr->connect(ds, failover_enabled);
 }
 
-MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info) {
+MYSQL_PROXY* CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info, DataSource* ds) {
 
-    if (dbc == nullptr || dbc->ds == nullptr || host_info == nullptr) {
+    if (dbc == nullptr || host_info == nullptr) {
         return nullptr;
     }
 
+    DataSource* ds_to_use = ds_new();
+    ds_copy(ds_to_use, ds ? ds : dbc->ds);
+
     const auto new_host = to_sqlwchar_string(host_info->get_host());
 
-    DBC* dbc_clone = clone_dbc(dbc);
-    ds_set_wstrnattr(&dbc_clone->ds->server, (SQLWCHAR*)new_host.c_str(), new_host.size());
+    DBC* dbc_clone = clone_dbc(dbc, ds_to_use);
+    ds_set_wstrnattr(&ds_to_use->server, (SQLWCHAR*)new_host.c_str(), new_host.size());
 
     MYSQL_PROXY* new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
-    const SQLRETURN rc = do_connect(dbc_clone, dbc_clone->ds, true);
+    const SQLRETURN rc = do_connect(dbc_clone, ds_to_use, ds_to_use->enable_cluster_failover);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
         new_connection = dbc_clone->mysql_proxy;
         dbc_clone->mysql_proxy = nullptr;
+        // postpone the deletion of ds_to_use/dbc_clone->ds until we are done with new_connection
         dbc_clone->ds = nullptr;
     }
 
@@ -85,7 +90,7 @@ MYSQL_PROXY* FAILOVER_CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INF
     return new_connection;
 }
 
-void FAILOVER_CONNECTION_HANDLER::update_connection(
+void CONNECTION_HANDLER::update_connection(
     MYSQL_PROXY* new_connection, const std::string& new_host_name) {
 
     if (new_connection->is_connected()) {
@@ -102,7 +107,7 @@ void FAILOVER_CONNECTION_HANDLER::update_connection(
     }
 }
 
-DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
+DBC* CONNECTION_HANDLER::clone_dbc(DBC* source_dbc, DataSource* ds) {
 
     DBC* dbc_clone = nullptr;
 
@@ -114,11 +119,9 @@ DBC* FAILOVER_CONNECTION_HANDLER::clone_dbc(DBC* source_dbc) {
         status = my_SQLAllocConnect(henv, &hdbc);
         if (status == SQL_SUCCESS || status == SQL_SUCCESS_WITH_INFO) {
             dbc_clone = static_cast<DBC*>(hdbc);
-            dbc_clone->ds = ds_new();
-            ds_copy(dbc_clone->ds, source_dbc->ds);
-            dbc_clone->mysql_proxy = new MYSQL_PROXY(dbc_clone, dbc_clone->ds);
+            dbc_clone->init_proxy_chain(ds);
         } else {
-            const char* err = "Cannot allocate connection handle when cloning DBC in writer failover process";
+            const char* err = "Cannot allocate connection handle when cloning DBC";
             MYLOG_DBC_TRACE(dbc, err);
             throw std::runtime_error(err);
         }

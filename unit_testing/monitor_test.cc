@@ -37,12 +37,11 @@
 #include <gtest/gtest.h>
 
 using ::testing::_;
+using ::testing::AllOf;
 using ::testing::AtLeast;
 using ::testing::Eq;
-using ::testing::MatcherCast;
-using ::testing::Pointee;
+using ::testing::Field;
 using ::testing::Return;
-using ::testing::SafeMatcherCast;
 
 namespace {
     const std::set<std::string> node_keys = { "any.node.domain" };
@@ -58,9 +57,13 @@ namespace {
 
 class MonitorTest : public testing::Test {
 protected:
+    SQLHENV env;
+    DBC* dbc;
+    DataSource* ds;
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MONITOR> monitor;
-    MOCK_MYSQL_MONITOR_PROXY* mock_proxy;
+    MOCK_MYSQL_PROXY* mock_proxy;
+    std::shared_ptr<MOCK_CONNECTION_HANDLER> mock_connection_handler;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_short_interval;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_long_interval;
 
@@ -69,10 +72,11 @@ protected:
     static void TearDownTestSuite() {}
 
     void SetUp() override {
+        allocate_odbc_handles(env, dbc, ds);
         host = std::make_shared<HOST_INFO>("host", 1234);
-        mock_proxy = new MOCK_MYSQL_MONITOR_PROXY();
-        monitor = std::make_shared<MONITOR>(host, failure_detection_timeout, monitor_disposal_time, mock_proxy);
-        
+        mock_connection_handler = std::make_shared<MOCK_CONNECTION_HANDLER>();
+        monitor = std::make_shared<MONITOR>(host, mock_connection_handler, failure_detection_timeout, monitor_disposal_time, ds, nullptr, false);
+
         mock_context_short_interval = std::make_shared<MOCK_MONITOR_CONNECTION_CONTEXT>(
             node_keys,
             failure_detection_time,
@@ -86,7 +90,9 @@ protected:
             failure_detection_count);
     }
 
-    void TearDown() override {}
+    void TearDown() override {
+        cleanup_odbc_handles(env, dbc, ds);
+    }
 };
 
 TEST_F(MonitorTest, StartMonitoringWithDifferentContexts) {
@@ -136,15 +142,12 @@ TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
-    EXPECT_CALL(*mock_proxy, is_connected())
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
-    
-    EXPECT_CALL(*mock_proxy, init()).Times(1);
-    
-    EXPECT_CALL(*mock_proxy, connect())
-        .WillOnce(Return(true));
+    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
+    EXPECT_CALL(*mock_connection_handler, connect(host, _))
+        .WillOnce(Return(mock_proxy));
+
+    EXPECT_CALL(*mock_proxy, is_connected()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_proxy, ping()).Times(0);
 
     CONNECTION_STATUS status = TEST_UTILS::check_connection_status(monitor);
@@ -153,22 +156,20 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
+    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+
+    EXPECT_CALL(*mock_connection_handler, connect(host, _))
+        .WillRepeatedly(Return(mock_proxy));
+
     EXPECT_CALL(*mock_proxy, is_connected())
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-    
-    EXPECT_CALL(*mock_proxy, init()).Times(AtLeast(1));
-    EXPECT_CALL(*mock_proxy, options(_, _)).Times(AtLeast(1));
-
-    EXPECT_CALL(*mock_proxy, connect())
-        .WillRepeatedly(Return(true));
-
     EXPECT_CALL(*mock_proxy, ping())
         .WillOnce(Return(0))
         .WillOnce(Return(1));
 
     CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitor);
-    EXPECT_TRUE(status1.is_valid);
+    EXPECT_FALSE(status1.is_valid);
 
     CONNECTION_STATUS status2 = TEST_UTILS::check_connection_status(monitor);
     EXPECT_TRUE(status2.is_valid);
@@ -178,16 +179,13 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
-    EXPECT_CALL(*mock_proxy, is_connected())
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
-    
-    EXPECT_CALL(*mock_proxy, init()).Times(AtLeast(1));
-    EXPECT_CALL(*mock_proxy, options(_, _)).Times(AtLeast(1));
-    
-    EXPECT_CALL(*mock_proxy, connect())
-        .WillOnce(Return(true));
+    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
+    EXPECT_CALL(*mock_connection_handler, connect(host, _))
+        .WillOnce(Return(mock_proxy));
+
+    EXPECT_CALL(*mock_proxy, is_connected())
+        .WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_proxy, ping())
         .WillOnce(Return(1));
 
@@ -201,11 +199,10 @@ TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
 }
 
 TEST_F(MonitorTest, RunWithoutContext) {
-    auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
     std::shared_ptr<MONITOR_THREAD_CONTAINER> container = MONITOR_THREAD_CONTAINER::get_instance();
     auto monitor_service = std::make_shared<MONITOR_SERVICE>(container);
 
-    auto mock_monitor = std::make_shared<MOCK_MONITOR3>(host, short_interval, proxy);
+    auto mock_monitor = std::make_shared<MOCK_MONITOR3>(host, short_interval);
 
     EXPECT_CALL(*mock_monitor, get_current_time())
         .WillRepeatedly(Return(short_interval_time));
@@ -227,23 +224,16 @@ TEST_F(MonitorTest, RunWithoutContext) {
 }
 
 TEST_F(MonitorTest, RunWithContext) {
-    auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
-    
-    EXPECT_CALL(*proxy, is_connected())
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+    auto proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
-    EXPECT_CALL(*proxy, init()).Times(AtLeast(1));
-    EXPECT_CALL(*proxy, options(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(*mock_connection_handler, connect(host, _))
+        .WillOnce(Return(proxy));
 
-    EXPECT_CALL(*proxy, connect())
-        .WillRepeatedly(Return(true));
-
-    EXPECT_CALL(*proxy, ping())
-        .WillRepeatedly(Return(0));
+    EXPECT_CALL(*proxy, is_connected()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*proxy, ping()).WillRepeatedly(Return(0));
 
     std::shared_ptr<MONITOR> monitorA = 
-        std::make_shared<MONITOR>(host, failure_detection_timeout, short_interval, proxy);
+        std::make_shared<MONITOR>(host, mock_connection_handler, failure_detection_timeout, short_interval, ds, nullptr);
 
     auto container = MONITOR_THREAD_CONTAINER::get_instance();
     auto monitor_service = std::make_shared<MONITOR_SERVICE>(container);
@@ -285,34 +275,23 @@ TEST_F(MonitorTest, RunWithContext) {
 
 // Verify that if 0 timeout is passed in, we should set it to default value
 TEST_F(MonitorTest, ZeroEFMTimeout) {
-    auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
-    
-    EXPECT_CALL(*proxy, is_connected())
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+    auto proxy = new MOCK_MYSQL_PROXY(dbc, ds);
 
-    EXPECT_CALL(*proxy, init()).Times(AtLeast(1));
-    EXPECT_CALL(
-        *proxy, 
-        options(MYSQL_OPT_CONNECT_TIMEOUT,
-                MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(
-                    Pointee(Eq(failure_detection_timeout_default))))))
-        .Times(1);
-    EXPECT_CALL(
-        *proxy,
-        options(MYSQL_OPT_READ_TIMEOUT,
-                MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(
-                    Pointee(Eq(failure_detection_timeout_default))))))
-        .Times(1);
+    EXPECT_CALL(*proxy, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*proxy, connect()).WillOnce(Return(true));
+    EXPECT_CALL(*mock_connection_handler,
+                connect(host,
+                    AllOf(
+                        Field("connect_timeout",&DataSource::connect_timeout, Eq(failure_detection_timeout_default)),
+                        Field("network_timeout", &DataSource::network_timeout, Eq(failure_detection_timeout_default)))))
+        .WillOnce(Return(proxy));
 
     EXPECT_CALL(*proxy, ping()).WillRepeatedly(Return(0));
 
-    std::chrono::seconds zero_timeout = std::chrono::seconds(0);
+    auto zero_timeout = std::chrono::seconds(0);
 
-    std::shared_ptr<MONITOR> monitorA = 
-        std::make_shared<MONITOR>(host, zero_timeout, short_interval, proxy);
+    auto monitorA =
+        std::make_shared<MONITOR>(host, mock_connection_handler, zero_timeout, short_interval, ds, nullptr);
 
     CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitorA);
     EXPECT_TRUE(status1.is_valid);
@@ -320,33 +299,24 @@ TEST_F(MonitorTest, ZeroEFMTimeout) {
 
 // Verify that if non-zero timeout is passed in, we should set it to that value
 TEST_F(MonitorTest, NonZeroEFMTimeout) {
-  auto proxy = new MOCK_MYSQL_MONITOR_PROXY();
-  std::chrono::seconds timeout = std::chrono::seconds(1);
+    auto proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    auto timeout = std::chrono::seconds(1);
 
-  EXPECT_CALL(*proxy, is_connected())
-      .WillOnce(Return(false))
-      .WillRepeatedly(Return(true));
+    EXPECT_CALL(*proxy, is_connected()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(*proxy, init()).Times(AtLeast(1));
-  EXPECT_CALL(
-      *proxy,
-      options(MYSQL_OPT_CONNECT_TIMEOUT,
-              MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(Pointee(Eq(timeout.count()))))))
-      .Times(1);
-  EXPECT_CALL(
-      *proxy,
-      options(MYSQL_OPT_READ_TIMEOUT,
-              MatcherCast<const void*>(SafeMatcherCast<const unsigned int*>(Pointee(Eq(timeout.count()))))))
-      .Times(1);
+    EXPECT_CALL(*mock_connection_handler,
+                connect(host,
+                    AllOf(
+                        Field("connect_timeout", &DataSource::connect_timeout, Eq(timeout.count())),
+                        Field("network_timeout", &DataSource::network_timeout, Eq(timeout.count())))))
+        .WillOnce(Return(proxy));
 
-  EXPECT_CALL(*proxy, connect()).WillOnce(Return(true));
-
-  EXPECT_CALL(*proxy, ping()).WillRepeatedly(Return(0));
+    EXPECT_CALL(*proxy, ping()).WillRepeatedly(Return(0));
 
 
-  std::shared_ptr<MONITOR> monitorA =
-      std::make_shared<MONITOR>(host, timeout, short_interval, proxy);
+    auto monitorA =
+        std::make_shared<MONITOR>(host, mock_connection_handler, timeout, short_interval, ds, nullptr);
 
-  CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitorA);
-  EXPECT_TRUE(status1.is_valid);
+    CONNECTION_STATUS status1 = TEST_UTILS::check_connection_status(monitorA);
+    EXPECT_TRUE(status1.is_valid);
 }

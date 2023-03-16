@@ -56,7 +56,7 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
         this->ds = ds_new();
         ds_copy(this->ds, ds);
     };
-    ~MOCK_MYSQL_PROXY() {
+    ~MOCK_MYSQL_PROXY() override {
         mock_mysql_proxy_destructor();
         if (this->ds) {
             ds_delete(this->ds);
@@ -77,6 +77,9 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
     MOCK_METHOD(void, free_result, (MYSQL_RES*));
     MOCK_METHOD(void, close_socket, ());
     MOCK_METHOD(void, mock_mysql_proxy_destructor, ());
+    MOCK_METHOD(void, close, ());
+    MOCK_METHOD(void, init, ());
+    MOCK_METHOD(int, ping, ());
 };
 
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
@@ -97,10 +100,10 @@ class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
                 (std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, FAILOVER_SYNC&));
 };
 
-class MOCK_CONNECTION_HANDLER : public FAILOVER_CONNECTION_HANDLER {
+class MOCK_CONNECTION_HANDLER : public CONNECTION_HANDLER {
  public:
-    MOCK_CONNECTION_HANDLER() : FAILOVER_CONNECTION_HANDLER(nullptr) {}
-    MOCK_METHOD(MYSQL_PROXY*, connect, (const std::shared_ptr<HOST_INFO>&));
+    MOCK_CONNECTION_HANDLER() : CONNECTION_HANDLER(nullptr) {}
+    MOCK_METHOD(MYSQL_PROXY*, connect, (const std::shared_ptr<HOST_INFO>&, DataSource*));
     MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*, bool));
 };
 
@@ -125,8 +128,8 @@ public:
 class MOCK_MONITOR : public MONITOR {
 public:
     MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time,
-                 MYSQL_MONITOR_PROXY* monitor_proxy)
-     : MONITOR(host, std::chrono::seconds{5}, disposal_time, monitor_proxy) {}
+                 MYSQL_PROXY* monitor_proxy)
+     : MONITOR(host, nullptr, std::chrono::seconds{5}, disposal_time, nullptr, monitor_proxy) {}
 
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
@@ -138,7 +141,7 @@ public:
 class MOCK_MONITOR2 : public MONITOR {
 public:
     MOCK_MONITOR2(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time)
-        : MONITOR(host, std::chrono::seconds{5}, disposal_time, (MYSQL_MONITOR_PROXY*)nullptr) {}
+        : MONITOR(host, nullptr, std::chrono::seconds{5}, disposal_time, nullptr, nullptr) {}
 
     MOCK_METHOD(void, run, (std::shared_ptr<MONITOR_SERVICE>));
 };
@@ -147,9 +150,8 @@ public:
 class MOCK_MONITOR3 : public MONITOR {
 public:
   MOCK_MONITOR3(std::shared_ptr<HOST_INFO> host,
-                std::chrono::milliseconds disposal_time,
-                MYSQL_MONITOR_PROXY* monitor_proxy)
-      : MONITOR(host, std::chrono::seconds{5}, disposal_time, monitor_proxy) {}
+                std::chrono::milliseconds disposal_time)
+      : MONITOR(host, nullptr, std::chrono::seconds{5}, disposal_time, nullptr, nullptr) {}
 
     MOCK_METHOD(std::chrono::steady_clock::time_point, get_current_time, ());
 };
@@ -163,7 +165,7 @@ public:
     }
 
     MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, 
-        (std::shared_ptr<HOST_INFO>, std::chrono::seconds, std::chrono::milliseconds, DataSource*, bool));
+        (std::shared_ptr<HOST_INFO>, std::shared_ptr<CONNECTION_HANDLER>, std::chrono::seconds, std::chrono::milliseconds, DataSource*, bool));
 };
 
 class MOCK_MONITOR_CONNECTION_CONTEXT : public MONITOR_CONNECTION_CONTEXT {
@@ -177,17 +179,6 @@ public:
                 nullptr, node_keys, failure_detection_time, failure_detection_interval, failure_detection_count) {}
 
     MOCK_METHOD(void, set_start_monitor_time, (std::chrono::steady_clock::time_point));
-};
-
-class MOCK_MYSQL_MONITOR_PROXY : public MYSQL_MONITOR_PROXY {
-public:
-    MOCK_MYSQL_MONITOR_PROXY() : MYSQL_MONITOR_PROXY(nullptr) {};
-
-    MOCK_METHOD(bool, is_connected, ());
-    MOCK_METHOD(void, init, ());
-    MOCK_METHOD(int, ping, ());
-    MOCK_METHOD(int, options, (enum mysql_option, const void*));
-    MOCK_METHOD(bool, connect, ());
 };
 
 class MOCK_MONITOR_SERVICE : public MONITOR_SERVICE {

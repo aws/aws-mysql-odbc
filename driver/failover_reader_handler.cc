@@ -38,7 +38,7 @@
 
 FAILOVER_READER_HANDLER::FAILOVER_READER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
-    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     int failover_timeout_ms, int failover_reader_connect_timeout,
     unsigned long dbc_id, bool enable_logging)
     : topology_service{topology_service},
@@ -223,7 +223,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::get_connection_from_hosts(
 // *** CONNECT_TO_READER_HANDLER
 // Handler to connect to a reader host.
 CONNECT_TO_READER_HANDLER::CONNECT_TO_READER_HANDLER(
-    std::shared_ptr<FAILOVER_CONNECTION_HANDLER> connection_handler,
+    std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     unsigned long dbc_id, bool enable_logging)
     : FAILOVER{connection_handler, topology_service, dbc_id, enable_logging} {}

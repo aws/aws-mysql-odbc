@@ -29,6 +29,7 @@
 
 #include "driver/monitor_service.h"
 
+#include "test_utils.h"
 #include "mock_objects.h"
 
 #include <gmock/gmock.h>
@@ -48,6 +49,9 @@ namespace {
 
 class MonitorServiceTest : public testing::Test {
 protected:
+    SQLHENV env;
+    DBC* dbc;
+    DataSource* ds;
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MOCK_MONITOR> mock_monitor;
     std::shared_ptr<MOCK_MONITOR_THREAD_CONTAINER> mock_thread_container;
@@ -58,6 +62,7 @@ protected:
     static void TearDownTestSuite() {}
 
     void SetUp() override {
+        allocate_odbc_handles(env, dbc, ds);
         host = std::make_shared<HOST_INFO>("host", 1234);
         mock_thread_container = std::make_shared<MOCK_MONITOR_THREAD_CONTAINER>();
         monitor_service = std::make_shared<MONITOR_SERVICE>(mock_thread_container);
@@ -67,19 +72,20 @@ protected:
     void TearDown() override {
         monitor_service->release_resources();
         mock_thread_container->release_resources();
+        cleanup_odbc_handles(env, dbc, ds);
     }
 };
 
 TEST_F(MonitorServiceTest, StartMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
     EXPECT_CALL(*mock_monitor, run(_)).Times(1);
 
     auto context = monitor_service->start_monitoring(
-        nullptr,
-        nullptr,
+        dbc,
+        ds,
         node_keys,
         host,
         failure_detection_time,
@@ -91,7 +97,7 @@ TEST_F(MonitorServiceTest, StartMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     const int runs = 5;
@@ -101,8 +107,8 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
 
     for (int i = 0; i < runs; i++) {
         auto context = monitor_service->start_monitoring(
-            nullptr,
-            nullptr,
+            dbc,
+            ds,
             node_keys,
             host,
             failure_detection_time,
@@ -115,15 +121,15 @@ TEST_F(MonitorServiceTest, StartMonitoringCalledMultipleTimes) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoring) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
     EXPECT_CALL(*mock_monitor, run(_)).Times(1);
 
     auto context = monitor_service->start_monitoring(
-        nullptr,
-        nullptr,
+        dbc,
+        ds,
         node_keys,
         host,
         failure_detection_time,
@@ -139,15 +145,15 @@ TEST_F(MonitorServiceTest, StopMonitoring) {
 }
 
 TEST_F(MonitorServiceTest, StopMonitoringCalledTwice) {
-    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _))
+    EXPECT_CALL(*mock_thread_container, create_monitor(_, _, _, _, _, _))
         .WillOnce(Return(mock_monitor));
 
     EXPECT_CALL(*mock_monitor, start_monitoring(_)).Times(1);
     EXPECT_CALL(*mock_monitor, run(_)).Times(1);
 
     auto context = monitor_service->start_monitoring(
-        nullptr,
-        nullptr,
+        dbc,
+        ds,
         node_keys,
         host,
         failure_detection_time,
@@ -168,8 +174,8 @@ TEST_F(MonitorServiceTest, EmptyNodeKeys) {
 
     EXPECT_THROW(
         monitor_service->start_monitoring(
-            nullptr,
-            nullptr,
+            dbc,
+            ds,
             keys,
             host,
             failure_detection_time,
