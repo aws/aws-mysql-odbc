@@ -30,8 +30,6 @@
 #ifndef __MYSQL_PROXY__
 #define __MYSQL_PROXY__
 
-//#include "MYODBC_MYSQL.h"
-
 struct DBC;
 struct DataSource;
 

@@ -29,8 +29,6 @@
 
 #include "dummy_proxy.h"
 
-//#include "driver.h"
-
 #include <sstream>
 
 namespace {
