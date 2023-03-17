@@ -109,7 +109,7 @@ void EFM_PROXY::set_next_proxy(CONNECTION_PROXY* next_proxy) {
 }
 
 void EFM_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
-    next_proxy->set_connection(connection_proxy);
+    CONNECTION_PROXY::set_connection(connection_proxy);
 
     if (monitor_service != nullptr && !node_keys.empty()) {
         monitor_service->stop_monitoring_for_all_connections(node_keys);

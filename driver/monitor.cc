@@ -31,9 +31,9 @@
 #include "driver.h"
 #include "monitor.h"
 
+#include "connection_proxy.h"
 #include "monitor_service.h"
 #include "mylog.h"
-#include "connection_proxy.h"
 
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,

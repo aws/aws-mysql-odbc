@@ -30,9 +30,9 @@
 #ifndef __MYSQL_PROXY__
 #define __MYSQL_PROXY__
 
+#include "connection_proxy.h"
 #include "driver.h"
 #include "host_info.h"
-#include "connection_proxy.h"
 
 class MYSQL_PROXY : public CONNECTION_PROXY {
 public:

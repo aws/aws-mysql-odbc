@@ -31,9 +31,9 @@
 #define __FAILOVER_H__
 
 #include "connection_handler.h"
+#include "connection_proxy.h"
 #include "topology_service.h"
 #include "mylog.h"
-#include "connection_proxy.h"
 
 #include <condition_variable>
 

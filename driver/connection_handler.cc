@@ -33,8 +33,8 @@
 */
 
 #include "connection_handler.h"
-#include "driver.h"
 #include "connection_proxy.h"
+#include "driver.h"
 
 #include <codecvt>
 #include <locale>

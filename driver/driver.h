@@ -44,8 +44,8 @@
 #include "util/installer.h"
 
 #include "connection_handler.h"
-#include "failover.h"
 #include "connection_proxy.h"
+#include "failover.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)

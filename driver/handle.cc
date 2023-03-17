@@ -48,8 +48,8 @@
 ****************************************************************************/
 
 #include "driver.h"
-#include "mysql_proxy.h"
 #include "efm_proxy.h"
+#include "mysql_proxy.h"
 
 #include <mutex>
 

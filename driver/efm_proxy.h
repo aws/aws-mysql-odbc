@@ -30,9 +30,9 @@
 #ifndef __EFM_PROXY__
 #define __EFM_PROXY__
 
+#include "connection_proxy.h"
 #include "driver.h"
 #include "monitor_service.h"
-#include "connection_proxy.h"
 
 class EFM_PROXY : public CONNECTION_PROXY {
 public:
