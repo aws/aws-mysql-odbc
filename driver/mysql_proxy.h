@@ -27,17 +27,17 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#ifndef __DUMMY_PROXY__
-#define __DUMMY_PROXY__
+#ifndef __MYSQL_PROXY__
+#define __MYSQL_PROXY__
 
 #include "driver.h"
 #include "host_info.h"
 #include "connection_proxy.h"
 
-class DUMMY_PROXY : public CONNECTION_PROXY {
+class MYSQL_PROXY : public CONNECTION_PROXY {
 public:
-    DUMMY_PROXY(DBC* dbc, DataSource* ds);
-    ~DUMMY_PROXY() override;
+    MYSQL_PROXY(DBC* dbc, DataSource* ds);
+    ~MYSQL_PROXY() override;
 
     uint64_t num_rows(MYSQL_RES* res) override;
     unsigned int num_fields(MYSQL_RES* res) override;
@@ -163,7 +163,7 @@ public:
 protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
-    DUMMY_PROXY* next_proxy = nullptr;
+    MYSQL_PROXY* next_proxy = nullptr;
 
 private:
     MYSQL* mysql = nullptr;
@@ -171,4 +171,4 @@ private:
 };
 
 
-#endif /* __DUMMY_PROXY__ */
+#endif /* __MYSQL_PROXY__ */

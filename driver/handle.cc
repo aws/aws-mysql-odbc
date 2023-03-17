@@ -48,7 +48,7 @@
 ****************************************************************************/
 
 #include "driver.h"
-#include "dummy_proxy.h"
+#include "mysql_proxy.h"
 #include "efm_proxy.h"
 
 #include <mutex>
@@ -117,7 +117,7 @@ void DBC::close()
 // construct a proxy chain, example: iam->efm->mysql
 void DBC::init_proxy_chain(DataSource* dsrc)
 {
-    CONNECTION_PROXY *head = new DUMMY_PROXY(this, dsrc);
+    CONNECTION_PROXY *head = new MYSQL_PROXY(this, dsrc);
 
     if (dsrc->enable_failure_detection) {
         CONNECTION_PROXY* efm_proxy = new EFM_PROXY(this, dsrc);
