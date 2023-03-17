@@ -613,7 +613,7 @@ static std::atomic_ulong last_dbc_id{1};
 struct DBC
 {
   ENV              *env;
-  CONNECTION_PROXY      *connection_proxy;
+  CONNECTION_PROXY *connection_proxy;
   std::list<STMT*> stmt_list;
   std::list<DESC*> desc_list; // Explicit descriptors
   STMT_OPTIONS     stmt_options;
