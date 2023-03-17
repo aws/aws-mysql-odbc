@@ -30,6 +30,7 @@
 #include "dummy_proxy.h"
 
 #include <sstream>
+#include <thread>
 
 namespace {
     const auto SOCKET_CLOSE_DELAY = std::chrono::milliseconds(100);
