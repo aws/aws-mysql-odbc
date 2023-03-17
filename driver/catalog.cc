@@ -160,7 +160,7 @@ create_fake_resultset(STMT *stmt, MYSQL_ROW rowval, size_t rowsize,
   else
   {
     if (stmt->result)
-      stmt->dbc->mysql_proxy->free_result(stmt->result);
+      stmt->dbc->connection_proxy->free_result(stmt->result);
   }
 
   /* Free if result data was not in row storage */
@@ -178,7 +178,7 @@ create_fake_resultset(STMT *stmt, MYSQL_ROW rowval, size_t rowsize,
     x_free(stmt->result);
     x_free(stmt->result_array);
 
-    set_mem_error(stmt->dbc->mysql_proxy);
+    set_mem_error(stmt->dbc->connection_proxy);
     return handle_connection_error(stmt);
   }
   stmt->fake_result= 1;
@@ -257,7 +257,7 @@ MYSQL_RES *db_status(STMT *stmt, std::string &db)
     return NULL;
   }
 
-  return stmt->dbc->mysql_proxy->store_result();
+  return stmt->dbc->connection_proxy->store_result();
 }
 
 
@@ -285,7 +285,7 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
                                    my_bool      show_tables,
                                    my_bool      show_views)
 {
-  MYSQL_PROXY *mysql_proxy= stmt->dbc->mysql_proxy;
+  CONNECTION_PROXY *connection_proxy= stmt->dbc->connection_proxy;
   /** the buffer size should count possible escapes */
   my_bool clause_added= FALSE;
   std::string query;
@@ -344,7 +344,7 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
     query.append("AND TABLE_NAME LIKE '");
     if (wildcard)
     {
-      cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)table_name, table_len);
+      cnt = connection_proxy->real_escape_string(tmpbuff, (char *)table_name, table_len);
       query.append(tmpbuff, cnt);
     }
     else
@@ -365,7 +365,7 @@ static MYSQL_RES *table_status_i_s(STMT    *stmt,
     return NULL;
   }
 
-  return mysql_proxy->store_result();
+  return connection_proxy->store_result();
 }
 
 
@@ -391,7 +391,7 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
                                          my_bool      show_tables,
                                          my_bool      show_views)
 {
-  MYSQL_PROXY *mysql_proxy= stmt->dbc->mysql_proxy;
+  CONNECTION_PROXY *connection_proxy= stmt->dbc->connection_proxy;
   /** the buffer size should count possible escapes */
   my_bool clause_added= FALSE;
   std::string query;
@@ -449,7 +449,7 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
     query.append("WHERE TABLE_NAME LIKE '");
     if (wildcard)
     {
-      cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)table_name, table_len);
+      cnt = connection_proxy->real_escape_string(tmpbuff, (char *)table_name, table_len);
       query.append(tmpbuff, cnt);
     }
     else
@@ -468,7 +468,7 @@ static MYSQL_RES *table_status_i_s_old(STMT        *stmt,
     return NULL;
   }
 
-  return mysql_proxy->store_result();
+  return connection_proxy->store_result();
 }
 
 
@@ -528,7 +528,7 @@ int add_name_condition_oa_id(HSTMT hstmt, std::string &query, SQLCHAR * name,
 
     query.append("'");
     char tmpbuff[1024];
-    size_t cnt = stmt->dbc->mysql_proxy->real_escape_string(tmpbuff, (char *)name, name_len);
+    size_t cnt = stmt->dbc->connection_proxy->real_escape_string(tmpbuff, (char *)name, name_len);
     query.append(tmpbuff, cnt);
     query.append("' ");
   }
@@ -574,7 +574,7 @@ int add_name_condition_pv_id(HSTMT hstmt, std::string &query, SQLCHAR * name,
 
     query.append("'");
     char tmpbuff[1024];
-    size_t cnt = stmt->dbc->mysql_proxy->real_escape_string(tmpbuff, (char *)name, name_len);
+    size_t cnt = stmt->dbc->connection_proxy->real_escape_string(tmpbuff, (char *)name, name_len);
     query.append(tmpbuff, cnt);
     query.append("' ");
   }
@@ -820,7 +820,7 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
     do_bind(params, column, MYSQL_TYPE_STRING, column_len);
   }
   query.append(" ORDER BY ORDINAL_POSITION");
-  ODBC_STMT local_stmt(stmt->dbc->mysql_proxy);
+  ODBC_STMT local_stmt(stmt->dbc->connection_proxy);
 
   for (size_t i = 0; i < ccount; i++)
   {
@@ -856,7 +856,7 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
     is_access = true;
 #endif
 
-  size_t rows = stmt->dbc->mysql_proxy->stmt_num_rows(local_stmt);
+  size_t rows = stmt->dbc->connection_proxy->stmt_num_rows(local_stmt);
   stmt->m_row_storage.set_size(rows, SQLCOLUMNS_FIELDS);
   if (rows == 0)
   {
@@ -869,7 +869,7 @@ columns_i_s(SQLHSTMT hstmt, SQLCHAR *catalog, unsigned long catalog_len,
   std::string db = get_database_name(stmt, catalog, catalog_len,
     schema, schema_len, false);
   size_t rnum = 1;
-  while(!stmt->dbc->mysql_proxy->stmt_fetch(local_stmt))
+  while(!stmt->dbc->connection_proxy->stmt_fetch(local_stmt))
   {
     CAT_SCHEMA_SET(data[0], data[1], db);
     /* TABLE_NAME */
@@ -1355,7 +1355,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
                            SQLSMALLINT fk_table_len)
 {
   STMT *stmt=(STMT *) hstmt;
-  MYSQL_PROXY *mysql_proxy= stmt->dbc->mysql_proxy;
+  CONNECTION_PROXY *connection_proxy= stmt->dbc->connection_proxy;
   char tmpbuff[1024]; /* This should be big enough. */
   char *update_rule, *delete_rule, *ref_constraints_join;
   SQLRETURN rc;
@@ -1371,7 +1371,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
   /*
      With 5.1, we can use REFERENTIAL_CONSTRAINTS to get even more info.
   */
-  if (is_minimum_version(stmt->dbc->mysql_proxy->get_server_version(), "5.1"))
+  if (is_minimum_version(stmt->dbc->connection_proxy->get_server_version(), "5.1"))
   {
     update_rule= "CASE"
                  " WHEN R.UPDATE_RULE = 'CASCADE' THEN 0"
@@ -1440,7 +1440,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
     if (!pk_db.empty())
     {
       query.append("'");
-      cnt = mysql_proxy->real_escape_string(tmpbuff, pk_db.c_str(), pk_db.length());
+      cnt = connection_proxy->real_escape_string(tmpbuff, pk_db.c_str(), pk_db.length());
       query.append(tmpbuff, cnt);
       query.append("' ");
     }
@@ -1451,7 +1451,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
 
     query.append("AND A.REFERENCED_TABLE_NAME = '");
 
-    cnt =mysql_proxy->real_escape_string(tmpbuff, (char *)pk_table, pk_table_len);
+    cnt =connection_proxy->real_escape_string(tmpbuff, (char *)pk_table, pk_table_len);
     query.append(tmpbuff, cnt);
     query.append("' ");
 
@@ -1465,7 +1465,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
     if (!fk_db.empty())
     {
       query.append("'");
-      cnt = mysql_proxy->real_escape_string(tmpbuff, fk_db.c_str(), fk_db.length());
+      cnt = connection_proxy->real_escape_string(tmpbuff, fk_db.c_str(), fk_db.length());
       query.append(tmpbuff, cnt);
       query.append("' ");
     }
@@ -1476,7 +1476,7 @@ SQLRETURN foreign_keys_i_s(SQLHSTMT hstmt,
 
     query.append("AND A.TABLE_NAME = '");
 
-    cnt = mysql_proxy->real_escape_string(tmpbuff, (char *)fk_table, fk_table_len);
+    cnt = connection_proxy->real_escape_string(tmpbuff, (char *)fk_table, fk_table_len);
     query.append(tmpbuff, cnt);
     query.append("' ");
 

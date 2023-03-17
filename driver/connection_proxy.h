@@ -27,16 +27,16 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#ifndef __MYSQL_PROXY__
-#define __MYSQL_PROXY__
+#ifndef __CONNECTION_PROXY__
+#define __CONNECTION_PROXY__
 
 struct DBC;
 struct DataSource;
 
-class MYSQL_PROXY {
+class CONNECTION_PROXY {
 public:
-    MYSQL_PROXY(DBC* dbc, DataSource* ds);
-    virtual ~MYSQL_PROXY();
+    CONNECTION_PROXY(DBC* dbc, DataSource* ds);
+    virtual ~CONNECTION_PROXY();
 
     virtual void delete_ds();
     virtual uint64_t num_rows(MYSQL_RES* res);
@@ -153,18 +153,18 @@ public:
 
     virtual unsigned int get_server_status() const;
 
-    virtual void set_connection(MYSQL_PROXY* mysql_proxy);
+    virtual void set_connection(CONNECTION_PROXY* connection_proxy);
 
     virtual void close_socket();
 
-    virtual void set_next_proxy(MYSQL_PROXY* next_proxy);
+    virtual void set_next_proxy(CONNECTION_PROXY* next_proxy);
 
     virtual MYSQL* move_mysql_connection();
 
 protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
-    MYSQL_PROXY* next_proxy = nullptr;
+    CONNECTION_PROXY* next_proxy = nullptr;
 };
 
-#endif /* __MYSQL_PROXY__ */
+#endif /* __CONNECTION_PROXY__ */

@@ -36,12 +36,12 @@ namespace {
 EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds) : EFM_PROXY(
     dbc, ds, nullptr, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
 
-EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy) : EFM_PROXY(
+EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : EFM_PROXY(
     dbc, ds, next_proxy, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
 
-EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy,
+EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy,
                      std::shared_ptr<MONITOR_SERVICE> monitor_service)
-    : MYSQL_PROXY(dbc, ds),
+    : CONNECTION_PROXY(dbc, ds),
       monitor_service{std::move(monitor_service)} {
 
     this->next_proxy = next_proxy;
@@ -103,13 +103,13 @@ void EFM_PROXY::generate_node_keys() {
     }
 }
 
-void EFM_PROXY::set_next_proxy(MYSQL_PROXY* next_proxy) {
-    MYSQL_PROXY::set_next_proxy(next_proxy);
+void EFM_PROXY::set_next_proxy(CONNECTION_PROXY* next_proxy) {
+    CONNECTION_PROXY::set_next_proxy(next_proxy);
     generate_node_keys();
 }
 
-void EFM_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
-    next_proxy->set_connection(mysql_proxy);
+void EFM_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
+    next_proxy->set_connection(connection_proxy);
 
     if (monitor_service != nullptr && !node_keys.empty()) {
         monitor_service->stop_monitoring_for_all_connections(node_keys);

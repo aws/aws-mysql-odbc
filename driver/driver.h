@@ -45,7 +45,7 @@
 
 #include "connection_handler.h"
 #include "failover.h"
-#include "mysql_proxy.h"
+#include "connection_proxy.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -613,7 +613,7 @@ static std::atomic_ulong last_dbc_id{1};
 struct DBC
 {
   ENV              *env;
-  MYSQL_PROXY      *mysql_proxy;
+  CONNECTION_PROXY      *connection_proxy;
   std::list<STMT*> stmt_list;
   std::list<DESC*> desc_list; // Explicit descriptors
   STMT_OPTIONS     stmt_options;
@@ -660,11 +660,11 @@ struct DBC
   void init_proxy_chain(DataSource *dsrc);
 
   inline bool transactions_supported() {
-    return mysql_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS;
+    return connection_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS;
   }
 
   inline bool autocommit_is_on() {
-    return mysql_proxy->get_server_status() & SERVER_STATUS_AUTOCOMMIT;
+    return connection_proxy->get_server_status() & SERVER_STATUS_AUTOCOMMIT;
   }
 
   void close();
@@ -977,7 +977,7 @@ struct ODBC_STMT
 {
   MYSQL_STMT *m_stmt;
 
-  ODBC_STMT(MYSQL_PROXY *mysql_proxy) { m_stmt = mysql_proxy->stmt_init(); }
+  ODBC_STMT(CONNECTION_PROXY *connection_proxy) { m_stmt = connection_proxy->stmt_init(); }
   operator MYSQL_STMT*() { return m_stmt; }
   ~ODBC_STMT() { mysql_stmt_close(m_stmt); } // TODO Replace with proxy call
 };

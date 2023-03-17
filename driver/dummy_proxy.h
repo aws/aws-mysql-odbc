@@ -32,9 +32,9 @@
 
 #include "driver.h"
 #include "host_info.h"
-#include "mysql_proxy.h"
+#include "connection_proxy.h"
 
-class DUMMY_PROXY : public MYSQL_PROXY {
+class DUMMY_PROXY : public CONNECTION_PROXY {
 public:
     DUMMY_PROXY(DBC* dbc, DataSource* ds);
     ~DUMMY_PROXY() override;
@@ -156,7 +156,7 @@ public:
 
     MYSQL* move_mysql_connection() override;
 
-    void set_connection(MYSQL_PROXY* mysql_proxy) override;
+    void set_connection(CONNECTION_PROXY* connection_proxy) override;
 
     void close_socket() override;
 

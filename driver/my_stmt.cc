@@ -53,17 +53,17 @@ BOOL returned_result(STMT *stmt)
     MYSQL_RES *temp_res= NULL;
 
     if ((stmt->result != NULL) ||
-        (temp_res= stmt->dbc->mysql_proxy->stmt_result_metadata(stmt->ssps)) != NULL)
+        (temp_res= stmt->dbc->connection_proxy->stmt_result_metadata(stmt->ssps)) != NULL)
     {
       /* mysql_free_result checks for NULL, so we can always call it */
-      stmt->dbc->mysql_proxy->free_result(temp_res);
+      stmt->dbc->connection_proxy->free_result(temp_res);
       return TRUE;
     }
     return FALSE;
   }
   else
   {
-    return stmt->dbc->mysql_proxy->field_count() > 0;
+    return stmt->dbc->connection_proxy->field_count() > 0;
   }
 }
 
@@ -76,7 +76,7 @@ my_bool free_current_result(STMT *stmt)
     if (ssps_used(stmt))
     {
       free_result_bind(stmt);
-      res= stmt->dbc->mysql_proxy->stmt_free_result(stmt->ssps);
+      res= stmt->dbc->connection_proxy->stmt_free_result(stmt->ssps);
     }
     free_internal_result_buffers(stmt);
     /* We need to always free stmt->result because SSPS keep metadata there */
@@ -95,11 +95,11 @@ static MYSQL_RES* stmt_get_result(STMT *stmt, BOOL force_use)
   /* We can't use USE_RESULT because SQLRowCount will fail in this case! */
   if (if_forward_cache(stmt) || force_use)
   {
-    return stmt->dbc->mysql_proxy->use_result();
+    return stmt->dbc->connection_proxy->use_result();
   }
   else
   {
-    return stmt->dbc->mysql_proxy->store_result();
+    return stmt->dbc->connection_proxy->store_result();
   }
 }
 
@@ -110,11 +110,11 @@ MYSQL_RES * get_result_metadata(STMT *stmt, BOOL force_use)
 {
   free_internal_result_buffers(stmt);
   /* just a precaution, mysql_free_result checks for NULL anywat */
-  stmt->dbc->mysql_proxy->free_result(stmt->result);
+  stmt->dbc->connection_proxy->free_result(stmt->result);
 
   if (ssps_used(stmt))
   {
-    stmt->result = stmt->dbc->mysql_proxy->stmt_result_metadata(stmt->ssps);
+    stmt->result = stmt->dbc->connection_proxy->stmt_result_metadata(stmt->ssps);
   }
   else
   {
@@ -151,13 +151,13 @@ size_t STMT::field_count()
 {
   if (ssps)
   {
-    return dbc->mysql_proxy->stmt_field_count(ssps);
+    return dbc->connection_proxy->stmt_field_count(ssps);
   }
   else
   {
     return result && result->field_count > 0 ?
       result->field_count :
-      dbc->mysql_proxy->field_count();
+      dbc->connection_proxy->field_count();
   }
 }
 
@@ -166,12 +166,12 @@ my_ulonglong affected_rows(STMT *stmt)
 {
   if (ssps_used(stmt))
   {
-    return stmt->dbc->mysql_proxy->stmt_affected_rows(stmt->ssps);
+    return stmt->dbc->connection_proxy->stmt_affected_rows(stmt->ssps);
   }
   else
   {
     /* In some cases in c/odbc it cannot be used instead of mysql_num_rows */
-    return stmt->dbc->mysql_proxy->affected_rows();
+    return stmt->dbc->connection_proxy->affected_rows();
   }
 }
 
@@ -194,11 +194,11 @@ my_ulonglong num_rows(STMT *stmt)
 
   if (ssps_used(stmt))
   {
-    return offset + stmt->dbc->mysql_proxy->stmt_num_rows(stmt->ssps);
+    return offset + stmt->dbc->connection_proxy->stmt_num_rows(stmt->ssps);
   }
   else
   {
-    return offset + stmt->dbc->mysql_proxy->num_rows(stmt->result);
+    return offset + stmt->dbc->connection_proxy->num_rows(stmt->result);
   }
 }
 
@@ -216,7 +216,7 @@ MYSQL_ROW STMT::fetch_row(bool read_unbuffered)
     if (read_unbuffered || m_row_storage.eof())
     {
       /* Reading results from network */
-      err = dbc->mysql_proxy->stmt_fetch(ssps);
+      err = dbc->connection_proxy->stmt_fetch(ssps);
     }
     else
     {
@@ -227,8 +227,8 @@ MYSQL_ROW STMT::fetch_row(bool read_unbuffered)
     switch (err)
     {
       case 1:
-        set_error("HY000", dbc->mysql_proxy->stmt_error(ssps),
-                  dbc->mysql_proxy->stmt_errno(ssps));
+        set_error("HY000", dbc->connection_proxy->stmt_error(ssps),
+                  dbc->connection_proxy->stmt_errno(ssps));
         throw error;
       case MYSQL_NO_DATA:
         return nullptr;
@@ -241,7 +241,7 @@ MYSQL_ROW STMT::fetch_row(bool read_unbuffered)
   }
   else
   {
-    return dbc->mysql_proxy->fetch_row(result);
+    return dbc->connection_proxy->fetch_row(result);
   }
 }
 
@@ -254,7 +254,7 @@ unsigned long* fetch_lengths(STMT *stmt)
   }
   else
   {
-    return stmt->dbc->mysql_proxy->fetch_lengths(stmt->result);
+    return stmt->dbc->connection_proxy->fetch_lengths(stmt->result);
   }
 }
 
@@ -263,11 +263,11 @@ MYSQL_ROW_OFFSET row_seek(STMT *stmt, MYSQL_ROW_OFFSET offset)
 {
   if (ssps_used(stmt))
   {
-    return stmt->dbc->mysql_proxy->stmt_row_seek(stmt->ssps, offset);
+    return stmt->dbc->connection_proxy->stmt_row_seek(stmt->ssps, offset);
   }
   else
   {
-    return stmt->dbc->mysql_proxy->row_seek(stmt->result, offset);
+    return stmt->dbc->connection_proxy->row_seek(stmt->result, offset);
   }
 }
 
@@ -276,11 +276,11 @@ void data_seek(STMT *stmt, my_ulonglong offset)
 {
   if (ssps_used(stmt))
   {
-    stmt->dbc->mysql_proxy->stmt_data_seek(stmt->ssps, offset);
+    stmt->dbc->connection_proxy->stmt_data_seek(stmt->ssps, offset);
   }
   else
   {
-    stmt->dbc->mysql_proxy->data_seek(stmt->result, offset);
+    stmt->dbc->connection_proxy->data_seek(stmt->result, offset);
   }
 }
 
@@ -289,11 +289,11 @@ MYSQL_ROW_OFFSET row_tell(STMT *stmt)
 {
   if (ssps_used(stmt))
   {
-    return stmt->dbc->mysql_proxy->stmt_row_tell(stmt->ssps);
+    return stmt->dbc->connection_proxy->stmt_row_tell(stmt->ssps);
   }
   else
   {
-    return stmt->dbc->mysql_proxy->row_tell(stmt->result);
+    return stmt->dbc->connection_proxy->row_tell(stmt->result);
   }
 }
 
@@ -304,11 +304,11 @@ int next_result(STMT *stmt)
 
   if (ssps_used(stmt))
   {
-    return stmt->dbc->mysql_proxy->stmt_next_result(stmt->ssps);
+    return stmt->dbc->connection_proxy->stmt_next_result(stmt->ssps);
   }
   else
   {
-    return stmt->dbc->mysql_proxy->next_result();
+    return stmt->dbc->connection_proxy->next_result();
   }
 }
 
@@ -435,7 +435,7 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
      actually parameter markers in it */
   if (!stmt->dbc->ds->no_ssps && (PARAM_COUNT(stmt->query) || force_prepare)
     && !IS_BATCH(&stmt->query)
-    && preparable_on_server(&stmt->query, stmt->dbc->mysql_proxy->get_server_version()))
+    && preparable_on_server(&stmt->query, stmt->dbc->connection_proxy->get_server_version()))
   {
     MYLOG_STMT_TRACE(stmt, "Using prepared statement");
     ssps_init(stmt);
@@ -449,32 +449,32 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
      if (reset_sql_limit)
         set_sql_select_limit(stmt->dbc, 0, false);
 
-     int prep_res = stmt->dbc->mysql_proxy->stmt_prepare(stmt->ssps, query, query_length);
+     int prep_res = stmt->dbc->connection_proxy->stmt_prepare(stmt->ssps, query, query_length);
 
      if (prep_res)
       {
-        MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql_proxy->error());
+        MYLOG_STMT_TRACE(stmt, stmt->dbc->connection_proxy->error());
 
         stmt->set_error("HY000");
         translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                        stmt->dbc->mysql_proxy->error_code());
+                        stmt->dbc->connection_proxy->error_code());
 
         return SQL_ERROR;
       }
 
-      stmt->param_count= stmt->dbc->mysql_proxy->stmt_param_count(stmt->ssps);
+      stmt->param_count= stmt->dbc->connection_proxy->stmt_param_count(stmt->ssps);
 
       free_internal_result_buffers(stmt);
       /* make sure we free the result from the previous time */
       if (stmt->result)
       {
-        stmt->dbc->mysql_proxy->free_result(stmt->result);
+        stmt->dbc->connection_proxy->free_result(stmt->result);
         stmt->result = NULL;
       }
 
       /* Getting result metadata */
       stmt->fake_result = false;  // reset in case it was set before
-      if ((stmt->result = stmt->dbc->mysql_proxy->stmt_result_metadata(stmt->ssps)))
+      if ((stmt->result = stmt->dbc->connection_proxy->stmt_result_metadata(stmt->ssps)))
       {
         /*stmt->state= ST_SS_PREPARED;*/
         fix_result_types(stmt);

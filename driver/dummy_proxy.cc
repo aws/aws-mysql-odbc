@@ -36,7 +36,7 @@ namespace {
     const auto SOCKET_CLOSE_DELAY = std::chrono::milliseconds(100);
 }
 
-DUMMY_PROXY::DUMMY_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {
+DUMMY_PROXY::DUMMY_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
     this->host = get_host_info_from_ds(ds);
 }
 
@@ -383,12 +383,12 @@ MYSQL* DUMMY_PROXY::move_mysql_connection() {
     return ret;
 }
 
-void DUMMY_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
+void DUMMY_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
     close();
-    this->mysql = mysql_proxy->move_mysql_connection();
+    this->mysql = connection_proxy->move_mysql_connection();
     // delete the ds initialized in CONNECTION_HANDLER::clone_dbc()
-    mysql_proxy->delete_ds();
-    delete mysql_proxy;
+    connection_proxy->delete_ds();
+    delete connection_proxy;
 }
 
 void DUMMY_PROXY::close_socket() {

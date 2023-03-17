@@ -65,10 +65,10 @@ class FailoverWriterHandlerTest : public testing::Test {
     std::shared_ptr<MOCK_TOPOLOGY_SERVICE> mock_ts;
     std::shared_ptr<MOCK_READER_HANDLER> mock_reader_handler;
     std::shared_ptr<MOCK_CONNECTION_HANDLER> mock_connection_handler;
-    MOCK_MYSQL_PROXY* mock_reader_a_proxy;
-    MOCK_MYSQL_PROXY* mock_reader_b_proxy;
-    MOCK_MYSQL_PROXY* mock_writer_proxy;
-    MOCK_MYSQL_PROXY* mock_new_writer_proxy;
+    MOCK_CONNECTION_PROXY* mock_reader_a_proxy;
+    MOCK_CONNECTION_PROXY* mock_reader_b_proxy;
+    MOCK_CONNECTION_PROXY* mock_writer_proxy;
+    MOCK_CONNECTION_PROXY* mock_new_writer_proxy;
 
     static void SetUpTestSuite() {}
 
@@ -113,7 +113,7 @@ class FailoverWriterHandlerTest : public testing::Test {
 // taskB: fail to connect to any reader due to exception
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
     EXPECT_CALL(*mock_writer_proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_ts, get_topology(_, true))
@@ -153,8 +153,8 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
 // time than taskA
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
@@ -213,12 +213,12 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
 // writer is not new (defer to taskA)
 // expected test result: new connection by taskA
 TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
     EXPECT_CALL(*mock_writer_proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_a_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
         .WillRepeatedly(Invoke([&]() {
@@ -259,9 +259,9 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
 // taskB: successfully connect to readerA and then to new-writer
 // expected test result: new connection to writer by taskB
 TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_new_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_new_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
@@ -274,12 +274,12 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     new_topology->add_host(reader_b_host);
 
     EXPECT_CALL(*mock_writer_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_writer_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_writer_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_new_writer_proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_a_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
         .WillRepeatedly(Invoke([&]() {
@@ -323,9 +323,9 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
 // taskB: successfully connect to readerA and then to new-writer 
 // expected test result: new connection to writer by taskB
 TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_new_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_new_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -334,12 +334,12 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
     new_topology->add_host(reader_b_host);
 
     EXPECT_CALL(*mock_writer_proxy, is_connected()).WillOnce(Return(true));
-    EXPECT_CALL(*mock_writer_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_writer_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_new_writer_proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_a_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
         .WillOnce(Return(mock_writer_proxy))
@@ -382,10 +382,10 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
 // taskB: successfully connect to readerA and then fail to connect to writer due to failover timeout
 // expected test result: no connection
 TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_new_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_new_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -393,13 +393,13 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
     new_topology->add_host(reader_b_host);
 
     EXPECT_CALL(*mock_writer_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_writer_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_writer_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_new_writer_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_new_writer_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_new_writer_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_a_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
 
@@ -448,8 +448,8 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
 // taskB: successfully connect to readerA and then fail to connect to writer
 // expected test result: no connection
 TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -457,7 +457,7 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed)
     new_topology->add_host(reader_b_host);
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_a_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
 
