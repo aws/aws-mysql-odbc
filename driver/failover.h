@@ -33,12 +33,9 @@
 #include "connection_handler.h"
 #include "topology_service.h"
 #include "mylog.h"
+#include "mysql_proxy.h"
 
 #include <condition_variable>
-
-struct DBC;
-struct DataSource;
-typedef short SQLRETURN;
 
 struct READER_FAILOVER_RESULT {
     bool connected = false;

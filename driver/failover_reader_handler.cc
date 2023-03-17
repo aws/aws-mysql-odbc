@@ -27,7 +27,7 @@
 // along with this program. If not, see 
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "failover.h"
+#include "driver.h"
 
 #include <algorithm>
 #include <chrono>

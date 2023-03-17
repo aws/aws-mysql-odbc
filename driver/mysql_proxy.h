@@ -30,9 +30,7 @@
 #ifndef __MYSQL_PROXY__
 #define __MYSQL_PROXY__
 
-#include <mysql.h>
-
-#include "host_info.h"
+//#include "MYODBC_MYSQL.h"
 
 struct DBC;
 struct DataSource;
@@ -163,14 +161,12 @@ public:
 
     virtual void set_next_proxy(MYSQL_PROXY* next_proxy);
 
+    virtual MYSQL* move_mysql_connection();
+
 protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     MYSQL_PROXY* next_proxy = nullptr;
-
-private:
-    MYSQL* mysql = nullptr;
-    std::shared_ptr<HOST_INFO> host = nullptr;
 };
 
 #endif /* __MYSQL_PROXY__ */

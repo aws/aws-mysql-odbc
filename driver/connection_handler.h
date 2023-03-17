@@ -31,7 +31,6 @@
 #define __CONNECTION_HANDLER_H__
 
 #include "host_info.h"
-
 #include <memory>
 
 #ifdef __linux__

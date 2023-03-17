@@ -30,6 +30,8 @@
 #ifndef __TOPOLOGYSERVICE_H__
 #define __TOPOLOGYSERVICE_H__
 
+#include "MYODBC_MYSQL.h"
+
 #include "cluster_aware_metrics_container.h"
 #include "cluster_topology_info.h"
 #include "mysql_proxy.h"
@@ -38,6 +40,7 @@
 #include <mutex>
 #include <chrono>
 #include <ctime>
+
 
 // TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.000;
 #define DEFAULT_REFRESH_RATE_IN_MILLISECONDS 30000

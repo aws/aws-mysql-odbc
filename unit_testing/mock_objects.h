@@ -35,6 +35,7 @@
 #include "driver/mysql_proxy.h"
 #include "driver/failover.h"
 #include "driver/monitor_thread_container.h"
+#include "driver/monitor_service.h"
 
 #ifdef WIN32
 #ifdef _DEBUG
@@ -80,6 +81,7 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
     MOCK_METHOD(void, close, ());
     MOCK_METHOD(void, init, ());
     MOCK_METHOD(int, ping, ());
+    MOCK_METHOD(void, delete_ds, ());
 };
 
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
