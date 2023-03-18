@@ -167,7 +167,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
 //TODO consider the return value
 //Note to determine whether or not force_update succeeded one would compare
 // CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(MYSQL_PROXY* connection, bool force_update)
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION_PROXY* connection, bool force_update)
 {
     //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
@@ -219,9 +219,9 @@ void TOPOLOGY_SERVICE::put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topol
     lock.unlock();
 }
 
-MYSQL_RES* TOPOLOGY_SERVICE::try_execute_query(MYSQL_PROXY* mysql_proxy, const char* query) {
-    if (mysql_proxy != nullptr && mysql_proxy->query(query) == 0) {
-        return mysql_proxy->store_result();
+MYSQL_RES* TOPOLOGY_SERVICE::try_execute_query(CONNECTION_PROXY* connection_proxy, const char* query) {
+    if (connection_proxy != nullptr && connection_proxy->query(query) == 0) {
+        return connection_proxy->store_result();
     }
 
     return nullptr;
@@ -270,17 +270,17 @@ std::shared_ptr<HOST_INFO> TOPOLOGY_SERVICE::create_host(MYSQL_ROW& row) {
 }
 
 // If no host information retrieved return NULL
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(MYSQL_PROXY* mysql_proxy) {
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONNECTION_PROXY* connection_proxy) {
 
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info = nullptr;
 
     std::chrono::steady_clock::time_point start_time_ms = std::chrono::steady_clock::now();
-    if (MYSQL_RES* result = try_execute_query(mysql_proxy, RETRIEVE_TOPOLOGY_SQL)) {
+    if (MYSQL_RES* result = try_execute_query(connection_proxy, RETRIEVE_TOPOLOGY_SQL)) {
         topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
         std::map<std::string, std::shared_ptr<HOST_INFO>> instances;
         MYSQL_ROW row;
         int writer_count = 0;
-        while ((row = mysql_proxy->fetch_row(result))) {
+        while ((row = connection_proxy->fetch_row(result))) {
             std::shared_ptr<HOST_INFO> host_info = create_host(row);
             if (host_info) {
                 // Only mark the first/latest writer as true writer
@@ -296,7 +296,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(MYSQ
                 }
             }
         }
-        mysql_proxy->free_result(result);
+        connection_proxy->free_result(result);
 
         topology_info->is_multi_writer_cluster = writer_count > 1;
         if (writer_count == 0) {

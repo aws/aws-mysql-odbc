@@ -57,9 +57,9 @@ protected:
     static std::shared_ptr<HOST_INFO> reader_c_host;
     static std::shared_ptr<HOST_INFO> writer_host;
 
-    MOCK_MYSQL_PROXY* mock_reader_a_proxy;
-    MOCK_MYSQL_PROXY* mock_reader_b_proxy;
-    MOCK_MYSQL_PROXY* mock_writer_proxy;
+    MOCK_CONNECTION_PROXY* mock_reader_a_proxy;
+    MOCK_CONNECTION_PROXY* mock_reader_b_proxy;
+    MOCK_CONNECTION_PROXY* mock_writer_proxy;
 
     static std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology;
     
@@ -238,7 +238,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Failure) {
 // Verify that reader failover handler connects to a reader node that is marked up.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Reader) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -265,7 +265,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Reader) {
 // Verify that reader failover handler connects to a writer node.
 // Expected result: new connection to writer
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Writer) {
-    mock_writer_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
@@ -291,8 +291,8 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Writer) {
 // Verify that reader failover handler connects to the fastest reader node available that is marked up.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds); // Will be free'd during failover as it is slower
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_CONNECTION_PROXY(dbc, ds); // Will be free'd during failover as it is slower
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
@@ -329,15 +329,15 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
 // Expected result: no connection
 TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Timeout) {
     // Connections should automatically free inside failover
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_ts, get_topology(_, true)).WillRepeatedly(Return(topology));
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_a_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_b_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_reader_b_proxy, mock_connection_proxy_destructor());
     
     EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr)).WillRepeatedly(Invoke([&]() {
@@ -382,8 +382,8 @@ TEST_F(FailoverReaderHandlerTest, Failover_Failure) {
 // Verify that reader failover handler connects to a faster reader node.
 // Expected result: new connection to reader A
 TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
-    mock_reader_a_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
-    mock_reader_b_proxy = new MOCK_MYSQL_PROXY(dbc, ds); // Will be free'd during failover to timeout / too slow
+    mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    mock_reader_b_proxy = new MOCK_CONNECTION_PROXY(dbc, ds); // Will be free'd during failover to timeout / too slow
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
@@ -399,7 +399,7 @@ TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
-    EXPECT_CALL(*mock_reader_b_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_reader_b_proxy, mock_connection_proxy_destructor());
 
     EXPECT_CALL(*mock_connection_handler, connect(_, nullptr)).WillRepeatedly(Return(nullptr));
     EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr)).WillRepeatedly(

@@ -27,6 +27,8 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
+#include "driver/efm_proxy.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -42,7 +44,7 @@ protected:
     DBC* dbc;
     DataSource* ds;
     std::shared_ptr<MOCK_MONITOR_SERVICE> mock_monitor_service;
-    MOCK_MYSQL_PROXY* mock_mysql_proxy;
+    MOCK_CONNECTION_PROXY* mock_connection_proxy;
 
 
     static void SetUpTestSuite() {}
@@ -57,7 +59,7 @@ protected:
         ds->enable_failure_detection = true;
 
         mock_monitor_service = std::make_shared<MOCK_MONITOR_SERVICE>();
-        mock_mysql_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+        mock_connection_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
     }
 
     void TearDown() override {
@@ -66,13 +68,13 @@ protected:
 };
 
 TEST_F(EFMProxyTest, NullDBC) {
-    EXPECT_THROW(EFM_PROXY efm_proxy(nullptr, ds, mock_mysql_proxy), std::runtime_error);
-    delete mock_mysql_proxy;
+    EXPECT_THROW(EFM_PROXY efm_proxy(nullptr, ds, mock_connection_proxy), std::runtime_error);
+    delete mock_connection_proxy;
 }
 
 TEST_F(EFMProxyTest, NullDS) {
-    EXPECT_THROW(EFM_PROXY efm_proxy(dbc, nullptr, mock_mysql_proxy), std::runtime_error);
-    delete mock_mysql_proxy;
+    EXPECT_THROW(EFM_PROXY efm_proxy(dbc, nullptr, mock_connection_proxy), std::runtime_error);
+    delete mock_connection_proxy;
 }
 
 TEST_F(EFMProxyTest, FailureDetectionDisabled) {
@@ -80,10 +82,10 @@ TEST_F(EFMProxyTest, FailureDetectionDisabled) {
 
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).Times(0);
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(_)).Times(0);
-    EXPECT_CALL(*mock_mysql_proxy, init());
-    EXPECT_CALL(*mock_mysql_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_connection_proxy, init());
+    EXPECT_CALL(*mock_connection_proxy, mock_connection_proxy_destructor());
 
-    EFM_PROXY efm_proxy(dbc, ds, mock_mysql_proxy, mock_monitor_service);
+    EFM_PROXY efm_proxy(dbc, ds, mock_connection_proxy, mock_monitor_service);
     efm_proxy.init();
 }
 
@@ -94,19 +96,19 @@ TEST_F(EFMProxyTest, FailureDetectionEnabled) {
 
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).WillOnce(Return(mock_context));
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(mock_context)).Times(1);
-    EXPECT_CALL(*mock_mysql_proxy, query(""));
-    EXPECT_CALL(*mock_mysql_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_connection_proxy, query(""));
+    EXPECT_CALL(*mock_connection_proxy, mock_connection_proxy_destructor());
 
-    EFM_PROXY efm_proxy(dbc, ds, mock_mysql_proxy, mock_monitor_service);
+    EFM_PROXY efm_proxy(dbc, ds, mock_connection_proxy, mock_monitor_service);
     efm_proxy.query("");
 }
 
 TEST_F(EFMProxyTest, DoesNotNeedMonitoring) {
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).Times(0);
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(_)).Times(0);
-    EXPECT_CALL(*mock_mysql_proxy, close());
-    EXPECT_CALL(*mock_mysql_proxy, mock_mysql_proxy_destructor());
+    EXPECT_CALL(*mock_connection_proxy, close());
+    EXPECT_CALL(*mock_connection_proxy, mock_connection_proxy_destructor());
 
-    EFM_PROXY efm_proxy(dbc, ds, mock_mysql_proxy, mock_monitor_service);
+    EFM_PROXY efm_proxy(dbc, ds, mock_connection_proxy, mock_monitor_service);
     efm_proxy.close();
 }

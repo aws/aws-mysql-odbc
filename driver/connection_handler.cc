@@ -33,8 +33,8 @@
 */
 
 #include "connection_handler.h"
+#include "connection_proxy.h"
 #include "driver.h"
-#include "mysql_proxy.h"
 
 #include <codecvt>
 #include <locale>
@@ -60,7 +60,7 @@ SQLRETURN CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, bool fail
     return dbc_ptr->connect(ds, failover_enabled);
 }
 
-MYSQL_PROXY* CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info, DataSource* ds) {
+CONNECTION_PROXY* CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info, DataSource* ds) {
 
     if (dbc == nullptr || host_info == nullptr) {
         return nullptr;
@@ -74,13 +74,13 @@ MYSQL_PROXY* CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_
     DBC* dbc_clone = clone_dbc(dbc, ds_to_use);
     ds_set_wstrnattr(&ds_to_use->server, (SQLWCHAR*)new_host.c_str(), new_host.size());
 
-    MYSQL_PROXY* new_connection = nullptr;
+    CONNECTION_PROXY* new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
     const SQLRETURN rc = do_connect(dbc_clone, ds_to_use, ds_to_use->enable_cluster_failover);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
-        new_connection = dbc_clone->mysql_proxy;
-        dbc_clone->mysql_proxy = nullptr;
+        new_connection = dbc_clone->connection_proxy;
+        dbc_clone->connection_proxy = nullptr;
         // postpone the deletion of ds_to_use/dbc_clone->ds until we are done with new_connection
         dbc_clone->ds = nullptr;
     }
@@ -91,11 +91,11 @@ MYSQL_PROXY* CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_
 }
 
 void CONNECTION_HANDLER::update_connection(
-    MYSQL_PROXY* new_connection, const std::string& new_host_name) {
+    CONNECTION_PROXY* new_connection, const std::string& new_host_name) {
 
     if (new_connection->is_connected()) {
         dbc->close();
-        dbc->mysql_proxy->set_connection(new_connection);
+        dbc->connection_proxy->set_connection(new_connection);
         
         CLEAR_DBC_ERROR(dbc);
 

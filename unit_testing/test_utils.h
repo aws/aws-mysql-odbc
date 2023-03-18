@@ -31,6 +31,8 @@
 #define __TESTUTILS_H__
 
 #include "driver/driver.h"
+#include "driver/monitor.h"
+#include "driver/monitor_thread_container.h"
 
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds);
 void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);

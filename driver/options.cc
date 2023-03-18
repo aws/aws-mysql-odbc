@@ -272,7 +272,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_ATTR_AUTOCOMMIT:
       if (ValuePtr != (SQLPOINTER) SQL_AUTOCOMMIT_ON)
       {
-        if (dbc->mysql_proxy == nullptr || !dbc->mysql_proxy->is_connected())
+        if (dbc->connection_proxy == nullptr || !dbc->connection_proxy->is_connected())
         {
           dbc->commit_flag= CHECK_AUTOCOMMIT_OFF;
           return SQL_SUCCESS;
@@ -284,7 +284,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
         if (autocommit_on(dbc))
           return odbc_stmt(dbc,"SET AUTOCOMMIT=0", SQL_NTS, TRUE);
       }
-      else if (dbc->mysql_proxy == nullptr || !dbc->mysql_proxy->is_connected())
+      else if (dbc->connection_proxy == nullptr || !dbc->connection_proxy->is_connected())
       {
         dbc->commit_flag= CHECK_AUTOCOMMIT_ON;
         return SQL_SUCCESS;
@@ -296,7 +296,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_ATTR_LOGIN_TIMEOUT:
       {
         /* we can't change timeout values in post connect state */
-        if (dbc->mysql_proxy != nullptr && dbc->mysql_proxy->is_connected())
+        if (dbc->connection_proxy != nullptr && dbc->connection_proxy->is_connected())
         {
           return set_conn_error(dbc, MYERR_S1011, NULL, 0);
         }
@@ -340,11 +340,11 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
         if (!(db= fix_str((char *)ldb, (char *)ValuePtr, StringLengthPtr)))
           return set_conn_error((DBC*)hdbc,MYERR_S1009,NULL, 0);
 
-        if (dbc->mysql_proxy != nullptr && dbc->mysql_proxy->is_connected())
+        if (dbc->connection_proxy != nullptr && dbc->connection_proxy->is_connected())
         {
-          if (dbc->mysql_proxy->select_db((char*) db))
+          if (dbc->connection_proxy->select_db((char*) db))
           {
-            set_conn_error(dbc, MYERR_S1000, dbc->mysql_proxy->error(), dbc->mysql_proxy->error_code());
+            set_conn_error(dbc, MYERR_S1000, dbc->connection_proxy->error(), dbc->connection_proxy->error_code());
             return SQL_ERROR;
           }
         }
@@ -375,7 +375,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
       break;
 
     case SQL_ATTR_TXN_ISOLATION:
-      if (dbc->mysql_proxy == nullptr || !dbc->mysql_proxy->is_connected())  /* no connection yet */
+      if (dbc->connection_proxy == nullptr || !dbc->connection_proxy->is_connected())  /* no connection yet */
       {
         dbc->txn_isolation= (SQLINTEGER)(SQLLEN)ValuePtr;
         return SQL_SUCCESS;
@@ -495,8 +495,8 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
   case SQL_ATTR_CONNECTION_DEAD:
     /* If waking up fails - we return "connection is dead", no matter what really the reason is */
     if (dbc->need_to_wakeup != 0 && wakeup_connection(dbc)
-      || dbc->need_to_wakeup == 0 && dbc->mysql_proxy->ping() &&
-        is_connection_lost(dbc->mysql_proxy->error_code()))
+      || dbc->need_to_wakeup == 0 && dbc->connection_proxy->ping() &&
+        is_connection_lost(dbc->connection_proxy->error_code()))
       *((SQLUINTEGER *)num_attr)= SQL_CD_TRUE;
     else
       *((SQLUINTEGER *)num_attr)= SQL_CD_FALSE;
@@ -508,7 +508,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
     break;
 
   case SQL_ATTR_CURRENT_CATALOG:
-    if (dbc->mysql_proxy != nullptr && dbc->mysql_proxy->is_connected()) {
+    if (dbc->connection_proxy != nullptr && dbc->connection_proxy->is_connected()) {
         if (reget_current_catalog(dbc))
         {
             return set_handle_error(SQL_HANDLE_DBC, hdbc, MYERR_S1000,
@@ -539,7 +539,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
     break;
 
   case SQL_ATTR_PACKET_SIZE:
-    *((SQLUINTEGER*)num_attr) = dbc->mysql_proxy->get_max_packet();
+    *((SQLUINTEGER*)num_attr) = dbc->connection_proxy->get_max_packet();
     break;
 
   case SQL_ATTR_TXN_ISOLATION:
@@ -553,13 +553,13 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
         Unless we're not connected yet, then we just assume it will
         be REPEATABLE READ, which is the server default.
       */
-      if (dbc->mysql_proxy == nullptr || !dbc->mysql_proxy->is_connected())
+      if (dbc->connection_proxy == nullptr || !dbc->connection_proxy->is_connected())
       {
         *((SQLINTEGER *)num_attr)= SQL_TRANSACTION_REPEATABLE_READ;
         break;
       }
 
-      if (is_minimum_version(dbc->mysql_proxy->get_server_version(), "8.0"))
+      if (is_minimum_version(dbc->connection_proxy->get_server_version(), "8.0"))
         result = odbc_stmt(dbc, "SELECT @@transaction_isolation", SQL_NTS, TRUE);
       else
         result = odbc_stmt(dbc, "SELECT @@tx_isolation", SQL_NTS, TRUE);
@@ -574,8 +574,8 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
         MYSQL_RES *res;
         MYSQL_ROW  row;
 
-        if ((res= dbc->mysql_proxy->store_result()) &&
-            (row = dbc->mysql_proxy->fetch_row(res)))
+        if ((res= dbc->connection_proxy->store_result()) &&
+            (row = dbc->connection_proxy->fetch_row(res)))
         {
           if (strncmp(row[0], "READ-UNCOMMITTED", 16) == 0) {
             dbc->txn_isolation= SQL_TRANSACTION_READ_UNCOMMITTED;
@@ -590,7 +590,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
             dbc->txn_isolation= SQL_TRANSACTION_SERIALIZABLE;
           }
         }
-        dbc->mysql_proxy->free_result(res);
+        dbc->connection_proxy->free_result(res);
       }
     }
 
