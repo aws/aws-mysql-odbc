@@ -31,9 +31,9 @@
 #include "driver.h"
 #include "monitor.h"
 
+#include "connection_proxy.h"
 #include "monitor_service.h"
 #include "mylog.h"
-#include "mysql_proxy.h"
 
 MONITOR::MONITOR(
     std::shared_ptr<HOST_INFO> host_info,
@@ -57,7 +57,7 @@ MONITOR::MONITOR(
     std::chrono::seconds failure_detection_timeout,
     std::chrono::milliseconds monitor_disposal_time,
     DataSource* ds,
-    MYSQL_PROXY* proxy,
+    CONNECTION_PROXY* proxy,
     bool enable_logging) {
 
     this->host = std::move(host_info);
@@ -66,7 +66,7 @@ MONITOR::MONITOR(
     this->disposal_time = monitor_disposal_time;
     this->ds = ds_new();
     ds_copy(this->ds, ds);
-    this->mysql_proxy = proxy;
+    this->connection_proxy = proxy;
     this->connection_check_interval = (std::chrono::milliseconds::max)();
     if (enable_logging)
         this->logger = init_log_file();
@@ -78,9 +78,9 @@ MONITOR::~MONITOR() {
         this->ds = nullptr;
     }
 
-    if (this->mysql_proxy) {
-        delete this->mysql_proxy;
-        this->mysql_proxy = nullptr;
+    if (this->connection_proxy) {
+        delete this->connection_proxy;
+        this->connection_proxy = nullptr;
     }
 }
 
@@ -191,7 +191,7 @@ std::chrono::milliseconds MONITOR::get_connection_check_interval() {
 }
 
 CONNECTION_STATUS MONITOR::check_connection_status() {
-    if (this->mysql_proxy == nullptr || !this->mysql_proxy->is_connected()) {
+    if (this->connection_proxy == nullptr || !this->connection_proxy->is_connected()) {
         const auto start = this->get_current_time();
         bool connected = this->connect();
         return CONNECTION_STATUS{
@@ -201,7 +201,7 @@ CONNECTION_STATUS MONITOR::check_connection_status() {
     }
 
     auto start = this->get_current_time();
-    bool is_connection_active = this->mysql_proxy->ping() == 0;
+    bool is_connection_active = this->connection_proxy->ping() == 0;
     auto duration = this->get_current_time() - start;
     
     return CONNECTION_STATUS{
@@ -211,9 +211,9 @@ CONNECTION_STATUS MONITOR::check_connection_status() {
 }
 
 bool MONITOR::connect() {
-    if (this->mysql_proxy) {
-        this->mysql_proxy->close();
-        delete this->mysql_proxy;
+    if (this->connection_proxy) {
+        this->connection_proxy->close();
+        delete this->connection_proxy;
     }
     // Timeout shouldn't be 0 by now, but double check just in case
     unsigned int timeout_sec = this->failure_detection_timeout.count() == 0 ? failure_detection_timeout_default : this->failure_detection_timeout.count();
@@ -230,12 +230,12 @@ bool MONITOR::connect() {
     this->ds->enable_cluster_failover = false;
     this->ds->enable_failure_detection= false;
 
-    this->mysql_proxy = this->connection_handler->connect(this->host, this->ds);
-    if (!this->mysql_proxy) {
+    this->connection_proxy = this->connection_handler->connect(this->host, this->ds);
+    if (!this->connection_proxy) {
         return false;
     }
 
-    return this->mysql_proxy->is_connected();
+    return this->connection_proxy->is_connected();
 }
 
 std::chrono::milliseconds MONITOR::find_shortest_interval() {

@@ -44,7 +44,7 @@ struct CONNECTION_STATUS {
 
 struct DataSource;
 class MONITOR_SERVICE;
-class MYSQL_PROXY;
+class CONNECTION_PROXY;
 
 namespace {
     const std::chrono::milliseconds thread_sleep_when_inactive = std::chrono::milliseconds(100);
@@ -66,7 +66,7 @@ public:
         std::chrono::seconds failure_detection_timeout,
         std::chrono::milliseconds monitor_disposal_time,
         DataSource* ds,
-        MYSQL_PROXY* proxy,
+        CONNECTION_PROXY* proxy,
         bool enable_logging = false);
     virtual ~MONITOR();
 
@@ -86,7 +86,7 @@ private:
     std::chrono::milliseconds disposal_time;
     std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> contexts;
     std::chrono::steady_clock::time_point last_context_timestamp;
-    MYSQL_PROXY* mysql_proxy = nullptr;
+    CONNECTION_PROXY* connection_proxy = nullptr;
     DataSource* ds = nullptr;
     std::shared_ptr<FILE> logger;
     std::mutex mutex_;

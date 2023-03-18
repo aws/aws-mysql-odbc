@@ -32,9 +32,10 @@
 
 #include <gmock/gmock.h>
 
-#include "driver/mysql_proxy.h"
+#include "driver/connection_proxy.h"
 #include "driver/failover.h"
 #include "driver/monitor_thread_container.h"
+#include "driver/monitor_service.h"
 
 #ifdef WIN32
 #ifdef _DEBUG
@@ -50,14 +51,14 @@ DataSource* ds_new();
 void ds_delete(DataSource* ds);
 void ds_copy(DataSource* ds, DataSource* ds_source);
 
-class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
+class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
  public:
-    MOCK_MYSQL_PROXY(DBC* dbc, DataSource* ds) : MYSQL_PROXY(dbc, ds) {
+    MOCK_CONNECTION_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
         this->ds = ds_new();
         ds_copy(this->ds, ds);
     };
-    ~MOCK_MYSQL_PROXY() override {
-        mock_mysql_proxy_destructor();
+    ~MOCK_CONNECTION_PROXY() override {
+        mock_connection_proxy_destructor();
         if (this->ds) {
             ds_delete(this->ds);
             this->ds = nullptr;
@@ -76,10 +77,11 @@ class MOCK_MYSQL_PROXY : public MYSQL_PROXY {
     MOCK_METHOD(char**, fetch_row, (MYSQL_RES*));
     MOCK_METHOD(void, free_result, (MYSQL_RES*));
     MOCK_METHOD(void, close_socket, ());
-    MOCK_METHOD(void, mock_mysql_proxy_destructor, ());
+    MOCK_METHOD(void, mock_connection_proxy_destructor, ());
     MOCK_METHOD(void, close, ());
     MOCK_METHOD(void, init, ());
     MOCK_METHOD(int, ping, ());
+    MOCK_METHOD(void, delete_ds, ());
 };
 
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
@@ -88,7 +90,7 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
 
     MOCK_METHOD(void, set_cluster_id, (std::string));
     MOCK_METHOD(void, set_cluster_instance_template, (std::shared_ptr<HOST_INFO>));
-    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (MYSQL_PROXY*, bool));
+    MOCK_METHOD(std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, get_topology, (CONNECTION_PROXY*, bool));
     MOCK_METHOD(void, mark_host_down, (std::shared_ptr<HOST_INFO>));
     MOCK_METHOD(void, mark_host_up, (std::shared_ptr<HOST_INFO>));
 };
@@ -103,7 +105,7 @@ class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
 class MOCK_CONNECTION_HANDLER : public CONNECTION_HANDLER {
  public:
     MOCK_CONNECTION_HANDLER() : CONNECTION_HANDLER(nullptr) {}
-    MOCK_METHOD(MYSQL_PROXY*, connect, (const std::shared_ptr<HOST_INFO>&, DataSource*));
+    MOCK_METHOD(CONNECTION_PROXY*, connect, (const std::shared_ptr<HOST_INFO>&, DataSource*));
     MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*, bool));
 };
 
@@ -128,7 +130,7 @@ public:
 class MOCK_MONITOR : public MONITOR {
 public:
     MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time,
-                 MYSQL_PROXY* monitor_proxy)
+                 CONNECTION_PROXY* monitor_proxy)
      : MONITOR(host, nullptr, std::chrono::seconds{5}, disposal_time, nullptr, monitor_proxy) {}
 
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));

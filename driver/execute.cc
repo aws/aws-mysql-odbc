@@ -87,11 +87,11 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
     if ( !is_server_alive( stmt->dbc ) )
     {
       stmt->set_error("08S01" /* "HYT00" */,
-                      stmt->dbc->mysql_proxy->error(),
-                      stmt->dbc->mysql_proxy->error_code());
+                      stmt->dbc->connection_proxy->error(),
+                      stmt->dbc->connection_proxy->error_code());
 
       translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_08S01 /* S1000 */,
-                      stmt->dbc->mysql_proxy->error_code());
+                      stmt->dbc->connection_proxy->error_code());
       goto exit;
     }
 
@@ -135,21 +135,21 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
     {
       native_error = 0;
       if (stmt->param_bind.size() && stmt->param_count)
-        native_error = stmt->dbc->mysql_proxy->stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
+        native_error = stmt->dbc->connection_proxy->stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
 
       if (native_error == 0)
       {
-        native_error = stmt->dbc->mysql_proxy->stmt_execute(stmt->ssps);
+        native_error = stmt->dbc->connection_proxy->stmt_execute(stmt->ssps);
       }
       else
       {
         stmt->set_error("HY000",
-                       stmt->dbc->mysql_proxy->stmt_error(stmt->ssps),
-                       stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps));
+                       stmt->dbc->connection_proxy->stmt_error(stmt->ssps),
+                       stmt->dbc->connection_proxy->stmt_errno(stmt->ssps));
 
         /* For some errors - translating to more appropriate status */
         translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                        stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps));
+                        stmt->dbc->connection_proxy->stmt_errno(stmt->ssps));
         goto exit;
       }
       MYLOG_STMT_TRACE(stmt, "ssps has been executed");
@@ -199,10 +199,10 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     if (native_error)
     {
-      const auto error_code = stmt->dbc->mysql_proxy->error_code();
+      const auto error_code = stmt->dbc->connection_proxy->error_code();
       if (error_code)
       {
-          MYLOG_STMT_TRACE(stmt, stmt->dbc->mysql_proxy->error());
+          MYLOG_STMT_TRACE(stmt, stmt->dbc->connection_proxy->error());
           stmt->set_error("HY000");
 
           // For some errors - translating to more appropriate status
@@ -579,7 +579,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
 
 
         if (has_utf8_maxlen4 &&
-            !is_minimum_version(stmt->dbc->mysql_proxy->get_server_version(), "5.5.3"))
+            !is_minimum_version(stmt->dbc->connection_proxy->get_server_version(), "5.5.3"))
         {
           return stmt->set_error("HY000",
                                 "Server does not support 4-byte encoded "
@@ -1289,7 +1289,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
           goto memerror;
         }
 
-        size_t added = dbc->mysql_proxy->real_escape_string(stmt->endbuf(), data, length);
+        size_t added = dbc->connection_proxy->real_escape_string(stmt->endbuf(), data, length);
         stmt->buf_add_pos(added);
         stmt->add_to_buffer("'", 1);
       }
@@ -1796,7 +1796,7 @@ static SQLRETURN find_next_out_stream(STMT *stmt, SQLPOINTER *token)
   else
   {
     /* Magical out params fetch */
-    stmt->dbc->mysql_proxy->stmt_fetch(stmt->ssps);
+    stmt->dbc->connection_proxy->stmt_fetch(stmt->ssps);
     stmt->out_params_state = OPS_PREFETCHED;
 
     return SQL_SUCCESS;
@@ -1840,14 +1840,14 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT hstmt, SQLPOINTER *prbgValue)
     if (stmt->send_data_param > 0)
     {
 
-      if (stmt->dbc->mysql_proxy->stmt_bind_param(stmt->ssps, (MYSQL_BIND*)stmt->param_bind->buffer))
+      if (stmt->dbc->connection_proxy->stmt_bind_param(stmt->ssps, (MYSQL_BIND*)stmt->param_bind->buffer))
       {
-        stmt->set_error("HY000", stmt->dbc->mysql_proxy->stmt_error(stmt->ssps),
-                      stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps));
+        stmt->set_error("HY000", stmt->dbc->connection_proxy->stmt_error(stmt->ssps),
+                      stmt->dbc->connection_proxy->stmt_errno(stmt->ssps));
 
         /* For some errors - translating to more appropriate status */
         translate_error(stmt->error.sqlstate, MYERR_S1000,
-                      stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps));
+                      stmt->dbc->connection_proxy->stmt_errno(stmt->ssps));
         return SQL_ERROR;
       }
 
@@ -1980,7 +1980,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
   {
     char buff[40];
     /* buff is always big enough because max length of %lu is 15 */
-    snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->mysql_proxy->thread_id());
+    snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->connection_proxy->thread_id());
     if (mysql_real_query(second, buff, strlen(buff)))
     {
       mysql_close(second);

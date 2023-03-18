@@ -41,7 +41,7 @@ using ::testing::ReturnNew;
 using ::testing::StrEq;
 
 namespace {
-    MOCK_MYSQL_PROXY* mock_proxy;
+    MOCK_CONNECTION_PROXY* mock_proxy;
     TOPOLOGY_SERVICE* ts;
     std::shared_ptr<HOST_INFO> cluster_instance;
 
@@ -75,7 +75,7 @@ protected:
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
         
-        mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+        mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
         EXPECT_CALL(*mock_proxy, store_result()).WillRepeatedly(ReturnNew<MYSQL_RES>());
         EXPECT_CALL(*mock_proxy, free_result(_)).WillRepeatedly(DeleteArg<0>());
         ts->set_refresh_rate(DEFAULT_REFRESH_RATE_IN_MILLISECONDS);

@@ -62,7 +62,7 @@ protected:
     DataSource* ds;
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<MONITOR> monitor;
-    MOCK_MYSQL_PROXY* mock_proxy;
+    MOCK_CONNECTION_PROXY* mock_proxy;
     std::shared_ptr<MOCK_CONNECTION_HANDLER> mock_connection_handler;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_short_interval;
     std::shared_ptr<MOCK_MONITOR_CONNECTION_CONTEXT> mock_context_long_interval;
@@ -142,7 +142,7 @@ TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
-    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_connection_handler, connect(host, _))
         .WillOnce(Return(mock_proxy));
@@ -156,7 +156,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
-    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_connection_handler, connect(host, _))
         .WillRepeatedly(Return(mock_proxy));
@@ -179,7 +179,7 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
 }
 
 TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
-    mock_proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_connection_handler, connect(host, _))
         .WillOnce(Return(mock_proxy));
@@ -224,7 +224,7 @@ TEST_F(MonitorTest, RunWithoutContext) {
 }
 
 TEST_F(MonitorTest, RunWithContext) {
-    auto proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    auto proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     EXPECT_CALL(*mock_connection_handler, connect(host, _))
         .WillOnce(Return(proxy));
@@ -275,7 +275,7 @@ TEST_F(MonitorTest, RunWithContext) {
 
 // Verify that if 0 timeout is passed in, we should set it to default value
 TEST_F(MonitorTest, ZeroEFMTimeout) {
-    auto proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    auto proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
     EXPECT_CALL(*proxy, is_connected()).WillRepeatedly(Return(true));
 
@@ -299,7 +299,7 @@ TEST_F(MonitorTest, ZeroEFMTimeout) {
 
 // Verify that if non-zero timeout is passed in, we should set it to that value
 TEST_F(MonitorTest, NonZeroEFMTimeout) {
-    auto proxy = new MOCK_MYSQL_PROXY(dbc, ds);
+    auto proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
     auto timeout = std::chrono::seconds(1);
 
     EXPECT_CALL(*proxy, is_connected()).WillRepeatedly(Return(true));

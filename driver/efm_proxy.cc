@@ -27,7 +27,7 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "driver.h"
+#include "efm_proxy.h"
 
 namespace {
     const char* RETRIEVE_HOST_PORT_SQL = "SELECT CONCAT(@@hostname, ':', @@port)";
@@ -36,12 +36,12 @@ namespace {
 EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds) : EFM_PROXY(
     dbc, ds, nullptr, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
 
-EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy) : EFM_PROXY(
+EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : EFM_PROXY(
     dbc, ds, next_proxy, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
 
-EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy,
+EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy,
                      std::shared_ptr<MONITOR_SERVICE> monitor_service)
-    : MYSQL_PROXY(dbc, ds),
+    : CONNECTION_PROXY(dbc, ds),
       monitor_service{std::move(monitor_service)} {
 
     this->next_proxy = next_proxy;
@@ -103,13 +103,13 @@ void EFM_PROXY::generate_node_keys() {
     }
 }
 
-void EFM_PROXY::set_next_proxy(MYSQL_PROXY* next_proxy) {
-    MYSQL_PROXY::set_next_proxy(next_proxy);
+void EFM_PROXY::set_next_proxy(CONNECTION_PROXY* next_proxy) {
+    CONNECTION_PROXY::set_next_proxy(next_proxy);
     generate_node_keys();
 }
 
-void EFM_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
-    next_proxy->set_connection(mysql_proxy);
+void EFM_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
+    CONNECTION_PROXY::set_connection(connection_proxy);
 
     if (monitor_service != nullptr && !node_keys.empty()) {
         monitor_service->stop_monitoring_for_all_connections(node_keys);
@@ -118,67 +118,11 @@ void EFM_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
     generate_node_keys();
 }
 
-void EFM_PROXY::close_socket() {
-    next_proxy->close_socket();
-}
-
-void EFM_PROXY::delete_ds() {
-    next_proxy->delete_ds();
-}
-
-uint64_t EFM_PROXY::num_rows(MYSQL_RES* res) {
-    return next_proxy->num_rows(res);
-}
-
-unsigned EFM_PROXY::num_fields(MYSQL_RES* res) {
-    return next_proxy->num_fields(res);
-}
-
-MYSQL_FIELD* EFM_PROXY::fetch_field_direct(MYSQL_RES* res, unsigned fieldnr) {
-    return next_proxy->fetch_field_direct(res, fieldnr);
-}
-
-MYSQL_ROW_OFFSET EFM_PROXY::row_tell(MYSQL_RES* res) {
-    return next_proxy->row_tell(res);
-}
-
-unsigned EFM_PROXY::field_count() {
-    return next_proxy->field_count();
-}
-
-uint64_t EFM_PROXY::affected_rows() {
-    return next_proxy->affected_rows();
-}
-
-unsigned EFM_PROXY::error_code() {
-    return next_proxy->error_code();
-}
-
-const char* EFM_PROXY::error() {
-    return next_proxy->error();
-}
-
-const char* EFM_PROXY::sqlstate() {
-    return next_proxy->sqlstate();
-}
-
-unsigned long EFM_PROXY::thread_id() {
-    return next_proxy->thread_id();
-}
-
 int EFM_PROXY::set_character_set(const char* csname) {
     const auto context = start_monitoring();
     const int ret = next_proxy->set_character_set(csname);
     stop_monitoring(context);
     return ret;
-}
-
-void EFM_PROXY::init() {
-    next_proxy->init();
-}
-
-bool EFM_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    return next_proxy->ssl_set(key, cert, ca, capath, cipher);
 }
 
 bool EFM_PROXY::change_user(const char* user, const char* passwd, const char* db) {
@@ -235,18 +179,6 @@ MYSQL_RES* EFM_PROXY::use_result() {
     return ret;
 }
 
-CHARSET_INFO* EFM_PROXY::get_character_set() const {
-    return next_proxy->get_character_set();
-}
-
-void EFM_PROXY::get_character_set_info(MY_CHARSET_INFO* charset) {
-    next_proxy->get_character_set_info(charset);
-}
-
-bool EFM_PROXY::autocommit(bool auto_mode) {
-    return next_proxy->autocommit(auto_mode);
-}
-
 int EFM_PROXY::next_result() {
     const auto context = start_monitoring();
     const int ret = next_proxy->next_result();
@@ -261,10 +193,6 @@ int EFM_PROXY::stmt_next_result(MYSQL_STMT* stmt) {
     return ret;
 }
 
-void EFM_PROXY::close() {
-    next_proxy->close();
-}
-
 bool EFM_PROXY::real_connect_dns_srv(
     const char* dns_srv_name, const char* user,
     const char* passwd, const char* db, unsigned long client_flag) {
@@ -276,38 +204,10 @@ bool EFM_PROXY::real_connect_dns_srv(
     return ret;
 }
 
-int EFM_PROXY::ping() {
-    return next_proxy->ping();
-}
-
-int EFM_PROXY::options4(mysql_option option, const void* arg1, const void* arg2) {
-    return next_proxy->options4(option, arg1, arg2);
-}
-
-int EFM_PROXY::get_option(mysql_option option, const void* arg) {
-    return next_proxy->get_option(option, arg);
-}
-
-int EFM_PROXY::options(mysql_option option, const void* arg) {
-    return next_proxy->options(option, arg);
-}
-
 void EFM_PROXY::free_result(MYSQL_RES* result) {
     const auto context = start_monitoring();
     next_proxy->free_result(result);
     stop_monitoring(context);
-}
-
-void EFM_PROXY::data_seek(MYSQL_RES* result, uint64_t offset) {
-    next_proxy->data_seek(result, offset);
-}
-
-MYSQL_ROW_OFFSET EFM_PROXY::row_seek(MYSQL_RES* result, MYSQL_ROW_OFFSET offset) {
-    return next_proxy->row_seek(result, offset);
-}
-
-MYSQL_FIELD_OFFSET EFM_PROXY::field_seek(MYSQL_RES* result, MYSQL_FIELD_OFFSET offset) {
-    return next_proxy->field_seek(result, offset);
 }
 
 MYSQL_ROW EFM_PROXY::fetch_row(MYSQL_RES* result) {
@@ -315,14 +215,6 @@ MYSQL_ROW EFM_PROXY::fetch_row(MYSQL_RES* result) {
     const MYSQL_ROW ret = next_proxy->fetch_row(result);
     stop_monitoring(context);
     return ret;
-}
-
-unsigned long* EFM_PROXY::fetch_lengths(MYSQL_RES* result) {
-    return next_proxy->fetch_lengths(result);
-}
-
-MYSQL_FIELD* EFM_PROXY::fetch_field(MYSQL_RES* result) {
-    return next_proxy->fetch_field(result);
 }
 
 MYSQL_RES* EFM_PROXY::list_fields(const char* table, const char* wild) {
@@ -388,10 +280,6 @@ int EFM_PROXY::stmt_store_result(MYSQL_STMT* stmt) {
     return ret;
 }
 
-unsigned long EFM_PROXY::stmt_param_count(MYSQL_STMT* stmt) {
-    return next_proxy->stmt_param_count(stmt);
-}
-
 bool EFM_PROXY::stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
     const auto context = start_monitoring();
     const bool ret = next_proxy->stmt_bind_param(stmt, bnd);
@@ -440,96 +328,4 @@ MYSQL_RES* EFM_PROXY::stmt_result_metadata(MYSQL_STMT* stmt) {
     MYSQL_RES* ret = next_proxy->stmt_result_metadata(stmt);
     stop_monitoring(context);
     return ret;
-}
-
-unsigned EFM_PROXY::stmt_errno(MYSQL_STMT* stmt) {
-    return next_proxy->stmt_errno(stmt);
-}
-
-const char* EFM_PROXY::stmt_error(MYSQL_STMT* stmt) {
-    return next_proxy->stmt_error(stmt);
-}
-
-MYSQL_ROW_OFFSET EFM_PROXY::stmt_row_seek(MYSQL_STMT* stmt, MYSQL_ROW_OFFSET offset) {
-    return next_proxy->stmt_row_seek(stmt, offset);
-}
-
-MYSQL_ROW_OFFSET EFM_PROXY::stmt_row_tell(MYSQL_STMT* stmt) {
-    return next_proxy->stmt_row_tell(stmt);
-}
-
-void EFM_PROXY::stmt_data_seek(MYSQL_STMT* stmt, uint64_t offset) {
-    next_proxy->stmt_data_seek(stmt, offset);
-}
-
-uint64_t EFM_PROXY::stmt_num_rows(MYSQL_STMT* stmt) {
-    return next_proxy->stmt_num_rows(stmt);
-}
-
-uint64_t EFM_PROXY::stmt_affected_rows(MYSQL_STMT* stmt) {
-    return next_proxy->stmt_affected_rows(stmt);
-}
-
-unsigned EFM_PROXY::stmt_field_count(MYSQL_STMT* stmt) {
-    return next_proxy->stmt_field_count(stmt);
-}
-
-st_mysql_client_plugin* EFM_PROXY::client_find_plugin(const char* name, int type) {
-    return next_proxy->client_find_plugin(name, type);
-}
-
-bool EFM_PROXY::is_connected() {
-    return next_proxy->is_connected();
-}
-
-void EFM_PROXY::set_last_error_code(unsigned error_code) {
-    next_proxy->set_last_error_code(error_code);
-}
-
-char* EFM_PROXY::get_last_error() const {
-    return next_proxy->get_last_error();
-}
-
-unsigned EFM_PROXY::get_last_error_code() const {
-    return next_proxy->get_last_error_code();
-}
-
-char* EFM_PROXY::get_sqlstate() const {
-    return next_proxy->get_sqlstate();
-}
-
-char* EFM_PROXY::get_server_version() const {
-    return next_proxy->get_server_version();
-}
-
-uint64_t EFM_PROXY::get_affected_rows() const {
-    return next_proxy->get_affected_rows();
-}
-
-void EFM_PROXY::set_affected_rows(uint64_t num_rows) {
-    next_proxy->set_affected_rows(num_rows);
-}
-
-char* EFM_PROXY::get_host_info() const {
-    return next_proxy->get_host_info();
-}
-
-std::string EFM_PROXY::get_host() {
-    return next_proxy->get_host();
-}
-
-unsigned EFM_PROXY::get_port() {
-    return next_proxy->get_port();
-}
-
-unsigned long EFM_PROXY::get_max_packet() const {
-    return next_proxy->get_max_packet();
-}
-
-unsigned long EFM_PROXY::get_server_capabilities() const {
-    return next_proxy->get_server_capabilities();
-}
-
-unsigned EFM_PROXY::get_server_status() const {
-    return next_proxy->get_server_status();
 }
