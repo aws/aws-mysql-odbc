@@ -279,11 +279,11 @@ SQLRETURN set_env_error(ENV *env, myodbc_errid errid, const char *errtext,
   @type    : myodbc3 internal
   @purpose : sets a myodbc_malloc() failure on a MYSQL* connection
 */
-void set_mem_error(MYSQL_PROXY* mysql_proxy)
+void set_mem_error(CONNECTION_PROXY* connection_proxy)
 {
-  mysql_proxy->set_last_error_code(CR_OUT_OF_MEMORY);
-  myodbc_stpmov(mysql_proxy->get_last_error(), "Memory allocation failed");
-  myodbc_stpmov(mysql_proxy->get_sqlstate(), "HY001");
+  connection_proxy->set_last_error_code(CR_OUT_OF_MEMORY);
+  myodbc_stpmov(connection_proxy->get_last_error(), "Memory allocation failed");
+  myodbc_stpmov(connection_proxy->get_sqlstate(), "HY001");
 }
 
 
@@ -294,7 +294,7 @@ void set_mem_error(MYSQL_PROXY* mysql_proxy)
 */
 SQLRETURN handle_connection_error(STMT *stmt)
 {
-  unsigned int err= stmt->dbc->mysql_proxy->error_code();
+  unsigned int err= stmt->dbc->connection_proxy->error_code();
   switch (err) {
   case 0:  /* no error */
     return SQL_SUCCESS;
@@ -307,13 +307,13 @@ SQLRETURN handle_connection_error(STMT *stmt)
     if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
       return stmt->set_error(error_code, error_msg, 0);
     else
-      return stmt->set_error("08S01", stmt->dbc->mysql_proxy->error(), err);
+      return stmt->set_error("08S01", stmt->dbc->connection_proxy->error(), err);
   case CR_OUT_OF_MEMORY:
-    return stmt->set_error("HY001", stmt->dbc->mysql_proxy->error(), err);
+    return stmt->set_error("HY001", stmt->dbc->connection_proxy->error(), err);
   case CR_COMMANDS_OUT_OF_SYNC:
   case CR_UNKNOWN_ERROR:
   default:
-    return stmt->set_error("HY000", stmt->dbc->mysql_proxy->error(), err);
+    return stmt->set_error("HY000", stmt->dbc->connection_proxy->error(), err);
   }
 }
 
@@ -488,7 +488,7 @@ MySQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle, SQLSMALLINT record,
     if (!stmt->result)
       *(SQLLEN *)num_value= 0;
     else
-      *(SQLLEN *)num_value= (SQLLEN) dbc->mysql_proxy->num_rows(stmt->result);
+      *(SQLLEN *)num_value= (SQLLEN) dbc->connection_proxy->num_rows(stmt->result);
     return SQL_SUCCESS;
 
   case SQL_DIAG_DYNAMIC_FUNCTION:

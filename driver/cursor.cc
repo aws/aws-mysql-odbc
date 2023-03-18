@@ -51,7 +51,7 @@
 /* Sets affected rows everewhere where SQLRowCOunt could look for */
 void global_set_affected_rows(STMT * stmt, my_ulonglong rows)
 {
-  stmt->dbc->mysql_proxy->set_affected_rows(rows);
+  stmt->dbc->connection_proxy->set_affected_rows(rows);
   stmt->affected_rows = rows;
 
   /* Dirty hack. But not dirtier than the one above */
@@ -227,7 +227,7 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
 
   /* Use SHOW KEYS FROM table to check for keys. */
   pos= myodbc_stpmov(buff, "SHOW KEYS FROM `");
-  pos+= stmt->dbc->mysql_proxy->real_escape_string(pos, table, strlen(table));
+  pos+= stmt->dbc->connection_proxy->real_escape_string(pos, table, strlen(table));
   pos= myodbc_stpmov(pos, "`");
 
   MYLOG_STMT_TRACE(stmt, buff);
@@ -235,13 +235,13 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
   assert(stmt);
   LOCK_DBC(stmt->dbc);
   if (exec_stmt_query(stmt, buff, strlen(buff), FALSE) ||
-      !(res = stmt->dbc->mysql_proxy->store_result()))
+      !(res = stmt->dbc->connection_proxy->store_result()))
   {
     stmt->set_error(MYERR_S1000);
     return FALSE;
   }
 
-  while ((row = stmt->dbc->mysql_proxy->fetch_row(res)) &&
+  while ((row = stmt->dbc->connection_proxy->fetch_row(res)) &&
          stmt->cursor.pk_count < MY_MAX_PK_PARTS)
   {
     int seq= atoi(row[3]);
@@ -269,7 +269,7 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
       /* Forget about any key we had in progress, we didn't have it all. */
       stmt->cursor.pk_count= seq_in_index= 0;
   }
-  stmt->dbc->mysql_proxy->free_result(res);
+  stmt->dbc->connection_proxy->free_result(res);
 
   /* Remember that we've figured this out already. */
   stmt->cursor.pk_validated= 1;
@@ -450,7 +450,7 @@ static bool insert_field_std(STMT *stmt, MYSQL_RES *result,
           iprec_(DESC_PARAM, DESC_IMP);
   DESCREC *aprec= &aprec_, *iprec= &iprec_;
 
-  MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(result,nSrcCol);
+  MYSQL_FIELD *field= stmt->dbc->connection_proxy->fetch_field_direct(result,nSrcCol);
   MYSQL_ROW   row_data;
   SQLLEN      length;
   char as_string[50], *dummy;
@@ -578,7 +578,7 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
   MYLOG_STMT_TRACE(stmt, select.c_str());
   LOCK_STMT(stmt);
   if (exec_stmt_query_std(stmt, select, false) ||
-      !(presultAllColumns = stmt->dbc->mysql_proxy->store_result()))
+      !(presultAllColumns = stmt->dbc->connection_proxy->store_result()))
   {
     stmt->set_error(MYERR_S1000);
     return SQL_ERROR;
@@ -588,10 +588,10 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
     If the number of fields in the underlying table is not the same as
     our result set, we bail out -- we need them all!
   */
-  if (stmt->dbc->mysql_proxy->num_fields(presultAllColumns) !=
-      stmt->dbc->mysql_proxy->num_fields(result))
+  if (stmt->dbc->connection_proxy->num_fields(presultAllColumns) !=
+      stmt->dbc->connection_proxy->num_fields(result))
   {
-    stmt->dbc->mysql_proxy->free_result(presultAllColumns);
+    stmt->dbc->connection_proxy->free_result(presultAllColumns);
     return SQL_ERROR;
   }
 
@@ -614,7 +614,7 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
     {
       stmt->set_error(MYERR_S1000,
                 "Invalid use of floating point comparision in positioned operations",0);
-      stmt->dbc->mysql_proxy->free_result(presultAllColumns);
+      stmt->dbc->connection_proxy->free_result(presultAllColumns);
       return SQL_ERROR;
     }
 
@@ -629,7 +629,7 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
         str.append("=");
         if (insert_field_std(stmt, result, str, j))
         {
-          stmt->dbc->mysql_proxy->free_result(presultAllColumns);
+          stmt->dbc->connection_proxy->free_result(presultAllColumns);
           return SQL_ERROR;
         }
         found_field= TRUE;
@@ -642,12 +642,12 @@ static SQLRETURN append_all_fields_std(STMT *stmt, std::string &str)
     */
     if (!found_field)
     {
-      stmt->dbc->mysql_proxy->free_result(presultAllColumns);
+      stmt->dbc->connection_proxy->free_result(presultAllColumns);
       return SQL_ERROR;
     }
   }
 
-  stmt->dbc->mysql_proxy->free_result(presultAllColumns);
+  stmt->dbc->connection_proxy->free_result(presultAllColumns);
   return SQL_SUCCESS;
 }
 
@@ -732,7 +732,7 @@ static SQLRETURN build_set_clause_std(STMT *stmt, SQLULEN irow,
     {
         SQLLEN *pcbValue;
 
-        field= stmt->dbc->mysql_proxy->fetch_field_direct(result,ncol);
+        field= stmt->dbc->connection_proxy->fetch_field_direct(result,ncol);
         arrec= desc_get_rec(stmt->ard, ncol, FALSE);
         irrec= desc_get_rec(stmt->ird, ncol, FALSE);
 
@@ -840,7 +840,7 @@ SQLRETURN my_pos_delete_std(STMT *stmt, STMT *stmtParam,
     nReturn= exec_stmt_query_std(stmt, str, false);
     if ( nReturn == SQL_SUCCESS || nReturn == SQL_SUCCESS_WITH_INFO )
     {
-        stmtParam->affected_rows= stmt->dbc->mysql_proxy->affected_rows();
+        stmtParam->affected_rows= stmt->dbc->connection_proxy->affected_rows();
         nReturn= update_status(stmtParam,SQL_ROW_DELETED);
     }
     return nReturn;
@@ -897,7 +897,7 @@ SQLRETURN my_pos_update_std( STMT *             pStmtCursor,
     rc = my_SQLExecute( pStmtTemp );
     if ( SQL_SUCCEEDED( rc ) )
     {
-        pStmt->affected_rows = pStmtTemp->dbc->mysql_proxy->affected_rows();
+        pStmt->affected_rows = pStmtTemp->dbc->connection_proxy->affected_rows();
         rc = update_status( pStmt, SQL_ROW_UPDATED );
     }
     else if (rc == SQL_NEED_DATA)
@@ -1054,7 +1054,7 @@ static SQLRETURN setpos_delete_bookmark_std(STMT *stmt, std::string &query)
     /* execute our DELETE statement */
     if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
     {
-      affected_rows+= stmt->dbc->mysql_proxy->get_affected_rows();
+      affected_rows+= stmt->dbc->connection_proxy->get_affected_rows();
     }
     if (stmt->stmt_options.rowStatusPtr_ex)
     {
@@ -1128,7 +1128,7 @@ static SQLRETURN setpos_delete_std(STMT *stmt, SQLUSMALLINT irow,
     /* execute our DELETE statement */
     if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
     {
-      affected_rows+= stmt->dbc->mysql_proxy->get_affected_rows();
+      affected_rows+= stmt->dbc->connection_proxy->get_affected_rows();
     }
 
   } while ( ++rowset_pos <= rowset_end );
@@ -1223,7 +1223,7 @@ static SQLRETURN setpos_update_bookmark_std(STMT *stmt, std::string &query)
 
     if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
     {
-      affected+= stmt->dbc->mysql_proxy->affected_rows();
+      affected+= stmt->dbc->connection_proxy->affected_rows();
     }
     if (stmt->stmt_options.rowStatusPtr_ex)
     {
@@ -1306,7 +1306,7 @@ static SQLRETURN setpos_update_std(STMT *stmt, SQLUSMALLINT irow,
 
       if (!(nReturn= exec_stmt_query_std(stmt, query, false)))
       {
-        affected+= stmt->dbc->mysql_proxy->affected_rows();
+        affected+= stmt->dbc->connection_proxy->affected_rows();
       }
       else if (!SQL_SUCCEEDED(nReturn))
       {
@@ -1387,7 +1387,7 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
             query.append("(");
             for ( ncol= 0; ncol < result->field_count; ++ncol )
             {
-                MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(result, ncol);
+                MYSQL_FIELD *field= stmt->dbc->connection_proxy->fetch_field_direct(result, ncol);
                 DESCREC     *arrec;
                 SQLLEN       ind_or_len= 0;
 
@@ -1778,7 +1778,7 @@ SQLRETURN SQL_API my_SQLSetPos(SQLHSTMT hstmt, SQLSETPOSIROW irow,
                 /* build list of column names */
                 for (nCol= 0; nCol < result->field_count; ++nCol)
                 {
-                    MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(result, nCol);
+                    MYSQL_FIELD *field= stmt->dbc->connection_proxy->fetch_field_direct(result, nCol);
                     myodbc_append_quoted_name_std(ins_query, field->org_name);
                     if (nCol < result->field_count - 1)
                       ins_query.append(",");
