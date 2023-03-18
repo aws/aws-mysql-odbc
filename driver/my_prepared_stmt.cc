@@ -67,7 +67,7 @@ static char * my_f_to_a(char * buf, size_t buf_size, double a)
 /* {{{ ssps_init() -I- */
 void ssps_init(STMT *stmt)
 {
-  stmt->ssps= stmt->dbc->mysql_proxy->stmt_init();
+  stmt->ssps= stmt->dbc->connection_proxy->stmt_init();
 
   stmt->result_bind = 0;
 }
@@ -156,7 +156,7 @@ BOOL ssps_get_out_params(STMT *stmt)
           /* Making bit field look "normally" */
           if (stmt->result_bind[counter].buffer_type == MYSQL_TYPE_BIT)
           {
-            MYSQL_FIELD *field= stmt->dbc->mysql_proxy->fetch_field_direct(stmt->result, counter);
+            MYSQL_FIELD *field= stmt->dbc->connection_proxy->fetch_field_direct(stmt->result, counter);
             unsigned long long numeric;
 
             assert(field->type == MYSQL_TYPE_BIT);
@@ -249,7 +249,7 @@ BOOL ssps_get_out_params(STMT *stmt)
       /* This MAGICAL fetch is required. If there are streams - it has to be after
          streams are all done, perhaps when stmt->out_params_state is changed from
          OPS_STREAMS_PENDING */
-      stmt->dbc->mysql_proxy->stmt_fetch(stmt->ssps);
+      stmt->dbc->connection_proxy->stmt_fetch(stmt->ssps);
     }
 
     return TRUE;
@@ -266,7 +266,7 @@ int ssps_get_result(STMT *stmt)
     {
       if (!if_forward_cache(stmt))
       {
-        return stmt->dbc->mysql_proxy->stmt_store_result(stmt->ssps);
+        return stmt->dbc->connection_proxy->stmt_store_result(stmt->ssps);
       }
       else
       {
@@ -347,7 +347,7 @@ void ssps_close(STMT *stmt)
       It can fail because the connection to the server is lost, which
       is still ok because the memory is freed anyway.
     */
-    stmt->dbc->mysql_proxy->stmt_close(stmt->ssps);
+    stmt->dbc->connection_proxy->stmt_close(stmt->ssps);
     stmt->ssps= NULL;
   }
   stmt->buf_set_pos(0);
@@ -365,9 +365,9 @@ SQLRETURN ssps_fetch_chunk(STMT *stmt, char *dest, unsigned long dest_bytes, uns
   bind.is_null= &is_null;
   bind.error= &error;
 
-  if (stmt->dbc->mysql_proxy->stmt_fetch_column(stmt->ssps, &bind, stmt->getdata.column, stmt->getdata.src_offset))
+  if (stmt->dbc->connection_proxy->stmt_fetch_column(stmt->ssps, &bind, stmt->getdata.column, stmt->getdata.src_offset))
   {
-    switch (stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps))
+    switch (stmt->dbc->connection_proxy->stmt_errno(stmt->ssps))
     {
       case  CR_INVALID_PARAMETER_NO:
         /* Shouldn't really happen here*/
@@ -600,14 +600,14 @@ static MYSQL_ROW fetch_varlength_columns(STMT *stmt, MYSQL_ROW values)
       }
 
       if (reallocated_buffers)
-        stmt->dbc->mysql_proxy->stmt_fetch_column(stmt->ssps, &stmt->result_bind[i], i, 0);
+        stmt->dbc->connection_proxy->stmt_fetch_column(stmt->ssps, &stmt->result_bind[i], i, 0);
 
     }
   }
 
   // Result buffers must be set again after reallocating
   if (reallocated_buffers)
-    stmt->dbc->mysql_proxy->stmt_bind_result(stmt->ssps, stmt->result_bind);
+    stmt->dbc->connection_proxy->stmt_bind_result(stmt->ssps, stmt->result_bind);
 
   fill_ird_data_lengths(stmt->ird, stmt->result_bind[0].length,
                                   stmt->result->field_count);
@@ -675,7 +675,7 @@ void STMT::free_reset_out_params()
   if (out_params_state == OPS_STREAMS_PENDING)
   {
     /* Magical out params fetch */
-    dbc->mysql_proxy->stmt_fetch(ssps);
+    dbc->connection_proxy->stmt_fetch(ssps);
   }
   out_params_state = OPS_UNKNOWN;
   apd->free_paramdata();
@@ -688,7 +688,7 @@ void STMT::free_reset_params()
 {
   if (ssps)
   {
-    // dbc->mysql_proxy->stmt_reset(ssps);
+    // dbc->connection_proxy->stmt_reset(ssps);
   }
   /* remove all params and reset count to 0 (per spec) */
   /* http://msdn2.microsoft.com/en-us/library/ms709284.aspx */
@@ -736,7 +736,7 @@ STMT::~STMT()
 
   if (ssps != NULL)
   {
-    dbc->mysql_proxy->stmt_close(ssps);
+    dbc->connection_proxy->stmt_close(ssps);
     ssps = NULL;
   }
 
@@ -767,7 +767,7 @@ SQLRETURN STMT::set_error(myodbc_errid errid, const char *errtext,
 
 SQLRETURN STMT::set_error(myodbc_errid errid)
 {
-  return set_error(errid, dbc->mysql_proxy->error(), dbc->mysql_proxy->error_code());
+  return set_error(errid, dbc->connection_proxy->error(), dbc->connection_proxy->error_code());
 }
 
 SQLRETURN STMT::set_error(const char *sqlstate, const char *msg,
@@ -779,7 +779,7 @@ SQLRETURN STMT::set_error(const char *sqlstate, const char *msg,
 
 SQLRETURN STMT::set_error(const char *state)
 {
-  return set_error(state, dbc->mysql_proxy->error(), dbc->mysql_proxy->error_code());
+  return set_error(state, dbc->connection_proxy->error(), dbc->connection_proxy->error_code());
 }
 
 
@@ -864,7 +864,7 @@ long STMT::compute_cur_row(unsigned fFetchType, SQLLEN irow)
       case SQL_NO_DATA:
         throw MYERROR(SQL_NO_DATA_FOUND);
       case SQL_ERROR:
-        set_error(MYERR_S1000, dbc->mysql_proxy->error(), 0);
+        set_error(MYERR_S1000, dbc->connection_proxy->error(), 0);
         throw error;
       }
     }
@@ -919,7 +919,7 @@ int STMT::ssps_bind_result()
 
     for (i= 0; i < num_fields; ++i)
     {
-      MYSQL_FIELD    *field= dbc->mysql_proxy->fetch_field_direct(result, i);
+      MYSQL_FIELD    *field= dbc->connection_proxy->fetch_field_direct(result, i);
       st_buffer_size_type p= allocate_buffer_for_field(field,
                                                       IS_PS_OUT_PARAMS(this));
 
@@ -946,10 +946,10 @@ int STMT::ssps_bind_result()
       }
     }
 
-    int rc = dbc->mysql_proxy->stmt_bind_result(ssps, result_bind);
+    int rc = dbc->connection_proxy->stmt_bind_result(ssps, result_bind);
     if (rc)
     {
-      set_error("HY000", dbc->mysql_proxy->stmt_error(ssps), 0);
+      set_error("HY000", dbc->connection_proxy->stmt_error(ssps), 0);
     }
     return rc;
   }
@@ -1026,7 +1026,7 @@ SQLRETURN STMT::bind_query_attrs(bool use_ssps)
   MYSQL_BIND *bind = query_attr_bind.data();
   const char** names = (const char**)query_attr_names.data();
 
-  if (dbc->mysql_proxy->bind_param(rcount - param_count,
+  if (dbc->connection_proxy->bind_param(rcount - param_count,
                              query_attr_bind.data(),
                              (const char**)query_attr_names.data()))
   {
@@ -1401,9 +1401,9 @@ T ssps_get_int64(STMT *stmt, ulong column_number, char *value, ulong length)
 SQLRETURN ssps_send_long_data(STMT *stmt, unsigned int param_number, const char *chunk,
                             unsigned long length)
 {
-  if ( stmt->dbc->mysql_proxy->stmt_send_long_data(stmt->ssps, param_number, chunk, length))
+  if ( stmt->dbc->connection_proxy->stmt_send_long_data(stmt->ssps, param_number, chunk, length))
   {
-    uint err = stmt->dbc->mysql_proxy->stmt_errno(stmt->ssps);
+    uint err = stmt->dbc->connection_proxy->stmt_errno(stmt->ssps);
     switch (err)
     {
       case CR_INVALID_BUFFER_USE:
@@ -1414,12 +1414,12 @@ SQLRETURN ssps_send_long_data(STMT *stmt, unsigned int param_number, const char 
         if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
           return stmt->set_error(error_code, error_msg, 0);
         else
-          return stmt->set_error("08S01", stmt->dbc->mysql_proxy->stmt_error(stmt->ssps), err);
+          return stmt->set_error("08S01", stmt->dbc->connection_proxy->stmt_error(stmt->ssps), err);
       case CR_COMMANDS_OUT_OF_SYNC:
       case CR_UNKNOWN_ERROR:
-        return stmt->set_error("HY000", stmt->dbc->mysql_proxy->stmt_error(stmt->ssps), err);
+        return stmt->set_error("HY000", stmt->dbc->connection_proxy->stmt_error(stmt->ssps), err);
       case CR_OUT_OF_MEMORY:
-        return stmt->set_error("HY001", stmt->dbc->mysql_proxy->stmt_error(stmt->ssps), err);
+        return stmt->set_error("HY001", stmt->dbc->connection_proxy->stmt_error(stmt->ssps), err);
       default:
         return stmt->set_error("HY000", "unhandled error from mysql_stmt_send_long_data", 0 );
     }

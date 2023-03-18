@@ -31,7 +31,6 @@
 #define __CONNECTION_HANDLER_H__
 
 #include "host_info.h"
-
 #include <memory>
 
 #ifdef __linux__
@@ -44,7 +43,7 @@ sqlwchar_string to_sqlwchar_string(const std::string& src);
 
 struct DBC;
 struct DataSource;
-class MYSQL_PROXY;
+class CONNECTION_PROXY;
 typedef short SQLRETURN;
 
 class CONNECTION_HANDLER {
@@ -53,8 +52,8 @@ class CONNECTION_HANDLER {
         virtual ~CONNECTION_HANDLER();
 
         virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled);
-        virtual MYSQL_PROXY* connect(const std::shared_ptr<HOST_INFO>& host_info, DataSource* ds);
-        void update_connection(MYSQL_PROXY* new_connection, const std::string& new_host_name);
+        virtual CONNECTION_PROXY* connect(const std::shared_ptr<HOST_INFO>& host_info, DataSource* ds);
+        void update_connection(CONNECTION_PROXY* new_connection, const std::string& new_host_name);
 
     private:
         DBC* dbc;

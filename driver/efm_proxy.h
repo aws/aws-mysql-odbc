@@ -30,34 +30,17 @@
 #ifndef __EFM_PROXY__
 #define __EFM_PROXY__
 
-#include <mysql.h>
-
+#include "connection_proxy.h"
+#include "driver.h"
 #include "monitor_service.h"
-#include "mysql_proxy.h"
 
-class EFM_PROXY : public MYSQL_PROXY {
+class EFM_PROXY : public CONNECTION_PROXY {
 public:
     EFM_PROXY(DBC* dbc, DataSource* ds);
-    EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy);
-    EFM_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy, std::shared_ptr<MONITOR_SERVICE> monitor_service);
+    EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
+    EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<MONITOR_SERVICE> monitor_service);
 
-    void delete_ds() override;
-    uint64_t num_rows(MYSQL_RES* res) override;
-    unsigned int num_fields(MYSQL_RES* res) override;
-    MYSQL_FIELD* fetch_field_direct(MYSQL_RES* res, unsigned int fieldnr) override;
-    MYSQL_ROW_OFFSET row_tell(MYSQL_RES* res) override;
-
-    unsigned int field_count() override;
-    uint64_t affected_rows() override;
-    unsigned int error_code() override;
-    const char* error() override;
-    const char* sqlstate() override;
-    unsigned long thread_id() override;
     int set_character_set(const char* csname) override;
-
-    void init() override;
-    bool ssl_set(const char* key, const char* cert, const char* ca,
-                 const char* capath, const char* cipher) override;
     bool change_user(const char* user, const char* passwd,
                      const char* db) override;
     bool real_connect(const char* host, const char* user,
@@ -68,22 +51,8 @@ public:
     int real_query(const char* q, unsigned long length) override;
     MYSQL_RES* store_result() override;
     MYSQL_RES* use_result() override;
-    struct CHARSET_INFO* get_character_set() const override;
-    void get_character_set_info(MY_CHARSET_INFO* charset) override;
-
-    int ping() override;
-    int options(enum mysql_option option, const void* arg) override;
-    int options4(enum mysql_option option, const void* arg1,
-                 const void* arg2) override;
-    int get_option(enum mysql_option option, const void* arg) override;
     void free_result(MYSQL_RES* result) override;
-    void data_seek(MYSQL_RES* result, uint64_t offset) override;
-    MYSQL_ROW_OFFSET row_seek(MYSQL_RES* result, MYSQL_ROW_OFFSET offset) override;
-    MYSQL_FIELD_OFFSET field_seek(MYSQL_RES* result, MYSQL_FIELD_OFFSET offset) override;
     MYSQL_ROW fetch_row(MYSQL_RES* result) override;
-
-    unsigned long* fetch_lengths(MYSQL_RES* result) override;
-    MYSQL_FIELD* fetch_field(MYSQL_RES* result) override;
     MYSQL_RES* list_fields(const char* table, const char* wild) override;
     unsigned long real_escape_string(char* to, const char* from,
                                      unsigned long length) override;
@@ -98,7 +67,6 @@ public:
     int stmt_fetch_column(MYSQL_STMT* stmt, MYSQL_BIND* bind_arg,
                           unsigned int column, unsigned long offset) override;
     int stmt_store_result(MYSQL_STMT* stmt) override;
-    unsigned long stmt_param_count(MYSQL_STMT* stmt) override;
     bool stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) override;
     bool stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd) override;
     bool stmt_close(MYSQL_STMT* stmt) override;
@@ -107,59 +75,14 @@ public:
     bool stmt_send_long_data(MYSQL_STMT* stmt, unsigned int param_number,
                              const char* data, unsigned long length) override;
     MYSQL_RES* stmt_result_metadata(MYSQL_STMT* stmt) override;
-    unsigned int stmt_errno(MYSQL_STMT* stmt) override;
-    const char* stmt_error(MYSQL_STMT* stmt) override;
-    MYSQL_ROW_OFFSET stmt_row_seek(MYSQL_STMT* stmt, MYSQL_ROW_OFFSET offset) override;
-    MYSQL_ROW_OFFSET stmt_row_tell(MYSQL_STMT* stmt) override;
-    void stmt_data_seek(MYSQL_STMT* stmt, uint64_t offset) override;
-    uint64_t stmt_num_rows(MYSQL_STMT* stmt) override;
-    uint64_t stmt_affected_rows(MYSQL_STMT* stmt) override;
-    unsigned int stmt_field_count(MYSQL_STMT* stmt) override;
-
-    bool autocommit(bool auto_mode) override;
     int next_result() override;
     int stmt_next_result(MYSQL_STMT* stmt) override;
-    void close() override;
-
     bool real_connect_dns_srv(const char* dns_srv_name,
                               const char* user, const char* passwd,
                               const char* db, unsigned long client_flag) override;
-    struct st_mysql_client_plugin* client_find_plugin(
-        const char* name, int type) override;
 
-    bool is_connected() override;
-
-    void set_last_error_code(unsigned int error_code) override;
-
-    char* get_last_error() const override;
-
-    unsigned int get_last_error_code() const override;
-
-    char* get_sqlstate() const override;
-
-    char* get_server_version() const override;
-
-    uint64_t get_affected_rows() const override;
-
-    void set_affected_rows(uint64_t num_rows) override;
-
-    char* get_host_info() const override;
-
-    std::string get_host() override;
-
-    unsigned int get_port() override;
-
-    unsigned long get_max_packet() const override;
-
-    unsigned long get_server_capabilities() const override;
-
-    unsigned int get_server_status() const override;
-
-    void set_connection(MYSQL_PROXY* mysql_proxy) override;
-
-    void close_socket() override;
-
-    void set_next_proxy(MYSQL_PROXY* next_proxy) override;
+    void set_connection(CONNECTION_PROXY* connection_proxy) override;
+    void set_next_proxy(CONNECTION_PROXY* next_proxy) override;
 
 private:
     std::shared_ptr<MONITOR_SERVICE> monitor_service = nullptr;

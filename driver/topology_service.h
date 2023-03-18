@@ -30,14 +30,17 @@
 #ifndef __TOPOLOGYSERVICE_H__
 #define __TOPOLOGYSERVICE_H__
 
+#include "MYODBC_MYSQL.h"
+
 #include "cluster_aware_metrics_container.h"
 #include "cluster_topology_info.h"
-#include "mysql_proxy.h"
+#include "connection_proxy.h"
 
 #include <map>
 #include <mutex>
 #include <chrono>
 #include <ctime>
+
 
 // TODO - consider - do we really need miliseconds for refresh? - the default numbers here are already 30 seconds.000;
 #define DEFAULT_REFRESH_RATE_IN_MILLISECONDS 30000
@@ -60,7 +63,7 @@ public:
     virtual void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
 
     virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(
-        MYSQL_PROXY* connection, bool force_update = false);
+        CONNECTION_PROXY* connection, bool force_update = false);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();
@@ -103,7 +106,7 @@ protected:
     std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container;
 
     bool refresh_needed(std::time_t last_updated);
-    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(MYSQL_PROXY* connection);
+    std::shared_ptr<CLUSTER_TOPOLOGY_INFO> query_for_topology(CONNECTION_PROXY* connection);
     std::shared_ptr<HOST_INFO> create_host(MYSQL_ROW& row);
     std::string get_host_endpoint(const char* node_name);
     static bool does_instance_exist(
@@ -113,7 +116,7 @@ protected:
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_from_cache();
     void put_to_cache(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info);
 
-    MYSQL_RES* try_execute_query(MYSQL_PROXY* mysql_proxy, const char* query);
+    MYSQL_RES* try_execute_query(CONNECTION_PROXY* connection_proxy, const char* query);
 };
 
 #endif /* __TOPOLOGYSERVICE_H__ */

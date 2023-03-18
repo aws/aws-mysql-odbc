@@ -42,7 +42,7 @@
 #ifndef __ERROR_H__
 #define __ERROR_H__
 
-#include "mysql_proxy.h"
+#include "connection_proxy.h"
 
 /* Including driver version definitions */
 #include "../MYODBC_CONF.h"
@@ -197,9 +197,9 @@ struct MYERROR
     sqlstate.clear();
   }
 
-  MYERROR(const char* state, MYSQL_PROXY* mysql_proxy) :
-    MYERROR(state, mysql_proxy->error(),
-      mysql_proxy->error_code(), MYODBC_ERROR_PREFIX)
+  MYERROR(const char* state, CONNECTION_PROXY* connection_proxy) :
+    MYERROR(state, connection_proxy->error(),
+      connection_proxy->error_code(), MYODBC_ERROR_PREFIX)
   {}
 
   MYERROR(const char* state, std::string errmsg) :

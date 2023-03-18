@@ -48,6 +48,9 @@
 ****************************************************************************/
 
 #include "driver.h"
+#include "efm_proxy.h"
+#include "mysql_proxy.h"
+
 #include <mutex>
 
 thread_local long thread_count = 0;
@@ -74,7 +77,7 @@ bool ENV::has_connections()
 DBC::DBC(ENV *p_env)
     : id{last_dbc_id++},
       env(p_env),
-      mysql_proxy(nullptr),
+      connection_proxy(nullptr),
       txn_isolation(DEFAULT_TXN_ISOLATION),
       last_query_time((time_t)time((time_t *)0))
 {
@@ -108,16 +111,16 @@ void DBC::free_explicit_descriptors()
 
 void DBC::close()
 {
-  mysql_proxy->close();
+  connection_proxy->close();
 }
 
 // construct a proxy chain, example: iam->efm->mysql
 void DBC::init_proxy_chain(DataSource* dsrc)
 {
-    MYSQL_PROXY *head = new MYSQL_PROXY(this, dsrc);
+    CONNECTION_PROXY *head = new MYSQL_PROXY(this, dsrc);
 
     if (dsrc->enable_failure_detection) {
-        MYSQL_PROXY* efm_proxy = new EFM_PROXY(this, dsrc);
+        CONNECTION_PROXY* efm_proxy = new EFM_PROXY(this, dsrc);
         efm_proxy->set_next_proxy(head);
         head = efm_proxy;
     }
@@ -125,18 +128,18 @@ void DBC::init_proxy_chain(DataSource* dsrc)
     ds_get_utf8attr(dsrc->auth_mode, &dsrc->auth_mode8);
 
     if (!myodbc_strcasecmp(AUTH_MODE_IAM, reinterpret_cast<const char*>(dsrc->auth_mode8))) {
-        // MYSQL_PROXY* iam_proxy = new IAM_PROXY(his, dsrc);
+        // CONNECTION_PROXY* iam_proxy = new IAM_PROXY(his, dsrc);
         // iam_proxy->set_next_proxy(head);
         // head = iam_proxy;
     }
 
     if (!myodbc_strcasecmp(AUTH_MODE_SECRETS_MANAGER, reinterpret_cast<const char*>(dsrc->auth_mode8))) {
-        // MYSQL_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY(his, dsrc);
+        // CONNECTION_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY(his, dsrc);
         // secrets_manager_proxy->set_next_proxy(head);
         // head = secrets_manager_proxy;
     }
 
-    this->mysql_proxy = head;
+    this->connection_proxy = head;
 }
 
 DBC::~DBC()
@@ -147,8 +150,8 @@ DBC::~DBC()
   if (ds)
     ds_delete(ds);
 
-  if (mysql_proxy) 
-    delete mysql_proxy;
+  if (connection_proxy) 
+    delete connection_proxy;
 
   if (fh)
     delete fh;
@@ -168,7 +171,7 @@ SQLRETURN DBC::set_error(char * state, const char * message, uint errcode)
 
 SQLRETURN DBC::set_error(char * state)
 {
-  return set_error(state, mysql_proxy->error(), mysql_proxy->error_code());
+  return set_error(state, connection_proxy->error(), connection_proxy->error_code());
 }
 
 
@@ -285,12 +288,12 @@ SQLRETURN SQL_API my_SQLAllocConnect(SQLHENV henv, SQLHDBC *phdbc)
 
     ++thread_count;
 
-    if (MYSQL_PROXY::get_client_version() < MIN_MYSQL_VERSION)
+    if (CONNECTION_PROXY::get_client_version() < MIN_MYSQL_VERSION)
     {
         char buff[255];
         snprintf(buff, sizeof(buff), 
                  "Wrong libmysqlclient library version: %ld.  MyODBC needs at least version: %ld",
-                 MYSQL_PROXY::get_client_version(), MIN_MYSQL_VERSION);
+                 CONNECTION_PROXY::get_client_version(), MIN_MYSQL_VERSION);
         return(set_env_error((ENV*)henv, MYERR_S1000, buff, 0));
     }
 
@@ -353,7 +356,7 @@ int wakeup_connection(DBC *dbc)
   {
     ds_get_utf8attr(ds->pwd1, &ds->pwd18);
     int fator = 2;
-    dbc->mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
+    dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
                          ds->pwd18);
   }
@@ -362,7 +365,7 @@ int wakeup_connection(DBC *dbc)
   {
     ds_get_utf8attr(ds->pwd2, &ds->pwd28);
     int fator = 2;
-    dbc->mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
+    dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
                          ds->pwd28);
   }
@@ -371,13 +374,13 @@ int wakeup_connection(DBC *dbc)
   {
     ds_get_utf8attr(ds->pwd3, &ds->pwd38);
     int fator = 3;
-    dbc->mysql_proxy->options4(MYSQL_OPT_USER_PASSWORD,
+    dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
                          ds->pwd38);
   }
 #endif
 
-  if (dbc->mysql_proxy->change_user(ds_get_utf8attr(ds->uid, &ds->uid8),
+  if (dbc->connection_proxy->change_user(ds_get_utf8attr(ds->uid, &ds->uid8),
                               ds_get_utf8attr(ds->pwd, &ds->pwd8),
                               ds_get_utf8attr(ds->database, &ds->database8)))
   {

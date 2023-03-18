@@ -27,40 +27,22 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "driver.h"
+#include "mysql_proxy.h"
 
 #include <sstream>
+#include <thread>
 
 namespace {
     const auto SOCKET_CLOSE_DELAY = std::chrono::milliseconds(100);
 }
 
-MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds) : dbc{dbc}, ds{ds} {
-    if (!this->dbc) {
-        throw std::runtime_error("DBC cannot be null.");
-    }
-
-    if (!this->ds) {
-        throw std::runtime_error("DataSource cannot be null.");
-    }
-
+MYSQL_PROXY::MYSQL_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
     this->host = get_host_info_from_ds(ds);
 }
 
 MYSQL_PROXY::~MYSQL_PROXY() {
     if (this->mysql) {
         close();
-    }
-
-    if (this->next_proxy) {
-        delete next_proxy;
-    }
-}
-
-void MYSQL_PROXY::delete_ds() {
-    if (ds) {
-        ds_delete(ds);
-        ds = nullptr;
     }
 }
 
@@ -186,10 +168,6 @@ int MYSQL_PROXY::ping() {
     return mysql_ping(mysql);
 }
 
-unsigned long MYSQL_PROXY::get_client_version(void) {
-    return mysql_get_client_version();
-}
-
 int MYSQL_PROXY::get_option(mysql_option option, const void* arg) {
     return mysql_get_option(mysql, option, arg);
 }
@@ -291,7 +269,7 @@ bool MYSQL_PROXY::stmt_free_result(MYSQL_STMT* stmt) {
 }
 
 bool MYSQL_PROXY::stmt_send_long_data(MYSQL_STMT* stmt, unsigned int param_number, const char* data,
-                                      unsigned long length) {
+    unsigned long length) {
 
     return mysql_stmt_send_long_data(stmt, param_number, data, length);
 }
@@ -392,13 +370,25 @@ unsigned int MYSQL_PROXY::get_server_status() const {
     return this->mysql->server_status;
 }
 
-void MYSQL_PROXY::set_connection(MYSQL_PROXY* mysql_proxy) {
+void MYSQL_PROXY::delete_ds() {
+    if (ds) {
+        ds_delete(ds);
+        ds = nullptr;
+    }
+}
+
+MYSQL* MYSQL_PROXY::move_mysql_connection() {
+    MYSQL* ret = this->mysql;
+    this->mysql = nullptr;
+    return ret;
+}
+
+void MYSQL_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
     close();
-    this->mysql = mysql_proxy->mysql;
-    mysql_proxy->mysql = nullptr;
+    this->mysql = connection_proxy->move_mysql_connection();
     // delete the ds initialized in CONNECTION_HANDLER::clone_dbc()
-    mysql_proxy->delete_ds();
-    delete mysql_proxy;
+    connection_proxy->delete_ds();
+    delete connection_proxy;
 }
 
 void MYSQL_PROXY::close_socket() {
@@ -412,12 +402,4 @@ void MYSQL_PROXY::close_socket() {
     if (mysql->net.fd != INVALID_SOCKET && (ret = ::closesocket(mysql->net.fd))) {
         MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", ret, strerror(socket_errno));
     }
-}
-
-void MYSQL_PROXY::set_next_proxy(MYSQL_PROXY* next_proxy) {
-    if (this->next_proxy) {
-        throw std::runtime_error("There is already a next proxy present!");
-    }
-
-    this->next_proxy = next_proxy;
 }

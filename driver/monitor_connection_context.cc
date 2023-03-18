@@ -188,7 +188,7 @@ void MONITOR_CONNECTION_CONTEXT::abort_connection() {
     if ((!get_connection_to_abort()) || (!is_active_context())) {
         return;
     }
-    connection_to_abort->mysql_proxy->close_socket();
+    connection_to_abort->connection_proxy->close_socket();
 }
 
 std::string MONITOR_CONNECTION_CONTEXT::build_node_keys_str() {
