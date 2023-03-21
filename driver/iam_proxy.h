@@ -72,6 +72,8 @@ public:
         const char* socket,
         unsigned long flags) override;
 
+    std::string get_auth_token(const char* host, const char* region, unsigned int port, const char* user);
+
 private:
     std::unordered_map<std::string, TOKEN_INFO> token_cache;
     Aws::RDS::RDSClient rds_client;
