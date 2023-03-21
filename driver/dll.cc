@@ -35,11 +35,14 @@
 
 #include "driver.h"
 #include <locale.h>
+#include <aws/core/Aws.h>
 
 char *default_locale, *decimal_point, *thousands_sep;
 uint decimal_point_length,thousands_sep_length;
 static int myodbc_inited=0;
 static int mysys_inited=0;
+
+static Aws::SDKOptions aws_sdk_options;
 
 std::string current_dll_location;
 std::string default_plugin_location;
@@ -87,6 +90,8 @@ void myodbc_init(void)
   // This library_init call is causing the test my_data to crash on mac.
   // TODO: Find alternate solution
   // mysql_library_init(0, nullptr, nullptr);
+
+  Aws::InitAPI(aws_sdk_options);
 
   if(!mysys_inited)
   {
@@ -154,6 +159,7 @@ void myodbc_end()
     my_thread_end_wait_time= 0;
 #endif
 
+    Aws::ShutdownAPI(aws_sdk_options);
     mysql_library_end();
   }
 }

@@ -50,6 +50,7 @@
 #include "driver.h"
 #include "efm_proxy.h"
 #include "mysql_proxy.h"
+#include "secrets_manager_proxy.h"
 
 #include <mutex>
 
@@ -134,9 +135,9 @@ void DBC::init_proxy_chain(DataSource* dsrc)
     }
 
     if (!myodbc_strcasecmp(AUTH_MODE_SECRETS_MANAGER, reinterpret_cast<const char*>(dsrc->auth_mode8))) {
-        // CONNECTION_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY(his, dsrc);
-        // secrets_manager_proxy->set_next_proxy(head);
-        // head = secrets_manager_proxy;
+         CONNECTION_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY(this, dsrc);
+         secrets_manager_proxy->set_next_proxy(head);
+         head = secrets_manager_proxy;
     }
 
     this->connection_proxy = head;
