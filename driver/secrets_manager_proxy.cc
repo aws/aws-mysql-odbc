@@ -32,49 +32,91 @@
 
 #include "secrets_manager_proxy.h"
 
-#include "installer.h"
+#include "mylog.h"
+
+#undef GetMessage // workaround for AWSError method GetMessage()
 
 using namespace Aws::SecretsManager;
 
-SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : SECRETS_MANAGER_PROXY(
-    dbc, ds, nullptr) {}
+namespace {
+    const char* DEFAULT_REGION = "us-east-1";
+    const Aws::String USERNAME_KEY{ "username" };
+    const Aws::String PASSWORD_KEY{"password"};
+}
+
+SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : SECRETS_MANAGER_PROXY(dbc, ds, nullptr) {}
 
 
-SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, MYSQL_PROXY* next_proxy) : MYSQL_PROXY(dbc, ds) {
-    Aws::InitAPI(this->SDK_options);
+SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(
+    dbc, ds) {
 
-    Aws::Client::ClientConfiguration config;
+    SecretsManagerClientConfiguration config;
     const char* region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
-    config.region = region ? region : "us-east-1";
+    config.region = region ? region : DEFAULT_REGION;
 
     this->sm_client = SecretsManagerClient(config);
+    this->next_proxy = next_proxy;
+}
 
+bool SECRETS_MANAGER_PROXY::real_connect(const char* host, const char* user, const char* passwd, const char* db,
+                                         unsigned int port, const char* unix_socket, unsigned long clientflag) {
+
+    const auto json_value = parse_json_value(fetch_latest_credentials());
+    const auto json_view = json_value.View();
+    const auto username = get_from_json_view(json_view, USERNAME_KEY);
+    const auto password = get_from_json_view(json_view, PASSWORD_KEY);
+
+    return next_proxy->real_connect(host, username.c_str(), password.c_str(), db, port, unix_socket, clientflag);
+}
+
+bool SECRETS_MANAGER_PROXY::real_connect_dns_srv(const char* dns_srv_name, const char* user, const char* passwd,
+                                                 const char* db, unsigned long client_flag) {
+
+    const auto json_value = parse_json_value(fetch_latest_credentials());
+    const auto json_view = json_value.View();
+    const auto username = get_from_json_view(json_view, USERNAME_KEY);
+    const auto password = get_from_json_view(json_view, PASSWORD_KEY);
+
+    return next_proxy->real_connect_dns_srv(dns_srv_name, username.c_str(), password.c_str(), db, client_flag);
+}
+
+Aws::String SECRETS_MANAGER_PROXY::fetch_latest_credentials() const {
     const Aws::String secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
 
     Model::GetSecretValueRequest request;
     request.SetSecretId(secret_ID);
 
-    auto getSecretValueOutcome = this->sm_client.GetSecretValue(request);
-    if (getSecretValueOutcome.IsSuccess()) {
-        std::cout << "Secret is: " << getSecretValueOutcome.GetResult().GetSecretString() << std::endl;
+    Aws::String secret_string;
+
+    auto get_secret_value_outcome = this->sm_client.GetSecretValue(request);
+
+    if (get_secret_value_outcome.IsSuccess()) {
+        secret_string = get_secret_value_outcome.GetResult().GetSecretString();
     }
     else {
-        std::cout << "Failed with Error: " << getSecretValueOutcome.GetError() << std::endl;
+        MYLOG_DBC_TRACE(dbc, get_secret_value_outcome.GetError().GetMessage().c_str());
     }
-
-    this->next_proxy = next_proxy;
+    return secret_string;
 }
 
-SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
-    Aws::ShutdownAPI(this->SDK_options);
+Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::parse_json_value(Aws::String json_string) const {
+    auto res_json = Aws::Utils::Json::JsonValue(json_string);
+    if (!res_json.WasParseSuccessful()) {
+        MYLOG_DBC_TRACE(dbc, res_json.GetErrorMessage().c_str());
+        throw std::runtime_error("Error parsing response body. " + res_json.GetErrorMessage());
+    }
+    return res_json;
 }
 
-bool SECRETS_MANAGER_PROXY::real_connect(const char* host, const char* user, const char* passwd, const char* db, unsigned int port, const char* unix_socket, unsigned long clientflag) {
-
-    const bool ret = next_proxy->real_connect(host, user, passwd, db, port, unix_socket, clientflag);
-    return ret;
-}
-
-void SECRETS_MANAGER_PROXY::set_next_proxy(MYSQL_PROXY* next_proxy) {
-    MYSQL_PROXY::set_next_proxy(next_proxy);
+std::string SECRETS_MANAGER_PROXY::get_from_json_view(Aws::Utils::Json::JsonView view, std::string key) const {
+    std::string value;
+    if (view.ValueExists(key)) {
+        value = view.GetString(key);
+    }
+    else {
+        const auto error = "Unable to extract the " + key + " from secrets manager response.";
+        MYLOG_DBC_TRACE(dbc, error.c_str());
+        throw std::runtime_error(error);
+    }
+    return value;
 }
