@@ -36,17 +36,26 @@
 
 #include "connection_proxy.h"
 
+constexpr auto DEFAULT_TOKEN_EXPIRATION_SEC = 15 * 60;
+
 class TOKEN_INFO {
 public:
     TOKEN_INFO() {};
-    TOKEN_INFO(std::string token, unsigned int expire);
+    TOKEN_INFO(std::string token) : TOKEN_INFO(token, DEFAULT_TOKEN_EXPIRATION_SEC) {};
+    TOKEN_INFO(std::string token, unsigned int seconds_until_expiration) {
+        this->token = token;
+        this->expiration_time = std::chrono::system_clock::now() + std::chrono::seconds(seconds_until_expiration);
+    }
 
     bool is_expired() {
-        return true;
+        std::chrono::system_clock::time_point current_time = std::chrono::system_clock::now();
+        return current_time > this->expiration_time;
     }
 
     std::string token;
-    unsigned int expiration_time;
+
+private:
+    std::chrono::system_clock::time_point expiration_time;
 };
 
 class IAM_PROXY : public CONNECTION_PROXY {

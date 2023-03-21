@@ -27,8 +27,9 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "driver.h"
+#include <aws/core/auth/AWSCredentialsProvider.h>
 
+#include "driver.h"
 #include "iam_proxy.h"
 
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
@@ -36,14 +37,18 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
     this->next_proxy = next_proxy;
 
-	const Aws::Client::ClientConfiguration clientConfiguration;
-	this->rds_client = Aws::RDS::RDSClient(clientConfiguration);
+	Aws::Auth::AWSCredentials credentials;
+	Aws::Client::ClientConfiguration client_config;
+
+	rds_client = Aws::RDS::RDSClient(credentials, client_config);
 }
 
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
 	const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
 	const char* region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
+	host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
+	port = ds->auth_port;
 
 	// Format should be "<region>:<host>:<port>:<user>"
 	std::string cache_key = std::string(region)
@@ -59,7 +64,6 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 	auto find_token = token_cache.find(cache_key);
 	if (find_token != token_cache.end() && !find_token->second.is_expired())
 	{
-		// log statement
 		TOKEN_INFO info = find_token->second;
 		password = info.token.c_str();
 	}
@@ -74,9 +78,3 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 
 	return next_proxy->connect(host, user, password, database, port, socket, flags);
 }
-
-TOKEN_INFO::TOKEN_INFO(std::string token, unsigned int expire) {
-	this->token = token;
-	this->expiration_time = expire;
-}
-
