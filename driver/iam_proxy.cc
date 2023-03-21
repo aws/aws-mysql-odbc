@@ -39,6 +39,7 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
 
 	Aws::Auth::AWSCredentials credentials;
 	Aws::Client::ClientConfiguration client_config;
+	client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
 
 	rds_client = Aws::RDS::RDSClient(credentials, client_config);
 }
@@ -46,11 +47,10 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
 	const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
-	const char* region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
 	host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
 	port = ds->auth_port;
 
-	std::string auth_token = this->get_auth_token(host, region, port, user);
+	std::string auth_token = this->get_auth_token(host, (const char*)ds->auth_region8, port, user);
 
 	return next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
 }
