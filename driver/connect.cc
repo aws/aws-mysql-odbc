@@ -607,7 +607,8 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 
 #if (MYSQL_VERSION_ID >= 50527 && MYSQL_VERSION_ID < 50600) || MYSQL_VERSION_ID >= 50607
   // IAM authentication requires the plugin to be set.
-  if (dsrc->enable_cleartext_plugin || !myodbc_strcasecmp(AUTH_MODE_IAM, (const char*)dsrc->auth_mode8))
+  if (dsrc->enable_cleartext_plugin || 
+      (dsrc->auth_mode8 && !myodbc_strcasecmp(AUTH_MODE_IAM, (const char*)dsrc->auth_mode8)))
   {
     connection_proxy->options(MYSQL_ENABLE_CLEARTEXT_PLUGIN, (char *)&on);
   }

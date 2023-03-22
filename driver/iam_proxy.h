@@ -60,6 +60,7 @@ private:
 
 class IAM_PROXY : public CONNECTION_PROXY {
 public:
+    IAM_PROXY() = default;
     IAM_PROXY(DBC* dbc, DataSource* ds);
     IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
 
@@ -72,11 +73,16 @@ public:
         const char* socket,
         unsigned long flags) override;
 
-    std::string get_auth_token(const char* host, const char* region, unsigned int port, const char* user);
+    std::string get_auth_token(
+        const char* host,const char* region, unsigned int port,
+        const char* user, unsigned int time_until_expiration);
 
-private:
+protected:
     std::unordered_map<std::string, TOKEN_INFO> token_cache;
     Aws::RDS::RDSClient rds_client;
+
+    virtual std::string generate_auth_token(
+        const char* host, const char* region, unsigned int port, const char* user);
 };
 
 #endif /* __IAM_PROXY__ */

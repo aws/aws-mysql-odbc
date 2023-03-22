@@ -37,6 +37,7 @@ struct DataSource;
 
 class CONNECTION_PROXY {
 public:
+    CONNECTION_PROXY() = default;
     CONNECTION_PROXY(DBC* dbc, DataSource* ds);
     virtual ~CONNECTION_PROXY();
 

@@ -37,9 +37,12 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
     this->next_proxy = next_proxy;
 
+	// TODO: Figure out credentials lookup
 	Aws::Auth::AWSCredentials credentials;
 	Aws::Client::ClientConfiguration client_config;
-	client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
+	if (ds->auth_region) {
+		client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
+	}
 
 	rds_client = Aws::RDS::RDSClient(credentials, client_config);
 }
@@ -47,15 +50,33 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
 	const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
-	host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
+	if (ds->auth_host) {
+		host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
+	}
+	else {
+		// TODO: consider whether we should just use the originally passed in value instead.
+		host = "";
+	}
+	
+	const char* region;
+	if (ds->auth_region8) {
+		region = (const char*)ds->auth_region8;
+	}
+	else {
+		region = "";
+	}
+
 	port = ds->auth_port;
 
-	std::string auth_token = this->get_auth_token(host, (const char*)ds->auth_region8, port, user);
+	std::string auth_token = this->get_auth_token(host, region, port, user, ds->auth_expiration);
 
 	return next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
 }
 
-std::string IAM_PROXY::get_auth_token(const char* host, const char* region, unsigned int port, const char* user) {
+std::string IAM_PROXY::get_auth_token(
+	const char* host, const char* region, unsigned int port,
+	const char* user, unsigned int time_until_expiration) {
+
 	// Format should be "<region>:<host>:<port>:<user>"
 	std::string cache_key = std::string(region)
 		.append(":")
@@ -76,9 +97,15 @@ std::string IAM_PROXY::get_auth_token(const char* host, const char* region, unsi
 	}
 
 	// Generate new token
-	std::string auth_token = rds_client.GenerateConnectAuthToken(host, region, port, user);
+	std::string auth_token = generate_auth_token(host, region, port, user);
 
-	token_cache[cache_key] = TOKEN_INFO(auth_token, ds->auth_expiration);
+	token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
 
 	return auth_token;
+}
+
+std::string IAM_PROXY::generate_auth_token(
+	const char* host, const char* region, unsigned int port, const char* user) {
+
+	return rds_client.GenerateConnectAuthToken(host, region, port, user);
 }
