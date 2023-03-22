@@ -81,8 +81,18 @@ protected:
     std::unordered_map<std::string, TOKEN_INFO> token_cache;
     Aws::RDS::RDSClient rds_client;
 
+    static std::string build_cache_key(
+        const char* host, const char* region, unsigned int port, const char* user);
+
     virtual std::string generate_auth_token(
         const char* host, const char* region, unsigned int port, const char* user);
+
+    void clear_token_cache();
+
+#ifdef UNIT_TEST_BUILD
+    // Allows for testing private/protected methods
+    friend class TEST_UTILS;
+#endif
 };
 
 #endif /* __IAM_PROXY__ */

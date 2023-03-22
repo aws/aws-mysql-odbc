@@ -77,21 +77,17 @@ std::string IAM_PROXY::get_auth_token(
 	const char* host, const char* region, unsigned int port,
 	const char* user, unsigned int time_until_expiration) {
 
-	// Format should be "<region>:<host>:<port>:<user>"
-	std::string cache_key = std::string(region)
-		.append(":")
-		.append(host)
-		.append(":")
-		.append(std::to_string(port))
-		.append(":")
-		.append(user);
+	std::string cache_key = build_cache_key(host, region, port, user);
 
 	// Search for token in cache
 	auto find_token = token_cache.find(cache_key);
 	if (find_token != token_cache.end())
 	{
 		TOKEN_INFO info = find_token->second;
-		if (!info.is_expired()) {
+		if (info.is_expired()) {
+			token_cache.erase(cache_key);
+		}
+		else {
 			return info.token;
 		}
 	}
@@ -104,8 +100,22 @@ std::string IAM_PROXY::get_auth_token(
 	return auth_token;
 }
 
+std::string IAM_PROXY::build_cache_key(
+	const char* host, const char* region, unsigned int port, const char* user) {
+
+	// Format should be "<region>:<host>:<port>:<user>"
+	return std::string(region)
+		.append(":").append(host)
+		.append(":").append(std::to_string(port))
+		.append(":").append(user);
+}
+
 std::string IAM_PROXY::generate_auth_token(
 	const char* host, const char* region, unsigned int port, const char* user) {
 
 	return rds_client.GenerateConnectAuthToken(host, region, port, user);
+}
+
+void IAM_PROXY::clear_token_cache() {
+	token_cache.clear();
 }
