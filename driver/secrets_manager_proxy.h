@@ -34,8 +34,13 @@
 #include <aws/core/utils/json/JsonSerializer.h>
 #include <aws/secretsmanager/SecretsManagerClient.h>
 
+#include <map>
+
 #include "connection_proxy.h"
 #include "driver.h"
+
+static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> secrets_cache;
+static std::mutex secrets_cache_mutex;
 
 class SECRETS_MANAGER_PROXY : public CONNECTION_PROXY {
 public:
@@ -51,10 +56,13 @@ public:
 
 private:
     Aws::SecretsManager::SecretsManagerClient sm_client;
+    std::pair<Aws::String, Aws::String> secret_key;
+    Aws::Utils::Json::JsonValue secret_json_value;
 
-    Aws::String fetch_latest_credentials() const;
+    bool update_secret(bool force_re_fetch);
+    Aws::Utils::Json::JsonValue fetch_latest_credentials() const;
     Aws::Utils::Json::JsonValue parse_json_value(Aws::String json_string) const;
-    std::string get_from_json_view(Aws::Utils::Json::JsonView view, std::string key) const;
+    std::string get_from_secret_json_value(std::string key) const;
 };
 
 #endif /* __SECRETS_MANAGER_PROXY__ */
