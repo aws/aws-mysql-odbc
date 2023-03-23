@@ -29,6 +29,10 @@
 
 #include "driver/secrets_manager_proxy.h"
 
+#include <aws/core/utils/Outcome.h>
+#include <aws/secretsmanager/model/GetSecretValueRequest.h>
+#include <aws/secretsmanager/SecretsManagerServiceClientModel.h>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -36,18 +40,24 @@
 #include "mock_objects.h"
 
 using testing::_;
+using testing::InSequence;
+using testing::Property;
 using testing::Return;
 using testing::StrEq;
 
+using namespace Aws::SecretsManager;
+
 namespace {
     const Aws::String TEST_SECRET_ID{"secret_ID"};
-    const Aws::String TEST_REGION{ "us-east-2" };
+    const Aws::String TEST_REGION{"us-east-2"};
     const Aws::String TEST_USERNAME{"test-user"};
-    const Aws::String TEST_PASSWORD{ "test-password" };
+    const Aws::String TEST_PASSWORD{"test-password"};
     const std::pair<Aws::String, Aws::String> SECRET_CACHE_KEY = std::make_pair(TEST_SECRET_ID, TEST_REGION);
-    Aws::Utils::Json::JsonValue TEST_SECRET;
+    const auto TEST_SECRET_STRING = R"({"username": ")" + TEST_USERNAME + R"(", "password": ")" + TEST_PASSWORD +
+        R"("})";
+    const auto TEST_SECRET = Aws::Utils::Json::JsonValue(TEST_SECRET_STRING);
     const char* TEST_HOST = "test-domain";
-
+    const auto INVALID_SECRET_STRING = "{username: invalid, password: invalid}";
 }
 
 static Aws::SDKOptions sdk_options;
@@ -61,11 +71,11 @@ protected:
     std::shared_ptr<MOCK_SECRETS_MANAGER_CLIENT> mock_sm_client;
 
     static void SetUpTestSuite() {
-        Aws::InitAPI(sdk_options);
+        InitAPI(sdk_options);
     }
 
     static void TearDownTestSuite() {
-        Aws::ShutdownAPI(sdk_options);
+        ShutdownAPI(sdk_options);
         mysql_library_end();
     }
 
@@ -73,10 +83,6 @@ protected:
         allocate_odbc_handles(env, dbc, ds);
         ds_setattr_from_utf8(&ds->auth_region, (SQLCHAR*)TEST_REGION.c_str());
         ds_setattr_from_utf8(&ds->auth_secret_id, (SQLCHAR*)TEST_SECRET_ID.c_str());
-
-        TEST_SECRET.WithString("username", TEST_USERNAME).WithString("password", TEST_PASSWORD);
-
-        TEST_UTILS::get_secrets_cache().insert({ SECRET_CACHE_KEY, TEST_SECRET });
 
         mock_sm_client = std::make_shared<MOCK_SECRETS_MANAGER_CLIENT>();
 
@@ -90,25 +96,134 @@ protected:
 };
 
 TEST_F(SecretsManagerProxyTest, NullDBC) {
-    EXPECT_THROW(SECRETS_MANAGER_PROXY sm_proxy(nullptr, ds, mock_connection_proxy, mock_sm_client), std::runtime_error);
+    EXPECT_THROW(SECRETS_MANAGER_PROXY sm_proxy(nullptr, ds, mock_connection_proxy, mock_sm_client),
+                 std::runtime_error);
     delete mock_connection_proxy;
 }
 
 TEST_F(SecretsManagerProxyTest, NullDS) {
-    EXPECT_THROW(SECRETS_MANAGER_PROXY sm_proxy(dbc, nullptr, mock_connection_proxy, mock_sm_client), std::runtime_error);
+    EXPECT_THROW(SECRETS_MANAGER_PROXY sm_proxy(dbc, nullptr, mock_connection_proxy, mock_sm_client),
+                 std::runtime_error);
     delete mock_connection_proxy;
 }
 
+// The proxy will successfully open a connection with a cached secret.
 TEST_F(SecretsManagerProxyTest, TestConnectWithCachedSecrets) {
     SECRETS_MANAGER_PROXY sm_proxy(dbc, ds, mock_connection_proxy, mock_sm_client);
 
-    EXPECT_CALL(*mock_sm_client, GetSecretValue(_)).Times(0);
-    EXPECT_CALL(*mock_connection_proxy, real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).Times(1);
-    EXPECT_CALL(*mock_connection_proxy, error_code()).WillOnce(Return(0));
+    TEST_UTILS::get_secrets_cache().insert({SECRET_CACHE_KEY, TEST_SECRET});
 
-    sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+    EXPECT_CALL(*mock_sm_client, GetSecretValue(_)).Times(0);
+    EXPECT_CALL(*mock_connection_proxy,
+                real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+        WillOnce(Return(true));
+
+    const auto ret = sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
 
     EXPECT_EQ(1, TEST_UTILS::get_secrets_cache().size());
+    EXPECT_TRUE(ret);
 }
 
+// The proxy will attempt to open a connection with an empty secret cache.
+// The proxy will fetch the secret from the AWS Secrets Manager.
+TEST_F(SecretsManagerProxyTest, TestConnectWithNewSecrets) {
+    SECRETS_MANAGER_PROXY sm_proxy(dbc, ds, mock_connection_proxy, mock_sm_client);
 
+    const auto expected_result = Model::GetSecretValueResult().WithSecretString(TEST_SECRET_STRING);
+    const auto expected_outcome = Model::GetSecretValueOutcome(expected_result);
+
+    EXPECT_CALL(*mock_sm_client,
+                GetSecretValue(Property("GetSecretId", &Aws::SecretsManager::Model::GetSecretValueRequest::GetSecretId,
+                    StrEq(TEST_SECRET_ID)))).WillOnce(Return(expected_outcome));
+    EXPECT_CALL(*mock_connection_proxy,
+                real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+        WillOnce(Return(true));
+
+    const auto ret = sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+
+    EXPECT_EQ(1, TEST_UTILS::get_secrets_cache().size());
+    EXPECT_TRUE(ret);
+}
+
+// The proxy will attempt to open a connection with a cached secret, but it will fail with a generic error.
+// In this case, the proxy will return the error back to the user.
+TEST_F(SecretsManagerProxyTest, TestFailedInitialConnectionWithUnhandledError) {
+    SECRETS_MANAGER_PROXY sm_proxy(dbc, ds, mock_connection_proxy, mock_sm_client);
+
+    TEST_UTILS::get_secrets_cache().insert({SECRET_CACHE_KEY, TEST_SECRET});
+
+    EXPECT_CALL(*mock_sm_client, GetSecretValue(_)).Times(0);
+    EXPECT_CALL(*mock_connection_proxy,
+                real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+        WillOnce(Return(false));
+    EXPECT_CALL(*mock_connection_proxy, error_code()).WillOnce(Return(ER_BAD_HOST_ERROR));
+
+    const auto ret = sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+    EXPECT_FALSE(ret);
+}
+
+// The proxy will attempt to open a connection with a cached secret, but it will fail with an access error.
+// In this case, the proxy will fetch the secret and will retry the connection.
+TEST_F(SecretsManagerProxyTest, TestConnectWithNewSecretsAfterTryingWithCachedSecrets) {
+    SECRETS_MANAGER_PROXY sm_proxy(dbc, ds, mock_connection_proxy, mock_sm_client);
+
+    TEST_UTILS::get_secrets_cache().insert({SECRET_CACHE_KEY, TEST_SECRET});
+
+    const auto expected_result = Model::GetSecretValueResult().WithSecretString(TEST_SECRET_STRING);
+    const auto expected_outcome = Model::GetSecretValueOutcome(expected_result);
+
+    EXPECT_CALL(*mock_sm_client,
+                GetSecretValue(Property("GetSecretId", &Aws::SecretsManager::Model::GetSecretValueRequest::GetSecretId,
+                    StrEq(TEST_SECRET_ID)))).WillOnce(Return(expected_outcome));
+    {
+        InSequence s;
+
+        EXPECT_CALL(*mock_connection_proxy,
+                    real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+            WillOnce(Return(false));
+        EXPECT_CALL(*mock_connection_proxy, error_code()).WillOnce(Return(ER_ACCESS_DENIED_ERROR));
+        EXPECT_CALL(*mock_connection_proxy,
+                    real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+            WillOnce(Return(true));
+    }
+
+    const auto ret = sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+
+    EXPECT_EQ(1, TEST_UTILS::get_secrets_cache().size());
+    EXPECT_TRUE(ret);
+}
+
+// The proxy will attempt to open a connection after fetching a secret,
+// but it will fail because the returned secret could not be parsed.
+TEST_F(SecretsManagerProxyTest, TestFailedToReadSecrets) {
+    SECRETS_MANAGER_PROXY sm_proxy(dbc, ds, mock_connection_proxy, mock_sm_client);
+
+    const auto expected_result = Model::GetSecretValueResult().WithSecretString(INVALID_SECRET_STRING);
+    const auto expected_outcome = Model::GetSecretValueOutcome(expected_result);
+
+    EXPECT_CALL(*mock_sm_client,
+                GetSecretValue(Property("GetSecretId", &Aws::SecretsManager::Model::GetSecretValueRequest::GetSecretId,
+                    StrEq(TEST_SECRET_ID)))).WillOnce(Return(expected_outcome));
+
+    EXPECT_CALL(*mock_connection_proxy, real_connect(_, _, _, _, _, _, _)).Times(0);
+
+    EXPECT_THROW(sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0), std::runtime_error);
+    EXPECT_EQ(0, TEST_UTILS::get_secrets_cache().size());
+}
+
+// The proxy will attempt to open a connection after fetching a secret,
+// but it will fail because the outcome from the AWS Secrets Manager is not successful.
+TEST_F(SecretsManagerProxyTest, TestFailedToGetSecrets) {
+    SECRETS_MANAGER_PROXY sm_proxy(dbc, ds, mock_connection_proxy, mock_sm_client);
+
+    const auto unsuccessful_outcome = Model::GetSecretValueOutcome();
+
+    EXPECT_CALL(*mock_sm_client,
+                GetSecretValue(Property("GetSecretId", &Aws::SecretsManager::Model::GetSecretValueRequest::GetSecretId,
+                    StrEq(TEST_SECRET_ID)))).WillOnce(Return(unsuccessful_outcome));
+
+    EXPECT_CALL(*mock_connection_proxy, real_connect(_, _, _, _, _, _, _)).Times(0);
+
+    EXPECT_THROW(sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0), std::runtime_error);
+    EXPECT_EQ(0, TEST_UTILS::get_secrets_cache().size());
+}
