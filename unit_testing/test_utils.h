@@ -37,7 +37,7 @@
 #include "driver/secrets_manager_proxy.h"
 
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds);
-void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);
+void cleanup_odbc_handles(SQLHENV env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);
 
 class TEST_UTILS {
 public:
