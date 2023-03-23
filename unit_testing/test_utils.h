@@ -33,6 +33,7 @@
 #include "driver/driver.h"
 #include "driver/monitor.h"
 #include "driver/monitor_thread_container.h"
+#include "driver/secrets_manager_proxy.h"
 
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds);
 void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);
@@ -52,6 +53,7 @@ public:
     static std::shared_ptr<MONITOR> get_available_monitor(std::shared_ptr<MONITOR_THREAD_CONTAINER> container);
     static size_t get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container);
     static std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> get_contexts(std::shared_ptr<MONITOR> monitor);
+    static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& get_secrets_cache();
 };
 
 #endif /* __TESTUTILS_H__ */

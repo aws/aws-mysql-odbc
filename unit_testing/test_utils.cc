@@ -110,3 +110,7 @@ size_t TEST_UTILS::get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> contai
 std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> TEST_UTILS::get_contexts(std::shared_ptr<MONITOR> monitor) {
     return monitor->contexts;
 }
+
+std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& TEST_UTILS::get_secrets_cache() {
+    return std::ref(SECRETS_MANAGER_PROXY::secrets_cache);
+}
