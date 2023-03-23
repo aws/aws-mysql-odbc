@@ -30,6 +30,7 @@
 #include <aws/secretsmanager/SecretsManagerServiceClientModel.h>
 #include <aws/secretsmanager/model/GetSecretValueRequest.h>
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
+#include <map>
 
 #include "secrets_manager_proxy.h"
 
@@ -44,23 +45,31 @@ namespace {
     const Aws::String PASSWORD_KEY{ "password" };
 }
 
-SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : SECRETS_MANAGER_PROXY(dbc, ds, nullptr) {}
+std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> SECRETS_MANAGER_PROXY::secrets_cache;
+std::mutex SECRETS_MANAGER_PROXY::secrets_cache_mutex;
 
-
-SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(
-    dbc, ds) {
-
+SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
     SecretsManagerClientConfiguration config;
-    Aws::Auth::DefaultAWSCredentialsProviderChain chain;
-    auto creds = chain.GetAWSCredentials();
-    auto accesskey = creds.GetAWSAccessKeyId();
+    //Aws::Auth::DefaultAWSCredentialsProviderChain chain;
+    //auto creds = chain.GetAWSCredentials();
+    //auto accesskey = creds.GetAWSAccessKeyId();
     const Aws::String region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     config.region = region.empty() ? Aws::Region::US_EAST_1 : region;
-    this->sm_client = SecretsManagerClient(config);
+    this->sm_client = std::make_shared<SecretsManagerClient>(config);
 
     const Aws::String secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
     this->secret_key = std::make_pair(secret_ID, region);
+    this->next_proxy = nullptr;
+}
 
+
+SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy,
+                                             std::shared_ptr<SecretsManagerClient> sm_client) :
+    CONNECTION_PROXY(dbc, ds), sm_client{std::move(sm_client)} {
+
+    const Aws::String region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
+    const Aws::String secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
+    this->secret_key = std::make_pair(secret_ID, region);
     this->next_proxy = next_proxy;
 }
 
@@ -71,7 +80,6 @@ bool SECRETS_MANAGER_PROXY::real_connect(const char* host, const char* user, con
     auto username = get_from_secret_json_value(USERNAME_KEY);
     auto password = get_from_secret_json_value(PASSWORD_KEY);
     fetched = false;
-    password = "wrong";
     auto ret = next_proxy->real_connect(host, username.c_str(), password.c_str(), db, port, unix_socket, clientflag);
 
     if (!ret && next_proxy->error_code() == ER_ACCESS_DENIED_ERROR && !fetched) {
@@ -135,7 +143,7 @@ Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() co
 
     Model::GetSecretValueRequest request;
     request.SetSecretId(this->secret_key.first);
-    auto get_secret_value_outcome = this->sm_client.GetSecretValue(request);
+    auto get_secret_value_outcome = this->sm_client->GetSecretValue(request);
 
     if (get_secret_value_outcome.IsSuccess()) {
         secret_string = get_secret_value_outcome.GetResult().GetSecretString();
@@ -150,7 +158,7 @@ Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::parse_json_value(Aws::String 
     auto res_json = Aws::Utils::Json::JsonValue(json_string);
     if (!res_json.WasParseSuccessful()) {
         MYLOG_DBC_TRACE(dbc, res_json.GetErrorMessage().c_str());
-        throw std::runtime_error("Error parsing response body. " + res_json.GetErrorMessage());
+        throw std::runtime_error("Error parsing secrets manager response body. " + res_json.GetErrorMessage());
     }
     return res_json;
 }

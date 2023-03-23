@@ -34,18 +34,13 @@
 #include <aws/core/utils/json/JsonSerializer.h>
 #include <aws/secretsmanager/SecretsManagerClient.h>
 
-#include <map>
-
 #include "connection_proxy.h"
 #include "driver.h"
-
-static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> secrets_cache;
-static std::mutex secrets_cache_mutex;
 
 class SECRETS_MANAGER_PROXY : public CONNECTION_PROXY {
 public:
     SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds);
-    SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
+    SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client);
 
     bool real_connect(const char* host, const char* user,
                       const char* passwd, const char* db, unsigned int port,
@@ -55,7 +50,7 @@ public:
                               const char* db, unsigned long client_flag) override;
 
 private:
-    Aws::SecretsManager::SecretsManagerClient sm_client;
+    std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client;
     std::pair<Aws::String, Aws::String> secret_key;
     Aws::Utils::Json::JsonValue secret_json_value;
 
@@ -63,6 +58,14 @@ private:
     Aws::Utils::Json::JsonValue fetch_latest_credentials() const;
     Aws::Utils::Json::JsonValue parse_json_value(Aws::String json_string) const;
     std::string get_from_secret_json_value(std::string key) const;
+
+    static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> secrets_cache;
+    static std::mutex secrets_cache_mutex;
+
+#ifdef UNIT_TEST_BUILD
+    // Allows for testing private/protected methods
+    friend class TEST_UTILS;
+#endif
 };
 
 #endif /* __SECRETS_MANAGER_PROXY__ */

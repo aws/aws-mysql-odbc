@@ -121,4 +121,6 @@ bool TEST_UTILS::token_cache_contains_key(std::string cache_key) {
 
 void TEST_UTILS::clear_token_cache(IAM_PROXY* iam_proxy) {
     iam_proxy->clear_token_cache();
+std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& TEST_UTILS::get_secrets_cache() {
+    return std::ref(SECRETS_MANAGER_PROXY::secrets_cache);
 }
