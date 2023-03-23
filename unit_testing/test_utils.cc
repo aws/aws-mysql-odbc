@@ -38,7 +38,7 @@ void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds) {
     ds = ds_new();
 }
 
-void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end) {
+void cleanup_odbc_handles(SQLHENV env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end) {
     SQLHDBC hdbc = static_cast<SQLHDBC>(dbc);
     if (nullptr != hdbc) {
         SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
