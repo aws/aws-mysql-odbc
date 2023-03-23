@@ -39,15 +39,17 @@ protected:
                                                                     Aws::String(SESSION_TOKEN));
   Aws::Client::ClientConfiguration client_config;
   Aws::RDS::RDSClient rds_client;
-  SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 
   static void SetUpTestSuite() {
-    Aws::InitAPI(options);
+    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
   }
 
   static void TearDownTestSuite() {
-    Aws::ShutdownAPI(options);
+    if (nullptr != env) {
+      SQLFreeHandle(SQL_HANDLE_ENV, env);
+    }
   }
 
   void SetUp() override {
