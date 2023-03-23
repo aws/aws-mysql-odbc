@@ -29,8 +29,6 @@
 
 #include <aws/secretsmanager/SecretsManagerServiceClientModel.h>
 #include <aws/secretsmanager/model/GetSecretValueRequest.h>
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
-#include <map>
 
 #include "secrets_manager_proxy.h"
 
@@ -50,9 +48,6 @@ std::mutex SECRETS_MANAGER_PROXY::secrets_cache_mutex;
 
 SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
     SecretsManagerClientConfiguration config;
-    //Aws::Auth::DefaultAWSCredentialsProviderChain chain;
-    //auto creds = chain.GetAWSCredentials();
-    //auto accesskey = creds.GetAWSAccessKeyId();
     const Aws::String region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     config.region = region.empty() ? Aws::Region::US_EAST_1 : region;
     this->sm_client = std::make_shared<SecretsManagerClient>(config);
@@ -103,7 +98,6 @@ bool SECRETS_MANAGER_PROXY::real_connect_dns_srv(const char* dns_srv_name, const
     auto username = get_from_secret_json_value(USERNAME_KEY);
     auto password = get_from_secret_json_value(PASSWORD_KEY);
     fetched = false;
-    password = "wrong";
     auto ret = next_proxy->real_connect_dns_srv(dns_srv_name, username.c_str(), password.c_str(), db, client_flag);
 
     if (!ret && next_proxy->error_code() == ER_ACCESS_DENIED_ERROR && !fetched) {
@@ -123,7 +117,7 @@ bool SECRETS_MANAGER_PROXY::real_connect_dns_srv(const char* dns_srv_name, const
 bool SECRETS_MANAGER_PROXY::update_secret(bool force_re_fetch) {
     bool fetched = false;
     {
-        std::unique_lock lock(secrets_cache_mutex);
+        std::unique_lock<std::mutex> lock(secrets_cache_mutex);
 
         if (const auto search = secrets_cache.find(this->secret_key); search != secrets_cache.end() && !force_re_fetch) {
             this->secret_json_value = search->second;
