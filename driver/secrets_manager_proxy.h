@@ -33,6 +33,7 @@
 #include <aws/core/Aws.h>
 #include <aws/core/utils/json/JsonSerializer.h>
 #include <aws/secretsmanager/SecretsManagerClient.h>
+#include <map>
 
 #include "connection_proxy.h"
 #include "driver.h"
