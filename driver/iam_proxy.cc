@@ -27,7 +27,7 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include <aws/core/auth/AWSCredentialsProvider.h>
+#include <aws/core/auth/AWSCredentialsProviderChain.h>
 
 #include "driver.h"
 #include "iam_proxy.h"
@@ -37,8 +37,9 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
     this->next_proxy = next_proxy;
 
-	// TODO: Figure out credentials lookup
-	Aws::Auth::AWSCredentials credentials;
+	Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
+	Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
+
 	Aws::Client::ClientConfiguration client_config;
 	if (ds->auth_region) {
 		client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
