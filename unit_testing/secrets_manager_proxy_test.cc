@@ -71,19 +71,19 @@ protected:
     std::shared_ptr<MOCK_SECRETS_MANAGER_CLIENT> mock_sm_client;
 
     static void SetUpTestSuite() {
-#ifdef WIN32
-        // For UNIX, Aws::InitAPI will be called in myodbc_init()
-        Aws::InitAPI(sdk_options);
-#endif
+// #ifdef WIN32
+//         // For UNIX, Aws::InitAPI will be called in myodbc_init()
+//         Aws::InitAPI(sdk_options);
+// #endif
         SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     }
 
     static void TearDownTestSuite() {
         SQLFreeHandle(SQL_HANDLE_ENV, env);
-#ifdef WIN32
-        // For UNIX, Aws::ShutdownAPI will be called in myodbc_end()
-        Aws::ShutdownAPI(sdk_options);
-#endif
+// #ifdef WIN32
+//         // For UNIX, Aws::ShutdownAPI will be called in myodbc_end()
+//         Aws::ShutdownAPI(sdk_options);
+// #endif
     }
 
     void SetUp() override {
