@@ -94,7 +94,7 @@ jobs:
         if: success()
         working-directory: ${{ github.workspace }}/build/test
         shell: bash
-        run: ctest -C $BUILD_TYPE --output-on-failure
+        run: ctest -C $BUILD_TYPE --verbose
         env:
           TEST_DSN: test
           TEST_UID: root
