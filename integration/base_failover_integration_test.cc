@@ -76,7 +76,6 @@ static std::string DOWN_STREAM_STR = "DOWNSTREAM";
 static std::string UP_STREAM_STR = "UPSTREAM";
 
 static Aws::SDKOptions options;
-static SQLHENV env = nullptr;
 
 class BaseFailoverIntegrationTest : public testing::Test {
 protected:

@@ -75,6 +75,19 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTIO
                                              std::shared_ptr<SecretsManagerClient> sm_client) :
     CONNECTION_PROXY(dbc, ds), sm_client{std::move(sm_client)} {
 
+    if (!awsSDKReady_) {
+        // Use awsSDKReady_ and mutex_ to guarantee InitAPI is executed before all
+        // Connection objects start to run.
+        std::lock_guard< std::mutex > lock(mutex_);
+        if (!awsSDKReady_) {
+            Aws::InitAPI(options_);
+            awsSDKReady_ = true;
+        }
+    }
+
+    // record the Connection object in an atomic counter
+    ++refCount_;
+
     const Aws::String region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     const Aws::String secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
     this->secret_key = std::make_pair(secret_ID, region);
