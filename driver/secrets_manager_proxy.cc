@@ -47,7 +47,7 @@ std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> SECRE
 std::mutex SECRETS_MANAGER_PROXY::secrets_cache_mutex;
 bool SECRETS_MANAGER_PROXY::awsSDKReady_ = false;
 std::mutex SECRETS_MANAGER_PROXY::aws_mutex_;
-std::atomic<int> SECRETS_MANAGER_PROXY::refCount_ = 0;
+std::atomic<int> SECRETS_MANAGER_PROXY::refCount_{0};
 Aws::SDKOptions SECRETS_MANAGER_PROXY::options_;
 
 SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
