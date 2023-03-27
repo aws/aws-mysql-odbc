@@ -45,12 +45,16 @@ namespace {
 
 std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> SECRETS_MANAGER_PROXY::secrets_cache;
 std::mutex SECRETS_MANAGER_PROXY::secrets_cache_mutex;
+bool SECRETS_MANAGER_PROXY::awsSDKReady_ = false;
+std::mutex SECRETS_MANAGER_PROXY::aws_mutex_;
+std::atomic<int> SECRETS_MANAGER_PROXY::refCount_ = 0;
+Aws::SDKOptions SECRETS_MANAGER_PROXY::options_;
 
 SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
     if (!awsSDKReady_) {
         // Use awsSDKReady_ and mutex_ to guarantee InitAPI is executed before all
         // Connection objects start to run.
-        std::lock_guard< std::mutex > lock(mutex_);
+        std::lock_guard< std::mutex > lock(aws_mutex_);
         if (!awsSDKReady_) {
             Aws::InitAPI(options_);
             awsSDKReady_ = true;
@@ -78,7 +82,7 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTIO
     if (!awsSDKReady_) {
         // Use awsSDKReady_ and mutex_ to guarantee InitAPI is executed before all
         // Connection objects start to run.
-        std::lock_guard< std::mutex > lock(mutex_);
+        std::lock_guard< std::mutex > lock(aws_mutex_);
         if (!awsSDKReady_) {
             Aws::InitAPI(options_);
             awsSDKReady_ = true;

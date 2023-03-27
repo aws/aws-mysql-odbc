@@ -55,10 +55,6 @@ private:
     std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client;
     std::pair<Aws::String, Aws::String> secret_key;
     Aws::Utils::Json::JsonValue secret_json_value;
-    bool awsSDKReady_ = false;
-    std::mutex mutex_;
-    std::atomic<int> refCount_;
-    Aws::SDKOptions options_;
 
     bool update_secret(bool force_re_fetch);
     Aws::Utils::Json::JsonValue fetch_latest_credentials() const;
@@ -67,6 +63,11 @@ private:
 
     static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> secrets_cache;
     static std::mutex secrets_cache_mutex;
+    static bool awsSDKReady_;
+    static std::mutex aws_mutex_;
+    static std::atomic<int> refCount_;
+    static Aws::SDKOptions options_;
+
 
 #ifdef UNIT_TEST_BUILD
     // Allows for testing private/protected methods
