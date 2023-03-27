@@ -39,7 +39,6 @@ protected:
                                                                     Aws::String(SESSION_TOKEN));
   Aws::Client::ClientConfiguration client_config;
   Aws::RDS::RDSClient rds_client;
-
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 

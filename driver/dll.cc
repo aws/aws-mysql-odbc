@@ -35,13 +35,11 @@
 
 #include "driver.h"
 #include <locale.h>
-#include <aws/core/Aws.h>
 
 char *default_locale, *decimal_point, *thousands_sep;
 uint decimal_point_length,thousands_sep_length;
 static int myodbc_inited=0;
 static int mysys_inited=0;
-
 
 std::string current_dll_location;
 std::string default_plugin_location;
@@ -208,7 +206,6 @@ int APIENTRY LibMain(HANDLE inst, DWORD ul_reason_being_called,
       // memory leaks even if initialized multiple times (myodbc_inited > 1).
       myodbc_inited = 1;
       myodbc_end();
-
     }
     break;
 
