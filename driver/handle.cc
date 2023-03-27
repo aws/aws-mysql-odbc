@@ -58,8 +58,6 @@ thread_local long thread_count = 0;
 
 std::mutex g_lock;
 
-static Aws::SDKOptions aws_sdk_options;
-
 void ENV::add_dbc(DBC* dbc)
 {
   LOCK_ENV(this);
@@ -200,7 +198,6 @@ SQLRETURN SQL_API my_SQLAllocEnv(SQLHENV *phenv)
     env = new ENV(SQL_OV_ODBC3);
 #endif
   *phenv = (SQLHENV)env;
-  Aws::InitAPI(aws_sdk_options);
   return SQL_SUCCESS;
 }
 
@@ -226,7 +223,6 @@ SQLRETURN SQL_API SQLAllocEnv(SQLHENV *phenv)
 SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
 {
     MONITOR_THREAD_CONTAINER::release_instance();
-    Aws::ShutdownAPI(aws_sdk_options);
     ENV *env= (ENV *) henv;
     delete env;
 #ifdef _UNIX_
