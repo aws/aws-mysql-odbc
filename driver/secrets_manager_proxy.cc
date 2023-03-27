@@ -45,20 +45,8 @@ namespace {
 
 std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> SECRETS_MANAGER_PROXY::secrets_cache;
 std::mutex SECRETS_MANAGER_PROXY::secrets_cache_mutex;
-int SECRETS_MANAGER_PROXY::sm_client_counts = 0;
-std::mutex SECRETS_MANAGER_PROXY::sm_client_mutex;
 
 SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
-
-    std::unique_lock<std::mutex> lock(sm_client_mutex);
-    {
-        if (sm_client_counts == 0) {
-            Aws::SDKOptions options;
-            Aws::InitAPI(options);
-        }
-        sm_client_counts++;
-    }
-
     SecretsManagerClientConfiguration config;
     const Aws::String region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     config.region = region.empty() ? Aws::Region::US_EAST_1 : region;
@@ -74,31 +62,10 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTIO
                                              std::shared_ptr<SecretsManagerClient> sm_client) :
     CONNECTION_PROXY(dbc, ds), sm_client{std::move(sm_client)} {
 
-    std::unique_lock<std::mutex> lock(sm_client_mutex);
-    {
-        if (sm_client_counts == 0) {
-            Aws::SDKOptions options;
-            Aws::InitAPI(options);
-        }
-        sm_client_counts++;
-    }
-
     const Aws::String region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     const Aws::String secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
     this->secret_key = std::make_pair(secret_ID, region);
     this->next_proxy = next_proxy;
-}
-
-SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
-    std::unique_lock<std::mutex> lock(sm_client_mutex);
-    {
-        sm_client_counts--;
-        if (sm_client_counts == 0)
-        {
-            Aws::SDKOptions options;
-            Aws::ShutdownAPI(options);
-        }
-    }
 }
 
 bool SECRETS_MANAGER_PROXY::real_connect(const char* host, const char* user, const char* passwd, const char* db,
