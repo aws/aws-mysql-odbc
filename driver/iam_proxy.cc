@@ -38,14 +38,14 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
     this->next_proxy = next_proxy;
 
 	Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
-	Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
+	this->credentials = credentials_provider.GetAWSCredentials();
 
 	Aws::Client::ClientConfiguration client_config;
 	if (ds->auth_region) {
 		client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
 	}
 
-	rds_client = Aws::RDS::RDSClient(credentials, client_config);
+	rds_client = Aws::RDS::RDSClient(this->credentials, client_config);
 }
 
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
@@ -71,7 +71,18 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 
 	std::string auth_token = this->get_auth_token(host, region, port, user, ds->auth_expiration);
 
-	return next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
+	bool connect_result = next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
+	if (!connect_result) {
+		if (this->credentials.IsEmpty()) {
+			this->set_custom_error_message("Could not find AWS Credentials for IAM Authentication. "
+				"Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN environment variables.");
+		}
+		else if (this->credentials.IsExpired()) {
+			this->set_custom_error_message("AWS Credentials for IAM Authentication are expired.");
+		}
+	}
+
+	return connect_result;
 }
 
 std::string IAM_PROXY::get_auth_token(
