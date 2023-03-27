@@ -41,7 +41,9 @@
 class SECRETS_MANAGER_PROXY : public CONNECTION_PROXY {
 public:
     SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds);
+#ifdef UNIT_TEST_BUILD
     SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client);
+#endif
     ~SECRETS_MANAGER_PROXY() override;
 
     bool real_connect(const char* host, const char* user,

@@ -71,11 +71,13 @@ protected:
     std::shared_ptr<MOCK_SECRETS_MANAGER_CLIENT> mock_sm_client;
 
     static void SetUpTestSuite() {
+        Aws::InitAPI(sdk_options);
         SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     }
 
     static void TearDownTestSuite() {
         SQLFreeHandle(SQL_HANDLE_ENV, env);
+        Aws::ShutdownAPI(sdk_options);
     }
 
     void SetUp() override {
