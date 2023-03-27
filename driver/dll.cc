@@ -35,7 +35,6 @@
 
 #include "driver.h"
 #include <locale.h>
-#include <aws/core/Aws.h>
 
 char *default_locale, *decimal_point, *thousands_sep;
 uint decimal_point_length,thousands_sep_length;
