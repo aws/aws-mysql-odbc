@@ -42,6 +42,7 @@ class SECRETS_MANAGER_PROXY : public CONNECTION_PROXY {
 public:
     SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds);
     SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client);
+    ~SECRETS_MANAGER_PROXY() override;
 
     bool real_connect(const char* host, const char* user,
                       const char* passwd, const char* db, unsigned int port,
@@ -54,6 +55,10 @@ private:
     std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client;
     std::pair<Aws::String, Aws::String> secret_key;
     Aws::Utils::Json::JsonValue secret_json_value;
+    bool awsSDKReady_ = false;
+    std::mutex mutex_;
+    std::atomic<int> refCount_;
+    Aws::SDKOptions options_;
 
     bool update_secret(bool force_re_fetch);
     Aws::Utils::Json::JsonValue fetch_latest_credentials() const;

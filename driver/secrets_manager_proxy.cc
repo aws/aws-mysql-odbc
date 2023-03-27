@@ -47,6 +47,19 @@ std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> SECRE
 std::mutex SECRETS_MANAGER_PROXY::secrets_cache_mutex;
 
 SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
+    if (!awsSDKReady_) {
+        // Use awsSDKReady_ and mutex_ to guarantee InitAPI is executed before all
+        // Connection objects start to run.
+        std::lock_guard< std::mutex > lock(mutex_);
+        if (!awsSDKReady_) {
+            Aws::InitAPI(options_);
+            awsSDKReady_ = true;
+        }
+    }
+
+    // record the Connection object in an atomic counter
+    ++refCount_;
+
     SecretsManagerClientConfiguration config;
     const Aws::String region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     config.region = region.empty() ? Aws::Region::US_EAST_1 : region;
@@ -66,6 +79,17 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTIO
     const Aws::String secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
     this->secret_key = std::make_pair(secret_ID, region);
     this->next_proxy = next_proxy;
+}
+
+SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
+    // Before the application terminates, the SDK must be shut down.
+    // It should be shutdown only once by the last Connection
+    // destructor during the application running. The atomic counter
+    // guarantees this.
+    if (0 == --refCount_) {
+        Aws::ShutdownAPI(options_);
+        awsSDKReady_ = false;
+    }
 }
 
 bool SECRETS_MANAGER_PROXY::real_connect(const char* host, const char* user, const char* passwd, const char* db,
