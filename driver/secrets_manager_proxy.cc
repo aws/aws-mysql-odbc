@@ -66,7 +66,8 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECT
     config.region = region ? region : Aws::Region::US_EAST_1;
     this->sm_client = std::make_shared<SecretsManagerClient>(config);
 
-    const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
+    //const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
+    const auto secret_ID = "test";
     if (!secret_ID) {
         const auto error = "Missing required config parameter: Secret ID";
         MYLOG_DBC_TRACE(dbc, error);
