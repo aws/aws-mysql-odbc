@@ -152,6 +152,7 @@ protected:
                                                                     Aws::String(SESSION_TOKEN));
   Aws::Client::ClientConfiguration client_config;
   Aws::RDS::RDSClient rds_client;
+  SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 
   SQLCHAR* LONG_QUERY = AS_SQLCHAR("SELECT SLEEP(600)"); // 600s -> 10m
@@ -159,14 +160,11 @@ protected:
   static constexpr char* OUTPUT_FILE_PATH = "./build/reports/";
 
   static void SetUpTestSuite() {
-    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
-    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
+    Aws::InitAPI(options);
   }
 
   static void TearDownTestSuite() {
-    if (nullptr != env) {
-      SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
+    Aws::ShutdownAPI(options);
 
     // Save results to spreadsheet
     write_metrics_to_xlsx("failover_performance.xlsx", socket_failover_data);
@@ -179,6 +177,8 @@ protected:
   }
 
   void SetUp() override {
+    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
     client_config.region = "us-east-2";
     rds_client = Aws::RDS::RDSClient(credentials, client_config);

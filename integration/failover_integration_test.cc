@@ -40,20 +40,20 @@ protected:
   Aws::Client::ClientConfiguration client_config;
   Aws::RDS::RDSClient rds_client;
 
+  SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 
   static void SetUpTestSuite() {
-    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
-    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
+    Aws::InitAPI(options);
   }
 
   static void TearDownTestSuite() {
-    if (nullptr != env) {
-      SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
+    Aws::ShutdownAPI(options);
   }
 
   void SetUp() override {
+    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
     client_config.region = "us-east-2";
     rds_client = Aws::RDS::RDSClient(credentials, client_config);
@@ -75,6 +75,9 @@ protected:
   void TearDown() override {
     if (nullptr != dbc) {
       SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+    }
+    if (nullptr != env) {
+      SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
   }
 };
