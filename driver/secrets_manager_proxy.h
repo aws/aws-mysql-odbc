@@ -65,11 +65,10 @@ private:
 
     static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> secrets_cache;
     static std::mutex secrets_cache_mutex;
-    static bool awsSDKReady_;
-    static std::mutex aws_mutex_;
-    static std::atomic<int> refCount_;
-    static Aws::SDKOptions options_;
-
+    static bool aws_sdk_ready;
+    static std::mutex aws_mutex;
+    static std::atomic<int> sm_client_count;
+    static Aws::SDKOptions options;
 
 #ifdef UNIT_TEST_BUILD
     // Allows for testing private/protected methods
