@@ -76,6 +76,9 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 		if (host == "") {
 			this->set_custom_error_message("Host for IAM Authentication not provided.");
 		}
+		else if (region == "") {
+			this->set_custom_error_message("Region for IAM Authentication not provided.");
+		}
 		else if (this->credentials.IsEmpty()) {
 			this->set_custom_error_message("Could not find AWS Credentials for IAM Authentication. "
 				"Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN environment variables.");
