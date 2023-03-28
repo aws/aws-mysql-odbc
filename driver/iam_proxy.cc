@@ -73,12 +73,15 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 
 	bool connect_result = next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
 	if (!connect_result) {
-		if (this->credentials.IsEmpty()) {
+		if (host == "") {
+			this->set_custom_error_message("Host for IAM Authentication not provided.");
+		}
+		else if (this->credentials.IsEmpty()) {
 			this->set_custom_error_message("Could not find AWS Credentials for IAM Authentication. "
 				"Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN environment variables.");
 		}
 		else if (this->credentials.IsExpired()) {
-			this->set_custom_error_message("AWS Credentials for IAM Authentication are expired.");
+			this->set_custom_error_message("AWS Credentials for IAM Authentication are expired. Please refresh credentials.");
 		}
 	}
 
