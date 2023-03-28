@@ -54,7 +54,7 @@ public:
     static size_t get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container);
     static std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> get_contexts(std::shared_ptr<MONITOR> monitor);
     static std::string build_cache_key(const char* host, const char* region, unsigned int port, const char* user);
-    static bool token_cache_contains_key(IAM_PROXY* iam_proxy, std::string cache_key);
+    static bool token_cache_contains_key(std::string cache_key);
     static void clear_token_cache(IAM_PROXY* iam_proxy);
 };
 

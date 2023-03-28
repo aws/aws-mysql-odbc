@@ -32,6 +32,8 @@
 #include "driver.h"
 #include "iam_proxy.h"
 
+std::unordered_map<std::string, TOKEN_INFO> IAM_PROXY::token_cache;
+
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
@@ -54,17 +56,14 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 	if (ds->auth_host) {
 		host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
 	}
-	else {
-		// TODO: consider whether we should just use the originally passed in value instead.
-		host = "";
-	}
 	
 	const char* region;
 	if (ds->auth_region8) {
 		region = (const char*)ds->auth_region8;
 	}
 	else {
-		region = "";
+		// Go with default region if region is not provided.
+		region = "us-east-1";
 	}
 
 	port = ds->auth_port;
@@ -73,18 +72,13 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 
 	bool connect_result = next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
 	if (!connect_result) {
-		if (host == "") {
-			this->set_custom_error_message("Host for IAM Authentication not provided.");
-		}
-		else if (region == "") {
-			this->set_custom_error_message("Region for IAM Authentication not provided.");
-		}
-		else if (this->credentials.IsEmpty()) {
-			this->set_custom_error_message("Could not find AWS Credentials for IAM Authentication. "
-				"Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN environment variables.");
+		if (this->credentials.IsEmpty()) {
+			this->set_custom_error_message(
+				"Could not find AWS Credentials for IAM Authentication. Please set up AWS credentials.");
 		}
 		else if (this->credentials.IsExpired()) {
-			this->set_custom_error_message("AWS Credentials for IAM Authentication are expired. Please refresh credentials.");
+			this->set_custom_error_message(
+				"AWS Credentials for IAM Authentication are expired. Please refresh AWS credentials.");
 		}
 	}
 
@@ -95,25 +89,30 @@ std::string IAM_PROXY::get_auth_token(
 	const char* host, const char* region, unsigned int port,
 	const char* user, unsigned int time_until_expiration) {
 
+	std::string auth_token;
 	std::string cache_key = build_cache_key(host, region, port, user);
 
-	// Search for token in cache
-	auto find_token = token_cache.find(cache_key);
-	if (find_token != token_cache.end())
 	{
-		TOKEN_INFO info = find_token->second;
-		if (info.is_expired()) {
-			token_cache.erase(cache_key);
+		std::unique_lock<std::mutex> lock(topology_cache_mutex);
+
+		// Search for token in cache
+		auto find_token = token_cache.find(cache_key);
+		if (find_token != token_cache.end())
+		{
+			TOKEN_INFO info = find_token->second;
+			if (info.is_expired()) {
+				token_cache.erase(cache_key);
+			}
+			else {
+				return info.token;
+			}
 		}
-		else {
-			return info.token;
-		}
+
+		// Generate new token
+		auth_token = generate_auth_token(host, region, port, user);
+
+		token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
 	}
-
-	// Generate new token
-	std::string auth_token = generate_auth_token(host, region, port, user);
-
-	token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
 
 	return auth_token;
 }
@@ -135,5 +134,6 @@ std::string IAM_PROXY::generate_auth_token(
 }
 
 void IAM_PROXY::clear_token_cache() {
+	std::unique_lock<std::mutex> lock(topology_cache_mutex);
 	token_cache.clear();
 }

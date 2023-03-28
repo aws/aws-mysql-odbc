@@ -79,7 +79,8 @@ public:
         const char* user, unsigned int time_until_expiration);
 
 protected:
-    std::unordered_map<std::string, TOKEN_INFO> token_cache;
+    static std::unordered_map<std::string, TOKEN_INFO> token_cache;
+    static std::mutex token_cache_mutex;
     Aws::Auth::AWSCredentials credentials;
     Aws::RDS::RDSClient rds_client;
 
@@ -89,7 +90,7 @@ protected:
     virtual std::string generate_auth_token(
         const char* host, const char* region, unsigned int port, const char* user);
 
-    void clear_token_cache();
+    static void clear_token_cache();
 
 #ifdef UNIT_TEST_BUILD
     // Allows for testing private/protected methods

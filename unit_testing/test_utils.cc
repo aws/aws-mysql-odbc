@@ -115,8 +115,8 @@ std::string TEST_UTILS::build_cache_key(const char* host, const char* region, un
     return IAM_PROXY::build_cache_key(host, region, port, user);
 }
 
-bool TEST_UTILS::token_cache_contains_key(IAM_PROXY* iam_proxy, std::string cache_key) {
-    return iam_proxy->token_cache.find(cache_key) != iam_proxy->token_cache.end();
+bool TEST_UTILS::token_cache_contains_key(std::string cache_key) {
+    return IAM_PROXY::token_cache.find(cache_key) != IAM_PROXY::token_cache.end();
 }
 
 void TEST_UTILS::clear_token_cache(IAM_PROXY* iam_proxy) {

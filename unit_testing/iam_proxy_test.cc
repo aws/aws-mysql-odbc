@@ -77,14 +77,14 @@ TEST_F(IamProxyTest, TokenExpiration) {
 
 TEST_F(IamProxyTest, TokenGetsCachedAndRetrieved) {
     std::string cache_key = TEST_UTILS::build_cache_key(host, region, port, user);
-    EXPECT_FALSE(TEST_UTILS::token_cache_contains_key(mock_proxy, cache_key));
+    EXPECT_FALSE(TEST_UTILS::token_cache_contains_key(cache_key));
 
     // We should only generate the token once.
     EXPECT_CALL(*mock_proxy, generate_auth_token(host, region, port, user)).WillOnce(Return(token));
 
     std::string token1 = mock_proxy->get_auth_token(host, region, port, user, 100);
 
-    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(mock_proxy, cache_key));
+    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(cache_key));
 
     // This 2nd call to get_auth_token() will retrieve the cached token.
     std::string token2 = mock_proxy->get_auth_token(host, region, port, user, 100);
@@ -109,8 +109,8 @@ TEST_F(IamProxyTest, MultipleCachedTokens) {
 
     EXPECT_NE(cache_key1, cache_key2);
 
-    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(mock_proxy, cache_key1));
-    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(mock_proxy, cache_key2));
+    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(cache_key1));
+    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(cache_key2));
 }
 
 TEST_F(IamProxyTest, RegenerateTokenAfterExpiration) {
@@ -123,11 +123,11 @@ TEST_F(IamProxyTest, RegenerateTokenAfterExpiration) {
     mock_proxy->get_auth_token(host, region, port, user, time_to_expire);
 
     std::string cache_key = TEST_UTILS::build_cache_key(host, region, port, user);
-    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(mock_proxy, cache_key));
+    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(cache_key));
 
     // Wait for first token to expire.
     std::this_thread::sleep_for(std::chrono::seconds(time_to_expire));
     mock_proxy->get_auth_token(host, region, port, user, time_to_expire);
 
-    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(mock_proxy, cache_key));
+    EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(cache_key));
 }
