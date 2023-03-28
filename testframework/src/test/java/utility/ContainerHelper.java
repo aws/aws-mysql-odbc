@@ -58,7 +58,7 @@ import org.testcontainers.utility.MountableFile;
 import org.testcontainers.utility.TestEnvironment;
 
 public class ContainerHelper {
-  private static final String TEST_CONTAINER_IMAGE_NAME = "kitware/cmake:ci-fedora35-x86_64-2022-02-01";
+  private static final String TEST_CONTAINER_IMAGE_NAME = "kitware/cmake:ci-debian10-aarch64-2023-03-08";
   private static final DockerImageName TOXIPROXY_IMAGE =
       DockerImageName.parse("shopify/toxiproxy:2.1.0");
 
