@@ -93,7 +93,7 @@ std::string IAM_PROXY::get_auth_token(
 	std::string cache_key = build_cache_key(host, region, port, user);
 
 	{
-		std::unique_lock<std::mutex> lock(topology_cache_mutex);
+		std::unique_lock<std::mutex> lock(token_cache_mutex);
 
 		// Search for token in cache
 		auto find_token = token_cache.find(cache_key);
@@ -134,6 +134,6 @@ std::string IAM_PROXY::generate_auth_token(
 }
 
 void IAM_PROXY::clear_token_cache() {
-	std::unique_lock<std::mutex> lock(topology_cache_mutex);
+	std::unique_lock<std::mutex> lock(token_cache_mutex);
 	token_cache.clear();
 }
