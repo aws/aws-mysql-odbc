@@ -33,6 +33,7 @@
 #include "iam_proxy.h"
 
 std::unordered_map<std::string, TOKEN_INFO> IAM_PROXY::token_cache;
+std::mutex IAM_PROXY::token_cache_mutex;
 
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 
