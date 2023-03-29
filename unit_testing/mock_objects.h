@@ -34,6 +34,7 @@
 
 #include "driver/connection_proxy.h"
 #include "driver/failover.h"
+#include "driver/iam_proxy.h"
 #include "driver/monitor_thread_container.h"
 #include "driver/monitor_service.h"
 
@@ -82,6 +83,13 @@ class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
     MOCK_METHOD(void, init, ());
     MOCK_METHOD(int, ping, ());
     MOCK_METHOD(void, delete_ds, ());
+};
+
+class MOCK_IAM_PROXY : public IAM_PROXY {
+public:
+    MOCK_IAM_PROXY() : IAM_PROXY() {};
+    
+    MOCK_METHOD(std::string , generate_auth_token, (const char*, const char*, unsigned int, const char*));
 };
 
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
