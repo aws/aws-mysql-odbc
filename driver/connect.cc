@@ -36,8 +36,6 @@
 #include "driver.h"
 #include "installer.h"
 
-#include <aws/core/Aws.h>
-
 #include <map>
 #include <vector>
 #include <sstream>
@@ -824,10 +822,6 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
     //Setting server and port to the dsrc->server8 and dsrc->port
     ds_set_strnattr(&dsrc->server8, (SQLCHAR*)host, strlen(host));
     dsrc->port = port;
-
-    //Aws::SDKOptions options;
-    //Aws::InitAPI(options); TODO: causing SSL connection error: SSL_CTX_new failed
-    //Aws::ShutdownAPI(options);
 
     const bool connect_result = dsrc->enable_dns_srv ?
                             connection_proxy->real_connect_dns_srv(host,
