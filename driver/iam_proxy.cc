@@ -104,6 +104,16 @@ std::string IAM_PROXY::get_auth_token(
     const char* host, const char* region, unsigned int port,
     const char* user, unsigned int time_until_expiration) {
 
+    if (!host) {
+        host = "";
+    }
+    if (!region) {
+        region = "";
+    }
+    if (!user) {
+        user = "";
+    }
+
     std::string auth_token;
     std::string cache_key = build_cache_key(host, region, port, user);
 
