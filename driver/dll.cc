@@ -34,7 +34,6 @@
 */
 
 #include "driver.h"
-
 #include <locale.h>
 
 char *default_locale, *decimal_point, *thousands_sep;

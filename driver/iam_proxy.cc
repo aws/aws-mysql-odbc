@@ -44,18 +44,18 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
     ++SDK_HELPER;
-	
+
     this->next_proxy = next_proxy;
 
-	Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
-	this->credentials = credentials_provider.GetAWSCredentials();
+    Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
+    this->credentials = credentials_provider.GetAWSCredentials();
 
-	Aws::Client::ClientConfiguration client_config;
-	if (ds->auth_region) {
-		client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
-	}
+    Aws::Client::ClientConfiguration client_config;
+    if (ds->auth_region) {
+        client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
+    }
 
-	rds_client = Aws::RDS::RDSClient(this->credentials, client_config);
+    rds_client = Aws::RDS::RDSClient(this->credentials, client_config);
 }
 
 IAM_PROXY::~IAM_PROXY() {
@@ -63,89 +63,89 @@ IAM_PROXY::~IAM_PROXY() {
 }
 
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
-	const char* database, unsigned int port, const char* socket, unsigned long flags) {
+    const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
-	if (ds->auth_host) {
-		host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
-	}
-	
-	const char* region;
-	if (ds->auth_region8) {
-		region = (const char*)ds->auth_region8;
-	}
-	else {
-		// Go with default region if region is not provided.
-		region = "us-east-1";
-	}
+    if (ds->auth_host) {
+        host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
+    }
 
-	port = ds->auth_port;
+    const char* region;
+    if (ds->auth_region8) {
+        region = (const char*)ds->auth_region8;
+    }
+    else {
+        // Go with default region if region is not provided.
+        region = "us-east-1";
+    }
 
-	std::string auth_token = this->get_auth_token(host, region, port, user, ds->auth_expiration);
+    port = ds->auth_port;
 
-	bool connect_result = next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
-	if (!connect_result) {
-		if (this->credentials.IsEmpty()) {
-			this->set_custom_error_message(
-				"Could not find AWS Credentials for IAM Authentication. Please set up AWS credentials.");
-		}
-		else if (this->credentials.IsExpired()) {
-			this->set_custom_error_message(
-				"AWS Credentials for IAM Authentication are expired. Please refresh AWS credentials.");
-		}
-	}
+    std::string auth_token = this->get_auth_token(host, region, port, user, ds->auth_expiration);
 
-	return connect_result;
+    bool connect_result = next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
+    if (!connect_result) {
+        if (this->credentials.IsEmpty()) {
+            this->set_custom_error_message(
+                "Could not find AWS Credentials for IAM Authentication. Please set up AWS credentials.");
+        }
+        else if (this->credentials.IsExpired()) {
+            this->set_custom_error_message(
+                "AWS Credentials for IAM Authentication are expired. Please refresh AWS credentials.");
+        }
+    }
+
+    return connect_result;
 }
 
 std::string IAM_PROXY::get_auth_token(
-	const char* host, const char* region, unsigned int port,
-	const char* user, unsigned int time_until_expiration) {
+    const char* host, const char* region, unsigned int port,
+    const char* user, unsigned int time_until_expiration) {
 
-	std::string auth_token;
-	std::string cache_key = build_cache_key(host, region, port, user);
+    std::string auth_token;
+    std::string cache_key = build_cache_key(host, region, port, user);
 
-	{
-		std::unique_lock<std::mutex> lock(token_cache_mutex);
+    {
+        std::unique_lock<std::mutex> lock(token_cache_mutex);
 
-		// Search for token in cache
-		auto find_token = token_cache.find(cache_key);
-		if (find_token != token_cache.end())
-		{
-			TOKEN_INFO info = find_token->second;
-			if (info.is_expired()) {
-				token_cache.erase(cache_key);
-			}
-			else {
-				return info.token;
-			}
-		}
+        // Search for token in cache
+        auto find_token = token_cache.find(cache_key);
+        if (find_token != token_cache.end())
+        {
+            TOKEN_INFO info = find_token->second;
+            if (info.is_expired()) {
+                token_cache.erase(cache_key);
+            }
+            else {
+                return info.token;
+            }
+        }
 
-		// Generate new token
-		auth_token = generate_auth_token(host, region, port, user);
+        // Generate new token
+        auth_token = generate_auth_token(host, region, port, user);
 
-		token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
-	}
+        token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
+    }
 
-	return auth_token;
+    return auth_token;
 }
 
 std::string IAM_PROXY::build_cache_key(
-	const char* host, const char* region, unsigned int port, const char* user) {
+    const char* host, const char* region, unsigned int port, const char* user) {
 
-	// Format should be "<region>:<host>:<port>:<user>"
-	return std::string(region)
-		.append(":").append(host)
-		.append(":").append(std::to_string(port))
-		.append(":").append(user);
+    // Format should be "<region>:<host>:<port>:<user>"
+    return std::string(region)
+        .append(":").append(host)
+        .append(":").append(std::to_string(port))
+        .append(":").append(user);
 }
 
 std::string IAM_PROXY::generate_auth_token(
-	const char* host, const char* region, unsigned int port, const char* user) {
+    const char* host, const char* region, unsigned int port, const char* user) {
 
-	return rds_client.GenerateConnectAuthToken(host, region, port, user);
+    return rds_client.GenerateConnectAuthToken(host, region, port, user);
 }
 
 void IAM_PROXY::clear_token_cache() {
-	std::unique_lock<std::mutex> lock(token_cache_mutex);
-	token_cache.clear();
+    std::unique_lock<std::mutex> lock(token_cache_mutex);
+    token_cache.clear();
 }
