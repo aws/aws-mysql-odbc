@@ -68,6 +68,10 @@ jobs:
                 -DENABLE_PERFORMANCE_TESTS=FALSE
                 -DENABLE_UNIT_TESTS=TRUE
                 -DWITH_UNIXODBC=1
+                
+      - name: copy AWS SDK libraries to driver library
+        run: |
+          cp ./aws_sdk/install/lib/*.so ./build/lib/
 
       # Build driver
       - name: Build driver
