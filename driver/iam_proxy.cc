@@ -50,7 +50,7 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
     Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
     Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
 
-    Aws::Client::ClientConfiguration client_config;
+    Aws::RDS::RDSClientConfiguration client_config;
     if (ds->auth_region) {
         client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     }
