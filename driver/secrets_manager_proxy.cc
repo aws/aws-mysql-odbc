@@ -83,14 +83,14 @@ SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
     --SDK_HELPER;
 }
 
-bool SECRETS_MANAGER_PROXY::real_connect(const char* host, const char* user, const char* passwd, const char* db,
-                                         unsigned int port, const char* unix_socket, unsigned long clientflag) {
+bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const char* passwd, const char* database,
+                                         unsigned int port, const char* unix_socket, unsigned long flags) {
 
-    auto fetched = update_secret(false);
-    auto username = get_from_secret_json_value(USERNAME_KEY);
-    auto password = get_from_secret_json_value(PASSWORD_KEY);
+    bool fetched = update_secret(false);
+    std::string username = get_from_secret_json_value(USERNAME_KEY);
+    std::string password = get_from_secret_json_value(PASSWORD_KEY);
     fetched = false;
-    auto ret = next_proxy->real_connect(host, username.c_str(), password.c_str(), db, port, unix_socket, clientflag);
+    bool ret = next_proxy->connect(host, username.c_str(), password.c_str(), database, port, unix_socket, flags);
 
     if (!ret && next_proxy->error_code() == ER_ACCESS_DENIED_ERROR && !fetched) {
         // Login unsuccessful with cached credentials
@@ -99,30 +99,7 @@ bool SECRETS_MANAGER_PROXY::real_connect(const char* host, const char* user, con
         if (fetched) {
             username = get_from_secret_json_value(USERNAME_KEY);
             password = get_from_secret_json_value(PASSWORD_KEY);
-            ret = next_proxy->real_connect(host, username.c_str(), password.c_str(), db, port, unix_socket, clientflag);
-        }
-    }
-
-    return ret;
-}
-
-bool SECRETS_MANAGER_PROXY::real_connect_dns_srv(const char* dns_srv_name, const char* user, const char* passwd,
-                                                 const char* db, unsigned long client_flag) {
-
-    auto fetched = update_secret(false);
-    auto username = get_from_secret_json_value(USERNAME_KEY);
-    auto password = get_from_secret_json_value(PASSWORD_KEY);
-    fetched = false;
-    auto ret = next_proxy->real_connect_dns_srv(dns_srv_name, username.c_str(), password.c_str(), db, client_flag);
-
-    if (!ret && next_proxy->error_code() == ER_ACCESS_DENIED_ERROR && !fetched) {
-        // Login unsuccessful with cached credentials
-        // Try to re-fetch credentials and try again
-        fetched = update_secret(true);
-        if (fetched) {
-            username = get_from_secret_json_value(USERNAME_KEY);
-            password = get_from_secret_json_value(PASSWORD_KEY);
-            ret = next_proxy->real_connect_dns_srv(dns_srv_name, username.c_str(), password.c_str(), db, client_flag);
+            ret = next_proxy->connect(host, username.c_str(), password.c_str(), database, port, unix_socket, flags);
         }
     }
 
@@ -134,7 +111,8 @@ bool SECRETS_MANAGER_PROXY::update_secret(bool force_re_fetch) {
     {
         std::unique_lock<std::mutex> lock(secrets_cache_mutex);
 
-        if (const auto search = secrets_cache.find(this->secret_key); search != secrets_cache.end() && !force_re_fetch) {
+        const auto search = secrets_cache.find(this->secret_key);
+        if (search != secrets_cache.end() && !force_re_fetch) {
             this->secret_json_value = search->second;
         }
         else {

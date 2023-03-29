@@ -84,7 +84,7 @@ class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
     MOCK_METHOD(void, init, ());
     MOCK_METHOD(int, ping, ());
     MOCK_METHOD(void, delete_ds, ());
-    MOCK_METHOD(bool, real_connect, (const char*, const char*, const char*, const char*, unsigned int, const char*, unsigned long));
+    MOCK_METHOD(bool, connect, (const char*, const char*, const char*, const char*, unsigned int, const char*, unsigned long));
     MOCK_METHOD(unsigned int, error_code, ());
 };
 

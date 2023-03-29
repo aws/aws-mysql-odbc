@@ -46,12 +46,8 @@ public:
 #endif
     ~SECRETS_MANAGER_PROXY() override;
 
-    bool real_connect(const char* host, const char* user,
-                      const char* passwd, const char* db, unsigned int port,
-                      const char* unix_socket, unsigned long clientflag) override;
-    bool real_connect_dns_srv(const char* dns_srv_name,
-                              const char* user, const char* passwd,
-                              const char* db, unsigned long client_flag) override;
+    bool connect(const char* host, const char* user, const char* passwd, const char* database,
+        unsigned int port, const char* unix_socket, unsigned long flags) override;
 
 private:
     std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client;

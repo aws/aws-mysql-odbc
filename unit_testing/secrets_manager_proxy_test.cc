@@ -120,10 +120,10 @@ TEST_F(SecretsManagerProxyTest, TestConnectWithCachedSecrets) {
 
     EXPECT_CALL(*mock_sm_client, GetSecretValue(_)).Times(0);
     EXPECT_CALL(*mock_connection_proxy,
-                real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+                connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
         WillOnce(Return(true));
 
-    const auto ret = sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+    const auto ret = sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
 
     EXPECT_EQ(1, TEST_UTILS::get_secrets_cache().size());
     EXPECT_TRUE(ret);
@@ -141,10 +141,10 @@ TEST_F(SecretsManagerProxyTest, TestConnectWithNewSecrets) {
                 GetSecretValue(Property("GetSecretId", &Aws::SecretsManager::Model::GetSecretValueRequest::GetSecretId,
                     StrEq(TEST_SECRET_ID)))).WillOnce(Return(expected_outcome));
     EXPECT_CALL(*mock_connection_proxy,
-                real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+                connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
         WillOnce(Return(true));
 
-    const auto ret = sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+    const auto ret = sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
 
     EXPECT_EQ(1, TEST_UTILS::get_secrets_cache().size());
     EXPECT_TRUE(ret);
@@ -159,11 +159,11 @@ TEST_F(SecretsManagerProxyTest, TestFailedInitialConnectionWithUnhandledError) {
 
     EXPECT_CALL(*mock_sm_client, GetSecretValue(_)).Times(0);
     EXPECT_CALL(*mock_connection_proxy,
-                real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+                connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
         WillOnce(Return(false));
     EXPECT_CALL(*mock_connection_proxy, error_code()).WillOnce(Return(ER_BAD_HOST_ERROR));
 
-    const auto ret = sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+    const auto ret = sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
     EXPECT_FALSE(ret);
 }
 
@@ -184,15 +184,15 @@ TEST_F(SecretsManagerProxyTest, TestConnectWithNewSecretsAfterTryingWithCachedSe
         InSequence s;
 
         EXPECT_CALL(*mock_connection_proxy,
-                    real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+                    connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
             WillOnce(Return(false));
         EXPECT_CALL(*mock_connection_proxy, error_code()).WillOnce(Return(ER_ACCESS_DENIED_ERROR));
         EXPECT_CALL(*mock_connection_proxy,
-                    real_connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
+                    connect(StrEq(TEST_HOST), StrEq(TEST_USERNAME), StrEq(TEST_PASSWORD), nullptr, 0, nullptr, 0)).
             WillOnce(Return(true));
     }
 
-    const auto ret = sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+    const auto ret = sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
 
     EXPECT_EQ(1, TEST_UTILS::get_secrets_cache().size());
     EXPECT_TRUE(ret);
@@ -210,9 +210,9 @@ TEST_F(SecretsManagerProxyTest, TestFailedToReadSecrets) {
                 GetSecretValue(Property("GetSecretId", &Aws::SecretsManager::Model::GetSecretValueRequest::GetSecretId,
                     StrEq(TEST_SECRET_ID)))).WillOnce(Return(expected_outcome));
 
-    EXPECT_CALL(*mock_connection_proxy, real_connect(_, _, _, _, _, _, _)).Times(0);
+    EXPECT_CALL(*mock_connection_proxy, connect(_, _, _, _, _, _, _)).Times(0);
 
-    EXPECT_THROW(sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0), std::runtime_error);
+    EXPECT_THROW(sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0), std::runtime_error);
     EXPECT_EQ(0, TEST_UTILS::get_secrets_cache().size());
 }
 
@@ -227,8 +227,8 @@ TEST_F(SecretsManagerProxyTest, TestFailedToGetSecrets) {
                 GetSecretValue(Property("GetSecretId", &Aws::SecretsManager::Model::GetSecretValueRequest::GetSecretId,
                     StrEq(TEST_SECRET_ID)))).WillOnce(Return(unsuccessful_outcome));
 
-    EXPECT_CALL(*mock_connection_proxy, real_connect(_, _, _, _, _, _, _)).Times(0);
+    EXPECT_CALL(*mock_connection_proxy, connect(_, _, _, _, _, _, _)).Times(0);
 
-    EXPECT_THROW(sm_proxy.real_connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0), std::runtime_error);
+    EXPECT_THROW(sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0), std::runtime_error);
     EXPECT_EQ(0, TEST_UTILS::get_secrets_cache().size());
 }
