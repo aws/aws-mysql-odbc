@@ -48,17 +48,18 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
     this->next_proxy = next_proxy;
 
     Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
-    this->credentials = credentials_provider.GetAWSCredentials();
+    Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
 
     Aws::Client::ClientConfiguration client_config;
     if (ds->auth_region) {
         client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     }
 
-    rds_client = Aws::RDS::RDSClient(this->credentials, client_config);
+    this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
 }
 
 IAM_PROXY::~IAM_PROXY() {
+    this->rds_client.reset();
     --SDK_HELPER;
 }
 
@@ -84,11 +85,13 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 
     bool connect_result = next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
     if (!connect_result) {
-        if (this->credentials.IsEmpty()) {
+        Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
+        Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
+        if (credentials.IsEmpty()) {
             this->set_custom_error_message(
                 "Could not find AWS Credentials for IAM Authentication. Please set up AWS credentials.");
         }
-        else if (this->credentials.IsExpired()) {
+        else if (credentials.IsExpired()) {
             this->set_custom_error_message(
                 "AWS Credentials for IAM Authentication are expired. Please refresh AWS credentials.");
         }
@@ -142,7 +145,7 @@ std::string IAM_PROXY::build_cache_key(
 std::string IAM_PROXY::generate_auth_token(
     const char* host, const char* region, unsigned int port, const char* user) {
 
-    return rds_client.GenerateConnectAuthToken(host, region, port, user);
+    return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
 }
 
 void IAM_PROXY::clear_token_cache() {

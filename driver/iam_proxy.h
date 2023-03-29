@@ -31,7 +31,6 @@
 #ifndef __IAM_PROXY__
 #define __IAM_PROXY__
 
-#include <aws/core/auth/AWSCredentials.h>
 #include <aws/rds/RDSClient.h>
 #include <unordered_map>
 
@@ -82,8 +81,7 @@ public:
 protected:
     static std::unordered_map<std::string, TOKEN_INFO> token_cache;
     static std::mutex token_cache_mutex;
-    Aws::Auth::AWSCredentials credentials;
-    Aws::RDS::RDSClient rds_client;
+    std::shared_ptr<Aws::RDS::RDSClient> rds_client;
 
     static std::string build_cache_key(
         const char* host, const char* region, unsigned int port, const char* user);
