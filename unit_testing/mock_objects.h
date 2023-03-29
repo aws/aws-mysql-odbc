@@ -30,8 +30,8 @@
 #ifndef __MOCKOBJECTS_H__
 #define __MOCKOBJECTS_H__
 
-#include <gmock/gmock.h>
 #include <aws/secretsmanager/SecretsManagerClient.h>
+#include <gmock/gmock.h>
 
 #include "driver/connection_proxy.h"
 #include "driver/failover.h"
