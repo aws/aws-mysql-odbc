@@ -41,7 +41,6 @@ public:
     CONNECTION_PROXY(DBC* dbc, DataSource* ds);
     virtual ~CONNECTION_PROXY();
 
-<<<<<<< HEAD
     virtual bool connect(
         const char* host,
         const char* user,
@@ -51,10 +50,6 @@ public:
         const char* socket,
         unsigned long flags);
 
-=======
-    virtual bool connect(const char* host, const char* user, const char* password, const char* database,
-                         unsigned int port, const char* socket, unsigned long flags);
->>>>>>> 1bbbca4d (address comments)
     virtual void delete_ds();
     virtual uint64_t num_rows(MYSQL_RES* res);
     virtual unsigned int num_fields(MYSQL_RES* res);
