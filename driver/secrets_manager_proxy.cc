@@ -58,9 +58,10 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECT
 
     const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
     if (!secret_ID) {
-        const auto error = "Missing required config parameter: Secret ID";
+        const auto error = "Missing required config parameter for Secrets Manager: Secret ID";
         MYLOG_DBC_TRACE(dbc, error);
-        throw std::runtime_error(error);
+        this->set_custom_error_message(error);
+
     }
     this->secret_key = std::make_pair(secret_ID, config.region);
     this->next_proxy = nullptr;
