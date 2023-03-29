@@ -64,6 +64,7 @@ public:
     IAM_PROXY() = default;
     IAM_PROXY(DBC* dbc, DataSource* ds);
     IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
+    ~IAM_PROXY() override;
 
     bool connect(
         const char* host,

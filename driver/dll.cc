@@ -35,15 +35,12 @@
 
 #include "driver.h"
 
-//#include <aws/core/Aws.h>
 #include <locale.h>
 
 char *default_locale, *decimal_point, *thousands_sep;
 uint decimal_point_length,thousands_sep_length;
 static int myodbc_inited=0;
 static int mysys_inited=0;
-
-//static Aws::SDKOptions options;
 
 std::string current_dll_location;
 std::string default_plugin_location;
@@ -126,8 +123,6 @@ void myodbc_init(void)
                                              MYF(0));
 #endif
   }
-
-  //Aws::InitAPI(options);
 }
 
 
@@ -162,8 +157,6 @@ void myodbc_end()
 
     mysql_library_end();
   }
-
-  //Aws::ShutdownAPI(options);
 }
 
 

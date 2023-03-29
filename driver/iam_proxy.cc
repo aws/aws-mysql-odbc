@@ -29,8 +29,13 @@
 
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 
+#include "aws_sdk_helper.h"
 #include "driver.h"
 #include "iam_proxy.h"
+
+namespace {
+    AWS_SDK_HELPER SDK_HELPER;
+}
 
 std::unordered_map<std::string, TOKEN_INFO> IAM_PROXY::token_cache;
 std::mutex IAM_PROXY::token_cache_mutex;
@@ -38,6 +43,8 @@ std::mutex IAM_PROXY::token_cache_mutex;
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
+    ++SDK_HELPER;
+	
     this->next_proxy = next_proxy;
 
 	Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
@@ -49,6 +56,10 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
 	}
 
 	rds_client = Aws::RDS::RDSClient(this->credentials, client_config);
+}
+
+IAM_PROXY::~IAM_PROXY() {
+    --SDK_HELPER;
 }
 
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
