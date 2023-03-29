@@ -49,6 +49,7 @@
 
 #include "driver.h"
 #include "efm_proxy.h"
+#include "iam_proxy.h"
 #include "mysql_proxy.h"
 
 #include <mutex>
@@ -125,18 +126,18 @@ void DBC::init_proxy_chain(DataSource* dsrc)
         head = efm_proxy;
     }
 
-    ds_get_utf8attr(dsrc->auth_mode, &dsrc->auth_mode8);
-
-    if (!myodbc_strcasecmp(AUTH_MODE_IAM, reinterpret_cast<const char*>(dsrc->auth_mode8))) {
-        // CONNECTION_PROXY* iam_proxy = new IAM_PROXY(his, dsrc);
-        // iam_proxy->set_next_proxy(head);
-        // head = iam_proxy;
-    }
-
-    if (!myodbc_strcasecmp(AUTH_MODE_SECRETS_MANAGER, reinterpret_cast<const char*>(dsrc->auth_mode8))) {
-        // CONNECTION_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY(his, dsrc);
-        // secrets_manager_proxy->set_next_proxy(head);
-        // head = secrets_manager_proxy;
+    if (dsrc->auth_mode) {
+        const char* auth_mode = ds_get_utf8attr(dsrc->auth_mode, &dsrc->auth_mode8);
+        if (!myodbc_strcasecmp(AUTH_MODE_IAM, auth_mode)) {
+            CONNECTION_PROXY* iam_proxy = new IAM_PROXY(this, dsrc);
+            iam_proxy->set_next_proxy(head);
+            head = iam_proxy;
+        }
+        else if (!myodbc_strcasecmp(AUTH_MODE_SECRETS_MANAGER, auth_mode)) {
+            // CONNECTION_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY(his, dsrc);
+            // secrets_manager_proxy->set_next_proxy(head);
+            // head = secrets_manager_proxy;
+        }
     }
 
     this->connection_proxy = head;

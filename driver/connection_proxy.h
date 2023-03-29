@@ -37,8 +37,18 @@ struct DataSource;
 
 class CONNECTION_PROXY {
 public:
+    CONNECTION_PROXY() = default;
     CONNECTION_PROXY(DBC* dbc, DataSource* ds);
     virtual ~CONNECTION_PROXY();
+
+    virtual bool connect(
+        const char* host,
+        const char* user,
+        const char* password,
+        const char* database,
+        unsigned int port,
+        const char* socket,
+        unsigned long flags);
 
     virtual void delete_ds();
     virtual uint64_t num_rows(MYSQL_RES* res);
@@ -163,10 +173,14 @@ public:
 
     virtual MYSQL* move_mysql_connection();
 
+    void set_custom_error_message(const char* error_message);
+
 protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     CONNECTION_PROXY* next_proxy = nullptr;
+    bool has_custom_error_message = false;
+    std::string custom_error_message = "";
 };
 
 #endif /* __CONNECTION_PROXY__ */
