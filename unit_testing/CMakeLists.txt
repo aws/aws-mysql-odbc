@@ -55,6 +55,7 @@ add_executable(
 
   cluster_aware_metrics_test.cc
   efm_proxy_test.cc
+  iam_proxy_test.cc
   failover_handler_test.cc
   failover_reader_handler_test.cc
   failover_writer_handler_test.cc

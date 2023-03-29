@@ -45,6 +45,16 @@ CONNECTION_PROXY::~CONNECTION_PROXY() {
     }
 }
 
+bool CONNECTION_PROXY::connect(const char* host, const char* user, const char* password,
+    const char* database, unsigned int port, const char* socket, unsigned long flags) {
+
+    if (ds->enable_dns_srv) {
+        return this->real_connect_dns_srv(host, user, password, database, flags);
+    }
+
+    return this->real_connect(host, user, password, database, port, socket, flags);
+}
+
 void CONNECTION_PROXY::delete_ds() {
     next_proxy->delete_ds();
 }
@@ -78,6 +88,14 @@ unsigned int CONNECTION_PROXY::error_code() {
 }
 
 const char* CONNECTION_PROXY::error() {
+    if (has_custom_error_message) {		
+        // We disable this flag after fetching the custom message once
+        // so it does not obscure future proxy errors.
+        has_custom_error_message = false;
+		
+        return this->custom_error_message.c_str();
+    }
+
     return next_proxy->error();
 }
 
@@ -392,4 +410,9 @@ void CONNECTION_PROXY::set_next_proxy(CONNECTION_PROXY* next_proxy) {
 
 MYSQL* CONNECTION_PROXY::move_mysql_connection() {
     return next_proxy ? next_proxy->move_mysql_connection() : nullptr;
+}
+
+void CONNECTION_PROXY::set_custom_error_message(const char* error_message) {
+    this->custom_error_message = error_message;
+    has_custom_error_message = true;
 }
