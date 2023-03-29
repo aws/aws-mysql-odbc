@@ -30,6 +30,7 @@
 #include <aws/secretsmanager/SecretsManagerServiceClientModel.h>
 #include <aws/secretsmanager/model/GetSecretValueRequest.h>
 
+#include "aws_sdk_helper.h"
 #include "secrets_manager_proxy.h"
 
 #include "mylog.h"
@@ -39,27 +40,16 @@
 using namespace Aws::SecretsManager;
 
 namespace {
+    AWS_SDK_HELPER SDK_HELPER;
     const Aws::String USERNAME_KEY{ "username" };
     const Aws::String PASSWORD_KEY{ "password" };
 }
 
 std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> SECRETS_MANAGER_PROXY::secrets_cache;
 std::mutex SECRETS_MANAGER_PROXY::secrets_cache_mutex;
-bool SECRETS_MANAGER_PROXY::aws_sdk_ready = false;
-std::mutex SECRETS_MANAGER_PROXY::aws_mutex;
-std::atomic<int> SECRETS_MANAGER_PROXY::sm_client_count{0};
-Aws::SDKOptions SECRETS_MANAGER_PROXY::options;
 
 SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
-    if (!aws_sdk_ready) {
-        std::lock_guard<std::mutex> lock(aws_mutex);
-        if (!aws_sdk_ready) {
-            Aws::InitAPI(options);
-            aws_sdk_ready = true;
-            MYLOG_DBC_TRACE(dbc, "AWS SDK is initialzed.");
-        }
-    }
-    ++sm_client_count;
+    ++SDK_HELPER;
 
     SecretsManagerClientConfiguration config;
     const auto region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
@@ -90,11 +80,7 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTIO
 
 SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
     this->sm_client.reset();
-    if (0 == --sm_client_count) {
-        Aws::ShutdownAPI(options);
-        aws_sdk_ready = false;
-        MYLOG_DBC_TRACE(dbc, "AWS SDK is shut down.");
-    }
+    --SDK_HELPER;
 }
 
 bool SECRETS_MANAGER_PROXY::real_connect(const char* host, const char* user, const char* passwd, const char* db,
