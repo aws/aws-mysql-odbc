@@ -753,17 +753,10 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 
     const char* user = ds_get_utf8attr(dsrc->uid, &dsrc->uid8);
     const char* password = ds_get_utf8attr(dsrc->pwd, &dsrc->pwd8);
-<<<<<<< HEAD
     const char* database = ds_get_utf8attr(dsrc->database, &dsrc->database8);
     const char* socket = ds_get_utf8attr(dsrc->socket, &dsrc->socket8);
 
     const bool connect_result = connection_proxy->connect(host, user, password, database, port, socket, flags);
-=======
-    const char* db = ds_get_utf8attr(dsrc->database, &dsrc->database8);
-    const char* socket = ds_get_utf8attr(dsrc->socket, &dsrc->socket8);
-
-    const bool connect_result = connection_proxy->connect(host, user, password, db, port, socket, flags);
->>>>>>> 1bbbca4d (address comments)
     if (!connect_result)
     {
       unsigned int native_error= connection_proxy->error_code();

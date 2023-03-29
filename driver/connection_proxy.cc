@@ -45,13 +45,9 @@ CONNECTION_PROXY::~CONNECTION_PROXY() {
     }
 }
 
-<<<<<<< HEAD
 bool CONNECTION_PROXY::connect(const char* host, const char* user, const char* password,
     const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
-=======
-bool CONNECTION_PROXY::connect(const char* host, const char* user, const char* password, const char* database, unsigned int port, const char* socket, unsigned long flags) {
->>>>>>> 1bbbca4d (address comments)
     if (ds->enable_dns_srv) {
         return this->real_connect_dns_srv(host, user, password, database, flags);
     }
