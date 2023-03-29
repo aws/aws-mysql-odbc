@@ -121,7 +121,7 @@ class ConnectionString {
         length += sprintf(conn_in + length, "AUTHENTICATION_MODE=%s;", m_auth_mode.c_str());
       }
       if (is_set_auth_region) {
-        length += sprintf(conn_in + length, "IAM_REGION=%s;", m_auth_region.c_str());
+        length += sprintf(conn_in + length, "AWS_REGION=%s;", m_auth_region.c_str());
       }
       if (is_set_auth_host) {
         length += sprintf(conn_in + length, "IAM_HOST=%s;", m_auth_host.c_str());
