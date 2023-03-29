@@ -57,7 +57,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   SET(DRIVER_NAME "awsmysqlodbc${CONNECTOR_DRIVER_TYPE_SHORT}")
 
   SET(DRIVER_SRCS
-    base_metrics_holder.cc catalog.cc catalog_no_i_s.cc cluster_topology_info.cc
+    aws_sdk_helper.cc base_metrics_holder.cc catalog.cc catalog_no_i_s.cc cluster_topology_info.cc
     cluster_aware_hit_metrics_holder.cc cluster_aware_metrics_container.cc
     cluster_aware_metrics.cc cluster_aware_time_metrics_holder.cc
     connect.cc connection_handler.cc connection_proxy.cc cursor.cc desc.cc dll.cc driver.cc efm_proxy.cc
@@ -82,7 +82,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.def.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.def @ONLY)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
     SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc  
-                                   base_metrics_holder.h catalog.h cluster_aware_hit_metrics_holder.h cluster_aware_metrics_container.h
+                                   aws_sdk_helper.h base_metrics_holder.h catalog.h cluster_aware_hit_metrics_holder.h cluster_aware_metrics_container.h
                                    cluster_aware_metrics.h cluster_aware_time_metrics_holder.h cluster_topology_info.h connection_handler.h connection_proxy.h
                                    driver.h efm_proxy.h error.h failover.h host_info.h monitor.h monitor_connection_context.h monitor_service.h
                                    monitor_thread_container.h mylog.h mysql_proxy.h myutil.h parse.h query_parsing.h topology_service.h

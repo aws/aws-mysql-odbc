@@ -164,11 +164,16 @@ jobs:
                 -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
 
+      - name: copy AWS SDK libraries to driver library
+        run: |
+          cp ./aws_sdk/install/lib/*.so ./build/lib/
+
       # Build driver
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
         shell: bash
         run: make -j4
+
 
       # Test driver
       - name: Run failover tests on Linux
