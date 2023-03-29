@@ -170,6 +170,10 @@ jobs:
         shell: bash
         run: make -j4
 
+      - name: copy AWS SDK libraries to driver library
+        run: |
+          cp ./aws_sdk/install/lib/*.so ./build/lib/
+
       # Test driver
       - name: Run failover tests on Linux
         if: success()

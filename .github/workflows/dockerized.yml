@@ -74,6 +74,10 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         shell: bash
         run: cmake --build . --config $BUILD_TYPE
+      
+      - name: copy AWS SDK libraries to driver library
+        run: |
+          cp ./aws_sdk/install/lib/*.so ./build/lib/
 
       - name: 'Set up JDK 8'
         uses: actions/setup-java@v1
