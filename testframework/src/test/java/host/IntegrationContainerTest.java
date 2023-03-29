@@ -58,9 +58,9 @@ public class IntegrationContainerTest {
   private static final String TEST_PASSWORD =
       !StringUtils.isNullOrEmpty(System.getenv("TEST_PASSWORD")) ?
           System.getenv("TEST_PASSWORD") : "my_test_password";
-  private static final String ACCESS_KEY = System.getenv("AWS_ACCESS_KEY_ID");
-  private static final String SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
-  private static final String SESSION_TOKEN = System.getenv("AWS_SESSION_TOKEN");
+  private static final String ACCESS_KEY = "ASIAXRHQJQPE24KFM3XA";
+  private static final String SECRET_ACCESS_KEY = "OmK6QB/3PgVP+ujxVlwZ/hH71U8YnevmoC5XnMMg";
+  private static final String SESSION_TOKEN = "IQoJb3JpZ2luX2VjEIv//////////wEaCXVzLWVhc3QtMSJHMEUCIQCOwUeImgbBVfgzCxb5sjFv3kSon2OkISOMfSFpBTBywQIgAWtGWq6+pPbBGuR9Gwlgr+9K60GGLLssJyOKWC6XPkQq7wEIZBAEGgw1MTgwNDc0OTkyMDkiDGz0s20alC9O0JYKmyrMAc7PAPl5wC9cO6yNzHIuacplMMRW1OCMNUET1Qrf+8kXid/3I2isDJj41cDMClUeohu3tgGa8wRhPUSutgcv112ZqfnLMaYGLAE6aCWQjLpXqr6XjmqkWlcXk3bhPllBdMcOFh0eh7EjSE/b0Wj1cRYgSfAii5F7V2E9hCOYQddXFprsJVRsknl1Yg833OJuOOsOqUn95QdrQBh/9jqL685UQBE+6jYzg2bcUh9v8ALoYqjKktGR19vfnpzeYPEToXpu94R6ePWFLIz8cTDdkpKhBjqYAYFC+mBjOT0cvsMzCH3/VnUaboIwVZYD2JIGseY0lPlX/9/Rv623mvjTecuThUem2siJgSMWYip8s8Yk+03P/xIAIfXXn8THmYmEJlMMkGidcQgvOfBLk5DNv/vcBvPVThAm6IpJeG3zTqhr/wGTxbr0jo6SkjpZl//r1+Q+cF7tL/xjzmOxAaLqF/wpcnzqWmn+iNOObcaa";
   private static final String DOCKER_UID = "1001";
   private static final String COMMUNITY_SERVER = "mysql-instance";
 
@@ -85,29 +85,29 @@ public class IntegrationContainerTest {
 
   @BeforeAll
   static void setUp() throws InterruptedException, UnknownHostException {
-    testContainer = createTestContainer(NETWORK);
+    //testContainer = createTestContainer(NETWORK);
   }
 
   @AfterAll
   static void tearDown() {
-    if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY) && !StringUtils.isNullOrEmpty(dbHostCluster)) {
-      if (StringUtils.isNullOrEmpty(TEST_DB_CLUSTER_IDENTIFIER)) {
-        auroraUtil.deleteCluster();
-      } else {
-        auroraUtil.deleteCluster(TEST_DB_CLUSTER_IDENTIFIER);
-      }
-
-      auroraUtil.ec2DeauthorizesIP(runnerIP);
-
-      for (ToxiproxyContainer proxy : proxyContainers) {
-        proxy.stop();
-      }
-    }
-
-    testContainer.stop();
-    if (mysqlContainer != null) {
-      mysqlContainer.stop();
-    }
+//    if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY) && !StringUtils.isNullOrEmpty(dbHostCluster)) {
+//      if (StringUtils.isNullOrEmpty(TEST_DB_CLUSTER_IDENTIFIER)) {
+//        auroraUtil.deleteCluster();
+//      } else {
+//        auroraUtil.deleteCluster(TEST_DB_CLUSTER_IDENTIFIER);
+//      }
+//
+//      auroraUtil.ec2DeauthorizesIP(runnerIP);
+//
+//      for (ToxiproxyContainer proxy : proxyContainers) {
+//        proxy.stop();
+//      }
+//    }
+//
+//    testContainer.stop();
+//    if (mysqlContainer != null) {
+//      mysqlContainer.stop();
+//    }
   }
 
   @Test
@@ -153,17 +153,20 @@ public class IntegrationContainerTest {
   private void setupFailoverIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
     if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY)) {
       // Comment out below to not create a new cluster & instances
-      AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, TEST_DB_CLUSTER_IDENTIFIER, TEST_DATABASE);
+      //AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, TEST_DB_CLUSTER_IDENTIFIER, TEST_DATABASE);
 
       // Comment out getting public IP to not add & remove from EC2 whitelist
       runnerIP = auroraUtil.getPublicIPAddress();
-      auroraUtil.ec2AuthorizeIP(runnerIP);
+      //auroraUtil.ec2AuthorizeIP(runnerIP);
 
-      dbConnStrSuffix = clusterInfo.getClusterSuffix();
-      dbHostCluster = clusterInfo.getClusterEndpoint();
-      dbHostClusterRo = clusterInfo.getClusterROEndpoint();
-
-      mySqlInstances = clusterInfo.getInstances();
+//      dbConnStrSuffix = clusterInfo.getClusterSuffix();
+//      dbHostCluster = clusterInfo.getClusterEndpoint();
+//      dbHostClusterRo = clusterInfo.getClusterROEndpoint();
+//
+//      mySqlInstances = clusterInfo.getInstances();
+      dbHostCluster = "atlas-mysql.cluster-czygpppufgy4.us-east-2.rds.amazonaws.com";
+      String secretValue = auroraUtil.createSecretValue(dbHostCluster, TEST_USERNAME, TEST_PASSWORD);
+      String secretsArn = auroraUtil.createSecrets("AWS-MySQL-ODBC-Tests-" + dbHostCluster, secretValue);
 
       proxyContainers = containerHelper.createProxyContainers(network, mySqlInstances, PROXIED_DOMAIN_NAME_SUFFIX);
       for (ToxiproxyContainer container : proxyContainers) {
