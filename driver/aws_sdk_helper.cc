@@ -29,7 +29,7 @@
 
 #include "aws_sdk_helper.h"
 
-std::atomic<int> AWS_SDK_HELPER::sdk_reference_count = 0;
+std::atomic<int> AWS_SDK_HELPER::sdk_reference_count{0};
 std::mutex AWS_SDK_HELPER::sdk_mutex;
 
 AWS_SDK_HELPER& AWS_SDK_HELPER::operator++()
