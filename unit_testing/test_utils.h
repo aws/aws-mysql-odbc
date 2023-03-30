@@ -34,9 +34,10 @@
 #include "driver/iam_proxy.h"
 #include "driver/monitor.h"
 #include "driver/monitor_thread_container.h"
+#include "driver/secrets_manager_proxy.h"
 
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds);
-void cleanup_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);
+void cleanup_odbc_handles(SQLHENV env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);
 
 class TEST_UTILS {
 public:
@@ -56,6 +57,7 @@ public:
     static std::string build_cache_key(const char* host, const char* region, unsigned int port, const char* user);
     static bool token_cache_contains_key(std::string cache_key);
     static void clear_token_cache(IAM_PROXY* iam_proxy);
+    static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& get_secrets_cache();
 };
 
 #endif /* __TESTUTILS_H__ */
