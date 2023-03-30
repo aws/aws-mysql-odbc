@@ -141,6 +141,9 @@ void DBC::init_proxy_chain(DataSource* dsrc)
         }
     }
 
+    CONNECTION_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY(this, dsrc);
+    delete secrets_manager_proxy;
+
     this->connection_proxy = head;
 }
 
