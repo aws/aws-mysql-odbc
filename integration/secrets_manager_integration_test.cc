@@ -27,23 +27,48 @@
 // along with this program. If not, see 
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include <aws/core/Aws.h>
-#include <aws/core/auth/AWSCredentialsProvider.h>
-#include <aws/secretsmanager/SecretsManagerClient.h>
+#include <gtest/gtest.h>
+#include <cassert>
+#include <chrono>
+#include <climits>
+#include <cstdlib>
+#include <iostream>
+#include <random>
+#include <stdexcept>
+#include <sql.h>
+#include <sqlext.h>
 
-#include "base_failover_integration_test.cc"
+#include "connection_string_builder.cc"
 
-class SecretsManagerIntegrationTest : public BaseFailoverIntegrationTest {
+#define MAX_NAME_LEN 255
+
+#define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
+
+static int str_to_int(const char* str) {
+    const long int x = strtol(str, nullptr, 10);
+    assert(x <= INT_MAX);
+    assert(x >= INT_MIN);
+    return static_cast<int>(x);
+}
+
+class SecretsManagerIntegrationTest : public testing::Test {
 protected:
-  std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
-  std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
-  std::string SESSION_TOKEN = std::getenv("AWS_SESSION_TOKEN");
-  Aws::Auth::AWSCredentials credentials = Aws::Auth::AWSCredentials(Aws::String(ACCESS_KEY),
-                                                                    Aws::String(SECRET_ACCESS_KEY),
-                                                                    Aws::String(SESSION_TOKEN));
   std::string SECRETS_ARN = std::getenv("SECRETS_ARN");
+  char* dsn = std::getenv("TEST_DSN");
+  char* db = std::getenv("TEST_DATABASE");
+
+  int MYSQL_PORT = str_to_int(std::getenv("MYSQL_PORT"));
+
+  std::string MYSQL_CLUSTER_URL = std::getenv("TEST_SERVER");
+
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
+
+  ConnectionStringBuilder builder;
+  std::string connection_string;
+
+  SQLCHAR conn_in[4096] = "\0", conn_out[4096] = "\0", sqlstate[6] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
+  SQLSMALLINT len = 0, length = 0;
 
   static void SetUpTestSuite() {
   }
@@ -75,6 +100,7 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManager) {
    EXPECT_TRUE(false) << connection_string;
    SQLCHAR conn_out[4096] = "\0";
    SQLSMALLINT len;
+   SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT)
    EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
