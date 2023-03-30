@@ -67,9 +67,6 @@ protected:
   ConnectionStringBuilder builder;
   std::string connection_string;
 
-  SQLCHAR conn_in[4096] = "\0", conn_out[4096] = "\0", sqlstate[6] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
-  SQLSMALLINT len = 0, length = 0;
-
   static void SetUpTestSuite() {
   }
 
@@ -100,7 +97,6 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManager) {
    EXPECT_TRUE(false) << connection_string;
    SQLCHAR conn_out[4096] = "\0";
    SQLSMALLINT len;
-   SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT)
    EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
