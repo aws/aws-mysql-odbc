@@ -93,7 +93,7 @@ public class AuroraTestUtility {
   private String dbInstanceClass = "db.r5.large";
   private final String dbRegion;
   private final String dbSecGroup = "default";
-  private int numOfInstances = 5;
+  private int numOfInstances = 1;
 
   private AmazonRDS rdsClient = null;
   private AmazonEC2 ec2Client = null;
