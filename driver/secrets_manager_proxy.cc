@@ -57,13 +57,7 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECT
     this->sm_client = std::make_shared<SecretsManagerClient>(config);
 
     const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
-    if (!secret_ID) {
-        const auto error = "Missing required config parameter for Secrets Manager: Secret ID";
-        MYLOG_DBC_TRACE(dbc, error);
-        this->set_custom_error_message(error);
-
-    }
-    this->secret_key = std::make_pair(secret_ID, config.region);
+    this->secret_key = std::make_pair(secret_ID ? secret_ID : "", config.region);
     this->next_proxy = nullptr;
 }
 
@@ -86,6 +80,13 @@ SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
 
 bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const char* passwd, const char* database,
                                          unsigned int port, const char* unix_socket, unsigned long flags) {
+
+    if (this->secret_key.first.empty()) {
+        const auto error = "Missing required config parameter for Secrets Manager: Secret ID";
+        MYLOG_DBC_TRACE(dbc, error);
+        this->set_custom_error_message(error);
+        return false;
+    }
 
     bool fetched = update_secret(false);
     std::string username = get_from_secret_json_value(USERNAME_KEY);
