@@ -80,6 +80,7 @@ public class IntegrationContainerTest {
   private static String dbHostClusterRo = "";
   private static String runnerIP = null;
   private static String dbConnStrSuffix = "";
+  private static String secretsArn = "";
 
   private static final Network NETWORK = Network.newNetwork();
 
@@ -153,20 +154,19 @@ public class IntegrationContainerTest {
   private void setupFailoverIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
     if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY)) {
       // Comment out below to not create a new cluster & instances
-      //AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, TEST_DB_CLUSTER_IDENTIFIER, TEST_DATABASE);
+      AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, TEST_DB_CLUSTER_IDENTIFIER, TEST_DATABASE);
 
       // Comment out getting public IP to not add & remove from EC2 whitelist
       runnerIP = auroraUtil.getPublicIPAddress();
-      //auroraUtil.ec2AuthorizeIP(runnerIP);
+      auroraUtil.ec2AuthorizeIP(runnerIP);
 
-//      dbConnStrSuffix = clusterInfo.getClusterSuffix();
-//      dbHostCluster = clusterInfo.getClusterEndpoint();
-//      dbHostClusterRo = clusterInfo.getClusterROEndpoint();
-//
-//      mySqlInstances = clusterInfo.getInstances();
-      dbHostCluster = "atlas-mysql.cluster-czygpppufgy4.us-east-2.rds.amazonaws.com";
+      dbConnStrSuffix = clusterInfo.getClusterSuffix();
+      dbHostCluster = clusterInfo.getClusterEndpoint();
+      dbHostClusterRo = clusterInfo.getClusterROEndpoint();
+
+      mySqlInstances = clusterInfo.getInstances();
       String secretValue = auroraUtil.createSecretValue(dbHostCluster, TEST_USERNAME, TEST_PASSWORD);
-      String secretsArn = auroraUtil.createSecrets("AWS-MySQL-ODBC-Tests-" + dbHostCluster, secretValue);
+      secretsArn = auroraUtil.createSecrets("AWS-MySQL-ODBC-Tests-" + dbHostCluster, secretValue);
 
       proxyContainers = containerHelper.createProxyContainers(network, mySqlInstances, PROXIED_DOMAIN_NAME_SUFFIX);
       for (ToxiproxyContainer container : proxyContainers) {
@@ -203,7 +203,8 @@ public class IntegrationContainerTest {
       .withEnv("TEST_SERVER", dbHostCluster)
       .withEnv("TEST_RO_SERVER", dbHostClusterRo)
       .withEnv("DB_CONN_STR_SUFFIX", "." + dbConnStrSuffix)
-      .withEnv("PROXIED_CLUSTER_TEMPLATE", "?." + dbConnStrSuffix + PROXIED_DOMAIN_NAME_SUFFIX);
+      .withEnv("PROXIED_CLUSTER_TEMPLATE", "?." + dbConnStrSuffix + PROXIED_DOMAIN_NAME_SUFFIX)
+      .withEnv("SECRETS_ARN", secretsArn);
         
     // Add mysql instances & proxies to container env
     for (int i = 0; i < mySqlInstances.size(); i++) {

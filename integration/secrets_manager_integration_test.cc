@@ -31,13 +31,9 @@
 #include <aws/core/auth/AWSCredentialsProvider.h>
 #include <aws/secretsmanager/SecretsManagerClient.h>
 
-#include <gtest/gtest.h>
+#include "base_failover_integration_test.cc"
 
-#include "connection_string_builder.cc"
-
-static Aws::SDKOptions options;
-
-class SecretsManagerIntegrationTest : public testing::Test {
+class SecretsManagerIntegrationTest : public BaseFailoverIntegrationTest {
 protected:
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
@@ -45,17 +41,40 @@ protected:
   Aws::Auth::AWSCredentials credentials = Aws::Auth::AWSCredentials(Aws::String(ACCESS_KEY),
                                                                     Aws::String(SECRET_ACCESS_KEY),
                                                                     Aws::String(SESSION_TOKEN));
+  std::string SECRETS_ARN = std::getenv("SECRETS_ARN");
+  SQLHENV env = nullptr;
+  SQLHDBC dbc = nullptr;
+
   static void SetUpTestSuite() {
-    Aws::InitAPI(options);
   }
 
   static void TearDownTestSuite() {
-    Aws::ShutdownAPI(options);
   }     
 
-   void SetUp() override {}
+   void SetUp() override {
+    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
+    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
+    builder = ConnectionStringBuilder();
+    builder.withPort(MYSQL_PORT).withLogQuery(true);
+   }
     
    void TearDown() override {}
-
+    if (nullptr != dbc) {
+      SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+    }
+    if (nullptr != env) {
+      SQLFreeHandle(SQL_HANDLE_ENV, env);
+    }
 };
 
+TEST_F(SecretsManagerIntegrationTest, EnableSecretsManager) {
+  connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-2").withSecretId(SECRETS_ARN).build();
+  EXPECT_TRUE(false) << connection_string;
+  SQLCHAR conn_out[4096] = "\0";
+  SQLSMALLINT len;
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+
+  EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+}
