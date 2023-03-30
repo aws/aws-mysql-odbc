@@ -66,6 +66,7 @@ add_executable(
   multi_threaded_monitor_service_test.cc
   query_parsing_test.cc
   main.cc
+  secrets_manager_proxy_test.cc
   topology_service_test.cc
 )
 

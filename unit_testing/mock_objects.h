@@ -30,6 +30,7 @@
 #ifndef __MOCKOBJECTS_H__
 #define __MOCKOBJECTS_H__
 
+#include <aws/secretsmanager/SecretsManagerClient.h>
 #include <gmock/gmock.h>
 
 #include "driver/connection_proxy.h"
@@ -83,6 +84,8 @@ class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
     MOCK_METHOD(void, init, ());
     MOCK_METHOD(int, ping, ());
     MOCK_METHOD(void, delete_ds, ());
+    MOCK_METHOD(bool, connect, (const char*, const char*, const char*, const char*, unsigned int, const char*, unsigned long));
+    MOCK_METHOD(unsigned int, error_code, ());
 };
 
 class MOCK_IAM_PROXY : public IAM_PROXY {
@@ -201,6 +204,13 @@ public:
                     std::chrono::seconds, std::chrono::milliseconds, int, std::chrono::milliseconds));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring_for_all_connections, (std::set<std::string>));
+};
+
+class MOCK_SECRETS_MANAGER_CLIENT : public Aws::SecretsManager::SecretsManagerClient {
+public:
+    MOCK_SECRETS_MANAGER_CLIENT() : SecretsManagerClient() {};
+
+    MOCK_METHOD(Aws::SecretsManager::Model::GetSecretValueOutcome, GetSecretValue, (const Aws::SecretsManager::Model::GetSecretValueRequest&), (const));
 };
 
 #endif /* __MOCKOBJECTS_H__ */
