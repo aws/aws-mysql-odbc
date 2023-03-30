@@ -110,39 +110,39 @@ protected:
   SQLINTEGER native_error = 0;
   SQLSMALLINT len = 0, length = 0;
 
-  std::string TOXIPROXY_INSTANCE_1_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_1_NETWORK_ALIAS");
-  std::string TOXIPROXY_INSTANCE_2_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_2_NETWORK_ALIAS");
-  std::string TOXIPROXY_INSTANCE_3_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_3_NETWORK_ALIAS");
-  std::string TOXIPROXY_INSTANCE_4_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_4_NETWORK_ALIAS");
-  std::string TOXIPROXY_INSTANCE_5_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_5_NETWORK_ALIAS");
-  std::string TOXIPROXY_CLUSTER_NETWORK_ALIAS = std::getenv("TOXIPROXY_CLUSTER_NETWORK_ALIAS");
-  std::string TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS = std::getenv("TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS");
+  // std::string TOXIPROXY_INSTANCE_1_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_1_NETWORK_ALIAS");
+  // std::string TOXIPROXY_INSTANCE_2_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_2_NETWORK_ALIAS");
+  // std::string TOXIPROXY_INSTANCE_3_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_3_NETWORK_ALIAS");
+  // std::string TOXIPROXY_INSTANCE_4_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_4_NETWORK_ALIAS");
+  // std::string TOXIPROXY_INSTANCE_5_NETWORK_ALIAS = std::getenv("TOXIPROXY_INSTANCE_5_NETWORK_ALIAS");
+  // std::string TOXIPROXY_CLUSTER_NETWORK_ALIAS = std::getenv("TOXIPROXY_CLUSTER_NETWORK_ALIAS");
+  // std::string TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS = std::getenv("TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS");
 
-  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_1 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_1_NETWORK_ALIAS);
-  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_2 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_2_NETWORK_ALIAS);
-  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_3 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_3_NETWORK_ALIAS);
-  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_4 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_4_NETWORK_ALIAS);
-  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_5 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_5_NETWORK_ALIAS);
-  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_cluster = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_CLUSTER_NETWORK_ALIAS);
-  TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_read_only_cluster = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS);
+  // TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_1 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_1_NETWORK_ALIAS);
+  // TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_2 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_2_NETWORK_ALIAS);
+  // TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_3 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_3_NETWORK_ALIAS);
+  // TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_4 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_4_NETWORK_ALIAS);
+  // TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_client_instance_5 = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_INSTANCE_5_NETWORK_ALIAS);
+  // TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_cluster = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_CLUSTER_NETWORK_ALIAS);
+  // TOXIPROXY::TOXIPROXY_CLIENT* toxiproxy_read_only_cluster = new TOXIPROXY::TOXIPROXY_CLIENT(TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS);
 
-  TOXIPROXY::PROXY* proxy_instance_1 = get_proxy(toxiproxy_client_instance_1, MYSQL_INSTANCE_1_URL, MYSQL_PORT);
-  TOXIPROXY::PROXY* proxy_instance_2 = get_proxy(toxiproxy_client_instance_2, MYSQL_INSTANCE_2_URL, MYSQL_PORT);
-  TOXIPROXY::PROXY* proxy_instance_3 = get_proxy(toxiproxy_client_instance_3, MYSQL_INSTANCE_3_URL, MYSQL_PORT);
-  TOXIPROXY::PROXY* proxy_instance_4 = get_proxy(toxiproxy_client_instance_4, MYSQL_INSTANCE_4_URL, MYSQL_PORT);
-  TOXIPROXY::PROXY* proxy_instance_5 = get_proxy(toxiproxy_client_instance_5, MYSQL_INSTANCE_5_URL, MYSQL_PORT);
-  TOXIPROXY::PROXY* proxy_cluster = get_proxy(toxiproxy_cluster, MYSQL_CLUSTER_URL, MYSQL_PORT);
-  TOXIPROXY::PROXY* proxy_read_only_cluster = get_proxy(toxiproxy_read_only_cluster, MYSQL_RO_CLUSTER_URL, MYSQL_PORT);
+  // TOXIPROXY::PROXY* proxy_instance_1 = get_proxy(toxiproxy_client_instance_1, MYSQL_INSTANCE_1_URL, MYSQL_PORT);
+  // TOXIPROXY::PROXY* proxy_instance_2 = get_proxy(toxiproxy_client_instance_2, MYSQL_INSTANCE_2_URL, MYSQL_PORT);
+  // TOXIPROXY::PROXY* proxy_instance_3 = get_proxy(toxiproxy_client_instance_3, MYSQL_INSTANCE_3_URL, MYSQL_PORT);
+  // TOXIPROXY::PROXY* proxy_instance_4 = get_proxy(toxiproxy_client_instance_4, MYSQL_INSTANCE_4_URL, MYSQL_PORT);
+  // TOXIPROXY::PROXY* proxy_instance_5 = get_proxy(toxiproxy_client_instance_5, MYSQL_INSTANCE_5_URL, MYSQL_PORT);
+  // TOXIPROXY::PROXY* proxy_cluster = get_proxy(toxiproxy_cluster, MYSQL_CLUSTER_URL, MYSQL_PORT);
+  // TOXIPROXY::PROXY* proxy_read_only_cluster = get_proxy(toxiproxy_read_only_cluster, MYSQL_RO_CLUSTER_URL, MYSQL_PORT);
 
-  std::map<std::string, TOXIPROXY::PROXY*> proxy_map = {
-    {MYSQL_INSTANCE_1_URL.substr(0, MYSQL_INSTANCE_1_URL.find('.')), proxy_instance_1},
-    {MYSQL_INSTANCE_2_URL.substr(0, MYSQL_INSTANCE_2_URL.find('.')), proxy_instance_2},
-    {MYSQL_INSTANCE_3_URL.substr(0, MYSQL_INSTANCE_3_URL.find('.')), proxy_instance_3},
-    {MYSQL_INSTANCE_4_URL.substr(0, MYSQL_INSTANCE_4_URL.find('.')), proxy_instance_4},
-    {MYSQL_INSTANCE_5_URL.substr(0, MYSQL_INSTANCE_5_URL.find('.')), proxy_instance_5},
-    {MYSQL_CLUSTER_URL, proxy_cluster},
-    {MYSQL_RO_CLUSTER_URL, proxy_read_only_cluster}
-  };
+  // std::map<std::string, TOXIPROXY::PROXY*> proxy_map = {
+  //   {MYSQL_INSTANCE_1_URL.substr(0, MYSQL_INSTANCE_1_URL.find('.')), proxy_instance_1},
+  //   {MYSQL_INSTANCE_2_URL.substr(0, MYSQL_INSTANCE_2_URL.find('.')), proxy_instance_2},
+  //   {MYSQL_INSTANCE_3_URL.substr(0, MYSQL_INSTANCE_3_URL.find('.')), proxy_instance_3},
+  //   {MYSQL_INSTANCE_4_URL.substr(0, MYSQL_INSTANCE_4_URL.find('.')), proxy_instance_4},
+  //   {MYSQL_INSTANCE_5_URL.substr(0, MYSQL_INSTANCE_5_URL.find('.')), proxy_instance_5},
+  //   {MYSQL_CLUSTER_URL, proxy_cluster},
+  //   {MYSQL_RO_CLUSTER_URL, proxy_read_only_cluster}
+  // };
 
   std::vector<std::string> cluster_instances;
   std::string writer_id;
