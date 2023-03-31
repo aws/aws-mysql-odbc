@@ -121,7 +121,7 @@ class ConnectionString {
         length += sprintf(conn_in + length, "AUTHENTICATION_MODE=%s;", m_auth_mode.c_str());
       }
       if (is_set_auth_region) {
-        length += sprintf(conn_in + length, "AWS_REGION={%s};", m_auth_region.c_str());
+        length += sprintf(conn_in + length, "AWS_REGION=%s;", m_auth_region.c_str());
       }
       if (is_set_auth_host) {
         length += sprintf(conn_in + length, "IAM_HOST=%s;", m_auth_host.c_str());
@@ -133,7 +133,7 @@ class ConnectionString {
         length += sprintf(conn_in + length, "IAM_EXPIRATION_TIME=%d;", m_auth_expiration);
       }
       if (is_set_secret_id) {
-        length += sprintf(conn_in + length, "SECRET_ID={%s];", m_secret_id.c_str());
+        length += sprintf(conn_in + length, "SECRET_ID={%s};", m_secret_id.c_str());
       }
       snprintf(conn_in + length, sizeof(conn_in) - length, "\0");
 
