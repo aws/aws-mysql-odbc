@@ -171,29 +171,29 @@ public class IntegrationContainerTest {
       String secretValue = auroraUtil.createSecretValue(dbHostCluster, TEST_USERNAME, TEST_PASSWORD);
       secretsArn = auroraUtil.createSecrets("AWS-MySQL-ODBC-Tests-" + dbHostCluster, secretValue);
 
-//      proxyContainers = containerHelper.createProxyContainers(network, mySqlInstances, PROXIED_DOMAIN_NAME_SUFFIX);
-//      for (ToxiproxyContainer container : proxyContainers) {
-//        container.start();
-//      }
-//      mySQLProxyPort = containerHelper.createAuroraInstanceProxies(mySqlInstances, proxyContainers, MYSQL_PORT);
-//
-//      proxyContainers.add(containerHelper.createAndStartProxyContainer(
-//          network,
-//          "toxiproxy-instance-cluster",
-//          dbHostCluster + PROXIED_DOMAIN_NAME_SUFFIX,
-//          dbHostCluster,
-//          MYSQL_PORT,
-//          mySQLProxyPort)
-//      );
+      proxyContainers = containerHelper.createProxyContainers(network, mySqlInstances, PROXIED_DOMAIN_NAME_SUFFIX);
+      for (ToxiproxyContainer container : proxyContainers) {
+        container.start();
+      }
+      mySQLProxyPort = containerHelper.createAuroraInstanceProxies(mySqlInstances, proxyContainers, MYSQL_PORT);
 
-//      proxyContainers.add(containerHelper.createAndStartProxyContainer(
-//          network,
-//          "toxiproxy-ro-instance-cluster",
-//          dbHostClusterRo + PROXIED_DOMAIN_NAME_SUFFIX,
-//          dbHostClusterRo,
-//          MYSQL_PORT,
-//          mySQLProxyPort)
-//      );
+      proxyContainers.add(containerHelper.createAndStartProxyContainer(
+          network,
+          "toxiproxy-instance-cluster",
+          dbHostCluster + PROXIED_DOMAIN_NAME_SUFFIX,
+          dbHostCluster,
+          MYSQL_PORT,
+          mySQLProxyPort)
+      );
+
+      proxyContainers.add(containerHelper.createAndStartProxyContainer(
+          network,
+          "toxiproxy-ro-instance-cluster",
+          dbHostClusterRo + PROXIED_DOMAIN_NAME_SUFFIX,
+          dbHostClusterRo,
+          MYSQL_PORT,
+          mySQLProxyPort)
+      );
     }
 
     testContainer

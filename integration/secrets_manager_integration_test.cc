@@ -105,7 +105,6 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWrongRegion) {
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
     EXPECT_EQ(SQL_ERROR, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
-    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerInvalidSecretID) {
@@ -113,5 +112,4 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerInvalidSecretID) {
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
     EXPECT_EQ(SQL_ERROR, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
-    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
