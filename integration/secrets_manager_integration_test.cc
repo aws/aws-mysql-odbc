@@ -93,23 +93,60 @@ class SecretsManagerIntegrationTest : public testing::Test {
 };
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManager) {
-    connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-2").withSecretId(SECRETS_ARN).build();
+    connection_string = builder
+                            .withDSN(dsn)
+                            .withServer(MYSQL_CLUSTER_URL)
+                            .withAuthMode("SECRETS MANAGER")
+                            .withAuthRegion("us-east-2")
+                            .withSecretId(SECRETS_ARN)
+                            .build();
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
+
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
     EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWrongRegion) {
-    connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-1").withSecretId(SECRETS_ARN).build();
+    connection_string = builder
+                            .withDSN(dsn)
+                            .withServer(MYSQL_CLUSTER_URL)
+                            .withAuthMode("SECRETS MANAGER")
+                            .withAuthRegion("us-east-1")
+                            .withSecretId(SECRETS_ARN)
+                            .build();
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
+
     EXPECT_EQ(SQL_ERROR, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+
+    // Check state
+    SQLCHAR sqlstate[6] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";;
+    SQLINTEGER native_error = 0;
+    SQLSMALLINT stmt_length;
+    EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, nullptr, sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+    const std::string state = reinterpret_cast<char*>(sqlstate);
+    EXPECT_EQ("HY000", state);
 }
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerInvalidSecretID) {
-    connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-2").withSecretId("invalid-id").build();
+    connection_string = builder
+                            .withDSN(dsn)
+                            .withServer(MYSQL_CLUSTER_URL)
+                            .withAuthMode("SECRETS MANAGER")
+                            .withAuthRegion("us-east-2")
+                            .withSecretId("invalid-id")
+                            .build();
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
+
     EXPECT_EQ(SQL_ERROR, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+    
+    // Check state
+    SQLCHAR sqlstate[6] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";;
+    SQLINTEGER native_error = 0;
+    SQLSMALLINT stmt_length;
+    EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, nullptr, sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+    const std::string state = reinterpret_cast<char*>(sqlstate);
+    EXPECT_EQ("HY000", state);
 }

@@ -123,11 +123,9 @@ bool SECRETS_MANAGER_PROXY::update_secret(bool force_re_fetch) {
             MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetching credentials from cache.");
             this->secret_json_value = search->second;
         }
-        else {
-            if (fetch_latest_credentials()) {
-                fetched = true;
-                secrets_cache[this->secret_key] = this->secret_json_value;
-            }
+        else if (fetch_latest_credentials()) {
+            fetched = true;
+            secrets_cache[this->secret_key] = this->secret_json_value;
         }
     }
 
@@ -145,8 +143,9 @@ bool SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
         secret_string = get_secret_value_outcome.GetResult().GetSecretString();
     }
     else {
-        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", get_secret_value_outcome.GetError().GetMessage().c_str());
-        this->set_custom_error_message(get_secret_value_outcome.GetError().GetMessage().c_str());
+        const auto error_message = get_secret_value_outcome.GetError().GetMessage().c_str();
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", error_message);
+        this->set_custom_error_message(error_message);
         return false;
     }
     return parse_json_value(secret_string);
@@ -155,8 +154,9 @@ bool SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
 bool SECRETS_MANAGER_PROXY::parse_json_value(Aws::String json_string) {
     const auto res_json = Aws::Utils::Json::JsonValue(json_string);
     if (!res_json.WasParseSuccessful()) {
-        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", res_json.GetErrorMessage().c_str());
-        this->set_custom_error_message(res_json.GetErrorMessage().c_str());
+        const auto error_message = res_json.GetErrorMessage().c_str();
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", error_message);
+        this->set_custom_error_message(error_message);
         return false;
     }
 
