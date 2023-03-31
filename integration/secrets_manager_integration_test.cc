@@ -56,7 +56,6 @@ class SecretsManagerIntegrationTest : public testing::Test {
    protected:
     std::string SECRETS_ARN = std::getenv("SECRETS_ARN");
     char* dsn = std::getenv("TEST_DSN");
-    char* db = std::getenv("TEST_DATABASE");
 
     int MYSQL_PORT = str_to_int(std::getenv("MYSQL_PORT"));
 
@@ -98,5 +97,21 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManager) {
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+}
+
+TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWrongRegion) {
+    connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-1").withSecretId(SECRETS_ARN).build();
+    SQLCHAR conn_out[4096] = "\0";
+    SQLSMALLINT len;
+    EXPECT_EQ(SQL_ERROR, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+}
+
+TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerInvalidSecretID) {
+    connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-2").withSecretId("invalid-id").build();
+    SQLCHAR conn_out[4096] = "\0";
+    SQLSMALLINT len;
+    EXPECT_EQ(SQL_ERROR, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
     EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }

@@ -55,7 +55,6 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECT
     const auto region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     config.region = region ? region : Aws::Region::US_EAST_1;
     this->sm_client = std::make_shared<SecretsManagerClient>(config);
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Secrets Manager client initialized.");
 
     const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
     this->secret_key = std::make_pair(secret_ID ? secret_ID : "", config.region);
@@ -76,7 +75,6 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTIO
 
 SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
     this->sm_client.reset();
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Secrets Manager client released.")
     --SDK_HELPER;
 }
 
@@ -84,7 +82,7 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
                                          unsigned int port, const char* unix_socket, unsigned long flags) {
 
     if (this->secret_key.first.empty()) {
-        const auto error = "[SECRETS_MANAGER_PROXY]Missing required config parameter for Secrets Manager: Secret ID";
+        const auto error = "Missing required config parameter for Secrets Manager: Secret ID";
         MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", error);
         this->set_custom_error_message(error);
         return false;
@@ -93,11 +91,13 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
     bool fetched = update_secret(false);
     std::string username = get_from_secret_json_value(USERNAME_KEY);
     std::string password = get_from_secret_json_value(PASSWORD_KEY);
-    fetched = false;
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] username %s.", username.c_str());
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] password %s.", password.c_str());
+    if (username.empty() || password.empty()) {
+        const auto error = "Failed to fetch username or password from Secrets Manager.";
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", error);
+        this->set_custom_error_message(error);
+        return false;
+    }
     bool ret = next_proxy->connect(host, username.c_str(), password.c_str(), database, port, unix_socket, flags);
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] ret %s.", ret ? "succeeded" : "failed");
     if (!ret && next_proxy->error_code() == ER_ACCESS_DENIED_ERROR && !fetched) {
         // Login unsuccessful with cached credentials
         // Try to re-fetch credentials and try again
@@ -107,7 +107,6 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
             username = get_from_secret_json_value(USERNAME_KEY);
             password = get_from_secret_json_value(PASSWORD_KEY);
             ret = next_proxy->connect(host, username.c_str(), password.c_str(), database, port, unix_socket, flags);
-            MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Second ret %s.", ret ? "succeeded" : "failed");
         }
     }
 
@@ -121,49 +120,51 @@ bool SECRETS_MANAGER_PROXY::update_secret(bool force_re_fetch) {
 
         const auto search = secrets_cache.find(this->secret_key);
         if (search != secrets_cache.end() && !force_re_fetch) {
+            MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetching credentials from cache.");
             this->secret_json_value = search->second;
-            MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetched from cache.");
         }
         else {
-            this->secret_json_value = fetch_latest_credentials();
-            fetched = true;
-            secrets_cache[this->secret_key] = this->secret_json_value;
+            if (fetch_latest_credentials()) {
+                fetched = true;
+                secrets_cache[this->secret_key] = this->secret_json_value;
+            }
         }
     }
 
     return fetched;
 }
 
-Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
+bool SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
     Aws::String secret_string;
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetching credentials from Secrets Manager.");
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetching credentials from Secrets Manager Service.");
 
     Model::GetSecretValueRequest request;
     request.SetSecretId(this->secret_key.first);
     auto get_secret_value_outcome = this->sm_client->GetSecretValue(request);
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Got secret_value_outcome.")
     if (get_secret_value_outcome.IsSuccess()) {
         secret_string = get_secret_value_outcome.GetResult().GetSecretString();
-        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] secret_value_outcome successful.");
     }
     else {
         MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", get_secret_value_outcome.GetError().GetMessage().c_str());
         this->set_custom_error_message(get_secret_value_outcome.GetError().GetMessage().c_str());
+        return false;
     }
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] secret_string: %s", secret_string.c_str());
     return parse_json_value(secret_string);
 }
 
-Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::parse_json_value(Aws::String json_string) const {
-    auto res_json = Aws::Utils::Json::JsonValue(json_string);
+bool SECRETS_MANAGER_PROXY::parse_json_value(Aws::String json_string) {
+    const auto res_json = Aws::Utils::Json::JsonValue(json_string);
     if (!res_json.WasParseSuccessful()) {
         MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", res_json.GetErrorMessage().c_str());
-        throw std::runtime_error("Error parsing secrets manager response body. " + res_json.GetErrorMessage());
+        this->set_custom_error_message(res_json.GetErrorMessage().c_str());
+        return false;
     }
-    return res_json;
+
+    this->secret_json_value = res_json;
+    return true;
 }
 
-std::string SECRETS_MANAGER_PROXY::get_from_secret_json_value(std::string key) const {
+std::string SECRETS_MANAGER_PROXY::get_from_secret_json_value(std::string key) {
     std::string value;
     const auto view = this->secret_json_value.View();
 
@@ -173,7 +174,8 @@ std::string SECRETS_MANAGER_PROXY::get_from_secret_json_value(std::string key) c
     else {
         const auto error = "Unable to extract the " + key + " from secrets manager response.";
         MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", error.c_str());
-        throw std::runtime_error(error);
+        this->set_custom_error_message(error.c_str());
+        return std::string();
     }
     return value;
 }

@@ -98,6 +98,10 @@ public class IntegrationContainerTest {
         auroraUtil.deleteCluster(TEST_DB_CLUSTER_IDENTIFIER);
       }
 
+      if (!StringUtils.isNullOrEmpty(secretsArn)) {
+        auroraUtil.deleteSecrets(secretsArn);
+      }
+
       auroraUtil.ec2DeauthorizesIP(runnerIP);
 
       for (ToxiproxyContainer proxy : proxyContainers) {
