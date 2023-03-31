@@ -95,10 +95,8 @@ class SecretsManagerIntegrationTest : public testing::Test {
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManager) {
     connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-2").withSecretId(SECRETS_ARN).build();
-    EXPECT_TRUE(false) << connection_string;
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
-
     EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
