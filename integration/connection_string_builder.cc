@@ -133,7 +133,7 @@ class ConnectionString {
         length += sprintf(conn_in + length, "IAM_EXPIRATION_TIME=%d;", m_auth_expiration);
       }
       if (is_set_secret_id) {
-        length += sprintf(conn_in + length, "SECRET_ID={%s};", m_secret_id.c_str());
+        length += sprintf(conn_in + length, "SECRET_ID=%s;", m_secret_id.c_str());
       }
       snprintf(conn_in + length, sizeof(conn_in) - length, "\0");
 

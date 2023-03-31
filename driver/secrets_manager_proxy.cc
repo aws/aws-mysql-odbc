@@ -82,8 +82,8 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
                                          unsigned int port, const char* unix_socket, unsigned long flags) {
 
     if (this->secret_key.first.empty()) {
-        const auto error = "Missing required config parameter for Secrets Manager: Secret ID";
-        MYLOG_DBC_TRACE(dbc, error);
+        const auto error = "[SECRETS_MANAGER_PROXY]Missing required config parameter for Secrets Manager: Secret ID";
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", error);
         this->set_custom_error_message(error);
         return false;
     }
@@ -138,7 +138,7 @@ Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
         secret_string = get_secret_value_outcome.GetResult().GetSecretString();
     }
     else {
-        MYLOG_DBC_TRACE(dbc, get_secret_value_outcome.GetError().GetMessage().c_str());
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", get_secret_value_outcome.GetError().GetMessage().c_str());
         this->set_custom_error_message(get_secret_value_outcome.GetError().GetMessage().c_str());
     }
     return parse_json_value(secret_string);
@@ -147,7 +147,7 @@ Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
 Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::parse_json_value(Aws::String json_string) const {
     auto res_json = Aws::Utils::Json::JsonValue(json_string);
     if (!res_json.WasParseSuccessful()) {
-        MYLOG_DBC_TRACE(dbc, res_json.GetErrorMessage().c_str());
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", res_json.GetErrorMessage().c_str());
         throw std::runtime_error("Error parsing secrets manager response body. " + res_json.GetErrorMessage());
     }
     return res_json;
@@ -162,7 +162,7 @@ std::string SECRETS_MANAGER_PROXY::get_from_secret_json_value(std::string key) c
     }
     else {
         const auto error = "Unable to extract the " + key + " from secrets manager response.";
-        MYLOG_DBC_TRACE(dbc, error.c_str());
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", error.c_str());
         throw std::runtime_error(error);
     }
     return value;

@@ -160,8 +160,6 @@ public:
 
     void close_socket() override;
 
-    void set_custom_error_message(const char* error_message) override;
-
 protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
@@ -170,8 +168,6 @@ protected:
 private:
     MYSQL* mysql = nullptr;
     std::shared_ptr<HOST_INFO> host = nullptr;
-    bool has_custom_error_message = false;
-    std::string custom_error_message = "";
 };
 
 

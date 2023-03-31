@@ -75,13 +75,6 @@ unsigned int MYSQL_PROXY::error_code() {
 }
 
 const char* MYSQL_PROXY::error() {
-    if (has_custom_error_message) {
-        // We disable this flag after fetching the custom message once
-        // so it does not obscure future proxy errors.
-        has_custom_error_message = false;
-
-        return this->custom_error_message.c_str();
-    }
     return mysql_error(mysql);
 }
 
@@ -409,9 +402,4 @@ void MYSQL_PROXY::close_socket() {
     if (mysql->net.fd != INVALID_SOCKET && (ret = ::closesocket(mysql->net.fd))) {
         MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", ret, strerror(socket_errno));
     }
-}
-
-void MYSQL_PROXY::set_custom_error_message(const char* error_message) {
-    this->custom_error_message = error_message;
-    has_custom_error_message = true;
 }

@@ -175,10 +175,14 @@ public:
 
     virtual void set_custom_error_message(const char* error_message);
 
+    void set_custom_error_message(const char* error_message);
+
 protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;
     CONNECTION_PROXY* next_proxy = nullptr;
+    bool has_custom_error_message = false;
+    std::string custom_error_message = "";
 };
 
 #endif /* __CONNECTION_PROXY__ */
