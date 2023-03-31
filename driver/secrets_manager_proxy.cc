@@ -101,11 +101,13 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
     if (!ret && next_proxy->error_code() == ER_ACCESS_DENIED_ERROR && !fetched) {
         // Login unsuccessful with cached credentials
         // Try to re-fetch credentials and try again
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Login failed with cached credentials");
         fetched = update_secret(true);
         if (fetched) {
             username = get_from_secret_json_value(USERNAME_KEY);
             password = get_from_secret_json_value(PASSWORD_KEY);
             ret = next_proxy->connect(host, username.c_str(), password.c_str(), database, port, unix_socket, flags);
+            MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Second ret %s.", ret ? "succeeded" : "failed");
         }
     }
 
@@ -120,6 +122,7 @@ bool SECRETS_MANAGER_PROXY::update_secret(bool force_re_fetch) {
         const auto search = secrets_cache.find(this->secret_key);
         if (search != secrets_cache.end() && !force_re_fetch) {
             this->secret_json_value = search->second;
+            MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetched from cache.");
         }
         else {
             this->secret_json_value = fetch_latest_credentials();
@@ -133,7 +136,7 @@ bool SECRETS_MANAGER_PROXY::update_secret(bool force_re_fetch) {
 
 Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
     Aws::String secret_string;
-    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetching credentials.")
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetching credentials from Secrets Manager.");
 
     Model::GetSecretValueRequest request;
     request.SetSecretId(this->secret_key.first);
@@ -141,12 +144,13 @@ Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
     MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Got secret_value_outcome.")
     if (get_secret_value_outcome.IsSuccess()) {
         secret_string = get_secret_value_outcome.GetResult().GetSecretString();
-        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] secret_value_outcome successful.")
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] secret_value_outcome successful.");
     }
     else {
         MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", get_secret_value_outcome.GetError().GetMessage().c_str());
         this->set_custom_error_message(get_secret_value_outcome.GetError().GetMessage().c_str());
     }
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] secret_string: %s", secret_string.c_str());
     return parse_json_value(secret_string);
 }
 
