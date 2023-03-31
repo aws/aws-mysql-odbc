@@ -55,6 +55,7 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECT
     const auto region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     config.region = region ? region : Aws::Region::US_EAST_1;
     this->sm_client = std::make_shared<SecretsManagerClient>(config);
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Secrets Manager client initialized.");
 
     const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
     this->secret_key = std::make_pair(secret_ID ? secret_ID : "", config.region);
@@ -75,6 +76,7 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTIO
 
 SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
     this->sm_client.reset();
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Secrets Manager client released.")
     --SDK_HELPER;
 }
 
@@ -92,8 +94,10 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
     std::string username = get_from_secret_json_value(USERNAME_KEY);
     std::string password = get_from_secret_json_value(PASSWORD_KEY);
     fetched = false;
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] username %s.", username.c_str());
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] password %s.", password.c_str());
     bool ret = next_proxy->connect(host, username.c_str(), password.c_str(), database, port, unix_socket, flags);
-
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] ret %s.", ret ? "succeeded" : "failed");
     if (!ret && next_proxy->error_code() == ER_ACCESS_DENIED_ERROR && !fetched) {
         // Login unsuccessful with cached credentials
         // Try to re-fetch credentials and try again
@@ -129,13 +133,15 @@ bool SECRETS_MANAGER_PROXY::update_secret(bool force_re_fetch) {
 
 Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
     Aws::String secret_string;
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Fetching credentials.")
 
     Model::GetSecretValueRequest request;
     request.SetSecretId(this->secret_key.first);
     auto get_secret_value_outcome = this->sm_client->GetSecretValue(request);
-
+    MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] Got secret_value_outcome.")
     if (get_secret_value_outcome.IsSuccess()) {
         secret_string = get_secret_value_outcome.GetResult().GetSecretString();
+        MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] secret_value_outcome successful.")
     }
     else {
         MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", get_secret_value_outcome.GetError().GetMessage().c_str());
