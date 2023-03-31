@@ -104,7 +104,7 @@ public class IntegrationContainerTest {
         proxy.stop();
       }
     }
-
+    testContainer.copyFileFromContainer("/tmp/myodbc.log", "./myodbc.log");
     testContainer.stop();
     if (mysqlContainer != null) {
       mysqlContainer.stop();

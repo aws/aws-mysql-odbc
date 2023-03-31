@@ -27,7 +27,6 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/secretsmanager/SecretsManagerServiceClientModel.h>
 #include <aws/secretsmanager/model/GetSecretValueRequest.h>
 
@@ -55,8 +54,6 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECT
     SecretsManagerClientConfiguration config;
     const auto region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     config.region = region ? region : Aws::Region::US_EAST_1;
-    Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
-    Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
     this->sm_client = std::make_shared<SecretsManagerClient>(config);
 
     const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);

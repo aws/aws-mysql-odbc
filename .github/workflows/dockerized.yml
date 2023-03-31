@@ -210,8 +210,10 @@ jobs:
 
       - name: 'Display and save log'
         if: always()
-        working-directory: ${{ github.workspace }}/build
+        working-directory: ${{ github.workspace }}
         run: |
+          ls ./build/integration/
+          ls ./build/integration/bin
           echo "Displaying logs"
           mkdir -p ./reports/tests
           if [[ -f myodbc.log && -s myodbc.log ]]; then 
