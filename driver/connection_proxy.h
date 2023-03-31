@@ -173,8 +173,6 @@ public:
 
     virtual MYSQL* move_mysql_connection();
 
-    virtual void set_custom_error_message(const char* error_message);
-
     void set_custom_error_message(const char* error_message);
 
 protected:
