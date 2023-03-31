@@ -24,10 +24,13 @@
 // See the GNU General Public License, version 2.0, for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program. If not, see 
+// along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include <gtest/gtest.h>
+#include <sql.h>
+#include <sqlext.h>
+
 #include <cassert>
 #include <chrono>
 #include <climits>
@@ -35,8 +38,6 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
-#include <sql.h>
-#include <sqlext.h>
 
 #include "connection_string_builder.cc"
 
@@ -52,52 +53,58 @@ static int str_to_int(const char* str) {
 }
 
 class SecretsManagerIntegrationTest : public testing::Test {
-protected:
-  std::string SECRETS_ARN = std::getenv("SECRETS_ARN");
-  char* dsn = std::getenv("TEST_DSN");
-  char* db = std::getenv("TEST_DATABASE");
+   protected:
+    std::string SECRETS_ARN = std::getenv("SECRETS_ARN");
+    char* dsn = std::getenv("TEST_DSN");
+    char* db = std::getenv("TEST_DATABASE");
 
-  int MYSQL_PORT = str_to_int(std::getenv("MYSQL_PORT"));
+    int MYSQL_PORT = str_to_int(std::getenv("MYSQL_PORT"));
 
-  std::string MYSQL_CLUSTER_URL = std::getenv("TEST_SERVER");
+    std::string MYSQL_CLUSTER_URL = std::getenv("TEST_SERVER");
 
-  SQLHENV env = nullptr;
-  SQLHDBC dbc = nullptr;
+    SQLHENV env = nullptr;
+    SQLHDBC dbc = nullptr;
 
-  ConnectionStringBuilder builder;
-  std::string connection_string;
+    ConnectionStringBuilder builder;
+    std::string connection_string;
 
-  static void SetUpTestSuite() {
-  }
-
-  static void TearDownTestSuite() {
-  }     
-
-  void SetUp() override {
-    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
-    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
-    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-
-    builder = ConnectionStringBuilder();
-    builder.withPort(MYSQL_PORT).withLogQuery(true);
-   }
-
-  void TearDown() override {
-    if (nullptr != dbc) {
-      SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+    static void SetUpTestSuite() {
     }
-    if (nullptr != env) {
-      SQLFreeHandle(SQL_HANDLE_ENV, env);
+
+    static void TearDownTestSuite() {
     }
-  }
+
+    void SetUp() override {
+        SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
+        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
+        builder = ConnectionStringBuilder();
+        builder.withPort(MYSQL_PORT).withLogQuery(true);
+    }
+
+    void TearDown() override {
+        if (nullptr != dbc) {
+            SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+        }
+        if (nullptr != env) {
+            SQLFreeHandle(SQL_HANDLE_ENV, env);
+        }
+    }
 };
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManager) {
-   connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-2").withSecretId(SECRETS_ARN).build();
-   EXPECT_TRUE(false) << connection_string;
-   SQLCHAR conn_out[4096] = "\0";
-   SQLSMALLINT len;
-   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+    connection_string = builder.withDSN(dsn).withServer(MYSQL_CLUSTER_URL).withAuthMode("SECRETS MANAGER").withAuthRegion("us-east-2").withSecretId(SECRETS_ARN).build();
+    EXPECT_TRUE(false) << connection_string;
+    SQLCHAR conn_out[4096] = "\0";
+    SQLCHAR message[SQL_MAX_MESSAGE_LENGTH] = "\0";
+    SQLSMALLINT len;
+    EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
-   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+    SQLSMALLINT stmt_length;
+    SQLCHAR sqlstate[6] = "\0";
+    SQLINTEGER native_error;
+    EXPECT_EQ(SQL_SUCCESS, SQLError(env, dbc, nullptr, sqlstate, &native_error, message, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length));
+    EXPECT_TRUE(false) << message;
+    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }

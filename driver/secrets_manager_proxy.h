@@ -55,7 +55,7 @@ private:
     Aws::Utils::Json::JsonValue secret_json_value;
 
     bool update_secret(bool force_re_fetch);
-    Aws::Utils::Json::JsonValue fetch_latest_credentials() const;
+    Aws::Utils::Json::JsonValue fetch_latest_credentials();
     Aws::Utils::Json::JsonValue parse_json_value(Aws::String json_string) const;
     std::string get_from_secret_json_value(std::string key) const;
 

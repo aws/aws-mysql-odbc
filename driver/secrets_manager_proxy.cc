@@ -27,6 +27,7 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
+#include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/secretsmanager/SecretsManagerServiceClientModel.h>
 #include <aws/secretsmanager/model/GetSecretValueRequest.h>
 
@@ -54,6 +55,8 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECT
     SecretsManagerClientConfiguration config;
     const auto region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     config.region = region ? region : Aws::Region::US_EAST_1;
+    Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
+    Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
     this->sm_client = std::make_shared<SecretsManagerClient>(config);
 
     const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
@@ -127,7 +130,7 @@ bool SECRETS_MANAGER_PROXY::update_secret(bool force_re_fetch) {
     return fetched;
 }
 
-Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() const {
+Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() {
     Aws::String secret_string;
 
     Model::GetSecretValueRequest request;
@@ -139,6 +142,7 @@ Aws::Utils::Json::JsonValue SECRETS_MANAGER_PROXY::fetch_latest_credentials() co
     }
     else {
         MYLOG_DBC_TRACE(dbc, get_secret_value_outcome.GetError().GetMessage().c_str());
+        this->set_custom_error_message(get_secret_value_outcome.GetError().GetMessage().c_str());
     }
     return parse_json_value(secret_string);
 }

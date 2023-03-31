@@ -88,14 +88,6 @@ unsigned int CONNECTION_PROXY::error_code() {
 }
 
 const char* CONNECTION_PROXY::error() {
-    if (has_custom_error_message) {		
-        // We disable this flag after fetching the custom message once
-        // so it does not obscure future proxy errors.
-        has_custom_error_message = false;
-		
-        return this->custom_error_message.c_str();
-    }
-
     return next_proxy->error();
 }
 
@@ -413,6 +405,5 @@ MYSQL* CONNECTION_PROXY::move_mysql_connection() {
 }
 
 void CONNECTION_PROXY::set_custom_error_message(const char* error_message) {
-    this->custom_error_message = error_message;
-    has_custom_error_message = true;
+    next_proxy->set_custom_error_message(error_message);
 }
