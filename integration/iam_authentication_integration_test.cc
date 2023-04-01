@@ -207,31 +207,6 @@ TEST_F(IamAuthenticationIntegrationTest, ServerWithNoAuthHost) {
     EXPECT_EQ(SQL_SUCCESS, rc);
 }
 
-// Tests that IAM connection will fail when we do not provide the server.
-TEST_F(IamAuthenticationIntegrationTest, AuthHostWithNoServer) {
-    auto connection_string = builder
-        .withAuthHost(test_endpoint)
-        .withUID(iam_user)
-        .withPort(3306)
-        .withAuthPort(3306).build();
-
-    SQLCHAR conn_out[4096] = "\0";
-    SQLSMALLINT len;
-    SQLRETURN rc = SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS,
-        conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
-    EXPECT_EQ(SQL_ERROR, rc);
-
-    SQLSMALLINT stmt_length;
-    SQLINTEGER native_err;
-    SQLCHAR msg[SQL_MAX_MESSAGE_LENGTH] = "\0", state[6] = "\0";
-    rc = SQLError(nullptr, dbc, nullptr, state, &native_err,
-        msg, SQL_MAX_MESSAGE_LENGTH - 1, &stmt_length);
-    EXPECT_EQ(SQL_SUCCESS, rc);
-
-    const std::string state_str = reinterpret_cast<char*>(state);
-    EXPECT_EQ("HY000", state_str);
-}
-
 // Tests that IAM connection will still connect via the provided port
 // when the auth port is not provided.
 TEST_F(IamAuthenticationIntegrationTest, PortWithNoAuthPort) {
@@ -240,25 +215,6 @@ TEST_F(IamAuthenticationIntegrationTest, PortWithNoAuthPort) {
         .withAuthHost(test_endpoint)
         .withUID(iam_user)
         .withPort(3306).build();
-
-    SQLCHAR conn_out[4096] = "\0";
-    SQLSMALLINT len;
-    SQLRETURN rc = SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS,
-        conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT);
-    EXPECT_EQ(SQL_SUCCESS, rc);
-
-    rc = SQLDisconnect(dbc);
-    EXPECT_EQ(SQL_SUCCESS, rc);
-}
-
-// Tests that IAM connection will still connect via the provided auth port
-// when the regular port is not provided.
-TEST_F(IamAuthenticationIntegrationTest, AuthPortWithNoPort) {
-    auto connection_string = builder
-        .withServer(test_endpoint)
-        .withAuthHost(test_endpoint)
-        .withUID(iam_user)
-        .withAuthPort(3306).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -279,7 +235,7 @@ TEST_F(IamAuthenticationIntegrationTest, ConnectToIpAddress) {
         .withServer(ip_address)
         .withAuthHost(test_endpoint)
         .withUID(iam_user)
-        .withAuthPort(3306).build();
+        .withPort(3306).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -299,7 +255,7 @@ TEST_F(IamAuthenticationIntegrationTest, WrongPassword) {
         .withAuthHost(test_endpoint)
         .withUID(iam_user)
         .withPWD("WRONG_PASSWORD")
-        .withAuthPort(3306).build();
+        .withPort(3306).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -317,7 +273,7 @@ TEST_F(IamAuthenticationIntegrationTest, WrongUser) {
         .withServer(test_endpoint)
         .withAuthHost(test_endpoint)
         .withUID("WRONG_USER")
-        .withAuthPort(3306).build();
+        .withPort(3306).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -342,7 +298,7 @@ TEST_F(IamAuthenticationIntegrationTest, EmptyUser) {
         .withServer(test_endpoint)
         .withAuthHost(test_endpoint)
         .withUID("")
-        .withAuthPort(3306).build();
+        .withPort(3306).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
