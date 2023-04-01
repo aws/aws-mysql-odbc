@@ -55,9 +55,9 @@ private:
     Aws::Utils::Json::JsonValue secret_json_value;
 
     bool update_secret(bool force_re_fetch);
-    Aws::Utils::Json::JsonValue fetch_latest_credentials() const;
-    Aws::Utils::Json::JsonValue parse_json_value(Aws::String json_string) const;
-    std::string get_from_secret_json_value(std::string key) const;
+    bool fetch_latest_credentials();
+    bool parse_json_value(Aws::String json_string);
+    std::string get_from_secret_json_value(std::string key);
 
     static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> secrets_cache;
     static std::mutex secrets_cache_mutex;
