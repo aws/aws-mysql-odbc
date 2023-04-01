@@ -66,8 +66,9 @@ IAM_PROXY::~IAM_PROXY() {
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
     const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
+    const char* auth_host = host;
     if (ds->auth_host) {
-        host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
+        auth_host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
     }
 
     const char* region;
@@ -76,12 +77,10 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
     }
     else {
         // Go with default region if region is not provided.
-        region = "us-east-1";
+        region = Aws::Region::US_EAST_1;
     }
 
-    port = ds->auth_port;
-
-    std::string auth_token = this->get_auth_token(host, region, port, user, ds->auth_expiration);
+    std::string auth_token = this->get_auth_token(auth_host, region, ds->auth_port, user, ds->auth_expiration);
 
     bool connect_result = next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
     if (!connect_result) {
