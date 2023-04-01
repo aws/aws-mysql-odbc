@@ -53,6 +53,12 @@ import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.amazonaws.waiters.WaiterTimedOutException;
 import com.amazonaws.waiters.WaiterUnrecoverableException;
+import org.json.JSONObject;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
+import software.amazon.awssdk.services.secretsmanager.model.*;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -89,6 +95,7 @@ public class AuroraTestUtility {
 
   private AmazonRDS rdsClient = null;
   private AmazonEC2 ec2Client = null;
+  private SecretsManagerClient smClient = null;
   private String runnerIP = "";
 
   private static final String DUPLICATE_IP_ERROR_CODE = "InvalidPermission.Duplicate";
@@ -130,6 +137,9 @@ public class AuroraTestUtility {
         .withRegion(dbRegion)
         .withCredentials(credentials)
         .build();
+    smClient = SecretsManagerClient.builder()
+            .region(Region.of(dbRegion))
+            .build();
   }
 
   /**
@@ -317,5 +327,41 @@ public class AuroraTestUtility {
         .withDBClusterIdentifier(dbIdentifier);
 
     rdsClient.deleteDBCluster(dbDeleteClusterRequest);
+  }
+
+  public String createSecrets(String secretName, String secretValue) {
+    try {
+      CreateSecretRequest secretRequest = CreateSecretRequest.builder()
+              .name(secretName)
+              .description("Integration tests credentials for AWS MySQL ODBC Driver")
+              .secretString(secretValue)
+              .build();
+
+      CreateSecretResponse secretResponse = smClient.createSecret(secretRequest);
+      return secretResponse.arn();
+
+    } catch (SecretsManagerException e) {
+      System.err.println(e.awsErrorDetails().errorMessage());
+      System.exit(1);
+    }
+    return "";
+  }
+
+  public String createSecretValue(String host, String username, String password) {
+    return new JSONObject()
+            .put("engine", "mysql")
+            .put("host", host)
+            .put("username", username)
+            .put("password", password)
+            .toString();
+  }
+
+  public void deleteSecrets(String secretsArn) {
+    DeleteSecretRequest request = DeleteSecretRequest.builder()
+            .secretId(secretsArn)
+            .forceDeleteWithoutRecovery(true)
+            .build();
+
+    smClient.deleteSecret(request);
   }
 }
