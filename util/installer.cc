@@ -305,6 +305,8 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         W_SSLMODE, W_NO_DATE_OVERFLOW, W_LOAD_DATA_LOCAL_DIR,
                         W_OCI_CONFIG_FILE, W_OCI_CONFIG_PROFILE, W_AUTHENTICATION_KERBEROS_MODE,
                         W_TLS_VERSIONS, W_SSL_CRL, W_SSL_CRLPATH,
+                        /* AWS Auth */
+                        W_AUTH_MODE, W_AUTH_REGION, W_AUTH_HOST, W_AUTH_PORT, W_AUTH_EXPIRATION, W_AUTH_SECRET_ID,
                         /* Failover */
                         W_ENABLE_CLUSTER_FAILOVER, W_ALLOW_READER_CONNECTIONS, 
                         W_GATHER_PERF_METRICS, W_GATHER_PERF_METRICS_PER_INSTANCE,

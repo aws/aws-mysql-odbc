@@ -212,7 +212,8 @@ TEST_F(SecretsManagerProxyTest, TestFailedToReadSecrets) {
 
     EXPECT_CALL(*mock_connection_proxy, connect(_, _, _, _, _, _, _)).Times(0);
 
-    EXPECT_THROW(sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0), std::runtime_error);
+    const auto ret = sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+    EXPECT_FALSE(ret);
     EXPECT_EQ(0, TEST_UTILS::get_secrets_cache().size());
 }
 
@@ -229,6 +230,7 @@ TEST_F(SecretsManagerProxyTest, TestFailedToGetSecrets) {
 
     EXPECT_CALL(*mock_connection_proxy, connect(_, _, _, _, _, _, _)).Times(0);
 
-    EXPECT_THROW(sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0), std::runtime_error);
+    const auto ret = sm_proxy.connect(TEST_HOST, nullptr, nullptr, nullptr, 0, nullptr, 0);
+    EXPECT_FALSE(ret);
     EXPECT_EQ(0, TEST_UTILS::get_secrets_cache().size());
 }

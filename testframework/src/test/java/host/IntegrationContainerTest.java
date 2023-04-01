@@ -80,6 +80,7 @@ public class IntegrationContainerTest {
   private static String dbHostClusterRo = "";
   private static String runnerIP = null;
   private static String dbConnStrSuffix = "";
+  private static String secretsArn = "";
 
   private static final Network NETWORK = Network.newNetwork();
 
@@ -97,13 +98,16 @@ public class IntegrationContainerTest {
         auroraUtil.deleteCluster(TEST_DB_CLUSTER_IDENTIFIER);
       }
 
+      if (!StringUtils.isNullOrEmpty(secretsArn)) {
+        auroraUtil.deleteSecrets(secretsArn);
+      }
+
       auroraUtil.ec2DeauthorizesIP(runnerIP);
 
       for (ToxiproxyContainer proxy : proxyContainers) {
         proxy.stop();
       }
     }
-
     testContainer.stop();
     if (mysqlContainer != null) {
       mysqlContainer.stop();
@@ -164,6 +168,8 @@ public class IntegrationContainerTest {
       dbHostClusterRo = clusterInfo.getClusterROEndpoint();
 
       mySqlInstances = clusterInfo.getInstances();
+      String secretValue = auroraUtil.createSecretValue(dbHostCluster, TEST_USERNAME, TEST_PASSWORD);
+      secretsArn = auroraUtil.createSecrets("AWS-MySQL-ODBC-Tests-" + dbHostCluster, secretValue);
 
       proxyContainers = containerHelper.createProxyContainers(network, mySqlInstances, PROXIED_DOMAIN_NAME_SUFFIX);
       for (ToxiproxyContainer container : proxyContainers) {
@@ -200,7 +206,8 @@ public class IntegrationContainerTest {
       .withEnv("TEST_SERVER", dbHostCluster)
       .withEnv("TEST_RO_SERVER", dbHostClusterRo)
       .withEnv("DB_CONN_STR_SUFFIX", "." + dbConnStrSuffix)
-      .withEnv("PROXIED_CLUSTER_TEMPLATE", "?." + dbConnStrSuffix + PROXIED_DOMAIN_NAME_SUFFIX);
+      .withEnv("PROXIED_CLUSTER_TEMPLATE", "?." + dbConnStrSuffix + PROXIED_DOMAIN_NAME_SUFFIX)
+      .withEnv("SECRETS_ARN", secretsArn);
         
     // Add mysql instances & proxies to container env
     for (int i = 0; i < mySqlInstances.size(); i++) {
