@@ -756,8 +756,8 @@ DataSource *ds_new()
   ds->port = 3306;
   ds->has_port = false;
   ds->no_schema = 1;
-  ds->auth_port = 0;
-  ds->auth_expiration = 0;
+  ds->auth_port = 3306;
+  ds->auth_expiration = 900; // 15 minutes
   ds->enable_cluster_failover = true;
   ds->allow_reader_connections = false;
   ds->gather_perf_metrics = false;
