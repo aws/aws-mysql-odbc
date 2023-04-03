@@ -64,7 +64,6 @@
             </Component>
             <Component Id="setup" Guid="e706b738-01f6-4a7c-bf4a-eb4599a4abb4" SharedDllRefCount="yes" Win64="yes">
               <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbcS.dll" />
-              <File Id="awsmysqlodbcS.lib" Name="awsmysqlodbcS.lib" DiskId="1" Source="x64\awsmysqlodbcS.lib"/>
             </Component>
             <Component Id="installer" Guid="4d743672-e573-45e2-8002-8d32866a5ae2" SharedDllRefCount="yes" Win64="yes">
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x64\myodbc-installer.exe" />
@@ -85,7 +84,6 @@
             </Component>
             <Component Id="setup" Guid="80e53cdf-b4fc-4911-a9c2-17853a6c83a8" SharedDllRefCount="yes">
               <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbcS.dll" />
-              <File Id="awsmysqlodbcS.lib" Name="awsmysqlodbcS.lib" DiskId="1" Source="x86\awsmysqlodbcS.lib"/>
             </Component>
             <Component Id="installer" Guid="dcf4dd91-f481-4333-a276-a0a11cce51ca" SharedDllRefCount="yes">
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x86\myodbc-installer.exe" />
