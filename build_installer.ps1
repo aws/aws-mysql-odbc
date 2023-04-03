@@ -45,7 +45,8 @@ Note that building the installer requires the following:
 
 $ARCHITECTURE = $args[0]
 $CONFIGURATION = $args[1]
-$MYSQL_DIR = $args[2]
+$GENERATOR = $args[2]
+$MYSQL_DIR = $args[3]
 
 # Set default values
 if ($null -eq $CONFIGURATION) {
@@ -56,7 +57,7 @@ if ($null -eq $MYSQL_DIR) {
 }
 
 # BUILD DRIVER
-cmake -S . -B ./build -G "Visual Studio 17 2022" -DMYSQL_DIR="$MYSQL_DIR" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DCMAKE_BUILD_TYPE="$CONFIGURATION" -DBUNDLE_DEPENDENCIES=TRUE
+cmake -S . -B ./build -G $GENERATOR -DMYSQL_DIR="$MYSQL_DIR" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DCMAKE_BUILD_TYPE="$CONFIGURATION" -DBUNDLE_DEPENDENCIES=TRUE
 cmake --build ./build --config "$CONFIGURATION"
 
 # CREATE INSTALLER
