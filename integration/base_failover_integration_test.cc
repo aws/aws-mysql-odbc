@@ -86,8 +86,8 @@ protected:
   std::string PROXIED_CLUSTER_TEMPLATE = std::getenv("PROXIED_CLUSTER_TEMPLATE");
   std::string DB_CONN_STR_SUFFIX = std::getenv("DB_CONN_STR_SUFFIX");
 
-  int MYSQL_PORT = str_to_int(std::getenv("MYSQL_PORT"));
-  int MYSQL_PROXY_PORT = str_to_int(std::getenv("MYSQL_PROXY_PORT"));
+  int MYSQL_PORT = INTEGRATION_TEST_UTILS::str_to_int(std::getenv("MYSQL_PORT"));
+  int MYSQL_PROXY_PORT = INTEGRATION_TEST_UTILS::str_to_int(std::getenv("MYSQL_PROXY_PORT"));
   Aws::String cluster_id = MYSQL_CLUSTER_URL.substr(0, MYSQL_CLUSTER_URL.find('.'));
 
   static const int GLOBAL_FAILOVER_TIMEOUT = 120000;
@@ -330,7 +330,7 @@ protected:
                             const Aws::String& target_writer_id = "") {
     
     auto cluster_endpoint = get_DB_cluster(client, cluster_id).GetEndpoint();
-    std::string initial_writer_ip = host_to_IP(cluster_endpoint);
+    std::string initial_writer_ip = INTEGRATION_TEST_UTILS::host_to_IP(cluster_endpoint);
 
     failover_cluster(client, cluster_id, target_writer_id);
     
@@ -345,10 +345,10 @@ protected:
     }
     
     // Failover has finished, wait for DNS to be updated so cluster endpoint resolves to the correct writer instance.
-    std::string current_writer_ip = host_to_IP(cluster_endpoint);
+    std::string current_writer_ip = INTEGRATION_TEST_UTILS::host_to_IP(cluster_endpoint);
     while (initial_writer_ip == current_writer_ip) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
-      current_writer_ip = host_to_IP(cluster_endpoint);
+      current_writer_ip = INTEGRATION_TEST_UTILS::host_to_IP(cluster_endpoint);
     }
 
     // Wait for target instance to be verified as a writer

@@ -47,7 +47,8 @@ class SecretsManagerIntegrationTest : public testing::Test {
     std::string SECRETS_ARN = std::getenv("SECRETS_ARN");
     char* dsn = std::getenv("TEST_DSN");
 
-    int MYSQL_PORT = str_to_int(get_env_var("MYSQL_PORT", "3306"));
+    int MYSQL_PORT = INTEGRATION_TEST_UTILS::str_to_int(
+        INTEGRATION_TEST_UTILS::get_env_var("MYSQL_PORT", "3306"));
 
     std::string MYSQL_CLUSTER_URL = std::getenv("TEST_SERVER");
 

@@ -57,8 +57,9 @@ protected:
         test_db = std::getenv("TEST_DATABASE");
         test_user = std::getenv("TEST_UID");
         test_pwd = std::getenv("TEST_PASSWORD");
-        test_port = str_to_int(get_env_var("MYSQL_PORT", "3306"));
-        iam_user = get_env_var("IAM_USER", "john_doe");
+        test_port = INTEGRATION_TEST_UTILS::str_to_int(
+            INTEGRATION_TEST_UTILS::get_env_var("MYSQL_PORT", "3306"));
+        iam_user = INTEGRATION_TEST_UTILS::get_env_var("IAM_USER", "john_doe");
 
         auto conn_str_builder = ConnectionStringBuilder();
         auto conn_str = conn_str_builder
@@ -199,7 +200,7 @@ TEST_F(IamAuthenticationIntegrationTest, PortWithNoAuthPort) {
 // Tests that IAM connection will still connect
 // when given an IP address instead of a cluster name.
 TEST_F(IamAuthenticationIntegrationTest, ConnectToIpAddress) {
-    auto ip_address = host_to_IP(test_endpoint);
+    auto ip_address = INTEGRATION_TEST_UTILS::host_to_IP(test_endpoint);
     
     auto connection_string = builder
         .withServer(ip_address)
