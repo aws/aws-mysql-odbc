@@ -93,6 +93,7 @@ enable_testing()
 
 set(TEST_SOURCES
   connection_string_builder.h  
+  integration_test_utils.cc
   integration_test_utils.h
 
   base_failover_integration_test.cc

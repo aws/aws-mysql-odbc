@@ -61,11 +61,6 @@
 #include "connection_string_builder.h"
 #include "integration_test_utils.h"
 
-#define MAX_NAME_LEN 255
-#define SQL_MAX_MESSAGE_LENGTH 512
-
-#define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
-
 static std::string DOWN_STREAM_STR = "DOWNSTREAM";
 static std::string UP_STREAM_STR = "UPSTREAM";
 

@@ -27,21 +27,51 @@
 // along with this program. If not, see 
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#ifndef __INTEGRATIONTESTUTILS_H__
-#define __INTEGRATIONTESTUTILS_H__
+#include <gtest/gtest.h>
 
-#include <httplib.h>
+#include "integration_test_utils.h"
 
-#define MAX_NAME_LEN 255
-#define SQL_MAX_MESSAGE_LENGTH 512
+char* INTEGRATION_TEST_UTILS::get_env_var(const char* key, char* default_value) {
+    char* value = std::getenv(key);
+    if (value == nullptr || value == "") {
+        return default_value;
+    }
 
-#define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
+    return value;
+}
 
-class INTEGRATION_TEST_UTILS {
-public:
-    static char* get_env_var(const char* key, char* default_value);
-    static int str_to_int(const char* str);
-    static std::string host_to_IP(std::string hostname);
-};
+int INTEGRATION_TEST_UTILS::str_to_int(const char* str) {
+    const long int x = strtol(str, nullptr, 10);
+    assert(x <= INT_MAX);
+    assert(x >= INT_MIN);
+    return static_cast<int>(x);
+}
 
-#endif /* __INTEGRATIONTESTUTILS_H__ */
+std::string INTEGRATION_TEST_UTILS::host_to_IP(std::string hostname) {
+    int status;
+    struct addrinfo hints;
+    struct addrinfo* servinfo;
+    struct addrinfo* p;
+    char ipstr[INET_ADDRSTRLEN];
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET; //IPv4
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((status = getaddrinfo(hostname.c_str(), NULL, &hints, &servinfo)) != 0) {
+        ADD_FAILURE() << "The IP address of host " << hostname << " could not be determined."
+            << "getaddrinfo error:" << gai_strerror(status);
+        return {};
+    }
+
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+        void* addr;
+
+        struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
+        addr = &(ipv4->sin_addr);
+        inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
+    }
+
+    freeaddrinfo(servinfo);
+    return std::string(ipstr);
+}

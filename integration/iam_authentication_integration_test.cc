@@ -87,12 +87,12 @@ protected:
         char query_buffer[200];
         sprintf(query_buffer, "DROP USER IF EXISTS %s;", iam_user);
         SQLExecDirect(stmt, AS_SQLCHAR(query_buffer), SQL_NTS);
-        memset(query_buffer, 0, sizeof(query_buffer));
 
+        memset(query_buffer, 0, sizeof(query_buffer));
         sprintf(query_buffer, "CREATE USER %s IDENTIFIED WITH AWSAuthenticationPlugin AS 'RDS';", iam_user);
         EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(stmt, AS_SQLCHAR(query_buffer), SQL_NTS));
-        memset(query_buffer, 0, sizeof(query_buffer));
 
+        memset(query_buffer, 0, sizeof(query_buffer));
         sprintf(query_buffer, "GRANT ALL ON `%`.* TO %s@`%`;", iam_user);
         EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(stmt, AS_SQLCHAR(query_buffer), SQL_NTS));
 
