@@ -58,19 +58,13 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include "connection_string_builder.cc"
+#include "connection_string_builder.h"
+#include "integration_test_utils.h"
 
 #define MAX_NAME_LEN 255
 #define SQL_MAX_MESSAGE_LENGTH 512
 
 #define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
-
-static int str_to_int(const char* str) {
-    const long int x = strtol(str, nullptr, 10);
-    assert(x <= INT_MAX);
-    assert(x >= INT_MIN);
-    return static_cast<int>(x);
-}
 
 static std::string DOWN_STREAM_STR = "DOWNSTREAM";
 static std::string UP_STREAM_STR = "UPSTREAM";
@@ -319,35 +313,6 @@ protected:
     std::mt19937 generator(rd());
     std::uniform_int_distribution<> distribution(0, readers.size() - 1); // define the range of random numbers
     return readers.at(distribution(generator));
-  }
-
-  static std::string host_to_IP(Aws::String hostname) {
-    int status;
-    struct addrinfo hints;
-    struct addrinfo *servinfo;
-    struct addrinfo *p;
-    char ipstr[INET_ADDRSTRLEN];
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET; //IPv4
-    hints.ai_socktype = SOCK_STREAM;
-
-    if ((status = getaddrinfo(hostname.c_str(), NULL, &hints, &servinfo)) != 0) {
-      ADD_FAILURE() << "The IP address of host " << hostname << " could not be determined."
-              << "getaddrinfo error:" << gai_strerror(status);
-      return {};
-    }
-
-    for (p = servinfo; p != NULL; p = p->ai_next) {
-      void* addr;
-
-      struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
-      addr = &(ipv4->sin_addr);
-      inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
-    }
-
-    freeaddrinfo(servinfo);
-    return std::string(ipstr);
   }
 
   static bool has_writer_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, std::string initial_writer_id, std::chrono::nanoseconds timeout) {
