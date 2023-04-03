@@ -66,8 +66,10 @@ New-Item -Path .\Wix\x86 -ItemType Directory -Force
 New-Item -Path .\Wix\doc -ItemType Directory -Force
 Copy-Item .\build\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x64
 Copy-Item .\build\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x64
+Copy-Item .\build\lib\$CONFIGURATION\aws-*.dll .\Wix\x64
 Copy-Item .\build\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x86
 Copy-Item .\build\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x86
+Copy-Item .\build\lib\$CONFIGURATION\aws-*.dll .\Wix\x86
 Copy-Item .\build\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x64
 Copy-Item .\build\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x86
 Copy-Item .\INFO_BIN .\Wix\doc

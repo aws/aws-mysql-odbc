@@ -61,6 +61,21 @@
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
+              <File Id="aws_c_auth.dll" Name="aws-c-auth.dll" DiskId="1" Source="x64\aws-c-auth.dll"/>
+              <File Id="aws_c_cal.dll" Name="aws-c-cal.dll" DiskId="1" Source="x64\aws-c-cal.dll"/>
+              <File Id="aws_c_common.dll" Name="aws-c-common.dll" DiskId="1" Source="x64\aws-c-common.dll"/>
+              <File Id="aws_c_compression.dll" Name="aws-c-compression.dll" DiskId="1" Source="x64\aws-c-compression.dll"/>
+              <File Id="aws_c_event_stream.dll" Name="aws-c-event-stream.dll" DiskId="1" Source="x64\aws-c-event-stream.dll"/>
+              <File Id="aws_checksums.dll" Name="aws-checksums.dll" DiskId="1" Source="x64\aws-checksums.dll"/>
+              <File Id="aws_c_http.dll" Name="aws-c-http.dll" DiskId="1" Source="x64\aws-c-http.dll"/>
+              <File Id="aws_c_io.dll" Name="aws-c-io.dll" DiskId="1" Source="x64\aws-c-io.dll"/>
+              <File Id="aws_c_mqtt.dll" Name="aws-c-mqtt.dll" DiskId="1" Source="x64\aws-c-mqtt.dll"/>
+              <File Id="aws_cpp_sdk_core.dll" Name="aws-cpp-sdk-core.dll" DiskId="1" Source="x64\aws-cpp-sdk-core.dll"/>
+              <File Id="aws_cpp_sdk_rds.dll" Name="aws-cpp-sdk-rds.dll" DiskId="1" Source="x64\aws-cpp-sdk-rds.dll"/>
+              <File Id="aws_cpp_sdk_secretsmanager.dll" Name="aws-cpp-sdk-secretsmanager.dll" DiskId="1" Source="x64\aws-cpp-sdk-secretsmanager.dll"/>
+              <File Id="aws_crt_cpp.dll" Name="aws-crt-cpp.dll" DiskId="1" Source="x64\aws-crt-cpp.dll"/>
+              <File Id="aws_c_s3.dll" Name="aws-c-s3.dll" DiskId="1" Source="x64\aws-c-s3.dll"/>
+              <File Id="aws_c_sdkutils.dll" Name="aws-c-sdkutils.dll" DiskId="1" Source="x64\aws-c-sdkutils.dll"/>
             </Component>
             <Component Id="setup" Guid="e706b738-01f6-4a7c-bf4a-eb4599a4abb4" SharedDllRefCount="yes" Win64="yes">
               <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbcS.dll" />
@@ -81,6 +96,21 @@
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
+              <File Id="aws_c_auth.dll" Name="aws-c-auth.dll" DiskId="1" Source="x86\aws-c-auth.dll"/>
+              <File Id="aws_c_cal.dll" Name="aws-c-cal.dll" DiskId="1" Source="x86\aws-c-cal.dll"/>
+              <File Id="aws_c_common.dll" Name="aws-c-common.dll" DiskId="1" Source="x86\aws-c-common.dll"/>
+              <File Id="aws_c_compression.dll" Name="aws-c-compression.dll" DiskId="1" Source="x86\aws-c-compression.dll"/>
+              <File Id="aws_c_event_stream.dll" Name="aws-c-event-stream.dll" DiskId="1" Source="x86\aws-c-event-stream.dll"/>
+              <File Id="aws_checksums.dll" Name="aws-checksums.dll" DiskId="1" Source="x86\aws-checksums.dll"/>
+              <File Id="aws_c_http.dll" Name="aws-c-http.dll" DiskId="1" Source="x86\aws-c-http.dll"/>
+              <File Id="aws_c_io.dll" Name="aws-c-io.dll" DiskId="1" Source="x86\aws-c-io.dll"/>
+              <File Id="aws_c_mqtt.dll" Name="aws-c-mqtt.dll" DiskId="1" Source="x86\aws-c-mqtt.dll"/>
+              <File Id="aws_cpp_sdk_core.dll" Name="aws-cpp-sdk-core.dll" DiskId="1" Source="x86\aws-cpp-sdk-core.dll"/>
+              <File Id="aws_cpp_sdk_rds.dll" Name="aws-cpp-sdk-rds.dll" DiskId="1" Source="x86\aws-cpp-sdk-rds.dll"/>
+              <File Id="aws_cpp_sdk_secretsmanager.dll" Name="aws-cpp-sdk-secretsmanager.dll" DiskId="1" Source="x86\aws-cpp-sdk-secretsmanager.dll"/>
+              <File Id="aws_crt_cpp.dll" Name="aws-crt-cpp.dll" DiskId="1" Source="x86\aws-crt-cpp.dll"/>
+              <File Id="aws_c_s3.dll" Name="aws-c-s3.dll" DiskId="1" Source="x86\aws-c-s3.dll"/>
+              <File Id="aws_c_sdkutils.dll" Name="aws-c-sdkutils.dll" DiskId="1" Source="x86\aws-c-sdkutils.dll"/>
             </Component>
             <Component Id="setup" Guid="80e53cdf-b4fc-4911-a9c2-17853a6c83a8" SharedDllRefCount="yes">
               <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbcS.dll" />
