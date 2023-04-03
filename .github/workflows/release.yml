@@ -2,9 +2,9 @@ name: Release Draft
 # This workflow is triggered on creating tags
 on:
   push:
-    workflow_dispatch:
     tags:
       - "*.*.*"
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
