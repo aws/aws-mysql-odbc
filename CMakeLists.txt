@@ -796,10 +796,18 @@ endif()
 set(PLUGINS)
 
 # additional bundled dependencies of the client library
+if(APPLE)
+  set(BUNDLED_LIBS
+    libssl libcrypto ssleay libeay
+    libaws-c-auth libaws-c-cal libaws-c-common libaws-c-compression libaws-c-event-stream libaws-c-http libaws-c-io
+    libaws-c-mqtt libaws-c-s3 libaws-c-sdkutils libaws-checksums libaws-cpp-sdk-core libaws-cpp-sdk-rds libaws-cpp-sdk-secretsmanager libaws-crt-cpp
+  )
+else(APPLE)
+  set(BUNDLED_LIBS
+    libssl libcrypto ssleay libeay ${AWSSDK_LINK_LIBRARIES}
+  )
+endif(APPLE)
 
-set(BUNDLED_LIBS
-  libssl libcrypto ssleay libeay
-)
 
 # List plugins and other libraries that can be found bundled with the server
 # but which are not relevant on client-side and can be safely ignored.
@@ -867,10 +875,10 @@ function(bundle_lib lib)
 endfunction(bundle_lib)
 
 macro(copy_lib_for_wix lib)
-
-  get_filename_component(lib_name ${lib} NAME)  
-  configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/${lib_name} COPYONLY)
-
+  if(WIN32)
+    get_filename_component(lib_name ${lib} NAME)
+    configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/${lib_name} COPYONLY)
+  endif(WIN32)
 endmacro(copy_lib_for_wix)
 
 # Bundle libraries listed in a list variable ${to_bundle}.
@@ -894,6 +902,7 @@ macro(bundle_libs to_bundle ignored)
     file(GLOB _bundled
       "${MYSQL_LIB_DIR}/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
       "${MYSQL_LIB_DIR}/private/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
+      "${CMAKE_SOURCE_DIR}/aws_sdk/install/lib/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
     )
 
     # On windows, libs are in bin directory
