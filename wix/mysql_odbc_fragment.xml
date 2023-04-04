@@ -53,15 +53,6 @@
             <Directory Id="INSTALLDIR" Name=".">
 
           <?if $(var.odbc_64bit) = 1 ?>
-
-            <Component Id="lib" Guid="5c83cc2b-ed0c-48b7-b265-4bc708f8c16d" SharedDllRefCount="yes" Win64="yes">
-              <File Id="awsmysqlodbca.lib" Name="awsmysqlodbca.lib" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbca.lib" />
-              <File Id="awsmysqlodbcw.lib" Name="awsmysqlodbcw.lib" DiskId="1" Source="x64\awsmysqlodbcw.lib" />
-              <?if $(var.odbc_pdb) = 1 ?>
-                <File Id="awsmysqlodbca.lib.pdb" Name="awsmysqlodbca.pdb" DiskId="1" Source="x64\awsmysqlodbca.pdb" />
-                <File Id="awsmysqlodbcw.lib.pdb" Name="awsmysqlodbcw.pdb" DiskId="1" Source="x64\awsmysqlodbcw.pdb" />
-              <?endif?>
-            </Component>
             <Component Id="driver" Guid="a2c91917-2d05-45d1-a5dd-4bbea3036133" SharedDllRefCount="yes" Win64="yes">
               <File Id="awsmysqlodbca.dll" Name="awsmysqlodbca.dll" Checksum="yes" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbca.dll"/>
               <File Id="awsmysqlodbcw.dll" Name="awsmysqlodbcw.dll" Checksum="yes" DiskId="1" Source="x64\awsmysqlodbcw.dll"/>
@@ -70,13 +61,24 @@
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
+              <File Id="aws_c_auth.dll" Name="aws-c-auth.dll" DiskId="1" Source="x64\aws-c-auth.dll"/>
+              <File Id="aws_c_cal.dll" Name="aws-c-cal.dll" DiskId="1" Source="x64\aws-c-cal.dll"/>
+              <File Id="aws_c_common.dll" Name="aws-c-common.dll" DiskId="1" Source="x64\aws-c-common.dll"/>
+              <File Id="aws_c_compression.dll" Name="aws-c-compression.dll" DiskId="1" Source="x64\aws-c-compression.dll"/>
+              <File Id="aws_c_event_stream.dll" Name="aws-c-event-stream.dll" DiskId="1" Source="x64\aws-c-event-stream.dll"/>
+              <File Id="aws_checksums.dll" Name="aws-checksums.dll" DiskId="1" Source="x64\aws-checksums.dll"/>
+              <File Id="aws_c_http.dll" Name="aws-c-http.dll" DiskId="1" Source="x64\aws-c-http.dll"/>
+              <File Id="aws_c_io.dll" Name="aws-c-io.dll" DiskId="1" Source="x64\aws-c-io.dll"/>
+              <File Id="aws_c_mqtt.dll" Name="aws-c-mqtt.dll" DiskId="1" Source="x64\aws-c-mqtt.dll"/>
+              <File Id="aws_cpp_sdk_core.dll" Name="aws-cpp-sdk-core.dll" DiskId="1" Source="x64\aws-cpp-sdk-core.dll"/>
+              <File Id="aws_cpp_sdk_rds.dll" Name="aws-cpp-sdk-rds.dll" DiskId="1" Source="x64\aws-cpp-sdk-rds.dll"/>
+              <File Id="aws_cpp_sdk_secretsmanager.dll" Name="aws-cpp-sdk-secretsmanager.dll" DiskId="1" Source="x64\aws-cpp-sdk-secretsmanager.dll"/>
+              <File Id="aws_crt_cpp.dll" Name="aws-crt-cpp.dll" DiskId="1" Source="x64\aws-crt-cpp.dll"/>
+              <File Id="aws_c_s3.dll" Name="aws-c-s3.dll" DiskId="1" Source="x64\aws-c-s3.dll"/>
+              <File Id="aws_c_sdkutils.dll" Name="aws-c-sdkutils.dll" DiskId="1" Source="x64\aws-c-sdkutils.dll"/>
             </Component>
             <Component Id="setup" Guid="e706b738-01f6-4a7c-bf4a-eb4599a4abb4" SharedDllRefCount="yes" Win64="yes">
               <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbcS.dll" />
-              <File Id="awsmysqlodbcS.lib" Name="awsmysqlodbcS.lib" DiskId="1" Source="x64\awsmysqlodbcS.lib"/>
-              <?if $(var.odbc_pdb) = 1 ?>
-                <File Id="awsmysqlodbcS.lib.pdb" Name="awsmysqlodbcS.pdb" DiskId="1" Source="x64\awsmysqlodbcS.pdb"/>
-              <?endif?>
             </Component>
             <Component Id="installer" Guid="4d743672-e573-45e2-8002-8d32866a5ae2" SharedDllRefCount="yes" Win64="yes">
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x64\myodbc-installer.exe" />
@@ -86,14 +88,6 @@
                 <File Id="libssl_1_1_x64.dll" Name="libssl-1_1-x64.dll" DiskId="1" Source="x64\libssl-1_1-x64.dll" />
             </Component>
           <?else ?>
-            <Component Id="lib" Guid="f35e60c3-0095-43ed-9414-4bfb2d0b9a60" SharedDllRefCount="yes">
-              <File Id="awsmysqlodbca.lib" Name="awsmysqlodbca.lib" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbca.lib" />
-              <File Id="awsmysqlodbcw.lib" Name="awsmysqlodbcw.lib" DiskId="1" Source="x86\awsmysqlodbcw.lib" />
-              <?if $(var.odbc_pdb) = 1 ?>
-                <File Id="awsmysqlodbca.lib.pdb" Name="awsmysqlodbca.pdb" DiskId="1" Source="x86\awsmysqlodbca.pdb" />
-                <File Id="awsmysqlodbcw.lib.pdb" Name="awsmysqlodbcw.pdb" DiskId="1" Source="x86\awsmysqlodbcw.pdb" />
-              <?endif?>
-            </Component>
             <Component Id="driver" Guid="2d5f8fc4-4cc3-46b7-9221-f28a5f930ebf" SharedDllRefCount="yes">
               <File Id="awsmysqlodbca.dll" Name="awsmysqlodbca.dll" Checksum="yes" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbca.dll"/>
               <File Id="awsmysqlodbcw.dll" Name="awsmysqlodbcw.dll" Checksum="yes" DiskId="1" Source="x86\awsmysqlodbcw.dll"/>
@@ -102,13 +96,24 @@
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
+              <File Id="aws_c_auth.dll" Name="aws-c-auth.dll" DiskId="1" Source="x86\aws-c-auth.dll"/>
+              <File Id="aws_c_cal.dll" Name="aws-c-cal.dll" DiskId="1" Source="x86\aws-c-cal.dll"/>
+              <File Id="aws_c_common.dll" Name="aws-c-common.dll" DiskId="1" Source="x86\aws-c-common.dll"/>
+              <File Id="aws_c_compression.dll" Name="aws-c-compression.dll" DiskId="1" Source="x86\aws-c-compression.dll"/>
+              <File Id="aws_c_event_stream.dll" Name="aws-c-event-stream.dll" DiskId="1" Source="x86\aws-c-event-stream.dll"/>
+              <File Id="aws_checksums.dll" Name="aws-checksums.dll" DiskId="1" Source="x86\aws-checksums.dll"/>
+              <File Id="aws_c_http.dll" Name="aws-c-http.dll" DiskId="1" Source="x86\aws-c-http.dll"/>
+              <File Id="aws_c_io.dll" Name="aws-c-io.dll" DiskId="1" Source="x86\aws-c-io.dll"/>
+              <File Id="aws_c_mqtt.dll" Name="aws-c-mqtt.dll" DiskId="1" Source="x86\aws-c-mqtt.dll"/>
+              <File Id="aws_cpp_sdk_core.dll" Name="aws-cpp-sdk-core.dll" DiskId="1" Source="x86\aws-cpp-sdk-core.dll"/>
+              <File Id="aws_cpp_sdk_rds.dll" Name="aws-cpp-sdk-rds.dll" DiskId="1" Source="x86\aws-cpp-sdk-rds.dll"/>
+              <File Id="aws_cpp_sdk_secretsmanager.dll" Name="aws-cpp-sdk-secretsmanager.dll" DiskId="1" Source="x86\aws-cpp-sdk-secretsmanager.dll"/>
+              <File Id="aws_crt_cpp.dll" Name="aws-crt-cpp.dll" DiskId="1" Source="x86\aws-crt-cpp.dll"/>
+              <File Id="aws_c_s3.dll" Name="aws-c-s3.dll" DiskId="1" Source="x86\aws-c-s3.dll"/>
+              <File Id="aws_c_sdkutils.dll" Name="aws-c-sdkutils.dll" DiskId="1" Source="x86\aws-c-sdkutils.dll"/>
             </Component>
             <Component Id="setup" Guid="80e53cdf-b4fc-4911-a9c2-17853a6c83a8" SharedDllRefCount="yes">
               <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbcS.dll" />
-              <File Id="awsmysqlodbcS.lib" Name="awsmysqlodbcS.lib" DiskId="1" Source="x86\awsmysqlodbcS.lib"/>
-              <?if $(var.odbc_pdb) = 1 ?>
-                <File Id="awsmysqlodbcS.lib.pdb" Name="awsmysqlodbcS.pdb" DiskId="1" Source="x86\awsmysqlodbcS.pdb"/>
-              <?endif?>
             </Component>
             <Component Id="installer" Guid="dcf4dd91-f481-4333-a276-a0a11cce51ca" SharedDllRefCount="yes">
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x86\myodbc-installer.exe" />
