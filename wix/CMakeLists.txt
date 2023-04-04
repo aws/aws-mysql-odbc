@@ -146,7 +146,7 @@ IF(${MSI_64})
   SET(XML_DEPS_GUID "BF941AF6-D40E-44AA-81D6-33A75F6FAE8A")
 ENDIF()
 
-SET(EXCLUDED_FILES "myodbc8a.dll" "myodbc8w.dll" "myodbc8S.dll"
+SET(EXCLUDED_FILES "awsmysqlodbca.dll" "awsmysqlodbcw.dll" "awsmysqlodbcS.dll"
   "libcrypto-1_1-x64.dll" "libcrypto-1_1.dll"
   "libssl-1_1-x64.dll" "libssl-1_1.dll"
   "myodbc-installer.exe")
@@ -159,9 +159,11 @@ FOREACH(_MASK "*.dll" "*.exe")
   FOREACH(_DEP_FILE ${DEP_FILE_LIST})
     get_filename_component(_DEP_FILE_RESULT ${_DEP_FILE} NAME)
     LIST(FIND EXCLUDED_FILES ${_DEP_FILE_RESULT} _INDEX_FOUND)
+    # Replace file name that has "-" with "_" since File Id does not allow "-"
+    STRING(REPLACE "-" "_" _DEP_FILE_RESULT_REPLACE ${_DEP_FILE_RESULT})
     IF(_INDEX_FOUND EQUAL -1)
       # Add files not in the exclude list
-      FILE(APPEND "${XML_DEPENDENCIES}" "<File Id='${_DEP_FILE_RESULT}' Name='${_DEP_FILE_RESULT}' DiskId='1' Source='${XML_FILE_SOURCE_ARCH}\\${_DEP_FILE_RESULT}' />")
+      FILE(APPEND "${XML_DEPENDENCIES}" "<File Id='${_DEP_FILE_RESULT_REPLACE}' Name='${_DEP_FILE_RESULT}' DiskId='1' Source='${XML_FILE_SOURCE_ARCH}\\${_DEP_FILE_RESULT}' />")
     ENDIF()
   ENDFOREACH()
 ENDFOREACH()

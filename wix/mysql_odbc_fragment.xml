@@ -53,15 +53,6 @@
             <Directory Id="INSTALLDIR" Name=".">
 
           <?if $(var.odbc_64bit) = 1 ?>
-
-            <Component Id="lib" Guid="5c83cc2b-ed0c-48b7-b265-4bc708f8c16d" SharedDllRefCount="yes" Win64="yes">
-              <File Id="awsmysqlodbca.lib" Name="awsmysqlodbca.lib" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbca.lib" />
-              <File Id="awsmysqlodbcw.lib" Name="awsmysqlodbcw.lib" DiskId="1" Source="x64\awsmysqlodbcw.lib" />
-              <?if $(var.odbc_pdb) = 1 ?>
-                <File Id="awsmysqlodbca.lib.pdb" Name="awsmysqlodbca.pdb" DiskId="1" Source="x64\awsmysqlodbca.pdb" />
-                <File Id="awsmysqlodbcw.lib.pdb" Name="awsmysqlodbcw.pdb" DiskId="1" Source="x64\awsmysqlodbcw.pdb" />
-              <?endif?>
-            </Component>
             <Component Id="driver" Guid="a2c91917-2d05-45d1-a5dd-4bbea3036133" SharedDllRefCount="yes" Win64="yes">
               <File Id="awsmysqlodbca.dll" Name="awsmysqlodbca.dll" Checksum="yes" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbca.dll"/>
               <File Id="awsmysqlodbcw.dll" Name="awsmysqlodbcw.dll" Checksum="yes" DiskId="1" Source="x64\awsmysqlodbcw.dll"/>
@@ -73,10 +64,6 @@
             </Component>
             <Component Id="setup" Guid="e706b738-01f6-4a7c-bf4a-eb4599a4abb4" SharedDllRefCount="yes" Win64="yes">
               <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbcS.dll" />
-              <File Id="awsmysqlodbcS.lib" Name="awsmysqlodbcS.lib" DiskId="1" Source="x64\awsmysqlodbcS.lib"/>
-              <?if $(var.odbc_pdb) = 1 ?>
-                <File Id="awsmysqlodbcS.lib.pdb" Name="awsmysqlodbcS.pdb" DiskId="1" Source="x64\awsmysqlodbcS.pdb"/>
-              <?endif?>
             </Component>
             <Component Id="installer" Guid="4d743672-e573-45e2-8002-8d32866a5ae2" SharedDllRefCount="yes" Win64="yes">
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x64\myodbc-installer.exe" />
@@ -86,14 +73,6 @@
                 <File Id="libssl_1_1_x64.dll" Name="libssl-1_1-x64.dll" DiskId="1" Source="x64\libssl-1_1-x64.dll" />
             </Component>
           <?else ?>
-            <Component Id="lib" Guid="f35e60c3-0095-43ed-9414-4bfb2d0b9a60" SharedDllRefCount="yes">
-              <File Id="awsmysqlodbca.lib" Name="awsmysqlodbca.lib" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbca.lib" />
-              <File Id="awsmysqlodbcw.lib" Name="awsmysqlodbcw.lib" DiskId="1" Source="x86\awsmysqlodbcw.lib" />
-              <?if $(var.odbc_pdb) = 1 ?>
-                <File Id="awsmysqlodbca.lib.pdb" Name="awsmysqlodbca.pdb" DiskId="1" Source="x86\awsmysqlodbca.pdb" />
-                <File Id="awsmysqlodbcw.lib.pdb" Name="awsmysqlodbcw.pdb" DiskId="1" Source="x86\awsmysqlodbcw.pdb" />
-              <?endif?>
-            </Component>
             <Component Id="driver" Guid="2d5f8fc4-4cc3-46b7-9221-f28a5f930ebf" SharedDllRefCount="yes">
               <File Id="awsmysqlodbca.dll" Name="awsmysqlodbca.dll" Checksum="yes" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbca.dll"/>
               <File Id="awsmysqlodbcw.dll" Name="awsmysqlodbcw.dll" Checksum="yes" DiskId="1" Source="x86\awsmysqlodbcw.dll"/>
@@ -105,10 +84,6 @@
             </Component>
             <Component Id="setup" Guid="80e53cdf-b4fc-4911-a9c2-17853a6c83a8" SharedDllRefCount="yes">
               <File Id="awsmysqlodbcS.dll" Name="awsmysqlodbcS.dll" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbcS.dll" />
-              <File Id="awsmysqlodbcS.lib" Name="awsmysqlodbcS.lib" DiskId="1" Source="x86\awsmysqlodbcS.lib"/>
-              <?if $(var.odbc_pdb) = 1 ?>
-                <File Id="awsmysqlodbcS.lib.pdb" Name="awsmysqlodbcS.pdb" DiskId="1" Source="x86\awsmysqlodbcS.pdb"/>
-              <?endif?>
             </Component>
             <Component Id="installer" Guid="dcf4dd91-f481-4333-a276-a0a11cce51ca" SharedDllRefCount="yes">
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x86\myodbc-installer.exe" />
