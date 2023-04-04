@@ -28,52 +28,21 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include <gtest/gtest.h>
-#include <httplib.h>
 #include <sql.h>
 #include <sqlext.h>
 
-#include "connection_string_builder.cc"
-
-#define MAX_NAME_LEN 255
-#define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
+#include "connection_string_builder.h"
+#include "integration_test_utils.h"
 
 // Connection string parameters
 static char* test_dsn;
 static char* test_db;
 static char* test_user;
 static char* test_pwd;
+static unsigned int test_port;
 static char* iam_user;
 
 static std::string test_endpoint;
-
-static std::string host_to_IP(std::string hostname) {
-    int status;
-    struct addrinfo hints;
-    struct addrinfo* servinfo;
-    struct addrinfo* p;
-    char ipstr[INET_ADDRSTRLEN];
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET; //IPv4
-    hints.ai_socktype = SOCK_STREAM;
-
-    if ((status = getaddrinfo(hostname.c_str(), NULL, &hints, &servinfo)) != 0) {
-        ADD_FAILURE() << "The IP address of host " << hostname << " could not be determined."
-            << "getaddrinfo error:" << gai_strerror(status);
-        return {};
-    }
-
-    for (p = servinfo; p != NULL; p = p->ai_next) {
-        void* addr;
-
-        struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
-        addr = &(ipv4->sin_addr);
-        inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
-    }
-
-    freeaddrinfo(servinfo);
-    return std::string(ipstr);
-}
 
 class IamAuthenticationIntegrationTest : public testing::Test {
 protected:
@@ -88,7 +57,9 @@ protected:
         test_db = std::getenv("TEST_DATABASE");
         test_user = std::getenv("TEST_UID");
         test_pwd = std::getenv("TEST_PASSWORD");
-        iam_user = "john_doe";
+        test_port = INTEGRATION_TEST_UTILS::str_to_int(
+            INTEGRATION_TEST_UTILS::get_env_var("MYSQL_PORT", "3306"));
+        iam_user = INTEGRATION_TEST_UTILS::get_env_var("IAM_USER", "john_doe");
 
         auto conn_str_builder = ConnectionStringBuilder();
         auto conn_str = conn_str_builder
@@ -96,7 +67,7 @@ protected:
             .withServer(test_endpoint)
             .withUID(test_user)
             .withPWD(test_pwd)
-            .withPort(3306)
+            .withPort(test_port)
             .withDatabase(test_db).build();
 
         SQLHENV env1 = nullptr;
@@ -117,12 +88,12 @@ protected:
         char query_buffer[200];
         sprintf(query_buffer, "DROP USER IF EXISTS %s;", iam_user);
         SQLExecDirect(stmt, AS_SQLCHAR(query_buffer), SQL_NTS);
-        memset(query_buffer, 0, sizeof(query_buffer));
 
+        memset(query_buffer, 0, sizeof(query_buffer));
         sprintf(query_buffer, "CREATE USER %s IDENTIFIED WITH AWSAuthenticationPlugin AS 'RDS';", iam_user);
         EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(stmt, AS_SQLCHAR(query_buffer), SQL_NTS));
-        memset(query_buffer, 0, sizeof(query_buffer));
 
+        memset(query_buffer, 0, sizeof(query_buffer));
         sprintf(query_buffer, "GRANT ALL ON `%`.* TO %s@`%`;", iam_user);
         EXPECT_EQ(SQL_SUCCESS, SQLExecDirect(stmt, AS_SQLCHAR(query_buffer), SQL_NTS));
 
@@ -175,8 +146,8 @@ TEST_F(IamAuthenticationIntegrationTest, SimpleIamConnection) {
         .withServer(test_endpoint)
         .withAuthHost(test_endpoint)
         .withUID(iam_user)
-        .withPort(3306)
-        .withAuthPort(3306).build();
+        .withPort(test_port)
+        .withAuthPort(test_port).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -194,8 +165,8 @@ TEST_F(IamAuthenticationIntegrationTest, ServerWithNoAuthHost) {
     auto connection_string = builder
         .withServer(test_endpoint)
         .withUID(iam_user)
-        .withPort(3306)
-        .withAuthPort(3306).build();
+        .withPort(test_port)
+        .withAuthPort(test_port).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -214,7 +185,7 @@ TEST_F(IamAuthenticationIntegrationTest, PortWithNoAuthPort) {
         .withServer(test_endpoint)
         .withAuthHost(test_endpoint)
         .withUID(iam_user)
-        .withPort(3306).build();
+        .withPort(test_port).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -229,13 +200,13 @@ TEST_F(IamAuthenticationIntegrationTest, PortWithNoAuthPort) {
 // Tests that IAM connection will still connect
 // when given an IP address instead of a cluster name.
 TEST_F(IamAuthenticationIntegrationTest, ConnectToIpAddress) {
-    auto ip_address = host_to_IP(test_endpoint);
+    auto ip_address = INTEGRATION_TEST_UTILS::host_to_IP(test_endpoint);
     
     auto connection_string = builder
         .withServer(ip_address)
         .withAuthHost(test_endpoint)
         .withUID(iam_user)
-        .withPort(3306).build();
+        .withPort(test_port).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -255,7 +226,7 @@ TEST_F(IamAuthenticationIntegrationTest, WrongPassword) {
         .withAuthHost(test_endpoint)
         .withUID(iam_user)
         .withPWD("WRONG_PASSWORD")
-        .withPort(3306).build();
+        .withPort(test_port).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -273,7 +244,7 @@ TEST_F(IamAuthenticationIntegrationTest, WrongUser) {
         .withServer(test_endpoint)
         .withAuthHost(test_endpoint)
         .withUID("WRONG_USER")
-        .withPort(3306).build();
+        .withPort(test_port).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -298,7 +269,7 @@ TEST_F(IamAuthenticationIntegrationTest, EmptyUser) {
         .withServer(test_endpoint)
         .withAuthHost(test_endpoint)
         .withUID("")
-        .withPort(3306).build();
+        .withPort(test_port).build();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;

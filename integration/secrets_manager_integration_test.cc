@@ -39,25 +39,16 @@
 #include <random>
 #include <stdexcept>
 
-#include "connection_string_builder.cc"
-
-#define MAX_NAME_LEN 255
-
-#define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
-
-static int str_to_int(const char* str) {
-    const long int x = strtol(str, nullptr, 10);
-    assert(x <= INT_MAX);
-    assert(x >= INT_MIN);
-    return static_cast<int>(x);
-}
+#include "connection_string_builder.h"
+#include "integration_test_utils.h"
 
 class SecretsManagerIntegrationTest : public testing::Test {
    protected:
     std::string SECRETS_ARN = std::getenv("SECRETS_ARN");
     char* dsn = std::getenv("TEST_DSN");
 
-    int MYSQL_PORT = str_to_int(std::getenv("MYSQL_PORT"));
+    int MYSQL_PORT = INTEGRATION_TEST_UTILS::str_to_int(
+        INTEGRATION_TEST_UTILS::get_env_var("MYSQL_PORT", "3306"));
 
     std::string MYSQL_CLUSTER_URL = std::getenv("TEST_SERVER");
 
