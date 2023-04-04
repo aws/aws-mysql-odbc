@@ -27,6 +27,9 @@
 // along with this program. If not, see 
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
+#ifndef __CONNECTIONSTRINGBUILDER_H__
+#define __CONNECTIONSTRINGBUILDER_H__
+
 #include <stdexcept>
 #include <string>
 #include <memory>
@@ -467,3 +470,5 @@ class ConnectionStringBuilder {
   private:
     std::unique_ptr<ConnectionString> connection_string;
 };
+
+#endif /* __CONNECTIONSTRINGBUILDER_H__ */

@@ -58,19 +58,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include "connection_string_builder.cc"
-
-#define MAX_NAME_LEN 4096
-#define SQL_MAX_MESSAGE_LENGTH 512
-
-#define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
-
-static int str_to_int(const char* str) {
-    const long int x = strtol(str, nullptr, 10);
-    assert(x <= INT_MAX);
-    assert(x >= INT_MIN);
-    return static_cast<int>(x);
-}
+#include "connection_string_builder.h"
+#include "integration_test_utils.h"
 
 static std::string DOWN_STREAM_STR = "DOWNSTREAM";
 static std::string UP_STREAM_STR = "UPSTREAM";
@@ -97,8 +86,8 @@ protected:
   std::string PROXIED_CLUSTER_TEMPLATE = std::getenv("PROXIED_CLUSTER_TEMPLATE");
   std::string DB_CONN_STR_SUFFIX = std::getenv("DB_CONN_STR_SUFFIX");
 
-  int MYSQL_PORT = str_to_int(std::getenv("MYSQL_PORT"));
-  int MYSQL_PROXY_PORT = str_to_int(std::getenv("MYSQL_PROXY_PORT"));
+  int MYSQL_PORT = INTEGRATION_TEST_UTILS::str_to_int(std::getenv("MYSQL_PORT"));
+  int MYSQL_PROXY_PORT = INTEGRATION_TEST_UTILS::str_to_int(std::getenv("MYSQL_PROXY_PORT"));
   Aws::String cluster_id = MYSQL_CLUSTER_URL.substr(0, MYSQL_CLUSTER_URL.find('.'));
 
   static const int GLOBAL_FAILOVER_TIMEOUT = 120000;
@@ -321,35 +310,6 @@ protected:
     return readers.at(distribution(generator));
   }
 
-  static std::string host_to_IP(Aws::String hostname) {
-    int status;
-    struct addrinfo hints;
-    struct addrinfo *servinfo;
-    struct addrinfo *p;
-    char ipstr[INET_ADDRSTRLEN];
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET; //IPv4
-    hints.ai_socktype = SOCK_STREAM;
-
-    if ((status = getaddrinfo(hostname.c_str(), NULL, &hints, &servinfo)) != 0) {
-      ADD_FAILURE() << "The IP address of host " << hostname << " could not be determined."
-              << "getaddrinfo error:" << gai_strerror(status);
-      return {};
-    }
-
-    for (p = servinfo; p != NULL; p = p->ai_next) {
-      void* addr;
-
-      struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
-      addr = &(ipv4->sin_addr);
-      inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
-    }
-
-    freeaddrinfo(servinfo);
-    return std::string(ipstr);
-  }
-
   static bool has_writer_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, std::string initial_writer_id, std::chrono::nanoseconds timeout) {
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -370,7 +330,7 @@ protected:
                             const Aws::String& target_writer_id = "") {
     
     auto cluster_endpoint = get_DB_cluster(client, cluster_id).GetEndpoint();
-    std::string initial_writer_ip = host_to_IP(cluster_endpoint);
+    std::string initial_writer_ip = INTEGRATION_TEST_UTILS::host_to_IP(cluster_endpoint);
 
     failover_cluster(client, cluster_id, target_writer_id);
     
@@ -385,10 +345,10 @@ protected:
     }
     
     // Failover has finished, wait for DNS to be updated so cluster endpoint resolves to the correct writer instance.
-    std::string current_writer_ip = host_to_IP(cluster_endpoint);
+    std::string current_writer_ip = INTEGRATION_TEST_UTILS::host_to_IP(cluster_endpoint);
     while (initial_writer_ip == current_writer_ip) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
-      current_writer_ip = host_to_IP(cluster_endpoint);
+      current_writer_ip = INTEGRATION_TEST_UTILS::host_to_IP(cluster_endpoint);
     }
 
     // Wait for target instance to be verified as a writer

@@ -29,7 +29,7 @@
 
 #include <gtest/gtest.h>
 
-#include "connection_string_builder.cc"
+#include "connection_string_builder.h"
 
 class ConnectionStringBuilderTest : public testing::Test {
 };
