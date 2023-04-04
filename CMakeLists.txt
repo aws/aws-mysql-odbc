@@ -788,10 +788,18 @@ endif()
 set(PLUGINS)
 
 # additional bundled dependencies of the client library
+if(APPLE)
+  set(BUNDLED_LIBS
+    libssl libcrypto ssleay libeay
+    libaws-c-auth libaws-c-cal libaws-c-common libaws-c-compression libaws-c-event-stream libaws-c-http libaws-c-io
+    libaws-c-mqtt libaws-c-s3 libaws-c-sdkutils libaws-checksums libaws-cpp-sdk-core libaws-cpp-sdk-rds libaws-cpp-sdk-secretsmanager libaws-crt-cpp
+  )
+else(APPLE)
+  set(BUNDLED_LIBS
+    libssl libcrypto ssleay libeay ${AWSSDK_LINK_LIBRARIES}
+  )
+endif(APPLE)
 
-set(BUNDLED_LIBS
-  libssl libcrypto ssleay libeay ${AWSSDK_LINK_LIBRARIES}
-)
 
 # List plugins and other libraries that can be found bundled with the server 
 # but which are not relevant on client-side and can be safely ignored.
