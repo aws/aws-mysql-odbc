@@ -45,7 +45,8 @@ Note that building the installer requires the following:
 
 $ARCHITECTURE = $args[0]
 $CONFIGURATION = $args[1]
-$MYSQL_DIR = $args[2]
+$GENERATOR = $args[2]
+$MYSQL_DIR = $args[3]
 
 # Set default values
 if ($null -eq $CONFIGURATION) {
@@ -56,20 +57,22 @@ if ($null -eq $MYSQL_DIR) {
 }
 
 # BUILD DRIVER
-cmake -S . -G "Visual Studio 16 2019" -DMYSQL_DIR="$MYSQL_DIR" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DCMAKE_BUILD_TYPE="$CONFIGURATION" -DBUNDLE_DEPENDENCIES=TRUE
-cmake --build . --config "$CONFIGURATION"
+cmake -S . -B ./build -G $GENERATOR -DMYSQL_DIR="$MYSQL_DIR" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DCMAKE_BUILD_TYPE="$CONFIGURATION" -DBUNDLE_DEPENDENCIES=TRUE
+cmake --build ./build --config "$CONFIGURATION"
 
 # CREATE INSTALLER
 # Copy dll, installer, and info files to wix folder
 New-Item -Path .\Wix\x64 -ItemType Directory -Force
 New-Item -Path .\Wix\x86 -ItemType Directory -Force
 New-Item -Path .\Wix\doc -ItemType Directory -Force
-Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x64
-Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x64
-Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x86
-Copy-Item .\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x86
-Copy-Item .\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x64
-Copy-Item .\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x86
+Copy-Item .\build\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x64
+Copy-Item .\build\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x64
+Copy-Item .\build\lib\$CONFIGURATION\aws-*.dll .\Wix\x64
+Copy-Item .\build\lib\$CONFIGURATION\awsmysqlodbc*.dll .\Wix\x86
+Copy-Item .\build\lib\$CONFIGURATION\awsmysqlodbc*.lib .\Wix\x86
+Copy-Item .\build\lib\$CONFIGURATION\aws-*.dll .\Wix\x86
+Copy-Item .\build\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x64
+Copy-Item .\build\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x86
 Copy-Item .\INFO_BIN .\Wix\doc
 Copy-Item .\INFO_SRC .\Wix\doc
 Copy-Item .\ChangeLog .\Wix\doc

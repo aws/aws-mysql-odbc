@@ -2,9 +2,9 @@ name: Release Draft
 # This workflow is triggered on creating tags
 on:
   push:
-    workflow_dispatch:
     tags:
       - "*.*.*"
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
@@ -40,7 +40,12 @@ jobs:
           brew unlink unixodbc
           brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
-      
+
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        run: |
+          ./build_aws_sdk_unix.sh $BUILD_TYPE
+
       - name: Create build environment
         run: cmake -E make_directory ${{ github.workspace }}/build
 
@@ -51,6 +56,7 @@ jobs:
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DODBC_INCLUDES=$ODBC_DM_INCLUDES
                 -DCONNECTOR_PLATFORM=macos
+                -DBUNDLE_DEPENDENCIES=true
 
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
@@ -94,6 +100,11 @@ jobs:
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64.tar.xz -o mysql.tar.gz
           tar xf mysql.tar.gz
 
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        run: |
+          ./build_aws_sdk_unix.sh $BUILD_TYPE
+
       - name: Create build environment
         shell: bash
         run: cmake -E make_directory ${{ github.workspace }}/build
@@ -107,6 +118,7 @@ jobs:
                 -DWITH_UNIXODBC=1
                 -DCONNECTOR_PLATFORM=linux
                 -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64/
+                -DBUNDLE_DEPENDENCIES=true
 
       # Build driver
       - name: Build driver
@@ -142,12 +154,20 @@ jobs:
           curl -L https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        run: |
+          .\build_aws_sdk_win.ps1 x64 ${{ env.BUILD_TYPE}} ON "${{env.CMAKE_GENERATOR}}"
+
       - name: Setup nmake
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Run build installer script
         run: |
-          .\build_installer.ps1 x64 $BUILD_TYPE C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
+          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
       
       - name: Upload Windows installer as artifact
         if: success()
