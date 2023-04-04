@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 	fprintf(fp, "<?define odbc_ver_long=\"%d.%d.%d\" ?>\n", v1, v2, v3);
         if (v3 == 0) {
           if (v2 == 0)
-            fprintf(fp, "<?define odbc_ver_prev=\"%d.%d.%d\" ?>\n", v1-1, 999, 999);
+            fprintf(fp, "<?define odbc_ver_prev=\"%d.%d.%d\" ?>\n", v1-1, 255, 999);
           else
             fprintf(fp, "<?define odbc_ver_prev=\"%d.%d.%d\" ?>\n", v1, v2-1, 999);
         } else {
