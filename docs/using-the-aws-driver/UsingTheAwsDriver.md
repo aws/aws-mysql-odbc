@@ -351,7 +351,7 @@ When connecting the AWS ODBC Driver for MySQL using a Windows system, ensure log
 
 #### Example
 
-![enable-logging-windows](./enable-logging-windows.jpg)
+![enable-logging-windows](../images/enable-logging-windows.jpg)
 
 The resulting log file, named `myodbc.log`, can be found under `%temp%`.
 
