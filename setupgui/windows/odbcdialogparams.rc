@@ -192,19 +192,19 @@ IDD_TAB3 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    RTEXT           "Authentication Mode:", IDC_STATIC, 0, 10, 80, 10
-    COMBOBOX        IDC_EDIT_auth_mode, 85, 10, 85, 10,
+    RTEXT           "Authentication Mode:", IDC_STATIC, -8, 10, 80, 10
+    COMBOBOX        IDC_EDIT_auth_mode, 78, 10, 289, 10,
                     CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "Auth Region:", IDC_STATIC, 0, 25, 80, 10
-    EDITTEXT        IDC_EDIT_auth_region, 85, 25, 85, 10, ES_AUTOHSCROLL
-    RTEXT           "IAM Host:", IDC_STATIC, 0, 40, 80, 10
-    EDITTEXT        IDC_EDIT_auth_host, 85, 40, 85, 10, ES_AUTOHSCROLL
-    RTEXT           "IAM Port:", IDC_STATIC, 0, 55, 80, 10
-    EDITTEXT        IDC_EDIT_auth_port, 85, 55, 85, 10, ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "IAM Expire Time:", IDC_STATIC, 0, 70, 80, 10
-    EDITTEXT        IDC_EDIT_auth_expiration, 85, 70, 85, 10, ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Secret ID:", IDC_STATIC, 0, 85, 80, 10
-    EDITTEXT        IDC_EDIT_auth_secret_id, 85, 85, 85, 10, ES_AUTOHSCROLL
+    RTEXT           "AWS Region:", IDC_STATIC, -8, 30, 80, 10
+    EDITTEXT        IDC_EDIT_auth_region, 78, 30, 289, 10, ES_AUTOHSCROLL
+    RTEXT           "IAM Host:", IDC_STATIC, -8, 50, 80, 10
+    EDITTEXT        IDC_EDIT_auth_host, 78, 50, 289, 10, ES_AUTOHSCROLL
+    RTEXT           "IAM Port:", IDC_STATIC, -8, 70, 80, 10
+    EDITTEXT        IDC_EDIT_auth_port, 78, 70, 289, 10, ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "IAM Expire Time:", IDC_STATIC, -8, 90, 80, 10
+    EDITTEXT        IDC_EDIT_auth_expiration, 78, 90, 289, 10, ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Secret ID:", IDC_STATIC, -8, 110, 80, 10
+    EDITTEXT        IDC_EDIT_auth_secret_id, 78, 110, 289, 10, ES_AUTOHSCROLL
 END
 
 IDD_TAB4 DIALOGEX 0, 0, 209, 281
