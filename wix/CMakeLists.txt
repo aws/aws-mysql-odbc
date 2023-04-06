@@ -85,9 +85,9 @@ IF(WIN32)
   ENDIF(ODBC_VERSION_SUFFIX STREQUAL "a")
 
   IF(${LICENSE})
-	  SET(MSI_PACKAGE "mysql-connector-odbc-commercial-${ODBC_VERSION}-${MSI_VERSION}${PACKAGE_SUFFIX}.msi")
+	  SET(MSI_PACKAGE "aws-mysql-odbc-commercial-${ODBC_VERSION}-${MSI_VERSION}${PACKAGE_SUFFIX}.msi")
   ELSE(${LICENSE})
-	  SET(MSI_PACKAGE "mysql-connector-odbc-${ODBC_VERSION}-${MSI_VERSION}${PACKAGE_SUFFIX}.msi")
+	  SET(MSI_PACKAGE "aws-mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}${PACKAGE_SUFFIX}.msi")
   ENDIF(${LICENSE})
 
   # Generate GUID
