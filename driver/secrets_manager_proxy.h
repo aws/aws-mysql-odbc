@@ -58,6 +58,7 @@ private:
     bool fetch_latest_credentials();
     bool parse_json_value(Aws::String json_string);
     std::string get_from_secret_json_value(std::string key);
+    static bool try_parse_region_from_secret(std::string secret, std::string& region);
 
     static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> secrets_cache;
     static std::mutex secrets_cache_mutex;
