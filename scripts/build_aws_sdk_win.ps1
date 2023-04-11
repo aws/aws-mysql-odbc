@@ -29,20 +29,6 @@ along with this program. If not, see
 http://www.gnu.org/licenses/gpl-2.0.html.
 /#>
 
-<#
-This script is to assist with building the driver and creating the installer. There are two optional arguments:
-- $CONFIGURATION: determines what configuration you would like to build the driver in (Debug, Release, RelWithDebInfo)
-- $MYSQL_DIR: determines where your MySQL installation is located
-
-The current default behaviour is to build the driver and installer without unit or integration tests on the Release configuration, 
-with "C:\Program Files\MySQL\MySQL Server 8.0" set as the location of the MySQL directory
-
-Note that building the installer requires the following:
-- Wix 3.0 or above (https://wixtoolset.org/)
-- Microsoft Visual Studio environment
-- CMake 2.4.6 (http://www.cmake.org)
-#>
-
 $CURRENT_DIR = (Get-Location).Path
 $SRC_DIR = "${PSScriptRoot}\..\aws_sdk\aws_sdk_cpp"
 $BUILD_DIR = "${SRC_DIR}\..\build"
