@@ -3,14 +3,14 @@
 ## Tips to Keep in Mind
 
 ### Failover Time Profiles
-A failover time profile refers to a specific combination of failover parameters that determine the time in which failover should be completed and define the aggressiveness of failover. Some failover parameters include `FAILOTVER_TIMEOUT` and `FAILOVER_READER_CONNECT_TIMEOUT`. Failover should be completed within 5 minutes by default. If the connection is not re-established during this time, then the failover process times out and fails. Users can configure the failover parameters to adjust the aggressiveness of the failover and fulfill the needs of their specific application. For example, a user could take a more aggressive approach and shorten the time limit on failover to promote a fail-fast approach for an application that does not tolerate database outages. Examples of normal and aggressive failover time profiles are shown below. 
+A failover time profile refers to a specific combination of failover parameters that determine the time in which failover should be completed and define the aggressiveness of failover. Some failover parameters include `FAILOVER_TIMEOUT` and `FAILOVER_READER_CONNECT_TIMEOUT`. Failover should be completed within 5 minutes by default. If the connection is not re-established during this time, then the failover process times out and fails. Users can configure the failover parameters to adjust the aggressiveness of the failover and fulfill the needs of their specific application. For example, a user could take a more aggressive approach and shorten the time limit on failover to promote a fail-fast approach for an application that does not tolerate database outages. Examples of normal and aggressive failover time profiles are shown below. 
 <br><br>
 **:warning:Note**: Aggressive failover does come with its side effects. Since the time limit on failover is shorter, it becomes more likely that a problem is caused not by a failure, but rather because of a timeout.
 <br><br>
 #### Example of the configuration for a normal failover time profile:
 | Parameter                              | Value     |
 |----------------------------------------|-----------|
-| `FAILOTVER_TIMEOUT`                    | `180000 ` |
+| `FAILOVER_TIMEOUT`                     | `180000`  |
 | `FAILOVER_WRITER_RECONNECT_INTERVAL`   | `2000`    |
 | `FAILOVER_READER_CONNECT_TIMEOUT`      | `30000`   |
 | `FAILOVER_TOPOLOGY_REFRESH_RATE`       | `2000`    |
@@ -18,7 +18,7 @@ A failover time profile refers to a specific combination of failover parameters 
 #### Example of the configuration for an aggressive failover time profile:
 | Parameter                              | Value   |
 |----------------------------------------|---------|
-| `FAILOTVER_TIMEOUT`                    | `30000` |
+| `FAILOVER_TIMEOUT`                     | `30000` |
 | `FAILOVER_WRITER_RECONNECT_INTERVAL`   | `2000`  |
 | `FAILOVER_READER_CONNECT_TIMEOUT`      | `10000` |
 | `FAILOVER_TOPOLOGY_REFRESH_RATE`       | `2000`  |
