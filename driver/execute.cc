@@ -1976,7 +1976,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     interfere with the existing one. Therefore, locking is not needed in
     the following block.
   */
-  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds->server8,dbc->ds->port);
+  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds->server8, dbc->ds->port);
   CONNECTION_PROXY* proxy = dbc->connection_handler->connect(host, dbc->ds);
 
   /** @todo need to preserve and use ssl params */
@@ -1992,7 +1992,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->connection_proxy->thread_id());
     if (proxy->real_query(buff, strlen(buff)))
     {
-        proxy->close();
+      proxy->close();
       /* We do not set the SQLSTATE here, per the ODBC spec. */
       return SQL_ERROR;
     }
