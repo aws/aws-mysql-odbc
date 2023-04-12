@@ -58,6 +58,7 @@ public:
     static bool token_cache_contains_key(std::string cache_key);
     static void clear_token_cache(IAM_PROXY* iam_proxy);
     static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& get_secrets_cache();
+    static bool try_parse_region_from_secret(std::string secret, std::string& region);
 };
 
 #endif /* __TESTUTILS_H__ */
