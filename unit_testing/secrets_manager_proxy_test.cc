@@ -234,3 +234,22 @@ TEST_F(SecretsManagerProxyTest, TestFailedToGetSecrets) {
     EXPECT_FALSE(ret);
     EXPECT_EQ(0, TEST_UTILS::get_secrets_cache().size());
 }
+
+TEST_F(SecretsManagerProxyTest, ParseRegionFromSecret) {
+    std::string region = "";
+    EXPECT_TRUE(TEST_UTILS::try_parse_region_from_secret(
+        "arn:aws:secretsmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3", region));
+    EXPECT_EQ("us-east-1", region);
+
+    region = "";
+    EXPECT_TRUE(TEST_UTILS::try_parse_region_from_secret(
+        "arn:aws:secretsmanager:us-west-3:0987654321:Whatever", region));
+    EXPECT_EQ("us-west-3", region);
+
+    region = "";
+    EXPECT_FALSE(TEST_UTILS::try_parse_region_from_secret(
+        "arn:aws:secretmanager:us-east-1:123456789012:secret:MyTestDatabaseSecret-a1b2c3", region));
+    EXPECT_EQ("", region);
+
+    delete mock_connection_proxy;
+}

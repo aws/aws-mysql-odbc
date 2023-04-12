@@ -29,6 +29,7 @@
 
 #include <aws/secretsmanager/SecretsManagerServiceClientModel.h>
 #include <aws/secretsmanager/model/GetSecretValueRequest.h>
+#include <regex>
 
 #include "aws_sdk_helper.h"
 #include "secrets_manager_proxy.h"
@@ -43,6 +44,7 @@ namespace {
     AWS_SDK_HELPER SDK_HELPER;
     const Aws::String USERNAME_KEY{ "username" };
     const Aws::String PASSWORD_KEY{ "password" };
+    const std::string SECRETS_ARN_PATTERN{ "arn:aws:secretsmanager:([-a-zA-Z0-9]+):.*" };
 }
 
 std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> SECRETS_MANAGER_PROXY::secrets_cache;
@@ -51,12 +53,23 @@ std::mutex SECRETS_MANAGER_PROXY::secrets_cache_mutex;
 SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
     ++SDK_HELPER;
 
+    const char* secret_ID = nullptr;
+    std::string region;
+    if (ds->auth_secret_id) {
+        secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
+    }
+    if (ds->auth_region) {
+        region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
+    }
+
+    if (secret_ID && region.empty()) {
+        try_parse_region_from_secret(secret_ID, region);
+    }
+
     SecretsManagerClientConfiguration config;
-    const auto region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
-    config.region = region ? region : Aws::Region::US_EAST_1;
+    config.region = !region.empty() ? region : Aws::Region::US_EAST_1;
     this->sm_client = std::make_shared<SecretsManagerClient>(config);
 
-    const auto secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
     this->secret_key = std::make_pair(secret_ID ? secret_ID : "", config.region);
     this->next_proxy = nullptr;
 }
@@ -178,4 +191,15 @@ std::string SECRETS_MANAGER_PROXY::get_from_secret_json_value(std::string key) {
         return std::string();
     }
     return value;
+}
+
+bool SECRETS_MANAGER_PROXY::try_parse_region_from_secret(std::string secret, std::string& region) {
+    std::regex rgx(SECRETS_ARN_PATTERN);
+    std::smatch matches;
+    if (std::regex_search(secret, matches, rgx) && matches.size() > 1) {
+        region = matches[1].str();
+        return true;
+    }
+
+    return false;
 }
