@@ -1965,13 +1965,11 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     interfere with the existing one. Therefore, locking is not needed in
     the following block.
   */
-  second= mysql_init(second);
+  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds->server8, dbc->ds->port);
+  CONNECTION_PROXY* proxy = dbc->connection_handler->connect(host, dbc->ds);
 
   /** @todo need to preserve and use ssl params */
-
-  if (!mysql_real_connect(second, (const char*)dbc->ds->server8, (const char*)dbc->ds->uid8,
-                          (const char*)dbc->ds->pwd8, NULL, dbc->ds->port,
-                          (const char*)dbc->ds->socket8, 0))
+  if (!proxy)
   {
     /* We do not set the SQLSTATE here, per the ODBC spec. */
     return SQL_ERROR;
@@ -1981,15 +1979,16 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     char buff[40];
     /* buff is always big enough because max length of %lu is 15 */
     snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->connection_proxy->thread_id());
-    if (mysql_real_query(second, buff, strlen(buff)))
+    if (proxy->real_query(buff, strlen(buff)))
     {
-      mysql_close(second);
+      proxy->close();
       /* We do not set the SQLSTATE here, per the ODBC spec. */
       return SQL_ERROR;
     }
   }
 
-  mysql_close(second);
+  proxy->delete_ds();
+  delete proxy;
 
   return SQL_SUCCESS;
 }
