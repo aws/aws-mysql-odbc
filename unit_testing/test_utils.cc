@@ -126,3 +126,7 @@ void TEST_UTILS::clear_token_cache(IAM_PROXY* iam_proxy) {
 std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& TEST_UTILS::get_secrets_cache() {
     return std::ref(SECRETS_MANAGER_PROXY::secrets_cache);
 }
+
+bool TEST_UTILS::try_parse_region_from_secret(std::string secret, std::string& region) {
+    return SECRETS_MANAGER_PROXY::try_parse_region_from_secret(secret, region);
+}
