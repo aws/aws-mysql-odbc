@@ -1998,6 +1998,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     }
   }
 
+  proxy->delete_ds();
   delete proxy;
 
   return SQL_SUCCESS;
