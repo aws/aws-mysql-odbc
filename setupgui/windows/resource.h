@@ -170,6 +170,7 @@
 #define IDC_EDIT_connect_timeout		10086
 #define IDC_EDIT_network_timeout        10087
 #define IDC_CHECK_allow_reader_connections 10088
+#define IDC_CHECK_enable_strict_reader_failover 10089
 #define IDC_CHECK_enable_failure_detection     10100
 #define IDC_EDIT_failure_detection_time        10101
 #define IDC_EDIT_failure_detection_interval    10102
