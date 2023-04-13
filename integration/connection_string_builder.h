@@ -51,7 +51,8 @@ class ConnectionString {
                          m_auth_port(-1), m_auth_expiration(-1), m_secret_id(""),
                          
                          is_set_uid(false), is_set_pwd(false), is_set_db(false), is_set_log_query(false),
-                         is_set_allow_reader_connections(false), is_set_multi_statements(false), is_set_enable_cluster_failover(false),
+                         is_set_allow_reader_connections(false), is_set_enable_strict_reader_failover(false),
+                         is_set_multi_statements(false), is_set_enable_cluster_failover(false),
                          is_set_failover_timeout(false), is_set_connect_timeout(false), is_set_network_timeout(false), is_set_host_pattern(false),
                          is_set_enable_failure_detection(false), is_set_failure_detection_time(false), is_set_failure_detection_timeout(false),
                          is_set_failure_detection_interval(false), is_set_failure_detection_count(false), is_set_monitor_disposal_time(false),
