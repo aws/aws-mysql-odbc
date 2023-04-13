@@ -40,11 +40,13 @@ FAILOVER_READER_HANDLER::FAILOVER_READER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<CONNECTION_HANDLER> connection_handler,
     int failover_timeout_ms, int failover_reader_connect_timeout,
+    bool enable_strict_reader_failover,
     unsigned long dbc_id, bool enable_logging)
     : topology_service{topology_service},
       connection_handler{connection_handler},
       max_failover_timeout_ms{failover_timeout_ms},
       reader_connect_timeout_ms{failover_reader_connect_timeout},
+      enable_strict_reader_failover{enable_strict_reader_failover},
       dbc_id{dbc_id} {
 
     if (enable_logging)
@@ -69,7 +71,7 @@ READER_FAILOVER_RESULT FAILOVER_READER_HANDLER::failover(
     auto reader_result_future = std::async(std::launch::async, [=, &global_sync, &reader_result]() {
         std::vector<std::shared_ptr<HOST_INFO>> hosts_list;
         while (!global_sync.is_completed()) {
-            hosts_list = build_hosts_list(current_topology, true);
+            hosts_list = build_hosts_list(current_topology, !enable_strict_reader_failover);
             reader_result = get_connection_from_hosts(hosts_list, global_sync);
             if (reader_result.connected) {
                 global_sync.mark_as_complete(true);

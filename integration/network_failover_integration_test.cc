@@ -165,6 +165,20 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
+TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers_strict_reader_failover) {
+  connection_string = builder.withServer(reader_endpoint).withAllowReaderConnections(true).withEnableStrictReaderFailover(true).build();
+  EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+
+  for (const auto& x : proxy_map) {
+    if (x.first != writer_id) {
+        disable_connectivity(x.second);
+    }
+  }
+
+  assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_FAILURE);
+  EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+}
+
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
   connection_string = builder.withServer(reader_endpoint).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
