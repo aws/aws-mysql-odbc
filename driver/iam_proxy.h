@@ -94,7 +94,7 @@ protected:
 
     static void clear_token_cache();
 
-    bool generate_token_for_func(std::function<bool(const char*)> func);
+    bool invoke_func_with_generated_token(std::function<bool(const char*)> func);
 
 #ifdef UNIT_TEST_BUILD
     // Allows for testing private/protected methods

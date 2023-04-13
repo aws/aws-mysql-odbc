@@ -28,6 +28,7 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
+#include <functional>
 
 #include "aws_sdk_helper.h"
 #include "driver.h"
@@ -68,12 +69,12 @@ bool IAM_PROXY::connect(const char* host, const char* user, const char* password
 
     auto f = std::bind(&CONNECTION_PROXY::connect, next_proxy, host, user, std::placeholders::_1, database, port,
                        socket, flags);
-    return generate_token_for_func(f);
+    return invoke_func_with_generated_token(f);
 }
 
 bool IAM_PROXY::change_user(const char* user, const char* passwd, const char* db) {
     auto f = std::bind(&CONNECTION_PROXY::change_user, next_proxy, user, std::placeholders::_1, db);
-    return generate_token_for_func(f);
+    return invoke_func_with_generated_token(f);
 }
 
 std::string IAM_PROXY::get_auth_token(
@@ -139,7 +140,7 @@ void IAM_PROXY::clear_token_cache() {
     token_cache.clear();
 }
 
-bool IAM_PROXY::generate_token_for_func(std::function<bool(const char*)> func) {
+bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)> func) {
 
     // Use user provided auth host if present, otherwise, use server host
     const char* auth_host = ds->auth_host ? ds_get_utf8attr(ds->auth_host, &ds->auth_host8) : (const char*)ds->server8;

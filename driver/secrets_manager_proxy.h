@@ -56,7 +56,7 @@ private:
     std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client;
     std::pair<Aws::String, Aws::String> secret_key;
     Aws::Utils::Json::JsonValue secret_json_value;
-    bool retrieve_secrets_for_func(std::function<bool(const char*, const char*)> func);
+    bool invoke_func_with_retrieved_secret(std::function<bool(const char*, const char*)> func);
     bool update_secret(bool force_re_fetch);
     bool fetch_latest_credentials();
     bool parse_json_value(Aws::String json_string);

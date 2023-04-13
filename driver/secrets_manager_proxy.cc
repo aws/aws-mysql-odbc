@@ -96,15 +96,15 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
                                          unsigned int port, const char* unix_socket, unsigned long flags) {
 
     auto f = std::bind(&CONNECTION_PROXY::connect, next_proxy, host, std::placeholders::_1, std::placeholders::_2, database, port, unix_socket, flags);
-    return retrieve_secrets_for_func(f);
+    return invoke_func_with_retrieved_secret(f);
 }
 
 bool SECRETS_MANAGER_PROXY::change_user(const char* user, const char* passwd, const char* db) {
     auto f = std::bind(&CONNECTION_PROXY::change_user, next_proxy, std::placeholders::_1, std::placeholders::_2, db);
-    return retrieve_secrets_for_func(f);
+    return invoke_func_with_retrieved_secret(f);
 }
 
-bool SECRETS_MANAGER_PROXY::retrieve_secrets_for_func(std::function<bool(const char*, const char*)> func) {
+bool SECRETS_MANAGER_PROXY::invoke_func_with_retrieved_secret(std::function<bool(const char*, const char*)> func) {
 
     if (this->secret_key.first.empty()) {
         const auto error = "Missing required config parameter for Secrets Manager: Secret ID";
