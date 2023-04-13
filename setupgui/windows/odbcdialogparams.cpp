@@ -704,6 +704,18 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         EnableWindow(secret_id, usingSecretsManager);
       }
       break;
+    case IDC_CHECK_allow_reader_connections:
+    {
+        HWND failoverTab = TabCtrl_1.hTabPages[FAILOVER_TAB - 1];
+        assert(failoverTab);
+        HWND prefetch = GetDlgItem(failoverTab, IDC_CHECK_enable_strict_reader_failover);
+        assert(prefetch);
+
+        EnableWindow(prefetch, !!Button_GetCheck(GetDlgItem(failoverTab,
+            IDC_CHECK_allow_reader_connections)));
+        setBoolFieldData(failoverTab, IDC_CHECK_enable_strict_reader_failover, Button_GetCheck(prefetch));
+    }
+    break;
     case IDC_CHECK_gather_perf_metrics:
       {
         HWND failoverTab = TabCtrl_1.hTabPages[FAILOVER_TAB-1];

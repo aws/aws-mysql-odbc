@@ -232,6 +232,7 @@ typedef struct DataSource {
   /* Failover */
   BOOL enable_cluster_failover;
   BOOL allow_reader_connections;
+  BOOL enable_strict_reader_failover;
   BOOL gather_perf_metrics;
   BOOL gather_metrics_per_instance;
   SQLCHAR *host_pattern8;

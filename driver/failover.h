@@ -73,6 +73,7 @@ class FAILOVER_READER_HANDLER {
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<CONNECTION_HANDLER> connection_handler,
         int failover_timeout_ms, int failover_reader_connect_timeout,
+        bool enable_strict_reader_failover,
         unsigned long dbc_id, bool enable_logging = false);
     
         ~FAILOVER_READER_HANDLER();
@@ -100,6 +101,7 @@ class FAILOVER_READER_HANDLER {
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
         std::shared_ptr<CONNECTION_HANDLER> connection_handler; 
         const int READER_CONNECT_INTERVAL_SEC = 1;  // 1 sec
+        bool enable_strict_reader_failover = false;
         std::shared_ptr<FILE> logger = nullptr;
         unsigned long dbc_id = 0;
 };

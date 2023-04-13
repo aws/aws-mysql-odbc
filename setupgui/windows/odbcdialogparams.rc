@@ -215,28 +215,30 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 12, 89, 10
     CONTROL         "&Allow reader connections", IDC_CHECK_allow_reader_connections,
                     "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 12, 27, 100, 10
+    CONTROL         "&Enable strict reader failover", IDC_CHECK_enable_strict_reader_failover,
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED, 132, 27, 100, 10
     CONTROL         "&Gather performance metrics",IDC_CHECK_gather_perf_metrics,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 42, 100, 10
     CONTROL         "&Gather instance-specific metrics",IDC_CHECK_gather_metrics_per_instance,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED, 12, 57, 115, 10 
-    RTEXT           "&Host pattern:",IDC_STATIC,12,75,117,8
-    EDITTEXT        IDC_EDIT_host_pattern,132,73,196,12,ES_AUTOHSCROLL
-    RTEXT           "&Cluster ID:",IDC_STATIC,12,90,116,8
-    EDITTEXT        IDC_EDIT_cluster_id,132,88,196,12,ES_AUTOHSCROLL
-    RTEXT           "Topology refresh rate (ms):",IDC_STATIC,12,105,116,8
-    EDITTEXT        IDC_EDIT_topology_refresh_rate,132,103,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Failover timeout (ms):",IDC_STATIC,12,120,116,8
-    EDITTEXT        IDC_EDIT_failover_timeout,132,118,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Failover topology refresh rate (ms):",IDC_STATIC,11,135,117,8
-    EDITTEXT        IDC_EDIT_failover_topology_refresh_rate,132,133,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Writer reconnect interval (ms):",IDC_STATIC,11,150,117,8
-    EDITTEXT        IDC_EDIT_failover_writer_reconnect_interval,132,148,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Reader connect timeout (ms):",IDC_STATIC,11,165,117,8
-    EDITTEXT        IDC_EDIT_failover_reader_connect_timeout,132,162,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Host Connect timeout (s):",IDC_STATIC,11,180,117,8
-    EDITTEXT        IDC_EDIT_connect_timeout,132,178,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Host Read/Write timeout (s):",IDC_STATIC,11,195,117,8
-    EDITTEXT        IDC_EDIT_network_timeout,132,193,64,12,ES_AUTOHSCROLL | ES_NUMBER
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED, 132, 42, 115, 10
+    RTEXT           "&Host pattern:",IDC_STATIC,12,60,117,8
+    EDITTEXT        IDC_EDIT_host_pattern,132,58,196,12,ES_AUTOHSCROLL
+    RTEXT           "&Cluster ID:",IDC_STATIC,12,77,116,8
+    EDITTEXT        IDC_EDIT_cluster_id,132,75,196,12,ES_AUTOHSCROLL
+    RTEXT           "Topology refresh rate (ms):",IDC_STATIC,12,94,116,8
+    EDITTEXT        IDC_EDIT_topology_refresh_rate,132,92,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Failover timeout (ms):",IDC_STATIC,12,111,116,8
+    EDITTEXT        IDC_EDIT_failover_timeout,132,109,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Failover topology refresh rate (ms):",IDC_STATIC,11,128,117,8
+    EDITTEXT        IDC_EDIT_failover_topology_refresh_rate,132,126,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Writer reconnect interval (ms):",IDC_STATIC,11,145,117,8
+    EDITTEXT        IDC_EDIT_failover_writer_reconnect_interval,132,143,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Reader connect timeout (ms):",IDC_STATIC,11,162,117,8
+    EDITTEXT        IDC_EDIT_failover_reader_connect_timeout,132,160,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Host Connect timeout (s):",IDC_STATIC,11,179,117,8
+    EDITTEXT        IDC_EDIT_connect_timeout,132,177,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Host Read/Write timeout (s):",IDC_STATIC,11,196,117,8
+    EDITTEXT        IDC_EDIT_network_timeout,132,194,64,12,ES_AUTOHSCROLL | ES_NUMBER
 END
 
 IDD_TAB5 DIALOGEX 0, 0, 209, 181
