@@ -81,7 +81,8 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
         this->topology_service, this->connection_handler, ds->failover_timeout,
-        ds->failover_reader_connect_timeout, dbc->id, ds->save_queries);
+        ds->failover_reader_connect_timeout, ds->enable_strict_reader_failover,
+        dbc->id, ds->save_queries);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
         this->connection_handler, ds->failover_timeout,
