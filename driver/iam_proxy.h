@@ -74,6 +74,9 @@ public:
         const char* socket,
         unsigned long flags) override;
 
+    bool change_user(const char* user, const char* passwd,
+        const char* db) override;
+
     std::string get_auth_token(
         const char* host,const char* region, unsigned int port,
         const char* user, unsigned int time_until_expiration);
@@ -90,6 +93,8 @@ protected:
         const char* host, const char* region, unsigned int port, const char* user);
 
     static void clear_token_cache();
+
+    bool invoke_func_with_generated_token(std::function<bool(const char*)> func);
 
 #ifdef UNIT_TEST_BUILD
     // Allows for testing private/protected methods
