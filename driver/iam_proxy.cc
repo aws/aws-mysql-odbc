@@ -28,6 +28,7 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
+#include <functional>
 
 #include "aws_sdk_helper.h"
 #include "driver.h"
@@ -64,39 +65,16 @@ IAM_PROXY::~IAM_PROXY() {
 }
 
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
-    const char* database, unsigned int port, const char* socket, unsigned long flags) {
+                        const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
-    const char* auth_host = host;
-    if (ds->auth_host) {
-        auth_host = ds_get_utf8attr(ds->auth_host, &ds->auth_host8);
-    }
+    auto f = std::bind(&CONNECTION_PROXY::connect, next_proxy, host, user, std::placeholders::_1, database, port,
+                       socket, flags);
+    return invoke_func_with_generated_token(f);
+}
 
-    const char* region;
-    if (ds->auth_region8) {
-        region = (const char*)ds->auth_region8;
-    }
-    else {
-        // Go with default region if region is not provided.
-        region = Aws::Region::US_EAST_1;
-    }
-
-    std::string auth_token = this->get_auth_token(auth_host, region, ds->auth_port, user, ds->auth_expiration);
-
-    bool connect_result = next_proxy->connect(host, user, auth_token.c_str(), database, port, socket, flags);
-    if (!connect_result) {
-        Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
-        Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
-        if (credentials.IsEmpty()) {
-            this->set_custom_error_message(
-                "Could not find AWS Credentials for IAM Authentication. Please set up AWS credentials.");
-        }
-        else if (credentials.IsExpired()) {
-            this->set_custom_error_message(
-                "AWS Credentials for IAM Authentication are expired. Please refresh AWS credentials.");
-        }
-    }
-
-    return connect_result;
+bool IAM_PROXY::change_user(const char* user, const char* passwd, const char* db) {
+    auto f = std::bind(&CONNECTION_PROXY::change_user, next_proxy, user, std::placeholders::_1, db);
+    return invoke_func_with_generated_token(f);
 }
 
 std::string IAM_PROXY::get_auth_token(
@@ -160,4 +138,31 @@ std::string IAM_PROXY::generate_auth_token(
 void IAM_PROXY::clear_token_cache() {
     std::unique_lock<std::mutex> lock(token_cache_mutex);
     token_cache.clear();
+}
+
+bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)> func) {
+
+    // Use user provided auth host if present, otherwise, use server host
+    const char* auth_host = ds->auth_host ? ds_get_utf8attr(ds->auth_host, &ds->auth_host8) : (const char*)ds->server8;
+
+    // Go with default region if region is not provided.
+    const char* region = ds->auth_region8 ? (const char*)ds->auth_region8 : Aws::Region::US_EAST_1;
+
+    std::string auth_token = this->get_auth_token(auth_host, region, ds->auth_port, (const char*)ds->uid8, ds->auth_expiration);
+
+    bool connect_result = func(auth_token.c_str());
+    if (!connect_result) {
+        Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
+        Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
+        if (credentials.IsEmpty()) {
+            this->set_custom_error_message(
+                "Could not find AWS Credentials for IAM Authentication. Please set up AWS credentials.");
+        }
+        else if (credentials.IsExpired()) {
+            this->set_custom_error_message(
+                "AWS Credentials for IAM Authentication are expired. Please refresh AWS credentials.");
+        }
+    }
+
+    return connect_result;
 }
