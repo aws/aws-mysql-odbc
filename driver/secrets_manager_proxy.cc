@@ -29,6 +29,7 @@
 
 #include <aws/secretsmanager/SecretsManagerServiceClientModel.h>
 #include <aws/secretsmanager/model/GetSecretValueRequest.h>
+#include <functional>
 #include <regex>
 
 #include "aws_sdk_helper.h"
@@ -94,6 +95,17 @@ SECRETS_MANAGER_PROXY::~SECRETS_MANAGER_PROXY() {
 bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const char* passwd, const char* database,
                                          unsigned int port, const char* unix_socket, unsigned long flags) {
 
+    auto f = std::bind(&CONNECTION_PROXY::connect, next_proxy, host, std::placeholders::_1, std::placeholders::_2, database, port, unix_socket, flags);
+    return invoke_func_with_retrieved_secret(f);
+}
+
+bool SECRETS_MANAGER_PROXY::change_user(const char* user, const char* passwd, const char* db) {
+    auto f = std::bind(&CONNECTION_PROXY::change_user, next_proxy, std::placeholders::_1, std::placeholders::_2, db);
+    return invoke_func_with_retrieved_secret(f);
+}
+
+bool SECRETS_MANAGER_PROXY::invoke_func_with_retrieved_secret(std::function<bool(const char*, const char*)> func) {
+
     if (this->secret_key.first.empty()) {
         const auto error = "Missing required config parameter for Secrets Manager: Secret ID";
         MYLOG_DBC_TRACE(dbc, "[SECRETS_MANAGER_PROXY] %s", error);
@@ -110,7 +122,7 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
         this->set_custom_error_message(error);
         return false;
     }
-    bool ret = next_proxy->connect(host, username.c_str(), password.c_str(), database, port, unix_socket, flags);
+    bool ret = func(username.c_str(), password.c_str());
     if (!ret && next_proxy->error_code() == ER_ACCESS_DENIED_ERROR && !fetched) {
         // Login unsuccessful with cached credentials
         // Try to re-fetch credentials and try again
@@ -119,7 +131,7 @@ bool SECRETS_MANAGER_PROXY::connect(const char* host, const char* user, const ch
         if (fetched) {
             username = get_from_secret_json_value(USERNAME_KEY);
             password = get_from_secret_json_value(PASSWORD_KEY);
-            ret = next_proxy->connect(host, username.c_str(), password.c_str(), database, port, unix_socket, flags);
+            ret = func(username.c_str(), password.c_str());
         }
     }
 

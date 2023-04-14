@@ -48,12 +48,15 @@ public:
 
     bool connect(const char* host, const char* user, const char* passwd, const char* database,
         unsigned int port, const char* unix_socket, unsigned long flags) override;
+    
+    bool change_user(const char* user, const char* passwd,
+                     const char* db) override;
 
 private:
     std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client;
     std::pair<Aws::String, Aws::String> secret_key;
     Aws::Utils::Json::JsonValue secret_json_value;
-
+    bool invoke_func_with_retrieved_secret(std::function<bool(const char*, const char*)> func);
     bool update_secret(bool force_re_fetch);
     bool fetch_latest_credentials();
     bool parse_json_value(Aws::String json_string);
