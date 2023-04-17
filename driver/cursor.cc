@@ -1492,8 +1492,7 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
 
     if (stmt->stmt_options.bookmarks == SQL_UB_VARIABLE)
     {
-      int _len= 0;
-      char _value[21];
+      ulong copy_bytes= 0;
       DESCREC *arrec;
       long max_row;
 
@@ -1528,11 +1527,10 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
                                           stmt->ard->bind_type,
                                           sizeof(SQLLEN), i);
           }
-
-          _len= sprintf(_value, "%ld", i + 1);
-          res= sql_get_bookmark_data(stmt, arrec->concise_type, (uint)0,
+          std::string sval = std::to_string(i + 1);
+          res = sql_get_bookmark_data(stmt, arrec->concise_type, (uint)0,
                                 TargetValuePtr, arrec->octet_length,
-                                pcbValue, _value, _len, arrec);
+                                pcbValue, (char*)sval.data(), sval.length(), arrec);
 
           if (!SQL_SUCCEEDED(res))
           {

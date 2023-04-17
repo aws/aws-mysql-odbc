@@ -3171,7 +3171,8 @@ SQLRETURN set_sql_select_limit(DBC *dbc, SQLULEN lim_value, my_bool req_lock)
     return SQL_SUCCESS;
 
   if (lim_value > 0 && lim_value < sql_select_unlimited)
-    snprintf(query, sizeof(query), "set @@sql_select_limit=%lu", (unsigned long)lim_value);
+    myodbc_snprintf(query, sizeof(query), "set @@sql_select_limit=%lu",
+                    (unsigned long)lim_value);
   else
   {
     strncpy(query, "set @@sql_select_limit=DEFAULT", sizeof(query));
@@ -4245,7 +4246,8 @@ SQLRETURN set_query_timeout(STMT *stmt, SQLULEN new_value)
   if (new_value > 0)
   {
     unsigned long long msec_value= (unsigned long long)new_value * 1000;
-    snprintf(query, sizeof(query), "set @@max_execution_time=%llu", msec_value);
+    myodbc_snprintf(query, sizeof(query),
+                    "set @@max_execution_time=%llu", msec_value);
   }
   else
   {
