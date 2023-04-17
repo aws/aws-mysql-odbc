@@ -152,7 +152,7 @@ DBC::~DBC()
   if (ds)
     ds_delete(ds);
 
-  if (connection_proxy) 
+  if (connection_proxy)
     delete connection_proxy;
 
   if (fh)
@@ -232,7 +232,7 @@ SQLRETURN SQL_API SQLAllocEnv(SQLHENV *phenv)
 SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
 {
     MONITOR_THREAD_CONTAINER::release_instance();
-    
+
     ENV *env= (ENV *) henv;
     delete env;
 #ifdef _UNIX_
@@ -293,9 +293,11 @@ SQLRETURN SQL_API my_SQLAllocConnect(SQLHENV henv, SQLHDBC *phdbc)
     if (CONNECTION_PROXY::get_client_version() < MIN_MYSQL_VERSION)
     {
         char buff[255];
-        snprintf(buff, sizeof(buff), 
-                 "Wrong libmysqlclient library version: %ld.  MyODBC needs at least version: %ld",
-                 CONNECTION_PROXY::get_client_version(), MIN_MYSQL_VERSION);
+        myodbc_snprintf(buff, sizeof(buff),
+          "Wrong libmysqlclient library version: %ld. "
+          "MyODBC needs at least version: %ld",
+          CONNECTION_PROXY::get_client_version(), MIN_MYSQL_VERSION);
+
         return(set_env_error((ENV*)henv, MYERR_S1000, buff, 0));
     }
 
