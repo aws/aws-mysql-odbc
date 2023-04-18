@@ -68,7 +68,7 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::failover(
     const auto start = std::chrono::steady_clock::now();
     auto global_sync = std::make_shared<FAILOVER_SYNC>(1);
 
-    std::packaged_task reader_failover_task ([=] {
+    std::packaged_task<std::shared_ptr<READER_FAILOVER_RESULT>()> reader_failover_task([=] {
         while (!global_sync->is_completed()) {
             auto hosts_list = build_hosts_list(current_topology, !enable_strict_reader_failover);
             auto reader_result = get_connection_from_hosts(hosts_list, global_sync);
