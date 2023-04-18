@@ -63,10 +63,12 @@ void trace_print(FILE *file, unsigned long dbc_id, const char *fmt, ...) {
     pid_t pid;
     pid = getpid();
 #endif
-
-    fprintf(file, "%s - Process ID %ld -  DBC ID %lu - %s\n", time_buf, pid,
-            dbc_id, buf.data());
-    fflush(file);
+    {
+      std::lock_guard<std::mutex> guard(log_file_mutex);
+      fprintf(file, "%s - Process ID %ld -  DBC ID %lu - %s\n", time_buf, pid,
+          dbc_id, buf.data());
+      fflush(file);
+    }
   }
 }
 

@@ -137,9 +137,9 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
         mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_writer_proxy);
+    EXPECT_TRUE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_writer_proxy);
 
     // Explicit delete on writer connection as it's returned as a valid result
     delete mock_writer_proxy;
@@ -198,9 +198,9 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, 0);
     const auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_writer_proxy);
+    EXPECT_TRUE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_writer_proxy);
 
     // Explicit delete on writer connection as it's returned as a valid result
     delete mock_writer_proxy;
@@ -243,9 +243,9 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 2000, 2000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_writer_proxy);
+    EXPECT_TRUE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_writer_proxy);
 
     // Explicit delete on writer connection as it's returned as a valid result
     delete mock_writer_proxy;
@@ -306,12 +306,12 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_TRUE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_new_writer_proxy);
-    EXPECT_EQ(3, result.new_topology->total_hosts());
+    EXPECT_TRUE(result->connected);
+    EXPECT_TRUE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_new_writer_proxy);
+    EXPECT_EQ(3, result->new_topology->total_hosts());
     EXPECT_EQ(new_writer_instance_name,
-            result.new_topology->get_writer()->instance_name);
+            result->new_topology->get_writer()->instance_name);
 
     // Explicit delete on new writer connection as it's returned as a valid result
     delete mock_new_writer_proxy;
@@ -365,12 +365,12 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
         mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_TRUE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_new_writer_proxy);
-    EXPECT_EQ(4, result.new_topology->total_hosts());
+    EXPECT_TRUE(result->connected);
+    EXPECT_TRUE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_new_writer_proxy);
+    EXPECT_EQ(4, result->new_topology->total_hosts());
     EXPECT_EQ(new_writer_instance_name,
-            result.new_topology->get_writer()->instance_name);
+            result->new_topology->get_writer()->instance_name);
     
     // Explicit delete on new writer connection as it's returned as a valid result
     delete mock_new_writer_proxy;
@@ -434,9 +434,9 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
         mock_ts, mock_reader_handler, mock_connection_handler, 1000, 2000, 2000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_FALSE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, nullptr);
+    EXPECT_FALSE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, nullptr);
 
     // delete reader b explicitly, since get_reader_connection() is mocked
     delete mock_reader_b_proxy;
@@ -483,9 +483,9 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed)
         mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_FALSE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, nullptr);
+    EXPECT_FALSE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, nullptr);
 
     // delete reader b explicitly, since get_reader_connection() is mocked
     delete mock_reader_b_proxy;

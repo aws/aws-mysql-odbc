@@ -78,20 +78,20 @@ class FAILOVER_READER_HANDLER {
     
         ~FAILOVER_READER_HANDLER();
     
-        READER_FAILOVER_RESULT failover(
+        std::shared_ptr<READER_FAILOVER_RESULT> failover(
             std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info);
     
-        virtual READER_FAILOVER_RESULT get_reader_connection(
+        virtual std::shared_ptr<READER_FAILOVER_RESULT> get_reader_connection(
             std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
-            FAILOVER_SYNC& f_sync);
+            std::shared_ptr<FAILOVER_SYNC> f_sync);
 
         std::vector<std::shared_ptr<HOST_INFO>> build_hosts_list(
-            const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& topology_info,
+            std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info,
             bool contain_writers);
 
-        READER_FAILOVER_RESULT get_connection_from_hosts(
+        std::shared_ptr<READER_FAILOVER_RESULT> get_connection_from_hosts(
             std::vector<std::shared_ptr<HOST_INFO>> hosts_list,
-            FAILOVER_SYNC& global_sync);
+            std::shared_ptr<FAILOVER_SYNC> global_sync);
 
     protected:
         int reader_connect_timeout_ms = 30000;   // 30 sec
@@ -138,7 +138,7 @@ class FAILOVER_WRITER_HANDLER {
         int writer_failover_timeout_ms, int read_topology_interval_ms,
         int reconnect_writer_interval_ms, unsigned long dbc_id, bool enable_logging = false);
     ~FAILOVER_WRITER_HANDLER();
-    WRITER_FAILOVER_RESULT failover(
+    std::shared_ptr<WRITER_FAILOVER_RESULT> failover(
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology);
 
    protected:
@@ -222,7 +222,7 @@ class FAILOVER {
     bool is_writer_connected();
 
    protected:
-    bool connect(const std::shared_ptr<HOST_INFO>& host_info);
+    bool connect(std::shared_ptr<HOST_INFO> host_info);
     void sleep(int miliseconds);
     void release_new_connection();
     std::shared_ptr<CONNECTION_HANDLER> connection_handler;
@@ -242,8 +242,8 @@ public:
 
     void operator()(
         std::shared_ptr<HOST_INFO> reader,
-        FAILOVER_SYNC& f_sync,
-        READER_FAILOVER_RESULT& result);
+        std::shared_ptr<FAILOVER_SYNC> f_sync,
+        std::shared_ptr<READER_FAILOVER_RESULT> result);
 };
 
 class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
@@ -256,15 +256,15 @@ class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
 
     void operator()(
         std::shared_ptr<HOST_INFO> original_writer,
-        FAILOVER_SYNC& f_sync,
-        WRITER_FAILOVER_RESULT& result);
+        std::shared_ptr<FAILOVER_SYNC> f_sync,
+        std::shared_ptr<WRITER_FAILOVER_RESULT> result);
 
    private:
     int reconnect_interval_ms;
 
     bool is_current_host_writer(
-        const std::shared_ptr<HOST_INFO>& original_writer,
-        const std::shared_ptr<CLUSTER_TOPOLOGY_INFO>& latest_topology);
+        std::shared_ptr<HOST_INFO> original_writer,
+        std::shared_ptr<CLUSTER_TOPOLOGY_INFO> latest_topology);
 };
 
 class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
@@ -279,8 +279,8 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
 
     void operator()(
         std::shared_ptr<HOST_INFO> original_writer,
-        FAILOVER_SYNC& f_sync,
-        WRITER_FAILOVER_RESULT& result);
+        std::shared_ptr<FAILOVER_SYNC> f_sync,
+        std::shared_ptr<WRITER_FAILOVER_RESULT> result);
 
    private:
     // TODO - initialize in constructor and define constant for default value
@@ -288,11 +288,11 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology;
     CONNECTION_PROXY* reader_connection = nullptr;  // To retrieve latest topology
-    std::shared_ptr<HOST_INFO> current_reader_host;
+    std::shared_ptr<HOST_INFO> current_reader_host = nullptr;
 
     void refresh_topology_and_connect_to_new_writer(
-        std::shared_ptr<HOST_INFO> original_writer, FAILOVER_SYNC& f_sync);
-    void connect_to_reader(FAILOVER_SYNC& f_sync);
+        std::shared_ptr<HOST_INFO> original_writer, std::shared_ptr<FAILOVER_SYNC> f_sync);
+    void connect_to_reader(std::shared_ptr<FAILOVER_SYNC> f_sync);
     bool connect_to_writer(std::shared_ptr<HOST_INFO> writer_candidate);
     void clean_up_reader_connection();
 };

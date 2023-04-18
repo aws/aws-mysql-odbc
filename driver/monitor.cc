@@ -79,6 +79,7 @@ MONITOR::~MONITOR() {
     }
 
     if (this->connection_proxy) {
+        this->connection_proxy->delete_ds();
         delete this->connection_proxy;
         this->connection_proxy = nullptr;
     }

@@ -60,7 +60,7 @@ SQLRETURN CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, bool fail
     return dbc_ptr->connect(ds, failover_enabled);
 }
 
-CONNECTION_PROXY* CONNECTION_HANDLER::connect(const std::shared_ptr<HOST_INFO>& host_info, DataSource* ds) {
+CONNECTION_PROXY* CONNECTION_HANDLER::connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds) {
 
     if (dbc == nullptr || host_info == nullptr) {
         return nullptr;

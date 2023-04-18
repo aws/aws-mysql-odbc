@@ -471,9 +471,9 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const cha
     MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting reader failover procedure.");
     auto result = failover_reader_handler->failover(current_topology);
 
-    if (result.connected) {
-        current_host = result.new_host;
-        connection_handler->update_connection(result.new_connection, current_host->get_host());
+    if (result->connected) {
+        current_host = result->new_host;
+        connection_handler->update_connection(result->new_connection, current_host->get_host());
         new_error_code = "08S02";
         error_msg = "The active SQL connection has changed.";
         MYLOG_DBC_TRACE(dbc,
@@ -494,20 +494,20 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code, const cha
     MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting writer failover procedure.");
     auto result = failover_writer_handler->failover(current_topology);
 
-    if (!result.connected) {
+    if (!result->connected) {
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Unable to establish SQL connection to writer node.");
         new_error_code = "08S01";
         error_msg = "The active SQL connection was lost.";
         return false;
     }
-    if (result.is_new_host) {
+    if (result->is_new_host) {
         // connected to a new writer host; take it over
-        current_topology = result.new_topology;
+        current_topology = result->new_topology;
         current_host = current_topology->get_writer();
     }
 
     connection_handler->update_connection(
-        result.new_connection, result.new_topology->get_writer()->get_host());
+        result->new_connection, result->new_topology->get_writer()->get_host());
     
     new_error_code = "08S02";
     error_msg = "The active SQL connection has changed.";
