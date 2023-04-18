@@ -206,9 +206,8 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         std::thread task_thread1(std::move(first_reader_task), first_reader_host,local_sync, first_connection_result);
         
         std::thread task_thread2;
-
         if (!odd_hosts_number) {
-            std::shared_ptr<HOST_INFO> second_reader_host = hosts_list.at(i + 1);
+            auto second_reader_host = hosts_list.at(i + 1);
             task_thread2 = std::thread(std::move(second_reader_task), second_reader_host, local_sync,second_connection_result);
         }
 
@@ -257,11 +256,11 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
                 // None has connected. We move on and try new hosts.
                 task_thread1.detach();
                 task_thread2.detach();
-                i += 2;
                 std::this_thread::sleep_for(std::chrono::seconds(READER_CONNECT_INTERVAL_SEC));
                 break;
             }
         }
+        i += 2;
     }
 
     // The operation was either cancelled either reached the end of the list without connecting.

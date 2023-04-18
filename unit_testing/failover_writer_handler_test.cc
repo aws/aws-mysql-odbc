@@ -124,7 +124,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
     EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(false, nullptr, nullptr)));
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(false, nullptr, nullptr)));
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
         .WillRepeatedly(Return(mock_writer_proxy));
@@ -186,12 +186,12 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(DoAll(
-            Invoke([](Unused, FAILOVER_SYNC& f_sync) {
-                for (int i = 0; i <= 50 && !f_sync.is_completed(); i++) {
+            Invoke([](Unused, std::shared_ptr<FAILOVER_SYNC> f_sync) {
+                for (int i = 0; i <= 50 && !f_sync->is_completed(); i++) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
             }),
-            Return(READER_FAILOVER_RESULT(true, reader_a_host,
+            Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                           mock_reader_a_proxy))));
 
     FAILOVER_WRITER_HANDLER writer_handler(
@@ -236,7 +236,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
     EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
@@ -299,7 +299,7 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
@@ -358,7 +358,7 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
     EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
@@ -427,7 +427,7 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
     EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
@@ -476,7 +476,7 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed)
     EXPECT_CALL(*mock_ts, mark_host_down(new_writer_host)).Times(AtLeast(1));
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
