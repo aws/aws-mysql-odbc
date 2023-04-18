@@ -322,8 +322,8 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     auto reconnect_result = std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
     auto new_writer_result = std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
 
-    std::packaged_task reconnect_task(reconnect_handler);
-    std::packaged_task wait_new_writer_task(new_writer_handler);
+    std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<WRITER_FAILOVER_RESULT>)> reconnect_task(reconnect_handler);
+    std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<WRITER_FAILOVER_RESULT>)> wait_new_writer_task(new_writer_handler);
 
     auto reconnect_future = reconnect_task.get_future();
     auto wait_new_writer_future = wait_new_writer_task.get_future();

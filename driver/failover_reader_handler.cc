@@ -197,8 +197,8 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         
         std::shared_ptr<HOST_INFO> first_reader_host = hosts_list.at(i);
 
-        std::packaged_task first_reader_task(first_connection_handler);
-        std::packaged_task second_reader_task(second_connection_handler);
+        std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<READER_FAILOVER_RESULT>)> first_reader_task(first_connection_handler);
+        std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<READER_FAILOVER_RESULT>)> second_reader_task(second_connection_handler);
 
         auto result1 = first_reader_task.get_future();
         auto result2 = second_reader_task.get_future();
