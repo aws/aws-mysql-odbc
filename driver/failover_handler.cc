@@ -389,7 +389,7 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
             rc = reconnect(true);
         }
         if (is_failover_enabled()) {
-            failover_thread_pool.resize(4);
+            failover_thread_pool.resize(current_topology->total_hosts());
         }
     }
 
