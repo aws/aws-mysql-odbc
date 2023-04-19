@@ -147,6 +147,10 @@ bool TEST_UTILS::is_rds_proxy_dns(std::string host) {
     return FAILOVER_HANDLER::is_rds_proxy_dns(host);
 }
 
+bool TEST_UTILS::is_rds_writer_cluster_dns(std::string host) {
+    return FAILOVER_HANDLER::is_rds_writer_cluster_dns(host);
+}
+
 bool TEST_UTILS::is_rds_custom_cluster_dns(std::string host) {
     return FAILOVER_HANDLER::is_rds_custom_cluster_dns(host);
 }

@@ -122,6 +122,14 @@ class MOCK_CONNECTION_HANDLER : public CONNECTION_HANDLER {
     MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*, bool));
 };
 
+class MOCK_FAILOVER_HANDLER : public FAILOVER_HANDLER {
+public:
+    MOCK_FAILOVER_HANDLER(DBC* dbc, DataSource* ds, std::shared_ptr<CONNECTION_HANDLER> ch,
+        std::shared_ptr<TOPOLOGY_SERVICE> ts, std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> mc) : 
+        FAILOVER_HANDLER(dbc, ds, ch, ts, mc) {}
+    MOCK_METHOD(std::string, host_to_IP, (std::string));
+};
+
 class MOCK_FAILOVER_SYNC : public FAILOVER_SYNC {
 public:
     MOCK_FAILOVER_SYNC() : FAILOVER_SYNC(1) {}
