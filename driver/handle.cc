@@ -55,6 +55,8 @@
 
 #include <mutex>
 
+ctpl::thread_pool failover_thread_pool;
+
 thread_local long thread_count = 0;
 
 std::mutex g_lock;
@@ -224,6 +226,7 @@ SQLRETURN SQL_API SQLAllocEnv(SQLHENV *phenv)
 SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
 {
     MONITOR_THREAD_CONTAINER::release_instance();
+    failover_thread_pool.stop(true);
     
     ENV *env= (ENV *) henv;
     delete env;

@@ -36,6 +36,9 @@
 #include "mylog.h"
 
 #include <condition_variable>
+#include <ctpl_stl.h>
+
+extern ctpl::thread_pool failover_thread_pool;
 
 struct READER_FAILOVER_RESULT {
     bool connected = false;
@@ -241,6 +244,7 @@ public:
     ~CONNECT_TO_READER_HANDLER();
 
     void operator()(
+        int id,
         std::shared_ptr<HOST_INFO> reader,
         std::shared_ptr<FAILOVER_SYNC> f_sync,
         std::shared_ptr<READER_FAILOVER_RESULT> result);
@@ -255,6 +259,7 @@ class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
     ~RECONNECT_TO_WRITER_HANDLER();
 
     void operator()(
+        int id,
         std::shared_ptr<HOST_INFO> original_writer,
         std::shared_ptr<FAILOVER_SYNC> f_sync,
         std::shared_ptr<WRITER_FAILOVER_RESULT> result);
@@ -278,6 +283,7 @@ class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
     ~WAIT_NEW_WRITER_HANDLER();
 
     void operator()(
+        int id,
         std::shared_ptr<HOST_INFO> original_writer,
         std::shared_ptr<FAILOVER_SYNC> f_sync,
         std::shared_ptr<WRITER_FAILOVER_RESULT> result);

@@ -128,7 +128,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             host_patterns = parse_host_list(hp_str.c_str(), port);
         } catch (std::string&) {
             err << "Invalid host pattern: '" << hp_str << "' - the value could not be parsed";
-            MYLOG_TRACE(dbc->log_file.get(), dbc->id, err.str().c_str());
+            MYLOG_TRACE(dbc->log_file, dbc->id, err.str().c_str());
             throw std::runtime_error(err.str());
         }
 
@@ -387,6 +387,9 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
                                       network_timeout != ds->read_timeout ||
                                       network_timeout != ds->write_timeout)) {
             rc = reconnect(true);
+        }
+        if (is_failover_enabled()) {
+            failover_thread_pool.resize(4);
         }
     }
 

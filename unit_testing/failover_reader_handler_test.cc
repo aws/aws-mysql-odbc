@@ -92,9 +92,7 @@ protected:
 
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
-        ds->save_queries = true;
-        ds->allow_reader_connections = true;
-        
+        failover_thread_pool.resize(3);
         reader_a_host->set_host_state(UP);
         reader_b_host->set_host_state(UP);
         reader_c_host->set_host_state(DOWN);
@@ -393,8 +391,6 @@ TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
     // Cannot delete at the end as it may cause double delete
     Mock::AllowLeak(mock_reader_b_proxy);
     Mock::AllowLeak(mock_reader_b_proxy->get_ds());
-    Mock::AllowLeak(mock_ts.get());
-    Mock::AllowLeak(mock_connection_handler.get());
 
     auto current_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     current_topology->add_host(writer_host);

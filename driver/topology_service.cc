@@ -58,7 +58,7 @@ TOPOLOGY_SERVICE::~TOPOLOGY_SERVICE() {
 }
 
 void TOPOLOGY_SERVICE::set_cluster_id(std::string cid) {
-    MYLOG_TRACE(logger.get(), dbc_id, "[TOPOLOGY_SERVICE] cluster ID=%s", cid.c_str());
+    MYLOG_TRACE(logger, dbc_id, "[TOPOLOGY_SERVICE] cluster ID=%s", cid.c_str());
     this->cluster_id = cid;
     metrics_container->set_cluster_id(this->cluster_id);
 }
@@ -71,7 +71,7 @@ void TOPOLOGY_SERVICE::set_cluster_instance_template(std::shared_ptr<HOST_INFO> 
     if (cluster_instance_host)
         cluster_instance_host.reset();
 
-    MYLOG_TRACE(logger.get(), dbc_id,
+    MYLOG_TRACE(logger, dbc_id,
                 "[TOPOLOGY_SERVICE] cluster instance host=%s, port=%d",
                 host_template->get_host().c_str(), host_template->get_port());
     cluster_instance_host = host_template;
@@ -300,7 +300,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
 
         topology_info->is_multi_writer_cluster = writer_count > 1;
         if (writer_count == 0) {
-            MYLOG_TRACE(logger.get(), dbc_id,
+            MYLOG_TRACE(logger, dbc_id,
                         "[TOPOLOGY_SERVICE] The topology query returned an "
                         "invalid topology - no writer instance detected");
         }

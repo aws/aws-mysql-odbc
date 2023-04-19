@@ -116,12 +116,13 @@ RECONNECT_TO_WRITER_HANDLER::RECONNECT_TO_WRITER_HANDLER(
 RECONNECT_TO_WRITER_HANDLER::~RECONNECT_TO_WRITER_HANDLER() {}
 
 void RECONNECT_TO_WRITER_HANDLER::operator()(
+    int id,
     std::shared_ptr<HOST_INFO> original_writer,
     std::shared_ptr<FAILOVER_SYNC> f_sync,
     std::shared_ptr<WRITER_FAILOVER_RESULT> result) {
 
     if (original_writer) {
-        MYLOG_TRACE(logger.get(), dbc_id,
+        MYLOG_TRACE(logger, dbc_id,
                     "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Attempting to "
                     "re-connect to the current writer instance: %s",
                     original_writer->get_host_port_pair().c_str());
@@ -142,18 +143,18 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
                     result->new_topology = latest_topology;
                     result->new_connection = std::move(new_connection);
                     f_sync->mark_as_complete(true);
-                    MYLOG_TRACE(logger.get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
+                    MYLOG_TRACE(logger, dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
                     return;
                 }
                 release_new_connection();
             }
             sleep(reconnect_interval_ms);
         }
-        MYLOG_TRACE(logger.get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Cancelled");
+        MYLOG_TRACE(logger, dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Cancelled");
     }
     // Another thread finishes or both timeout, this thread is canceled
     release_new_connection();
-    MYLOG_TRACE(logger.get(), dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
+    MYLOG_TRACE(logger, dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
 }
 
 bool RECONNECT_TO_WRITER_HANDLER::is_current_host_writer(
@@ -183,11 +184,12 @@ WAIT_NEW_WRITER_HANDLER::WAIT_NEW_WRITER_HANDLER(
 WAIT_NEW_WRITER_HANDLER::~WAIT_NEW_WRITER_HANDLER() {}
 
 void WAIT_NEW_WRITER_HANDLER::operator()(
+    int id,
     std::shared_ptr<HOST_INFO> original_writer,
     std::shared_ptr<FAILOVER_SYNC> f_sync,
     std::shared_ptr<WRITER_FAILOVER_RESULT> result) {
 
-    MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Attempting to connect to a new writer instance");
+    MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Attempting to connect to a new writer instance");
     
     while (!f_sync->is_completed()) {
         if (!is_writer_connected()) {
@@ -200,16 +202,16 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
             result->new_topology = current_topology;
             result->new_connection = std::move(new_connection);
             f_sync->mark_as_complete(true);
-            MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
+            MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
             return;
         }
     }
-    MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Cancelled");
+    MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Cancelled");
 
     // Another thread finishes or both timeout, this thread is canceled
     clean_up_reader_connection();
     release_new_connection();
-    MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
+    MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
 }
 
 // Connect to a reader to later retrieve the latest topology
@@ -220,12 +222,12 @@ void WAIT_NEW_WRITER_HANDLER::connect_to_reader(std::shared_ptr<FAILOVER_SYNC> f
             reader_connection = connection_result->new_connection;
             current_reader_host = connection_result->new_host;
             MYLOG_TRACE(
-                logger.get(), dbc_id,
+                logger, dbc_id,
                 "[WAIT_NEW_WRITER_HANDLER] [TaskB] Connected to reader: %s",
                 connection_result->new_host->get_host_port_pair().c_str());
             break;
         }
-        MYLOG_TRACE(logger.get(), dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Failed to connect to any reader.");
+        MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Failed to connect to any reader.");
     }
 }
 
@@ -250,7 +252,7 @@ void WAIT_NEW_WRITER_HANDLER::refresh_topology_and_connect_to_new_writer(
 bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
     std::shared_ptr<HOST_INFO> writer_candidate) {
 
-    MYLOG_TRACE(logger.get(), dbc_id,
+    MYLOG_TRACE(logger, dbc_id,
       "[WAIT_NEW_WRITER_HANDLER] [TaskB] Trying to connect to a new writer: %s",
       writer_candidate->get_host_port_pair().c_str());
 
@@ -299,7 +301,7 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> current_topology) {
     
     if (!current_topology || current_topology->total_hosts() == 0) {
-        MYLOG_TRACE(logger.get(), dbc_id,
+        MYLOG_TRACE(logger, dbc_id,
                     "[FAILOVER_WRITER_HANDLER] Failover was called with "
                     "an invalid (null or empty) topology");
         return std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
@@ -322,14 +324,18 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     auto reconnect_result = std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
     auto new_writer_result = std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
 
-    std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<WRITER_FAILOVER_RESULT>)> reconnect_task(reconnect_handler);
-    std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<WRITER_FAILOVER_RESULT>)> wait_new_writer_task(new_writer_handler);
+    //std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<WRITER_FAILOVER_RESULT>)> reconnect_task(reconnect_handler);
+    //std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<WRITER_FAILOVER_RESULT>)> wait_new_writer_task(new_writer_handler);
 
-    auto reconnect_future = reconnect_task.get_future();
-    auto wait_new_writer_future = wait_new_writer_task.get_future();
+    //auto reconnect_future = reconnect_task.get_future();
+    //auto wait_new_writer_future = wait_new_writer_task.get_future();
 
-    std::thread reconnect_thread(std::move(reconnect_task), original_writer, failover_sync, reconnect_result);
-    std::thread wait_new_writer_thread(std::move(wait_new_writer_task), original_writer, failover_sync, new_writer_result);
+    //std::thread reconnect_thread(std::move(reconnect_task), original_writer, failover_sync, reconnect_result);
+    //std::thread wait_new_writer_thread(std::move((wait_new_writer_task), original_writer, failover_sync, new_writer_result);
+
+
+    auto reconnect_future = failover_thread_pool.push(std::move(reconnect_handler), original_writer, failover_sync, reconnect_result);
+    auto wait_new_writer_future = failover_thread_pool.push(std::move(new_writer_handler), original_writer, failover_sync, new_writer_result);
 
     // Wait for task complete signal with specified timeout
     failover_sync->wait_and_complete(writer_failover_timeout_ms);
@@ -338,11 +344,11 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     while (true) {
         // Check if reconnect task result is ready
         if (reconnect_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-            reconnect_thread.join();
-            wait_new_writer_thread.detach();
+            //reconnect_thread.join();
+            //wait_new_writer_thread.detach();
             reconnect_future.get();
             if (reconnect_result->connected) {
-                MYLOG_TRACE(logger.get(), dbc_id,
+                MYLOG_TRACE(logger, dbc_id,
                     "[FAILOVER_WRITER_HANDLER] Successfully re-connected to the current writer instance: %s",
                     reconnect_result->new_topology->get_writer()->get_host_port_pair().c_str());
                 return reconnect_result;
@@ -352,11 +358,11 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
 
         // Check if wait new writer task result is ready
         if (wait_new_writer_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-            reconnect_thread.detach();
-            wait_new_writer_thread.join();
+            //reconnect_thread.detach();
+            //wait_new_writer_thread.join();
             wait_new_writer_future.get();
             if (new_writer_result->connected) {
-                MYLOG_TRACE(logger.get(), dbc_id,
+                MYLOG_TRACE(logger, dbc_id,
                     "[FAILOVER_WRITER_HANDLER] Successfully connected to the new writer instance: %s",
                     new_writer_result->new_topology->get_writer()->get_host_port_pair().c_str());
                 return new_writer_result;
@@ -369,9 +375,9 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
         const auto remaining_wait_ms = writer_failover_timeout_ms - duration.count();
         if (remaining_wait_ms <= 0) {
             // Writer failover timed out
-            reconnect_thread.detach();
-            wait_new_writer_thread.detach();
-            MYLOG_TRACE(logger.get(), dbc_id, "[FAILOVER_WRITER_HANDLER] Failed to connect to the writer instance.");
+            //reconnect_thread.detach();
+            //wait_new_writer_thread.detach();
+            MYLOG_TRACE(logger, dbc_id, "[FAILOVER_WRITER_HANDLER] Failed to connect to the writer instance.");
             return std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
         }
     }

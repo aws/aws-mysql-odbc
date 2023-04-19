@@ -76,7 +76,7 @@ class FailoverWriterHandlerTest : public testing::Test {
 
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
-        
+        failover_thread_pool.resize(3);
         writer_instance_name = "writer-host";
         new_writer_instance_name = "new-writer-host";
 
