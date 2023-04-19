@@ -68,6 +68,9 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::failover(
     const auto start = std::chrono::steady_clock::now();
     auto global_sync = std::make_shared<FAILOVER_SYNC>(1);
 
+    if (failover_thread_pool.n_idle() == 0) {
+        failover_thread_pool.resize(failover_thread_pool.size() + 1);
+    }
     auto reader_result_future = failover_thread_pool.push([=](int id) {
         while (!global_sync->is_completed()) {
             auto hosts_list = build_hosts_list(current_topology, !enable_strict_reader_failover);
@@ -217,6 +220,14 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
 
         //auto result1 = first_reader_task.get_future();
         //auto result2 = second_reader_task.get_future();
+
+        if (failover_thread_pool.n_idle() == 0) {
+            failover_thread_pool.resize(failover_thread_pool.size() + 2);
+        }
+
+        if (failover_thread_pool.n_idle() == 1) {
+            failover_thread_pool.resize(failover_thread_pool.size() + 1);
+        }
 
         auto result1 = failover_thread_pool.push(std::move(first_connection_handler), first_reader_host, local_sync, first_connection_result);
 

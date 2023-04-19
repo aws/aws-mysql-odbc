@@ -333,6 +333,13 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     //std::thread reconnect_thread(std::move(reconnect_task), original_writer, failover_sync, reconnect_result);
     //std::thread wait_new_writer_thread(std::move((wait_new_writer_task), original_writer, failover_sync, new_writer_result);
 
+    if (failover_thread_pool.n_idle() == 0) {
+        failover_thread_pool.resize(failover_thread_pool.size() + 2);
+    }
+
+    if (failover_thread_pool.n_idle() == 1) {
+        failover_thread_pool.resize(failover_thread_pool.size() + 1);
+    }
 
     auto reconnect_future = failover_thread_pool.push(std::move(reconnect_handler), original_writer, failover_sync, reconnect_result);
     auto wait_new_writer_future = failover_thread_pool.push(std::move(new_writer_handler), original_writer, failover_sync, new_writer_result);
