@@ -59,7 +59,7 @@ struct FILEDeleter {
   }
 };
 
-static std::shared_ptr<FILE> log_file;
+extern std::shared_ptr<FILE> log_file;
 extern std::mutex log_file_mutex;
 
 /* Functions used when debugging */

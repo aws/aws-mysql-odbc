@@ -42,6 +42,7 @@
 #endif
 
 std::mutex log_file_mutex;
+std::shared_ptr<FILE> log_file;
 
 void trace_print(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *fmt, ...) {
   if (file && fmt) {
