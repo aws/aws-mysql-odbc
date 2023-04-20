@@ -7,7 +7,7 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     maven {
-        url = uri("https://repo.maven.apache.org/maven2/")
+        url = uri("https://repo1.maven.org/maven2")
     }
 }
 
