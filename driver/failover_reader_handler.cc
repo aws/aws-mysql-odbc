@@ -69,6 +69,7 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::failover(
     auto global_sync = std::make_shared<FAILOVER_SYNC>(1);
 
     if (failover_thread_pool.n_idle() == 0) {
+        MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Resizing thread pool to %d", failover_thread_pool.size() + 1);
         failover_thread_pool.resize(failover_thread_pool.size() + 1);
     }
     auto reader_result_future = failover_thread_pool.push([=](int id) {
@@ -221,13 +222,12 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         //auto result1 = first_reader_task.get_future();
         //auto result2 = second_reader_task.get_future();
 
-        if (failover_thread_pool.n_idle() == 0) {
-            failover_thread_pool.resize(failover_thread_pool.size() + 2);
-        }
-
-        if (failover_thread_pool.n_idle() == 1) {
-            failover_thread_pool.resize(failover_thread_pool.size() + 1);
-        }
+        if (failover_thread_pool.n_idle() <= 1) {
+            int size = failover_thread_pool.size() + 2 - failover_thread_pool.n_idle();
+            MYLOG_TRACE(logger, dbc_id,
+                        "[FAILOVER_READER_HANDLER] Resizing thread pool to %d", size);
+            failover_thread_pool.resize(size);
+    }
 
         auto first_result = failover_thread_pool.push(std::move(first_connection_handler), first_reader_host, local_sync, first_connection_result);
 
@@ -318,8 +318,8 @@ void CONNECT_TO_READER_HANDLER::operator()(
     if (reader && !f_sync->is_completed()) {
 
         MYLOG_TRACE(logger, dbc_id,
-                    "[CONNECT_TO_READER_HANDLER] Trying to connect to reader: %s",
-                    reader->get_host_port_pair().c_str());
+                    "Thread ID %d - [CONNECT_TO_READER_HANDLER] Trying to connect to reader: %s",
+                    id, reader->get_host_port_pair().c_str());
 
         if (connect(reader)) {
             topology_service->mark_host_up(reader);
@@ -333,16 +333,16 @@ void CONNECT_TO_READER_HANDLER::operator()(
                 f_sync->mark_as_complete(true);
                 MYLOG_TRACE(
                     logger, dbc_id,
-                    "[CONNECT_TO_READER_HANDLER] Connected to reader: %s",
-                    reader->get_host_port_pair().c_str());
+                    "Thread ID %d - [CONNECT_TO_READER_HANDLER] Connected to reader: %s",
+                    id, reader->get_host_port_pair().c_str());
                 return;
             }
         } else {
             topology_service->mark_host_down(reader);
             MYLOG_TRACE(
                 logger, dbc_id,
-                "[CONNECT_TO_READER_HANDLER] Failed to connect to reader: %s",
-                reader->get_host_port_pair().c_str());
+                "Thread ID %d - [CONNECT_TO_READER_HANDLER] Failed to connect to reader: %s",
+                id, reader->get_host_port_pair().c_str());
             if (!f_sync->is_completed()) {
                 f_sync->mark_as_complete(false);
             }

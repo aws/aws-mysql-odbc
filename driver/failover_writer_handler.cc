@@ -123,9 +123,9 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
 
     if (original_writer) {
         MYLOG_TRACE(logger, dbc_id,
-                    "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Attempting to "
+                    "Thread ID %d - [RECONNECT_TO_WRITER_HANDLER] [TaskA] Attempting to "
                     "re-connect to the current writer instance: %s",
-                    original_writer->get_host_port_pair().c_str());
+                    id, original_writer->get_host_port_pair().c_str());
 
         while (!f_sync->is_completed()) {
             if (connect(original_writer)) {
@@ -143,18 +143,18 @@ void RECONNECT_TO_WRITER_HANDLER::operator()(
                     result->new_topology = latest_topology;
                     result->new_connection = std::move(new_connection);
                     f_sync->mark_as_complete(true);
-                    MYLOG_TRACE(logger, dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
+                    MYLOG_TRACE(logger, dbc_id, "Thread ID %d - [RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished", id);
                     return;
                 }
                 release_new_connection();
             }
             sleep(reconnect_interval_ms);
         }
-        MYLOG_TRACE(logger, dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Cancelled");
+        MYLOG_TRACE(logger, dbc_id, "Thread ID %d - [RECONNECT_TO_WRITER_HANDLER] [TaskA] Cancelled", id);
     }
     // Another thread finishes or both timeout, this thread is canceled
     release_new_connection();
-    MYLOG_TRACE(logger, dbc_id, "[RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished");
+    MYLOG_TRACE(logger, dbc_id, "Thread ID %d - [RECONNECT_TO_WRITER_HANDLER] [TaskA] Finished", id);
 }
 
 bool RECONNECT_TO_WRITER_HANDLER::is_current_host_writer(
@@ -189,7 +189,7 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
     std::shared_ptr<FAILOVER_SYNC> f_sync,
     std::shared_ptr<WRITER_FAILOVER_RESULT> result) {
 
-    MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Attempting to connect to a new writer instance");
+    MYLOG_TRACE(logger, dbc_id, "Thread ID %d - [WAIT_NEW_WRITER_HANDLER] [TaskB] Attempting to connect to a new writer instance", id);
     
     while (!f_sync->is_completed()) {
         if (!is_writer_connected()) {
@@ -202,16 +202,16 @@ void WAIT_NEW_WRITER_HANDLER::operator()(
             result->new_topology = current_topology;
             result->new_connection = std::move(new_connection);
             f_sync->mark_as_complete(true);
-            MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
+            MYLOG_TRACE(logger, dbc_id, "Thread ID %d - [WAIT_NEW_WRITER_HANDLER] [TaskB] Finished", id);
             return;
         }
     }
-    MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Cancelled");
+    MYLOG_TRACE(logger, dbc_id, "Thread ID %d - [WAIT_NEW_WRITER_HANDLER] [TaskB] Cancelled", id);
 
     // Another thread finishes or both timeout, this thread is canceled
     clean_up_reader_connection();
     release_new_connection();
-    MYLOG_TRACE(logger, dbc_id, "[WAIT_NEW_WRITER_HANDLER] [TaskB] Finished");
+    MYLOG_TRACE(logger, dbc_id, "Thread ID %d - [WAIT_NEW_WRITER_HANDLER] [TaskB] Finished", id);
 }
 
 // Connect to a reader to later retrieve the latest topology
@@ -333,12 +333,11 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     //std::thread reconnect_thread(std::move(reconnect_task), original_writer, failover_sync, reconnect_result);
     //std::thread wait_new_writer_thread(std::move((wait_new_writer_task), original_writer, failover_sync, new_writer_result);
 
-    if (failover_thread_pool.n_idle() == 0) {
-        failover_thread_pool.resize(failover_thread_pool.size() + 2);
-    }
-
-    if (failover_thread_pool.n_idle() == 1) {
-        failover_thread_pool.resize(failover_thread_pool.size() + 1);
+    if (failover_thread_pool.n_idle() <= 1) {
+        int size = failover_thread_pool.size() + 2 - failover_thread_pool.n_idle();
+        MYLOG_TRACE(logger, dbc_id,
+                    "[FAILOVER_WRITER_HANDLER] Resizing thread pool to %d", size);
+        failover_thread_pool.resize(size);
     }
 
     auto reconnect_future = failover_thread_pool.push(std::move(reconnect_handler), original_writer, failover_sync, reconnect_result);
