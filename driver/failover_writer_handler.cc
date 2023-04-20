@@ -349,7 +349,7 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     // Constantly polling for results until timeout
     while (true) {
         // Check if reconnect task result is ready
-        if (reconnect_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready && reconnect_future.valid()) {
+        if (reconnect_future.valid() && reconnect_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             //reconnect_thread.join();
             //wait_new_writer_thread.detach();
             reconnect_future.get();
@@ -362,7 +362,7 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
         }
 
         // Check if wait new writer task result is ready
-        if (wait_new_writer_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready && wait_new_writer_future.valid()) {
+        if (wait_new_writer_future.valid() && wait_new_writer_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             //reconnect_thread.detach();
             //wait_new_writer_thread.join();
             wait_new_writer_future.get();
