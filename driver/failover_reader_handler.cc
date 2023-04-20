@@ -237,7 +237,7 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         if (!odd_hosts_number) {
             auto second_reader_host = hosts_list.at(i + 1);
             //task_thread2 = std::thread(std::move(second_reader_task), second_reader_host, local_sync,second_connection_result);
-            second_future = failover_thread_pool.push(std::move(second_connection_handler), second_reader_host, local_sync, second_connection_result);
+            second_future = std::move(failover_thread_pool.push(std::move(second_connection_handler), second_reader_host, local_sync, second_connection_result));
         }
 
         // Wait for task complete signal with specified timeout

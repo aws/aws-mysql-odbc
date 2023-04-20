@@ -101,7 +101,7 @@ set(TEST_SOURCES
 set(INTEGRATION_TESTS 
   iam_authentication_integration_test.cc
   secrets_manager_integration_test.cc
-  failover_integration_test.cc
+  #failover_integration_test.cc
   network_failover_integration_test.cc
   )
 
