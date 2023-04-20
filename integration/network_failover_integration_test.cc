@@ -77,7 +77,7 @@ protected:
         .withNetworkTimeout(10);
     builder.withPort(MYSQL_PROXY_PORT)
         .withHostPattern(PROXIED_CLUSTER_TEMPLATE)
-        .withLogQuery(true)
+        //.withLogQuery(true)
         .withEnableFailureDetection(true);
   }
 
