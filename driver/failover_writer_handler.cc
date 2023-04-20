@@ -350,7 +350,7 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     // Constantly polling for results until timeout
     while (true) {
         // Check if reconnect task result is ready
-        if (reconnect_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        if (reconnect_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready && reconnect_future.valid()) {
             //reconnect_thread.join();
             //wait_new_writer_thread.detach();
             reconnect_future.get();
@@ -360,11 +360,10 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
                     reconnect_result->new_topology->get_writer()->get_host_port_pair().c_str());
                 return reconnect_result;
             }
-            break;
         }
 
         // Check if wait new writer task result is ready
-        if (wait_new_writer_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        if (wait_new_writer_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready && wait_new_writer_future.valid()) {
             //reconnect_thread.detach();
             //wait_new_writer_thread.join();
             wait_new_writer_future.get();
@@ -374,6 +373,10 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
                     new_writer_result->new_topology->get_writer()->get_host_port_pair().c_str());
                 return new_writer_result;
             }
+        }
+
+        // Results are ready but non has valid connection
+        if (!reconnect_future.valid() && !wait_new_writer_future.valid()) {
             break;
         }
 
@@ -384,11 +387,12 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
             // Writer failover timed out
             //reconnect_thread.detach();
             //wait_new_writer_thread.detach();
-            MYLOG_TRACE(logger, dbc_id, "[FAILOVER_WRITER_HANDLER] Failed to connect to the writer instance.");
+            MYLOG_TRACE(logger, dbc_id, "[FAILOVER_WRITER_HANDLER] Writer failover timed out. Failed to connect to the writer instance.");
             return std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
         }
     }
 
     // Writer failover finished but not connected
+    MYLOG_TRACE(logger, dbc_id, "[FAILOVER_WRITER_HANDLER] Failed to connect to the writer instance.");
     return std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
 }

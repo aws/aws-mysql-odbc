@@ -110,7 +110,7 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::failover(
     while (true) {
         if (reader_result_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             //reader_failover_thread.join();
-            MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Successfully connected to the reader instance.");
+            MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Reader failover finished.");
             return reader_result_future.get();
         }
 
@@ -120,7 +120,7 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::failover(
         if (remaining_wait_ms <= 0) {
             // Reader failover timed out
             //reader_failover_thread.detach();
-            MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Failed to connect to the reader instance.");
+            MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Reader failover timed out. Failed to connect to the reader instance.");
             return empty_result;
         }
     }
@@ -229,15 +229,15 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
             failover_thread_pool.resize(failover_thread_pool.size() + 1);
         }
 
-        auto result1 = failover_thread_pool.push(std::move(first_connection_handler), first_reader_host, local_sync, first_connection_result);
+        auto first_result = failover_thread_pool.push(std::move(first_connection_handler), first_reader_host, local_sync, first_connection_result);
 
         //std::thread task_thread1(std::move(first_reader_task), first_reader_host,local_sync, first_connection_result);
         //std::thread task_thread2;
-        std::future<void> result2;
+        std::future<void> second_future;
         if (!odd_hosts_number) {
             auto second_reader_host = hosts_list.at(i + 1);
             //task_thread2 = std::thread(std::move(second_reader_task), second_reader_host, local_sync,second_connection_result);
-            result2 = failover_thread_pool.push(std::move(second_connection_handler), second_reader_host, local_sync, second_connection_result);
+            second_future = failover_thread_pool.push(std::move(second_connection_handler), second_reader_host, local_sync, second_connection_result);
         }
 
         // Wait for task complete signal with specified timeout
@@ -246,12 +246,12 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         // Constantly polling for results until timeout
         while (true) {
             // Check if first reader task result is ready
-            if (result1.wait_for(std::chrono::seconds(0)) == std::future_status::ready && result1.valid()) {
+            if (first_result.wait_for(std::chrono::seconds(0)) == std::future_status::ready && first_result.valid()) {
                 //task_thread1.join();
                 if (!odd_hosts_number) {
                     //task_thread2.detach();
                 }
-                result1.get();
+                first_result.get();
                 if (first_connection_result->connected) {
                     MYLOG_TRACE(logger, dbc_id,
                         "[FAILOVER_READER_HANDLER] Connected to reader: %s",
@@ -263,10 +263,10 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
 
             // Check if second reader task result is ready if there is one
             if (!odd_hosts_number &&
-                result2.wait_for(std::chrono::seconds(0)) == std::future_status::ready && result2.valid()) {
+                second_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready && second_future.valid()) {
                 //task_thread1.detach();
                 //task_thread2.join();
-                result2.get();
+                second_future.get();
                 if (second_connection_result->connected) {
                     MYLOG_TRACE(logger, dbc_id,
                         "[FAILOVER_READER_HANDLER] Connected to reader: %s",
@@ -277,7 +277,7 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
             }
 
             // Results are ready but non has valid connection
-            if (!result1.valid() && (odd_hosts_number || !result2.valid())) {
+            if (!first_result.valid() && (odd_hosts_number || !second_future.valid())) {
                 break;
             }
 
