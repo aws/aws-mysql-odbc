@@ -104,6 +104,7 @@ class FailoverWriterHandlerTest : public testing::Test {
 
     void TearDown() override {
         cleanup_odbc_handles(env, dbc, ds);
+        failover_thread_pool.stop(true);
     }
 };
 
