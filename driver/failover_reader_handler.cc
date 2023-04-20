@@ -246,7 +246,7 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         // Constantly polling for results until timeout
         while (true) {
             // Check if first reader task result is ready
-            if (first_result.wait_for(std::chrono::seconds(0)) == std::future_status::ready && first_result.valid()) {
+            if (first_result.valid() && first_result.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                 //task_thread1.join();
                 if (!odd_hosts_number) {
                     //task_thread2.detach();
@@ -262,8 +262,8 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
             }
 
             // Check if second reader task result is ready if there is one
-            if (!odd_hosts_number &&
-                second_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready && second_future.valid()) {
+            if (!odd_hosts_number && second_future.valid() &&
+                second_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                 //task_thread1.detach();
                 //task_thread2.join();
                 second_future.get();
