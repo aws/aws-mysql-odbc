@@ -78,7 +78,6 @@ protected:
     if (nullptr != env) {
       SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
-    rds_client.reset();
   }
 };
 

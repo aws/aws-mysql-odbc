@@ -194,7 +194,6 @@ protected:
     if (nullptr != env) {
       SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
-    rds_client.reset();
   }
 
   // Only run if passed in parameter: data, is a type of BASE_PERFORMANCE_DATA
