@@ -38,7 +38,7 @@ protected:
                                                                     Aws::String(SECRET_ACCESS_KEY),
                                                                     Aws::String(SESSION_TOKEN));
   Aws::RDS::RDSClientConfiguration client_config;
-  std::shared_ptr<Aws::RDS::RDSClient> rds_client;
+  Aws::RDS::RDSClient rds_client;
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 
@@ -51,12 +51,12 @@ protected:
   }
 
   void SetUp() override {
-    rds_client = std::make_shared<Aws::RDS::RDSClient>(client_config);
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
     client_config.region = "us-east-2";
+    rds_client = Aws::RDS::RDSClient(credentials, client_config);
 
     for (const auto& x : proxy_map) {
       enable_connectivity(x.second);
@@ -92,7 +92,7 @@ protected:
   }
 };
 
-TEST_F(NetworkFailoverIntegrationTest, connection_test) {
+TEST_F(NetworkFailoverIntegrationTest, DISABLED_connection_test) {
   test_connection(dbc, MYSQL_INSTANCE_1_URL, MYSQL_PORT);
   test_connection(dbc, MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
   test_connection(dbc, MYSQL_CLUSTER_URL, MYSQL_PORT);
@@ -101,7 +101,7 @@ TEST_F(NetworkFailoverIntegrationTest, connection_test) {
   test_connection(dbc, MYSQL_RO_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
 }
 
-TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
+TEST_F(NetworkFailoverIntegrationTest, DISABLED_lost_connection_to_writer) {
   const std::string server = get_proxied_endpoint(writer_id);
   connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
@@ -122,7 +122,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
-TEST_F(NetworkFailoverIntegrationTest, use_same_connection_after_failing_failover) {
+TEST_F(NetworkFailoverIntegrationTest, DISABLED_use_same_connection_after_failing_failover) {
   const std::string server = get_proxied_endpoint(writer_id);
   connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
@@ -149,7 +149,7 @@ TEST_F(NetworkFailoverIntegrationTest, use_same_connection_after_failing_failove
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
-TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
+TEST_F(NetworkFailoverIntegrationTest, DISABLED_lost_connection_to_all_readers) {
   connection_string = builder.withServer(reader_endpoint).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 

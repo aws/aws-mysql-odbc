@@ -47,7 +47,6 @@
 #include <climits>
 #include <cstdlib>
 #include <iostream>
-#include <memory>
 #include <random>
 #include <stdexcept>
 #include <sql.h>
@@ -220,7 +219,7 @@ protected:
 
   // Helper functions from integration tests
 
-  static std::vector<std::string> retrieve_topology_via_SDK(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id) {
+  static std::vector<std::string> retrieve_topology_via_SDK(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     std::vector<std::string> instances;
 
     std::string writer;
@@ -228,7 +227,7 @@ protected:
 
     Aws::RDS::Model::DescribeDBClustersRequest rds_req;
     rds_req.WithDBClusterIdentifier(cluster_id);
-    auto outcome = client->DescribeDBClusters(rds_req);
+    auto outcome = client.DescribeDBClusters(rds_req);
 
     if (!outcome.IsSuccess()) {
       throw std::runtime_error("Unable to get cluster topology using SDK.");
@@ -253,15 +252,15 @@ protected:
     return instances;
   }
 
-  static Aws::RDS::Model::DBCluster get_DB_cluster(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id) {
+  static Aws::RDS::Model::DBCluster get_DB_cluster(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     Aws::RDS::Model::DescribeDBClustersRequest rds_req;
     rds_req.WithDBClusterIdentifier(cluster_id);
-    auto outcome = client->DescribeDBClusters(rds_req);
+    auto outcome = client.DescribeDBClusters(rds_req);
     const auto result = outcome.GetResult();
     return result.GetDBClusters().at(0);
   }
 
-  static void wait_until_cluster_has_right_state(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id) {
+  static void wait_until_cluster_has_right_state(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     Aws::String status = get_DB_cluster(client, cluster_id).GetStatus();
 
     while (status != "available") {
@@ -270,7 +269,7 @@ protected:
     }
   }
 
-  static Aws::RDS::Model::DBClusterMember get_DB_cluster_writer_instance(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id) {
+  static Aws::RDS::Model::DBClusterMember get_DB_cluster_writer_instance(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     Aws::RDS::Model::DBClusterMember instance;
     const Aws::RDS::Model::DBCluster cluster = get_DB_cluster(client, cluster_id);
     for (const auto& member : cluster.GetDBClusterMembers()) {
@@ -281,11 +280,11 @@ protected:
     return instance;
   }
 
-  static Aws::String get_DB_cluster_writer_instance_id(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id) {
+  static Aws::String get_DB_cluster_writer_instance_id(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {
     return get_DB_cluster_writer_instance(client, cluster_id).GetDBInstanceIdentifier();
   }
 
-  static void wait_until_writer_instance_changed(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id,
+  static void wait_until_writer_instance_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id,
                       const Aws::String& initial_writer_instance_id) {
     Aws::String next_cluster_writer_id = get_DB_cluster_writer_instance_id(client, cluster_id);
     while (initial_writer_instance_id == next_cluster_writer_id) {
@@ -294,14 +293,14 @@ protected:
     }
   }
 
-  static void failover_cluster(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id, const Aws::String& target_instance_id = "") {
+  static void failover_cluster(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, const Aws::String& target_instance_id = "") {
     wait_until_cluster_has_right_state(client, cluster_id);
     Aws::RDS::Model::FailoverDBClusterRequest rds_req;
     rds_req.WithDBClusterIdentifier(cluster_id);
     if (!target_instance_id.empty()) {
       rds_req.WithTargetDBInstanceIdentifier(target_instance_id);
     }
-    auto outcome = client->FailoverDBCluster(rds_req);
+    auto outcome = client.FailoverDBCluster(rds_req);
   }
 
   static Aws::String get_random_DB_cluster_reader_instance_id(std::vector<std::string> readers) {
@@ -311,7 +310,7 @@ protected:
     return readers.at(distribution(generator));
   }
 
-  static bool has_writer_changed(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id, std::string initial_writer_id, std::chrono::nanoseconds timeout) {
+  static bool has_writer_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, std::string initial_writer_id, std::chrono::nanoseconds timeout) {
     auto start = std::chrono::high_resolution_clock::now();
 
     std::string current_writer_id = get_DB_cluster_writer_instance_id(client, cluster_id);
@@ -326,7 +325,7 @@ protected:
     return true;
   }
 
-  static void failover_cluster_and_wait_until_writer_changed(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id,
+  static void failover_cluster_and_wait_until_writer_changed(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id,
                             const Aws::String& initial_writer_id,
                             const Aws::String& target_writer_id = "") {
     
@@ -358,7 +357,7 @@ protected:
     }
   }
 
-  static Aws::RDS::Model::DBClusterMember get_matched_DBClusterMember(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id,
+  static Aws::RDS::Model::DBClusterMember get_matched_DBClusterMember(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id,
                                  const Aws::String& instance_id) {
     Aws::RDS::Model::DBClusterMember instance;
     const Aws::RDS::Model::DBCluster cluster = get_DB_cluster(client, cluster_id);
@@ -371,11 +370,11 @@ protected:
     return instance;
   }
 
-  static bool is_DB_instance_writer(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id, const Aws::String& instance_id) {
+  static bool is_DB_instance_writer(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, const Aws::String& instance_id) {
     return get_matched_DBClusterMember(client, cluster_id, instance_id).GetIsClusterWriter();
   }
 
-  static bool is_DB_instance_reader(std::shared_ptr<Aws::RDS::RDSClient> client, const Aws::String& cluster_id, const Aws::String& instance_id) {
+  static bool is_DB_instance_reader(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id, const Aws::String& instance_id) {
     return !get_matched_DBClusterMember(client, cluster_id, instance_id).GetIsClusterWriter();
   }
 

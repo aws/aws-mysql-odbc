@@ -151,7 +151,7 @@ protected:
                                                                     Aws::String(SECRET_ACCESS_KEY),
                                                                     Aws::String(SESSION_TOKEN));
   Aws::RDS::RDSClientConfiguration client_config;
-  std::shared_ptr<Aws::RDS::RDSClient> rds_client;
+  Aws::RDS::RDSClient rds_client;
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 
@@ -177,7 +177,6 @@ protected:
   }
 
   void SetUp() override {
-    rds_client = std::make_shared<Aws::RDS::RDSClient>(client_config);
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
