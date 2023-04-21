@@ -153,7 +153,7 @@ protected:
   Aws::Client::ClientConfiguration client_config;
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
-  Aws::RDS::RDSClient rds_client;
+  std::shared_ptr<Aws::RDS::RDSClient> rds_client;
 
   SQLCHAR* LONG_QUERY = AS_SQLCHAR("SELECT SLEEP(600)"); // 600s -> 10m
   const size_t NB_OF_RUNS = 6;

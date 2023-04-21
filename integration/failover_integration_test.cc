@@ -38,7 +38,7 @@ protected:
                                                                     Aws::String(SECRET_ACCESS_KEY),
                                                                     Aws::String(SESSION_TOKEN));
   Aws::Client::ClientConfiguration client_config;
-  Aws::RDS::RDSClient rds_client;
+  std::shared_ptr<Aws::RDS::RDSClient> rds_client;
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
 
