@@ -6,9 +6,7 @@ group = "software.aws.rds"
 version = "1.0-SNAPSHOT"
 
 repositories {
-    maven {
-        url = uri("https://repo1.maven.org/maven2")
-    }
+    mavenCentral()
 }
 
 dependencies {
