@@ -66,7 +66,6 @@ static std::string DOWN_STREAM_STR = "DOWNSTREAM";
 static std::string UP_STREAM_STR = "UPSTREAM";
 
 static Aws::SDKOptions options;
-static std::shared_ptr<Aws::RDS::RDSClient> rds_client;
 
 class BaseFailoverIntegrationTest : public testing::Test {
 protected:

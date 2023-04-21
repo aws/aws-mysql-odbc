@@ -153,6 +153,7 @@ protected:
   Aws::Client::ClientConfiguration client_config;
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
+  Aws::RDS::RDSClient rds_client;
 
   SQLCHAR* LONG_QUERY = AS_SQLCHAR("SELECT SLEEP(600)"); // 600s -> 10m
   const size_t NB_OF_RUNS = 6;
@@ -160,11 +161,9 @@ protected:
 
   static void SetUpTestSuite() {
     Aws::InitAPI(options);
-    rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
   }
 
   static void TearDownTestSuite() {
-    rds_client->reset();
     Aws::ShutdownAPI(options);
 
     // Save results to spreadsheet
@@ -178,6 +177,7 @@ protected:
   }
 
   void SetUp() override {
+    rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
