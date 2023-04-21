@@ -37,7 +37,7 @@ protected:
   Aws::Auth::AWSCredentials credentials = Aws::Auth::AWSCredentials(Aws::String(ACCESS_KEY),
                                                                     Aws::String(SECRET_ACCESS_KEY),
                                                                     Aws::String(SESSION_TOKEN));
-  Aws::Client::ClientConfiguration client_config;
+  Aws::RDS::RDSClientConfiguration client_config;
   std::shared_ptr<Aws::RDS::RDSClient> rds_client;
   SQLHENV env = nullptr;
   SQLHDBC dbc = nullptr;
@@ -51,7 +51,7 @@ protected:
   }
 
   void SetUp() override {
-    rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
+    rds_client = std::make_shared<Aws::RDS::RDSClient>(client_config);
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
@@ -78,6 +78,7 @@ protected:
     if (nullptr != env) {
       SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
+    rds_client.reset();
   }
 };
 
