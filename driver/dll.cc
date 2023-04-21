@@ -153,7 +153,6 @@ void myodbc_end()
     */
     my_thread_end_wait_time= 0;
 #endif
-    failover_thread_pool.stop(true);
     mysql_library_end();
   }
 }

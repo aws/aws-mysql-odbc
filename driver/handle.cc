@@ -55,8 +55,6 @@
 
 #include <mutex>
 
-ctpl::thread_pool failover_thread_pool;
-
 thread_local long thread_count = 0;
 
 std::mutex g_lock;

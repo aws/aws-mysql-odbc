@@ -39,11 +39,13 @@
 FAILOVER_READER_HANDLER::FAILOVER_READER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<CONNECTION_HANDLER> connection_handler,
+    ctpl::thread_pool& thread_pool,
     int failover_timeout_ms, int failover_reader_connect_timeout,
     bool enable_strict_reader_failover,
     unsigned long dbc_id, bool enable_logging)
     : topology_service{topology_service},
       connection_handler{connection_handler},
+      thread_pool{thread_pool},
       max_failover_timeout_ms{failover_timeout_ms},
       reader_connect_timeout_ms{failover_reader_connect_timeout},
       enable_strict_reader_failover{enable_strict_reader_failover},
@@ -68,11 +70,11 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::failover(
     const auto start = std::chrono::steady_clock::now();
     auto global_sync = std::make_shared<FAILOVER_SYNC>(1);
 
-    if (failover_thread_pool.n_idle() == 0) {
-        MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Resizing thread pool to %d", failover_thread_pool.size() + 1);
-        failover_thread_pool.resize(failover_thread_pool.size() + 1);
+    if (thread_pool.n_idle() == 0) {
+        MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Resizing thread pool to %d", thread_pool.size() + 1);
+        thread_pool.resize(thread_pool.size() + 1);
     }
-    auto reader_result_future = failover_thread_pool.push([=](int id) {
+    auto reader_result_future = thread_pool.push([=](int id) {
         while (!global_sync->is_completed()) {
             auto hosts_list = build_hosts_list(current_topology, !enable_strict_reader_failover);
             auto reader_result = get_connection_from_hosts(hosts_list, global_sync);
@@ -222,14 +224,14 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         //auto result1 = first_reader_task.get_future();
         //auto result2 = second_reader_task.get_future();
 
-        if (failover_thread_pool.n_idle() <= 1) {
-            int size = failover_thread_pool.size() + 2 - failover_thread_pool.n_idle();
+        if (thread_pool.n_idle() <= 1) {
+            int size = thread_pool.size() + 2 - thread_pool.n_idle();
             MYLOG_TRACE(logger, dbc_id,
                         "[FAILOVER_READER_HANDLER] Resizing thread pool to %d", size);
-            failover_thread_pool.resize(size);
+            thread_pool.resize(size);
     }
 
-        auto first_result = failover_thread_pool.push(std::move(first_connection_handler), first_reader_host, local_sync, first_connection_result);
+        auto first_result = thread_pool.push(std::move(first_connection_handler), first_reader_host, local_sync, first_connection_result);
 
         //std::thread task_thread1(std::move(first_reader_task), first_reader_host,local_sync, first_connection_result);
         //std::thread task_thread2;
@@ -237,7 +239,7 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         if (!odd_hosts_number) {
             auto second_reader_host = hosts_list.at(i + 1);
             //task_thread2 = std::thread(std::move(second_reader_task), second_reader_host, local_sync,second_connection_result);
-            second_future = std::move(failover_thread_pool.push(std::move(second_connection_handler), second_reader_host, local_sync, second_connection_result));
+            second_future = std::move(thread_pool.push(std::move(second_connection_handler), second_reader_host, local_sync, second_connection_result));
         }
 
         // Wait for task complete signal with specified timeout

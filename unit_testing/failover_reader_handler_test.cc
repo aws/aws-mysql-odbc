@@ -61,12 +61,14 @@ protected:
     MOCK_CONNECTION_PROXY* mock_reader_a_proxy;
     MOCK_CONNECTION_PROXY* mock_reader_b_proxy;
     MOCK_CONNECTION_PROXY* mock_writer_proxy;
+    ctpl::thread_pool failover_thread_pool;
 
     static std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology;
     
     std::shared_ptr<MOCK_TOPOLOGY_SERVICE> mock_ts;
     std::shared_ptr<MOCK_CONNECTION_HANDLER> mock_connection_handler;
-     std::shared_ptr<MOCK_FAILOVER_SYNC> mock_sync;
+    std::shared_ptr<MOCK_FAILOVER_SYNC> mock_sync;
+
 
     static void SetUpTestSuite() { 
         reader_a_host = std::make_shared<HOST_INFO>("reader-a-host" + HOST_SUFFIX, 1234, UP, false);
@@ -92,7 +94,6 @@ protected:
 
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
-        failover_thread_pool.resize(3);
         reader_a_host->set_host_state(UP);
         reader_b_host->set_host_state(UP);
         reader_c_host->set_host_state(DOWN);
@@ -106,7 +107,6 @@ protected:
 
     void TearDown() override {
         cleanup_odbc_handles(env, dbc, ds);
-        failover_thread_pool.stop(true);
     }
 };
 
@@ -158,7 +158,7 @@ TEST_F(FailoverReaderHandlerTest, GenerateTopology) {
 }
 
 TEST_F(FailoverReaderHandlerTest, BuildHostsList) {
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000, false, 0);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, failover_thread_pool, 60000, 30000, false, 0);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology_info;
     std::vector<std::shared_ptr<HOST_INFO>> hosts_list;
 
@@ -230,7 +230,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Failure) {
     EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(1);
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000, false, 0);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, failover_thread_pool, 60000, 30000, false, 0);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
     auto result = reader_handler.get_connection_from_hosts(hosts_list, mock_sync);
 
@@ -253,7 +253,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Reader) {
     // Reader C will not be used as it is put at the end. Will only try to connect to A and B
     EXPECT_CALL(*mock_ts, mark_host_up(reader_a_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000, false, 0);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, failover_thread_pool, 60000, 30000, false, 0);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
     auto result = reader_handler.get_connection_from_hosts(hosts_list, mock_sync);
 
@@ -279,7 +279,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Success_Writer) {
 
     EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000, false, 0);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, failover_thread_pool, 60000, 30000, false, 0);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
     auto result = reader_handler.get_connection_from_hosts(hosts_list, mock_sync);
 
@@ -316,7 +316,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_FastestHost) {
             return mock_reader_b_proxy;
         }));
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000, false, 0);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, failover_thread_pool, 60000, 30000, false, 0);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
     auto result = reader_handler.get_connection_from_hosts(hosts_list, mock_sync);
 
@@ -355,7 +355,7 @@ TEST_F(FailoverReaderHandlerTest, GetConnectionFromHosts_Timeout) {
     EXPECT_CALL(*mock_ts, mark_host_down(_)).Times(AnyNumber());
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(1);
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 1000, false, 0);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, failover_thread_pool, 60000, 1000, false, 0);
     auto hosts_list = reader_handler.build_hosts_list(topology, true);
     auto result = reader_handler.get_connection_from_hosts(hosts_list, mock_sync);
 
@@ -375,7 +375,7 @@ TEST_F(FailoverReaderHandlerTest, Failover_Failure) {
     EXPECT_CALL(*mock_ts, mark_host_down(reader_c_host)).Times(AtLeast(1));
     EXPECT_CALL(*mock_ts, mark_host_down(writer_host)).Times(AtLeast(1));
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 3000, 1000, false, 0);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, failover_thread_pool, 3000, 1000, false, 0);
     auto result = reader_handler.failover(topology);
 
     EXPECT_FALSE(result->connected);
@@ -412,7 +412,7 @@ TEST_F(FailoverReaderHandlerTest, Failover_Success_Reader) {
         return mock_reader_b_proxy;
     }));
 
-    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, 60000, 30000, false, 0);
+    FAILOVER_READER_HANDLER reader_handler(mock_ts, mock_connection_handler, failover_thread_pool, 60000, 30000, false, 0);
     auto result = reader_handler.failover(current_topology);
 
     EXPECT_TRUE(result->connected);

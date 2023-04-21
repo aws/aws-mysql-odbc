@@ -36,9 +36,6 @@
 #include "mylog.h"
 
 #include <condition_variable>
-#include <ctpl_stl.h>
-
-extern ctpl::thread_pool failover_thread_pool;
 
 struct READER_FAILOVER_RESULT {
     bool connected = false;
@@ -75,6 +72,7 @@ class FAILOVER_READER_HANDLER {
     FAILOVER_READER_HANDLER(
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<CONNECTION_HANDLER> connection_handler,
+        ctpl::thread_pool& thread_pool,
         int failover_timeout_ms, int failover_reader_connect_timeout,
         bool enable_strict_reader_failover,
         unsigned long dbc_id, bool enable_logging = false);
@@ -107,6 +105,7 @@ class FAILOVER_READER_HANDLER {
         bool enable_strict_reader_failover = false;
         std::shared_ptr<FILE> logger = nullptr;
         unsigned long dbc_id = 0;
+        ctpl::thread_pool& thread_pool;
 };
 
 // This struct holds results of Writer Failover Process.
@@ -138,6 +137,7 @@ class FAILOVER_WRITER_HANDLER {
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
         std::shared_ptr<CONNECTION_HANDLER> connection_handler,
+        ctpl::thread_pool& thread_pool,
         int writer_failover_timeout_ms, int read_topology_interval_ms,
         int reconnect_writer_interval_ms, unsigned long dbc_id, bool enable_logging = false);
     ~FAILOVER_WRITER_HANDLER();
@@ -155,6 +155,7 @@ class FAILOVER_WRITER_HANDLER {
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler;
     std::shared_ptr<FILE> logger = nullptr;
     unsigned long dbc_id = 0;
+    ctpl::thread_pool& thread_pool;
 };
 
 class FAILOVER_HANDLER {

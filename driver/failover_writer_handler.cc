@@ -281,11 +281,13 @@ FAILOVER_WRITER_HANDLER::FAILOVER_WRITER_HANDLER(
     std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
     std::shared_ptr<FAILOVER_READER_HANDLER> reader_handler,
     std::shared_ptr<CONNECTION_HANDLER> connection_handler,
+    ctpl::thread_pool& thread_pool,
     int writer_failover_timeout_ms, int read_topology_interval_ms,
     int reconnect_writer_interval_ms, unsigned long dbc_id, bool enable_logging)
     : connection_handler{connection_handler},
       topology_service{topology_service},
       reader_handler{reader_handler},
+      thread_pool{thread_pool},
       writer_failover_timeout_ms{writer_failover_timeout_ms},
       read_topology_interval_ms{read_topology_interval_ms},
       reconnect_writer_interval_ms{reconnect_writer_interval_ms},
@@ -333,15 +335,15 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     //std::thread reconnect_thread(std::move(reconnect_task), original_writer, failover_sync, reconnect_result);
     //std::thread wait_new_writer_thread(std::move((wait_new_writer_task), original_writer, failover_sync, new_writer_result);
 
-    if (failover_thread_pool.n_idle() <= 1) {
-        int size = failover_thread_pool.size() + 2 - failover_thread_pool.n_idle();
+    if (thread_pool.n_idle() <= 1) {
+        int size = thread_pool.size() + 2 - thread_pool.n_idle();
         MYLOG_TRACE(logger, dbc_id,
                     "[FAILOVER_WRITER_HANDLER] Resizing thread pool to %d", size);
-        failover_thread_pool.resize(size);
+        thread_pool.resize(size);
     }
 
-    auto reconnect_future = failover_thread_pool.push(std::move(reconnect_handler), original_writer, failover_sync, reconnect_result);
-    auto wait_new_writer_future = failover_thread_pool.push(std::move(new_writer_handler), original_writer, failover_sync, new_writer_result);
+    auto reconnect_future = thread_pool.push(std::move(reconnect_handler), original_writer, failover_sync, reconnect_result);
+    auto wait_new_writer_future = thread_pool.push(std::move(new_writer_handler), original_writer, failover_sync, new_writer_result);
 
     // Wait for task complete signal with specified timeout
     failover_sync->wait_and_complete(writer_failover_timeout_ms);

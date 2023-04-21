@@ -80,12 +80,12 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
     this->connection_handler = connection_handler;
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
-        this->topology_service, this->connection_handler, ds->failover_timeout,
+        this->topology_service, this->connection_handler, dbc->env->failover_thread_pool, ds->failover_timeout,
         ds->failover_reader_connect_timeout, ds->enable_strict_reader_failover,
         dbc->id, ds->save_queries);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
-        this->connection_handler, ds->failover_timeout,
+        this->connection_handler, dbc->env->failover_thread_pool, ds->failover_timeout,
         ds->failover_topology_refresh_rate,
         ds->failover_writer_reconnect_interval, dbc->id, ds->save_queries);
     this->metrics_container = metrics_container;
@@ -389,7 +389,7 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
             rc = reconnect(true);
         }
         if (is_failover_enabled()) {
-            failover_thread_pool.resize(current_topology->total_hosts());
+            this->dbc->env->failover_thread_pool.resize(current_topology->total_hosts());
         }
     }
 
