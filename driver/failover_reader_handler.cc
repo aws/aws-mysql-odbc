@@ -89,30 +89,11 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::failover(
         return empty_result;
     });
 
-    //std::packaged_task<std::shared_ptr<READER_FAILOVER_RESULT>()> reader_failover_task([=] {
-    //    while (!global_sync->is_completed()) {
-    //        auto hosts_list = build_hosts_list(current_topology, !enable_strict_reader_failover);
-    //        auto reader_result = get_connection_from_hosts(hosts_list, global_sync);
-    //        if (reader_result->connected) {
-    //            global_sync->mark_as_complete(true);
-    //            return reader_result;
-    //        }
-    //        // TODO Think of changes to the strategy if it went
-    //        // through all the hosts and did not connect.
-    //        std::this_thread::sleep_for(std::chrono::seconds(READER_CONNECT_INTERVAL_SEC));
-    //    }
-    //    return empty_result;
-    //    });
-
-    //auto reader_result_future = reader_failover_task.get_future();
-    //std::thread reader_failover_thread(std::move(reader_failover_task));
-
     // Wait for task complete signal with specified timeout
     global_sync->wait_and_complete(max_failover_timeout_ms);
     // Constantly polling for results until timeout
     while (true) {
         if (reader_result_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-            //reader_failover_thread.join();
             MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Reader failover finished.");
             return reader_result_future.get();
         }
@@ -122,7 +103,6 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::failover(
         const auto remaining_wait_ms = max_failover_timeout_ms - duration.count();
         if (remaining_wait_ms <= 0) {
             // Reader failover timed out
-            //reader_failover_thread.detach();
             MYLOG_TRACE(logger, dbc_id, "[FAILOVER_READER_HANDLER] Reader failover timed out. Failed to connect to the reader instance.");
             return empty_result;
         }
@@ -218,12 +198,6 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         
         std::shared_ptr<HOST_INFO> first_reader_host = hosts_list.at(i);
 
-        //std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<READER_FAILOVER_RESULT>)> first_reader_task(first_connection_handler);
-        //std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<READER_FAILOVER_RESULT>)> second_reader_task(second_connection_handler);
-
-        //auto result1 = first_reader_task.get_future();
-        //auto result2 = second_reader_task.get_future();
-
         if (thread_pool.n_idle() <= 1) {
             int size = thread_pool.size() + 2 - thread_pool.n_idle();
             MYLOG_TRACE(logger, dbc_id,
@@ -232,14 +206,10 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
     }
 
         auto first_result = thread_pool.push(std::move(first_connection_handler), first_reader_host, local_sync, first_connection_result);
-
-        //std::thread task_thread1(std::move(first_reader_task), first_reader_host,local_sync, first_connection_result);
-        //std::thread task_thread2;
         std::future<void> second_future;
         if (!odd_hosts_number) {
             auto second_reader_host = hosts_list.at(i + 1);
-            //task_thread2 = std::thread(std::move(second_reader_task), second_reader_host, local_sync,second_connection_result);
-            second_future = std::move(thread_pool.push(std::move(second_connection_handler), second_reader_host, local_sync, second_connection_result));
+            second_future = thread_pool.push(std::move(second_connection_handler), second_reader_host, local_sync, second_connection_result);
         }
 
         // Wait for task complete signal with specified timeout
@@ -249,10 +219,6 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
         while (true) {
             // Check if first reader task result is ready
             if (first_result.valid() && first_result.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                //task_thread1.join();
-                if (!odd_hosts_number) {
-                    //task_thread2.detach();
-                }
                 first_result.get();
                 if (first_connection_result->connected) {
                     MYLOG_TRACE(logger, dbc_id,
@@ -266,8 +232,6 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
             // Check if second reader task result is ready if there is one
             if (!odd_hosts_number && second_future.valid() &&
                 second_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                //task_thread1.detach();
-                //task_thread2.join();
                 second_future.get();
                 if (second_connection_result->connected) {
                     MYLOG_TRACE(logger, dbc_id,
@@ -288,8 +252,6 @@ std::shared_ptr<READER_FAILOVER_RESULT> FAILOVER_READER_HANDLER::get_connection_
             const auto remaining_wait_ms = reader_connect_timeout_ms - duration.count();
             if (remaining_wait_ms <= 0) {
                 // None has connected. We move on and try new hosts.
-                //task_thread1.detach();
-                //task_thread2.detach();
                 std::this_thread::sleep_for(std::chrono::seconds(READER_CONNECT_INTERVAL_SEC));
                 break;
             }

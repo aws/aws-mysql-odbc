@@ -93,7 +93,6 @@ public class ContainerHelper {
             .withDockerfileFromBuilder(builder ->
                 builder
                     .from(testContainerImageName)
-                    .run("yum", "-y", "install", "gdb")
                     .run("mkdir", "app")
                     .workDir("/app")
                     .entryPoint("/bin/sh -c \"while true; do sleep 30; done;\"")

@@ -153,6 +153,7 @@ void myodbc_end()
     */
     my_thread_end_wait_time= 0;
 #endif
+
     mysql_library_end();
   }
 }

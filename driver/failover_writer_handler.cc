@@ -326,15 +326,6 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     auto reconnect_result = std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
     auto new_writer_result = std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
 
-    //std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<WRITER_FAILOVER_RESULT>)> reconnect_task(reconnect_handler);
-    //std::packaged_task<void(std::shared_ptr<HOST_INFO>, std::shared_ptr<FAILOVER_SYNC>, std::shared_ptr<WRITER_FAILOVER_RESULT>)> wait_new_writer_task(new_writer_handler);
-
-    //auto reconnect_future = reconnect_task.get_future();
-    //auto wait_new_writer_future = wait_new_writer_task.get_future();
-
-    //std::thread reconnect_thread(std::move(reconnect_task), original_writer, failover_sync, reconnect_result);
-    //std::thread wait_new_writer_thread(std::move((wait_new_writer_task), original_writer, failover_sync, new_writer_result);
-
     if (thread_pool.n_idle() <= 1) {
         int size = thread_pool.size() + 2 - thread_pool.n_idle();
         MYLOG_TRACE(logger, dbc_id,
@@ -352,8 +343,6 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
     while (true) {
         // Check if reconnect task result is ready
         if (reconnect_future.valid() && reconnect_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-            //reconnect_thread.join();
-            //wait_new_writer_thread.detach();
             reconnect_future.get();
             if (reconnect_result->connected) {
                 MYLOG_TRACE(logger, dbc_id,
@@ -365,8 +354,6 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
 
         // Check if wait new writer task result is ready
         if (wait_new_writer_future.valid() && wait_new_writer_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-            //reconnect_thread.detach();
-            //wait_new_writer_thread.join();
             wait_new_writer_future.get();
             if (new_writer_result->connected) {
                 MYLOG_TRACE(logger, dbc_id,
@@ -386,8 +373,6 @@ std::shared_ptr<WRITER_FAILOVER_RESULT> FAILOVER_WRITER_HANDLER::failover(
         const auto remaining_wait_ms = writer_failover_timeout_ms - duration.count();
         if (remaining_wait_ms <= 0) {
             // Writer failover timed out
-            //reconnect_thread.detach();
-            //wait_new_writer_thread.detach();
             MYLOG_TRACE(logger, dbc_id, "[FAILOVER_WRITER_HANDLER] Writer failover timed out. Failed to connect to the writer instance.");
             return std::make_shared<WRITER_FAILOVER_RESULT>(false, false, nullptr, nullptr);
         }

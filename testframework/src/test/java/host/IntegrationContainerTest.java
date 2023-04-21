@@ -133,7 +133,6 @@ public class IntegrationContainerTest {
   public void testRunFailoverTestInContainer()
       throws UnsupportedOperationException, IOException, InterruptedException {
     setupFailoverIntegrationTests(NETWORK);
-    //Thread.sleep(Long.MAX_VALUE);
     containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
   }
 
