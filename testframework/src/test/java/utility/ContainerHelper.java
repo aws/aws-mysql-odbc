@@ -66,7 +66,7 @@ public class ContainerHelper {
       throws IOException, InterruptedException {
     System.out.println("==== Container console feed ==== >>>>");
     Consumer<OutputFrame> consumer = new ConsoleConsumer();
-    Long exitCode = execInContainer(container, consumer, String.format("./%s/%s", testDir, testExecutable));
+    Long exitCode = execInContainer(container, consumer, String.format("./%s/%s --", testDir, testExecutable));
     System.out.println("==== Container console feed ==== <<<<");
     assertEquals(0, exitCode, "Some tests failed.");
   }
@@ -93,6 +93,7 @@ public class ContainerHelper {
             .withDockerfileFromBuilder(builder ->
                 builder
                     .from(testContainerImageName)
+                    .run("yum", "-y", "install", "gdb")
                     .run("mkdir", "app")
                     .workDir("/app")
                     .entryPoint("/bin/sh -c \"while true; do sleep 30; done;\"")

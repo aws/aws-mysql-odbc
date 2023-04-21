@@ -91,7 +91,7 @@ protected:
   }
 };
 
-TEST_F(NetworkFailoverIntegrationTest, DISABLED_connection_test) {
+TEST_F(NetworkFailoverIntegrationTest, connection_test) {
   test_connection(dbc, MYSQL_INSTANCE_1_URL, MYSQL_PORT);
   test_connection(dbc, MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
   test_connection(dbc, MYSQL_CLUSTER_URL, MYSQL_PORT);
@@ -100,7 +100,7 @@ TEST_F(NetworkFailoverIntegrationTest, DISABLED_connection_test) {
   test_connection(dbc, MYSQL_RO_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
 }
 
-TEST_F(NetworkFailoverIntegrationTest, DISABLED_lost_connection_to_writer) {
+TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
   const std::string server = get_proxied_endpoint(writer_id);
   connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
@@ -121,7 +121,7 @@ TEST_F(NetworkFailoverIntegrationTest, DISABLED_lost_connection_to_writer) {
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
-TEST_F(NetworkFailoverIntegrationTest, DISABLED_use_same_connection_after_failing_failover) {
+TEST_F(NetworkFailoverIntegrationTest, use_same_connection_after_failing_failover) {
   const std::string server = get_proxied_endpoint(writer_id);
   connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
@@ -148,7 +148,7 @@ TEST_F(NetworkFailoverIntegrationTest, DISABLED_use_same_connection_after_failin
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
 }
 
-TEST_F(NetworkFailoverIntegrationTest, DISABLED_lost_connection_to_all_readers) {
+TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
   connection_string = builder.withServer(reader_endpoint).build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
