@@ -58,13 +58,13 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
 
     if (!dbc || !ds) {
         auto msg = "[MONITOR_SERVICE] Parameter dbc or ds cannot be null";
-        MYLOG_TRACE(this->logger.get(), dbc ? dbc->id : 0, msg);
+        MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, msg);
         throw std::invalid_argument(msg);
     }
 
     if (node_keys.empty()) {
         auto msg = "[MONITOR_SERVICE] Parameter node_keys cannot be empty";
-        MYLOG_TRACE(this->logger.get(), dbc ? dbc->id : 0, msg);
+        MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, msg);
         throw std::invalid_argument(msg);
     }
 
@@ -96,7 +96,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
 void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
     if (context == nullptr) {
         MYLOG_TRACE(
-            this->logger.get(), 0,
+            this->logger, 0,
             "[MONITOR_SERVICE] Invalid context passed into stop_monitoring()");
         return;
     }
@@ -106,7 +106,7 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
     std::string node = this->thread_container->get_node(context->get_node_keys());
     if (node.empty()) {
         MYLOG_TRACE(
-            this->logger.get(), context->get_dbc_id(),
+            this->logger, context->get_dbc_id(),
             "[MONITOR_SERVICE] Can not find node key from context");
         return;
     }
@@ -121,7 +121,7 @@ void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> 
     std::string node = this->thread_container->get_node(node_keys);
     if (node.empty()) {
         MYLOG_TRACE(
-            this->logger.get(), 0,
+            this->logger, 0,
             "[MONITOR_SERVICE] Invalid node keys passed into stop_monitoring_for_all_connections(). "
             "No existing monitor for the given set of node keys");
         return;
@@ -137,7 +137,7 @@ void MONITOR_SERVICE::stop_monitoring_for_all_connections(std::set<std::string> 
 void MONITOR_SERVICE::notify_unused(const std::shared_ptr<MONITOR>& monitor) const {
     if (monitor == nullptr) {
         MYLOG_TRACE(
-            this->logger.get(), 0,
+            this->logger, 0,
             "[MONITOR_SERVICE] Invalid monitor passed into notify_unused()");
         return;
     }
