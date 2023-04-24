@@ -79,6 +79,7 @@ MONITOR::~MONITOR() {
     }
 
     if (this->connection_proxy) {
+        this->connection_proxy->delete_ds();
         delete this->connection_proxy;
         this->connection_proxy = nullptr;
     }
@@ -103,7 +104,7 @@ void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> conte
 void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
     if (context == nullptr) {
         MYLOG_TRACE(
-            this->logger.get(), 0,
+            this->logger, 0,
             "[MONITOR] Invalid context passed into stop_monitoring()");
         return;
     }

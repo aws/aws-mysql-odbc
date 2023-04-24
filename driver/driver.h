@@ -37,6 +37,7 @@
 #define __DRIVER_H__
 
 #include <atomic>
+#include <ctpl_stl.h>
 
 #include "../MYODBC_MYSQL.h"
 #include "../MYODBC_CONF.h"
@@ -593,6 +594,7 @@ struct	ENV
   std::list<DBC*> conn_list;
   MYERROR      error;
   std::mutex lock;
+  ctpl::thread_pool failover_thread_pool;
 
   ENV(SQLINTEGER ver) : odbc_ver(ver)
   {}

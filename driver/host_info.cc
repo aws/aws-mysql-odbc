@@ -113,6 +113,6 @@ void HOST_INFO::mark_as_writer(bool writer) {
 }
 
 // Check if two host info have same instance name
-bool HOST_INFO::is_host_same(const std::shared_ptr<HOST_INFO>& h1, const std::shared_ptr<HOST_INFO>& h2) {
+bool HOST_INFO::is_host_same(std::shared_ptr<HOST_INFO> h1, std::shared_ptr<HOST_INFO> h2) {
     return h1->instance_name == h2->instance_name;
 }
