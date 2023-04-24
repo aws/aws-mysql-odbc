@@ -52,7 +52,7 @@ class CONNECTION_HANDLER {
         virtual ~CONNECTION_HANDLER();
 
         virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled);
-        virtual CONNECTION_PROXY* connect(const std::shared_ptr<HOST_INFO>& host_info, DataSource* ds);
+        virtual CONNECTION_PROXY* connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds);
         void update_connection(CONNECTION_PROXY* new_connection, const std::string& new_host_name);
 
     private:
