@@ -285,7 +285,7 @@ std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource* ds) {
   } catch (std::string &) {
     err << "Invalid server '" << ds->server8 << "'.";
     if (ds->save_queries) {
-      MYLOG_TRACE(init_log_file().get(), 0, err.str().c_str());
+      MYLOG_TRACE(init_log_file(), 0, err.str().c_str());
     }
     throw std::runtime_error(err.str());
   }
@@ -293,7 +293,7 @@ std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource* ds) {
   if (hosts.size() == 0) {
     err << "No host was retrieved from the data source.";
     if (ds->save_queries) {
-      MYLOG_TRACE(init_log_file().get(), 0, err.str().c_str());
+      MYLOG_TRACE(init_log_file(), 0, err.str().c_str());
     }
     throw std::runtime_error(err.str());
   }
@@ -1535,9 +1535,7 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
       cluster_id_str.append(":").append(std::to_string(dbc->connection_proxy->get_port()));
     }
 
-    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(
-        cluster_id_str, dbc->ds->gather_metrics_per_instance,
-        dbc->log_file ? dbc->log_file.get() : nullptr, dbc->id);
+    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds->gather_metrics_per_instance, dbc->log_file, dbc->id);
   }
 
   CHECK_HANDLE(hdbc);

@@ -79,7 +79,7 @@ void CLUSTER_AWARE_METRICS_CONTAINER::set_gather_metric(bool gather) {
     this->can_gather = gather;
 }
 
-void CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url, bool for_instances, FILE* log, unsigned long dbc_id) {
+void CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(std::string conn_url, bool for_instances, std::shared_ptr<FILE> log, unsigned long dbc_id) {
     if (!log) {
         return;
     }

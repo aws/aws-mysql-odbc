@@ -60,7 +60,7 @@ public:
     
     void set_gather_metric(bool gather);
 
-    static void report_metrics(std::string conn_url, bool for_instances, FILE* log, unsigned long dbc_id);
+    static void report_metrics(std::string conn_url, bool for_instances, std::shared_ptr<FILE> log, unsigned long dbc_id);
     static std::string report_metrics(std::string conn_url, bool for_instances);
     static void reset_metrics();
 
