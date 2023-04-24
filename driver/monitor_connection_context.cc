@@ -165,14 +165,14 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
         const auto max_invalid_node_duration = get_failure_detection_interval() * (std::max)(0, get_failure_detection_count());
 
         if (invalid_node_duration_ms >= max_invalid_node_duration) {
-            MYLOG_TRACE(logger.get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys_str.c_str());
+            MYLOG_TRACE(logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *dead*.", node_keys_str.c_str());
             set_node_unhealthy(true);
             abort_connection();
             return;
         }
 
         MYLOG_TRACE(
-            logger.get(), get_dbc_id(),
+            logger, get_dbc_id(),
             "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *not responding* (%d).", node_keys_str.c_str(), get_failure_count());
         return;
     }
@@ -180,7 +180,7 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
     set_failure_count(0);
     reset_invalid_node_start_time();
     set_node_unhealthy(false);
-    MYLOG_TRACE(logger.get(), get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *alive*.", node_keys_str.c_str());
+    MYLOG_TRACE(logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Node '%s' is *alive*.", node_keys_str.c_str());
 }
 
 void MONITOR_CONNECTION_CONTEXT::abort_connection() {

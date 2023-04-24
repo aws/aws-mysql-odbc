@@ -69,6 +69,7 @@ class FailoverWriterHandlerTest : public testing::Test {
     MOCK_CONNECTION_PROXY* mock_reader_b_proxy;
     MOCK_CONNECTION_PROXY* mock_writer_proxy;
     MOCK_CONNECTION_PROXY* mock_new_writer_proxy;
+    ctpl::thread_pool failover_thread_pool;
 
     static void SetUpTestSuite() {}
 
@@ -76,7 +77,6 @@ class FailoverWriterHandlerTest : public testing::Test {
 
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
-        
         writer_instance_name = "writer-host";
         new_writer_instance_name = "new-writer-host";
 
@@ -124,7 +124,7 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
     EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(false, nullptr, nullptr)));
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(false, nullptr, nullptr)));
 
     EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
         .WillRepeatedly(Return(mock_writer_proxy));
@@ -134,12 +134,12 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
         .WillRepeatedly(Return(nullptr));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000, 0);
+        mock_ts, mock_reader_handler, mock_connection_handler, failover_thread_pool, 5000, 2000, 2000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_writer_proxy);
+    EXPECT_TRUE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_writer_proxy);
 
     // Explicit delete on writer connection as it's returned as a valid result
     delete mock_writer_proxy;
@@ -186,21 +186,21 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(DoAll(
-            Invoke([](Unused, FAILOVER_SYNC& f_sync) {
-                for (int i = 0; i <= 50 && !f_sync.is_completed(); i++) {
+            Invoke([](Unused, std::shared_ptr<FAILOVER_SYNC> f_sync) {
+                for (int i = 0; i <= 50 && !f_sync->is_completed(); i++) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
             }),
-            Return(READER_FAILOVER_RESULT(true, reader_a_host,
+            Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                           mock_reader_a_proxy))));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, 0);
+        mock_ts, mock_reader_handler, mock_connection_handler, failover_thread_pool, 60000, 5000, 5000, 0);
     const auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_writer_proxy);
+    EXPECT_TRUE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_writer_proxy);
 
     // Explicit delete on writer connection as it's returned as a valid result
     delete mock_writer_proxy;
@@ -236,16 +236,16 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
     EXPECT_CALL(*mock_ts, mark_host_up(writer_host)).InSequence(s);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 2000, 2000, 0);
+        mock_ts, mock_reader_handler, mock_connection_handler, failover_thread_pool, 60000, 2000, 2000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_writer_proxy);
+    EXPECT_TRUE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_writer_proxy);
 
     // Explicit delete on writer connection as it's returned as a valid result
     delete mock_writer_proxy;
@@ -299,19 +299,19 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, 0);
+        mock_ts, mock_reader_handler, mock_connection_handler, failover_thread_pool, 60000, 5000, 5000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_TRUE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_new_writer_proxy);
-    EXPECT_EQ(3, result.new_topology->total_hosts());
+    EXPECT_TRUE(result->connected);
+    EXPECT_TRUE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_new_writer_proxy);
+    EXPECT_EQ(3, result->new_topology->total_hosts());
     EXPECT_EQ(new_writer_instance_name,
-            result.new_topology->get_writer()->instance_name);
+            result->new_topology->get_writer()->instance_name);
 
     // Explicit delete on new writer connection as it's returned as a valid result
     delete mock_new_writer_proxy;
@@ -358,19 +358,19 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
     EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 60000, 5000, 5000, 0);
+        mock_ts, mock_reader_handler, mock_connection_handler, failover_thread_pool, 60000, 5000, 5000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_TRUE(result.connected);
-    EXPECT_TRUE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, mock_new_writer_proxy);
-    EXPECT_EQ(4, result.new_topology->total_hosts());
+    EXPECT_TRUE(result->connected);
+    EXPECT_TRUE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, mock_new_writer_proxy);
+    EXPECT_EQ(4, result->new_topology->total_hosts());
     EXPECT_EQ(new_writer_instance_name,
-            result.new_topology->get_writer()->instance_name);
+            result->new_topology->get_writer()->instance_name);
     
     // Explicit delete on new writer connection as it's returned as a valid result
     delete mock_new_writer_proxy;
@@ -427,16 +427,16 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
     EXPECT_CALL(*mock_ts, mark_host_up(new_writer_host)).Times(1);
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 1000, 2000, 2000, 0);
+        mock_ts, mock_reader_handler, mock_connection_handler, failover_thread_pool, 1000, 2000, 2000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_FALSE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, nullptr);
+    EXPECT_FALSE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, nullptr);
 
     // delete reader b explicitly, since get_reader_connection() is mocked
     delete mock_reader_b_proxy;
@@ -476,16 +476,16 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed)
     EXPECT_CALL(*mock_ts, mark_host_down(new_writer_host)).Times(AtLeast(1));
 
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
-        .WillRepeatedly(Return(READER_FAILOVER_RESULT(true, reader_a_host,
+        .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(true, reader_a_host,
                                                     mock_reader_a_proxy)));
 
     FAILOVER_WRITER_HANDLER writer_handler(
-        mock_ts, mock_reader_handler, mock_connection_handler, 5000, 2000, 2000, 0);
+        mock_ts, mock_reader_handler, mock_connection_handler, failover_thread_pool, 5000, 2000, 2000, 0);
     auto result = writer_handler.failover(current_topology);
 
-    EXPECT_FALSE(result.connected);
-    EXPECT_FALSE(result.is_new_host);
-    EXPECT_THAT(result.new_connection, nullptr);
+    EXPECT_FALSE(result->connected);
+    EXPECT_FALSE(result->is_new_host);
+    EXPECT_THAT(result->new_connection, nullptr);
 
     // delete reader b explicitly, since get_reader_connection() is mocked
     delete mock_reader_b_proxy;

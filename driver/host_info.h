@@ -57,7 +57,7 @@ public:
     bool is_host_down();
     bool is_host_writer();
     void mark_as_writer(bool writer);
-    static bool is_host_same(const std::shared_ptr<HOST_INFO>& h1, const std::shared_ptr<HOST_INFO>& h2);
+    static bool is_host_same(std::shared_ptr<HOST_INFO> h1, std::shared_ptr<HOST_INFO> h2);
     static constexpr int NO_PORT = -1;
 
     // used to be properties - TODO - remove the ones that are not necessary

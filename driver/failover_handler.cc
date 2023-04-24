@@ -80,12 +80,12 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
     this->connection_handler = connection_handler;
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
-        this->topology_service, this->connection_handler, ds->failover_timeout,
+        this->topology_service, this->connection_handler, dbc->env->failover_thread_pool, ds->failover_timeout,
         ds->failover_reader_connect_timeout, ds->enable_strict_reader_failover,
         dbc->id, ds->save_queries);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
-        this->connection_handler, ds->failover_timeout,
+        this->connection_handler, dbc->env->failover_thread_pool, ds->failover_timeout,
         ds->failover_topology_refresh_rate,
         ds->failover_writer_reconnect_interval, dbc->id, ds->save_queries);
     this->metrics_container = metrics_container;
@@ -128,7 +128,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             host_patterns = parse_host_list(hp_str.c_str(), port);
         } catch (std::string&) {
             err << "Invalid host pattern: '" << hp_str << "' - the value could not be parsed";
-            MYLOG_TRACE(dbc->log_file.get(), dbc->id, err.str().c_str());
+            MYLOG_TRACE(dbc->log_file, dbc->id, err.str().c_str());
             throw std::runtime_error(err.str());
         }
 
@@ -388,6 +388,9 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
                                       network_timeout != ds->write_timeout)) {
             rc = reconnect(true);
         }
+        if (is_failover_enabled()) {
+            this->dbc->env->failover_thread_pool.resize(current_topology->total_hosts());
+        }
     }
 
     return rc;
@@ -471,9 +474,9 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const cha
     MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting reader failover procedure.");
     auto result = failover_reader_handler->failover(current_topology);
 
-    if (result.connected) {
-        current_host = result.new_host;
-        connection_handler->update_connection(result.new_connection, current_host->get_host());
+    if (result->connected) {
+        current_host = result->new_host;
+        connection_handler->update_connection(result->new_connection, current_host->get_host());
         new_error_code = "08S02";
         error_msg = "The active SQL connection has changed.";
         MYLOG_DBC_TRACE(dbc,
@@ -494,20 +497,20 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code, const cha
     MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting writer failover procedure.");
     auto result = failover_writer_handler->failover(current_topology);
 
-    if (!result.connected) {
+    if (!result->connected) {
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Unable to establish SQL connection to writer node.");
         new_error_code = "08S01";
         error_msg = "The active SQL connection was lost.";
         return false;
     }
-    if (result.is_new_host) {
+    if (result->is_new_host) {
         // connected to a new writer host; take it over
-        current_topology = result.new_topology;
+        current_topology = result->new_topology;
         current_host = current_topology->get_writer();
     }
 
     connection_handler->update_connection(
-        result.new_connection, result.new_topology->get_writer()->get_host());
+        result->new_connection, result->new_topology->get_writer()->get_host());
     
     new_error_code = "08S02";
     error_msg = "The active SQL connection has changed.";

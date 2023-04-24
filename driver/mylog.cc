@@ -41,7 +41,10 @@
 #include <unistd.h>
 #endif
 
-void trace_print(FILE *file, unsigned long dbc_id, const char *fmt, ...) {
+std::mutex log_file_mutex;
+std::shared_ptr<FILE> log_file;
+
+void trace_print(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *fmt, ...) {
   if (file && fmt) {
     time_t now = time(nullptr);
     char time_buf[256];
@@ -63,10 +66,12 @@ void trace_print(FILE *file, unsigned long dbc_id, const char *fmt, ...) {
     pid_t pid;
     pid = getpid();
 #endif
-
-    fprintf(file, "%s - Process ID %ld -  DBC ID %lu - %s\n", time_buf, pid,
-            dbc_id, buf.data());
-    fflush(file);
+    {
+      std::lock_guard<std::mutex> guard(log_file_mutex);
+      fprintf(file.get(), "%s - Process ID %ld -  DBC ID %lu - %s\n", time_buf, pid,
+          dbc_id, buf.data());
+      fflush(file.get());
+    }
   }
 }
 
