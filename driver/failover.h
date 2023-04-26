@@ -192,14 +192,15 @@ class FAILOVER_HANDLER {
     bool m_is_rds_custom_cluster = false;
     bool initialized = false;
 
-    bool is_dns_pattern_valid(std::string host);
-    bool is_rds_dns(std::string host);
-    bool is_rds_proxy_dns(std::string host);
-    bool is_rds_custom_cluster_dns(std::string host);
+    static bool is_dns_pattern_valid(std::string host);
+    static bool is_rds_dns(std::string host);
+    static bool is_rds_cluster_dns(std::string host);
+    static bool is_rds_proxy_dns(std::string host);
+    static bool is_rds_custom_cluster_dns(std::string host);
     SQLRETURN create_connection_and_initialize_topology();
     SQLRETURN reconnect(bool failover_enabled);
-    std::string get_rds_cluster_host_url(std::string host);
-    std::string get_rds_instance_host_pattern(std::string host);
+    static std::string get_rds_cluster_host_url(std::string host);
+    static std::string get_rds_instance_host_pattern(std::string host);
     bool is_ipv4(std::string host);
     bool is_ipv6(std::string host);
     bool failover_to_reader(const char*& new_error_code, const char*& error_msg);
@@ -210,6 +211,11 @@ class FAILOVER_HANDLER {
     std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container;
     std::chrono::steady_clock::time_point invoke_start_time_ms;
     std::chrono::steady_clock::time_point failover_start_time_ms;
+
+#ifdef UNIT_TEST_BUILD
+    // Allows for testing private methods
+    friend class TEST_UTILS;
+#endif
 };
 
 // ************************************************************************************************
