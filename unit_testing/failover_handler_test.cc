@@ -38,6 +38,19 @@ using ::testing::AtLeast;
 using ::testing::Return;
 using ::testing::StrEq;
 
+namespace {
+    const std::string US_EAST_REGION_CLUSTER = "database-test-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
+    const std::string US_EAST_REGION_CLUSTER_READ_ONLY = "database-test-name.cluster-ro-XYZ.us-east-2.rds.amazonaws.com";
+    const std::string US_EAST_REGION_PROXY = "proxy-test-name.proxy-XYZ.us-east-2.rds.amazonaws.com";
+    const std::string US_EAST_REGION_CUSTON_DOMAIN = "custom-test-name.cluster-custom-XYZ.us-east-2.rds.amazonaws.com";
+
+    const std::string CHINA_REGION_CLUSTER = "database-test-name.cluster-XYZ.rds.cn-northwest-1.amazonaws.com.cn";
+    const std::string CHINA_REGION_CLUSTER_READ_ONLY = "database-test-name.cluster-ro-XYZ.rds.cn-northwest-1.amazonaws.com.cn";
+    const std::string CHINA_REGION_PROXY = "proxy-test-name.proxy-XYZ.rds.cn-northwest-1.amazonaws.com.cn";
+    const std::string CHINA_REGION_CUSTON_DOMAIN = "custom-test-name.cluster-custom-XYZ.rds.cn-northwest-1.amazonaws.com.cn";
+
+}  // namespace
+
 class FailoverHandlerTest : public testing::Test {
    protected:
     static std::shared_ptr<HOST_INFO> writer_host;
@@ -386,4 +399,78 @@ TEST_F(FailoverHandlerTest, ReconnectWithFailoverSettings) {
     failover_handler.init_cluster_info();
 
     EXPECT_TRUE(failover_handler.is_failover_enabled());
+}
+
+TEST_F(FailoverHandlerTest, IsRdsDns) {
+    EXPECT_TRUE(TEST_UTILS::is_rds_dns(US_EAST_REGION_CLUSTER));
+    EXPECT_TRUE(TEST_UTILS::is_rds_dns(US_EAST_REGION_CLUSTER_READ_ONLY));
+    EXPECT_TRUE(TEST_UTILS::is_rds_dns(US_EAST_REGION_PROXY));
+    EXPECT_TRUE(TEST_UTILS::is_rds_dns(US_EAST_REGION_CUSTON_DOMAIN));
+
+    EXPECT_TRUE(TEST_UTILS::is_rds_dns(CHINA_REGION_CLUSTER));
+    EXPECT_TRUE(TEST_UTILS::is_rds_dns(CHINA_REGION_CLUSTER_READ_ONLY));
+    EXPECT_TRUE(TEST_UTILS::is_rds_dns(CHINA_REGION_PROXY));
+    EXPECT_TRUE(TEST_UTILS::is_rds_dns(CHINA_REGION_CUSTON_DOMAIN));
+}
+
+TEST_F(FailoverHandlerTest, IsRdsClusterDns) {
+    EXPECT_TRUE(TEST_UTILS::is_rds_cluster_dns(US_EAST_REGION_CLUSTER));
+    EXPECT_TRUE(TEST_UTILS::is_rds_cluster_dns(US_EAST_REGION_CLUSTER_READ_ONLY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_cluster_dns(US_EAST_REGION_PROXY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_cluster_dns(US_EAST_REGION_CUSTON_DOMAIN));
+
+    EXPECT_TRUE(TEST_UTILS::is_rds_cluster_dns(CHINA_REGION_CLUSTER));
+    EXPECT_TRUE(TEST_UTILS::is_rds_cluster_dns(CHINA_REGION_CLUSTER_READ_ONLY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_cluster_dns(CHINA_REGION_PROXY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_cluster_dns(CHINA_REGION_CUSTON_DOMAIN));
+}
+
+TEST_F(FailoverHandlerTest, IsRdsProxyDns) {
+    EXPECT_FALSE(TEST_UTILS::is_rds_proxy_dns(US_EAST_REGION_CLUSTER));
+    EXPECT_FALSE(TEST_UTILS::is_rds_proxy_dns(US_EAST_REGION_CLUSTER_READ_ONLY));
+    EXPECT_TRUE(TEST_UTILS::is_rds_proxy_dns(US_EAST_REGION_PROXY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_proxy_dns(US_EAST_REGION_CUSTON_DOMAIN));
+
+    EXPECT_FALSE(TEST_UTILS::is_rds_proxy_dns(CHINA_REGION_CLUSTER));
+    EXPECT_FALSE(TEST_UTILS::is_rds_proxy_dns(CHINA_REGION_CLUSTER_READ_ONLY));
+    EXPECT_TRUE(TEST_UTILS::is_rds_proxy_dns(CHINA_REGION_PROXY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_proxy_dns(CHINA_REGION_CUSTON_DOMAIN));
+}
+
+TEST_F(FailoverHandlerTest, IsRdsCustomClusterDns) {
+    EXPECT_FALSE(TEST_UTILS::is_rds_custom_cluster_dns(US_EAST_REGION_CLUSTER));
+    EXPECT_FALSE(TEST_UTILS::is_rds_custom_cluster_dns(US_EAST_REGION_CLUSTER_READ_ONLY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_custom_cluster_dns(US_EAST_REGION_PROXY));
+    EXPECT_TRUE(TEST_UTILS::is_rds_custom_cluster_dns(US_EAST_REGION_CUSTON_DOMAIN));
+
+    EXPECT_FALSE(TEST_UTILS::is_rds_custom_cluster_dns(CHINA_REGION_CLUSTER));
+    EXPECT_FALSE(TEST_UTILS::is_rds_custom_cluster_dns(CHINA_REGION_CLUSTER_READ_ONLY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_custom_cluster_dns(CHINA_REGION_PROXY));
+    EXPECT_TRUE(TEST_UTILS::is_rds_custom_cluster_dns(CHINA_REGION_CUSTON_DOMAIN));
+}
+
+TEST_F(FailoverHandlerTest, GetRdsInstanceHostPattern) {
+    const std::string expected_pattern = "?.XYZ.us-east-2.rds.amazonaws.com";
+    EXPECT_EQ(expected_pattern, TEST_UTILS::get_rds_instance_host_pattern(US_EAST_REGION_CLUSTER));
+    EXPECT_EQ(expected_pattern, TEST_UTILS::get_rds_instance_host_pattern(US_EAST_REGION_CLUSTER_READ_ONLY));
+    EXPECT_EQ(expected_pattern, TEST_UTILS::get_rds_instance_host_pattern(US_EAST_REGION_PROXY));
+    EXPECT_EQ(expected_pattern, TEST_UTILS::get_rds_instance_host_pattern(US_EAST_REGION_CUSTON_DOMAIN));
+
+    const std::string expected_china_pattern = "?.XYZ.rds.cn-northwest-1.amazonaws.com.cn";
+    EXPECT_EQ(expected_china_pattern, TEST_UTILS::get_rds_instance_host_pattern(CHINA_REGION_CLUSTER));
+    EXPECT_EQ(expected_china_pattern, TEST_UTILS::get_rds_instance_host_pattern(CHINA_REGION_CLUSTER_READ_ONLY));
+    EXPECT_EQ(expected_china_pattern, TEST_UTILS::get_rds_instance_host_pattern(CHINA_REGION_PROXY));
+    EXPECT_EQ(expected_china_pattern, TEST_UTILS::get_rds_instance_host_pattern(CHINA_REGION_CUSTON_DOMAIN));
+}
+
+TEST_F(FailoverHandlerTest, GetRdsClusterHostUrl) {
+    EXPECT_EQ(US_EAST_REGION_CLUSTER, TEST_UTILS::get_rds_cluster_host_url(US_EAST_REGION_CLUSTER));
+    EXPECT_EQ(US_EAST_REGION_CLUSTER, TEST_UTILS::get_rds_cluster_host_url(US_EAST_REGION_CLUSTER_READ_ONLY));
+    EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_host_url(US_EAST_REGION_PROXY));
+    EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_host_url(US_EAST_REGION_CUSTON_DOMAIN));
+
+    EXPECT_EQ(CHINA_REGION_CLUSTER, TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_CLUSTER));
+    EXPECT_EQ(CHINA_REGION_CLUSTER, TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_CLUSTER_READ_ONLY));
+    EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_PROXY));
+    EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_CUSTON_DOMAIN));
 }
