@@ -42,10 +42,25 @@ const std::regex AURORA_DNS_PATTERN(
     R"#((.+)\.(proxy-|cluster-|cluster-ro-|cluster-custom-)?([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
     std::regex_constants::icase);
 const std::regex AURORA_PROXY_DNS_PATTERN(
-    R"#((.+)\.(proxy-[a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
+    R"#((.+)\.(proxy-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
+    std::regex_constants::icase);
+const std::regex AURORA_CLUSTER_PATTERN(
+    R"#((.+)\.(cluster-|cluster-ro-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
     std::regex_constants::icase);
 const std::regex AURORA_CUSTOM_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-custom-[a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
+    R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
+    std::regex_constants::icase);
+const std::regex AURORA_CHINA_DNS_PATTERN(
+    R"#((.+)\.(proxy-|cluster-|cluster-ro-|cluster-custom-)?([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    std::regex_constants::icase);
+const std::regex AURORA_CHINA_PROXY_DNS_PATTERN(
+    R"#((.+)\.(proxy-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    std::regex_constants::icase);
+const std::regex AURORA_CHINA_CLUSTER_PATTERN(
+    R"#((.+)\.(cluster-|cluster-ro-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    std::regex_constants::icase);
+const std::regex AURORA_CHINA_CUSTOM_CLUSTER_PATTERN(
+    R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
 const std::regex IPV4_PATTERN(
     R"#(^(([1-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){1}(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){2}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$)#");
@@ -296,15 +311,19 @@ bool FAILOVER_HANDLER::is_dns_pattern_valid(std::string host) {
 }
 
 bool FAILOVER_HANDLER::is_rds_dns(std::string host) {
-    return std::regex_match(host, AURORA_DNS_PATTERN);
+    return std::regex_match(host, AURORA_DNS_PATTERN) || std::regex_match(host, AURORA_CHINA_DNS_PATTERN);
+}
+
+bool FAILOVER_HANDLER::is_rds_cluster_dns(std::string host) {
+    return std::regex_match(host, AURORA_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_CLUSTER_PATTERN);
 }
 
 bool FAILOVER_HANDLER::is_rds_proxy_dns(std::string host) {
-    return std::regex_match(host, AURORA_PROXY_DNS_PATTERN);
+    return std::regex_match(host, AURORA_PROXY_DNS_PATTERN) || std::regex_match(host, AURORA_CHINA_PROXY_DNS_PATTERN);
 }
 
 bool FAILOVER_HANDLER::is_rds_custom_cluster_dns(std::string host) {
-    return std::regex_match(host, AURORA_CUSTOM_CLUSTER_PATTERN);
+    return std::regex_match(host, AURORA_CUSTOM_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_CUSTOM_CLUSTER_PATTERN);
 }
 
 #if defined(__APPLE__) || defined(__linux__)
@@ -314,35 +333,53 @@ bool FAILOVER_HANDLER::is_rds_custom_cluster_dns(std::string host) {
 #endif
 
 std::string FAILOVER_HANDLER::get_rds_cluster_host_url(std::string host) {
-    std::smatch m;
-    if (std::regex_search(host, m, AURORA_DNS_PATTERN) && m.size() > 1) {
-        std::string gr1 = m.size() > 1 ? m.str(1) : std::string("");
-        std::string gr2 = m.size() > 2 ? m.str(2) : std::string("");
-        std::string gr3 = m.size() > 3 ? m.str(3) : std::string("");
-        if (!gr1.empty() && !gr3.empty() &&
-            (strcmp_case_insensitive(gr2.c_str(), "cluster-") == 0 || strcmp_case_insensitive(gr2.c_str(), "cluster-ro-") == 0)) {
-            std::string result;
-            result.assign(gr1);
-            result.append(".cluster-");
-            result.append(gr3);
+    auto f = [host](const std::regex pattern) {
+        std::smatch m;
+        if (std::regex_search(host, m, pattern) && m.size() > 1) {
+            std::string gr1 = m.size() > 1 ? m.str(1) : std::string("");
+            std::string gr2 = m.size() > 2 ? m.str(2) : std::string("");
+            std::string gr3 = m.size() > 3 ? m.str(3) : std::string("");
+            if (!gr1.empty() && !gr3.empty() &&
+                (strcmp_case_insensitive(gr2.c_str(), "cluster-") == 0 || strcmp_case_insensitive(gr2.c_str(), "cluster-ro-") == 0)) {
+                std::string result;
+                result.assign(gr1);
+                result.append(".cluster-");
+                result.append(gr3);
 
-            return result;
+                return result;
+            }
         }
+        return std::string();
+    };
+
+    auto result = f(AURORA_CLUSTER_PATTERN);
+    if (!result.empty()) {
+        return result;
     }
-    return "";
+
+    return f(AURORA_CHINA_CLUSTER_PATTERN);
 }
 
 std::string FAILOVER_HANDLER::get_rds_instance_host_pattern(std::string host) {
-    std::smatch m;
-    if (std::regex_search(host, m, AURORA_DNS_PATTERN) && m.size() > 3) {
-        if (!m.str(3).empty()) {
-            std::string result("?.");
-            result.append(m.str(3));
+    auto f = [host](const std::regex pattern) {
+        std::smatch m;
+        if (std::regex_search(host, m, pattern) && m.size() > 3) {
+            if (!m.str(3).empty()) {
+                std::string result("?.");
+                result.append(m.str(3));
 
-            return result;
+                return result;
+            }
         }
+        return std::string();
+    };
+
+    auto result = f(AURORA_DNS_PATTERN);
+    if (!result.empty()) {
+        return result;
     }
-    return "";
+
+    return f(AURORA_CHINA_DNS_PATTERN);
 }
 
 bool FAILOVER_HANDLER::is_failover_enabled() {
