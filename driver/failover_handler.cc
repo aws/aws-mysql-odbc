@@ -333,7 +333,6 @@ bool FAILOVER_HANDLER::is_rds_custom_cluster_dns(std::string host) {
 #endif
 
 std::string FAILOVER_HANDLER::get_rds_cluster_host_url(std::string host) {
-
     auto f = [host](const std::regex pattern) {
         std::smatch m;
         if (std::regex_search(host, m, pattern) && m.size() > 1) {
