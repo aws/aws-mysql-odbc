@@ -59,6 +59,13 @@ public:
     static void clear_token_cache(IAM_PROXY* iam_proxy);
     static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& get_secrets_cache();
     static bool try_parse_region_from_secret(std::string secret, std::string& region);
+    static bool is_dns_pattern_valid(std::string host);
+    static bool is_rds_dns(std::string host);
+    static bool is_rds_cluster_dns(std::string host);
+    static bool is_rds_proxy_dns(std::string host);
+    static bool is_rds_custom_cluster_dns(std::string host);
+    static std::string get_rds_cluster_host_url(std::string host);
+    static std::string get_rds_instance_host_pattern(std::string host);
 };
 
 #endif /* __TESTUTILS_H__ */

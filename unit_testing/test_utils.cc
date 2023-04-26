@@ -130,3 +130,31 @@ std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& TEST
 bool TEST_UTILS::try_parse_region_from_secret(std::string secret, std::string& region) {
     return SECRETS_MANAGER_PROXY::try_parse_region_from_secret(secret, region);
 }
+
+bool TEST_UTILS::is_dns_pattern_valid(std::string host) {
+    return FAILOVER_HANDLER::is_dns_pattern_valid(host);
+}
+
+bool TEST_UTILS::is_rds_dns(std::string host) {
+    return FAILOVER_HANDLER::is_rds_dns(host);
+}
+
+bool TEST_UTILS::is_rds_cluster_dns(std::string host) {
+    return FAILOVER_HANDLER::is_rds_cluster_dns(host);
+}
+
+bool TEST_UTILS::is_rds_proxy_dns(std::string host) {
+    return FAILOVER_HANDLER::is_rds_proxy_dns(host);
+}
+
+bool TEST_UTILS::is_rds_custom_cluster_dns(std::string host) {
+    return FAILOVER_HANDLER::is_rds_custom_cluster_dns(host);
+}
+
+std::string TEST_UTILS::get_rds_cluster_host_url(std::string host) {
+    return FAILOVER_HANDLER::get_rds_cluster_host_url(host);
+}
+
+std::string TEST_UTILS::get_rds_instance_host_pattern(std::string host) {
+    return FAILOVER_HANDLER::get_rds_instance_host_pattern(host);
+}
