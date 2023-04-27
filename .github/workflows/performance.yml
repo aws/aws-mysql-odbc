@@ -3,6 +3,17 @@ name: Dockerized Performance Tests
 # This workflow should always be triggered manually 
 on: 
   workflow_dispatch:
+  pull_request:
+    branches:
+      - '*'
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.jpg'
+      - '**/README.txt'
+      - '**/LICENSE.txt'
+      - 'docs/**'
+      - 'ISSUE_TEMPLATE/**'
+      - '**/remove-old-artifacts.yml'
 
 env:
   BUILD_TYPE: Release
