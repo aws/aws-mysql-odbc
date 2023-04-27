@@ -35,6 +35,7 @@
 
 using ::testing::_;
 using ::testing::AtLeast;
+using ::testing::DeleteArg;
 using ::testing::Return;
 using ::testing::ReturnNew;
 using ::testing::StrEq;
@@ -489,7 +490,7 @@ TEST_F(FailoverHandlerTest, GetRdsClusterHostUrl) {
 TEST_F(FailoverHandlerTest, ConnectToNewWriter) {
     SQLCHAR server[] = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
 
-    EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, false))
+    EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, _))
         .WillOnce(Return(SQL_SUCCESS))
         .WillOnce(Return(SQL_SUCCESS));
 
@@ -511,17 +512,17 @@ TEST_F(FailoverHandlerTest, ConnectToNewWriter) {
     EXPECT_CALL(*mock_proxy, fetch_row(_))
         .WillOnce(Return(row));
 
-    EXPECT_CALL(*mock_proxy, free_result(_));
+    EXPECT_CALL(*mock_proxy, free_result(_))
+        .WillOnce(DeleteArg<0>());
 
-    auto multi_writer_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
-    multi_writer_topology->add_host(writer_host);
-    multi_writer_topology->add_host(reader_host);
-    multi_writer_topology->is_multi_writer_cluster = true;
+    auto topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
+    topology->add_host(writer_host);
+    topology->add_host(reader_host);
 
     EXPECT_CALL(*mock_ts, get_topology(_, false))
-        .WillOnce(Return(multi_writer_topology));
+        .WillOnce(Return(topology));
     EXPECT_CALL(*mock_ts, get_topology(_, true))
-        .WillOnce(Return(multi_writer_topology));
+        .WillOnce(Return(topology));
     
     auto mock_failover_handler = std::make_shared<MOCK_FAILOVER_HANDLER>(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     EXPECT_CALL(*mock_failover_handler, host_to_IP(_))
