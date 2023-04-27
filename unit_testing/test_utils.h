@@ -31,6 +31,7 @@
 #define __TESTUTILS_H__
 
 #include "driver/driver.h"
+#include "driver/failover.h"
 #include "driver/iam_proxy.h"
 #include "driver/monitor.h"
 #include "driver/monitor_thread_container.h"
@@ -63,6 +64,7 @@ public:
     static bool is_rds_dns(std::string host);
     static bool is_rds_cluster_dns(std::string host);
     static bool is_rds_proxy_dns(std::string host);
+    static bool is_rds_writer_cluster_dns(std::string host);
     static bool is_rds_custom_cluster_dns(std::string host);
     static std::string get_rds_cluster_host_url(std::string host);
     static std::string get_rds_instance_host_pattern(std::string host);

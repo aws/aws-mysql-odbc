@@ -1121,7 +1121,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   dbc->init_proxy_chain(ds);
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
-  rc = dbc->fh->init_cluster_info();
+  rc = dbc->fh->init_connection();
   if (!dbc->ds)
     ds_delete(ds);
   return rc;
@@ -1239,7 +1239,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     dbc->init_proxy_chain(ds);
     dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
-    rc = dbc->fh->init_cluster_info();
+    rc = dbc->fh->init_connection();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
       goto connected;
     bPrompt= TRUE;
@@ -1419,7 +1419,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   dbc->init_proxy_chain(ds);
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
-  rc = dbc->fh->init_cluster_info();
+  rc = dbc->fh->init_connection();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
   {
     goto error;
