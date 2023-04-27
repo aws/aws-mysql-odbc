@@ -486,6 +486,12 @@ protected:
   }
 
   void test_connection(const SQLHDBC dbc, const std::string& test_server, const int test_port) {
+    sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_config().c_str(), test_server.c_str(), test_port);
+    EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
+    EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+  }
+
+  void test_connection_with_proxy_pattern(const SQLHDBC dbc, const std::string& test_server, const int test_port) {
     sprintf(reinterpret_cast<char*>(conn_in), "%sSERVER=%s;PORT=%d;", get_default_proxied_config().c_str(), test_server.c_str(), test_port);
     EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, conn_in, SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
     EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));

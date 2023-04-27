@@ -35,7 +35,9 @@
 
 using ::testing::_;
 using ::testing::AtLeast;
+using ::testing::DeleteArg;
 using ::testing::Return;
+using ::testing::ReturnNew;
 using ::testing::StrEq;
 
 namespace {
@@ -119,7 +121,7 @@ TEST_F(FailoverHandlerTest, CustomDomain) {
         .WillOnce(Return(SQL_SUCCESS));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_FALSE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -133,7 +135,7 @@ TEST_F(FailoverHandlerTest, FailoverDisabled) {
     EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, false)).Times(1);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_FALSE(failover_handler.is_failover_enabled());
 }
@@ -145,13 +147,11 @@ TEST_F(FailoverHandlerTest, IP_TopologyAvailable_PatternRequired) {
 
     EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, false))
         .WillOnce(Return(SQL_SUCCESS));
-    EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, true))
-        .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    EXPECT_THROW(failover_handler.init_cluster_info(), std::runtime_error);
+    EXPECT_THROW(failover_handler.init_connection(), std::runtime_error);
 }
 
 TEST_F(FailoverHandlerTest, IP_TopologyNotAvailable) {
@@ -166,7 +166,7 @@ TEST_F(FailoverHandlerTest, IP_TopologyNotAvailable) {
         .WillOnce(Return(std::make_shared<CLUSTER_TOPOLOGY_INFO>()));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_FALSE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -191,7 +191,7 @@ TEST_F(FailoverHandlerTest, IP_Cluster) {
     EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(0);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_FALSE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -218,7 +218,7 @@ TEST_F(FailoverHandlerTest, IP_Cluster_ClusterID) {
     EXPECT_CALL(*mock_ts, set_cluster_id(StrEq(reinterpret_cast<const char*>(cluster_id)))).Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_FALSE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -242,7 +242,7 @@ TEST_F(FailoverHandlerTest, RDS_Cluster) {
     EXPECT_CALL(*mock_ts, set_cluster_id(StrEq("my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com:1234"))).Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -265,7 +265,7 @@ TEST_F(FailoverHandlerTest, RDS_CustomCluster) {
     EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(1);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -288,7 +288,7 @@ TEST_F(FailoverHandlerTest, RDS_Instance) {
     EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(1);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -310,7 +310,7 @@ TEST_F(FailoverHandlerTest, RDS_Proxy) {
     EXPECT_CALL(*mock_ts, set_cluster_id(StrEq("test-proxy.proxy-XYZ.us-east-2.rds.amazonaws.com:1234"))).Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_TRUE(failover_handler.is_rds_proxy());
@@ -337,7 +337,7 @@ TEST_F(FailoverHandlerTest, RDS_ReaderCluster) {
         .Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -368,7 +368,7 @@ TEST_F(FailoverHandlerTest, RDS_MultiWriterCluster) {
         .Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_TRUE(failover_handler.is_rds());
     EXPECT_FALSE(failover_handler.is_rds_proxy());
@@ -396,7 +396,7 @@ TEST_F(FailoverHandlerTest, ReconnectWithFailoverSettings) {
         .WillOnce(Return(SQL_SUCCESS));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_cluster_info();
+    failover_handler.init_connection();
 
     EXPECT_TRUE(failover_handler.is_failover_enabled());
 }
@@ -437,6 +437,18 @@ TEST_F(FailoverHandlerTest, IsRdsProxyDns) {
     EXPECT_FALSE(TEST_UTILS::is_rds_proxy_dns(CHINA_REGION_CUSTON_DOMAIN));
 }
 
+TEST_F(FailoverHandlerTest, IsRdsWriterClusterDns) {
+    EXPECT_TRUE(TEST_UTILS::is_rds_writer_cluster_dns(US_EAST_REGION_CLUSTER));
+    EXPECT_FALSE(TEST_UTILS::is_rds_writer_cluster_dns(US_EAST_REGION_CLUSTER_READ_ONLY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_writer_cluster_dns(US_EAST_REGION_PROXY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_writer_cluster_dns(US_EAST_REGION_CUSTON_DOMAIN));
+
+    EXPECT_TRUE(TEST_UTILS::is_rds_writer_cluster_dns(CHINA_REGION_CLUSTER));
+    EXPECT_FALSE(TEST_UTILS::is_rds_writer_cluster_dns(CHINA_REGION_CLUSTER_READ_ONLY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_writer_cluster_dns(CHINA_REGION_PROXY));
+    EXPECT_FALSE(TEST_UTILS::is_rds_writer_cluster_dns(CHINA_REGION_CUSTON_DOMAIN));
+}
+
 TEST_F(FailoverHandlerTest, IsRdsCustomClusterDns) {
     EXPECT_FALSE(TEST_UTILS::is_rds_custom_cluster_dns(US_EAST_REGION_CLUSTER));
     EXPECT_FALSE(TEST_UTILS::is_rds_custom_cluster_dns(US_EAST_REGION_CLUSTER_READ_ONLY));
@@ -473,4 +485,51 @@ TEST_F(FailoverHandlerTest, GetRdsClusterHostUrl) {
     EXPECT_EQ(CHINA_REGION_CLUSTER, TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_CLUSTER_READ_ONLY));
     EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_PROXY));
     EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_CUSTON_DOMAIN));
+}
+
+TEST_F(FailoverHandlerTest, ConnectToNewWriter) {
+    SQLCHAR server[] = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
+
+    EXPECT_CALL(*mock_connection_handler, do_connect(dbc, ds, _))
+        .WillOnce(Return(SQL_SUCCESS))
+        .WillOnce(Return(SQL_SUCCESS));
+
+    ds_setattr_from_utf8(&ds->server, server);
+    ds->port = 1234;
+    ds->enable_cluster_failover = true;
+
+    auto mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+    delete dbc->connection_proxy;
+    dbc->connection_proxy = mock_proxy;
+    
+    EXPECT_CALL(*mock_proxy, query(_))
+        .WillOnce(Return(0));
+
+    EXPECT_CALL(*mock_proxy, store_result())
+        .WillOnce(ReturnNew<MYSQL_RES>());
+
+    char* row[1] = { "1" };
+    EXPECT_CALL(*mock_proxy, fetch_row(_))
+        .WillOnce(Return(row));
+
+    EXPECT_CALL(*mock_proxy, free_result(_))
+        .WillOnce(DeleteArg<0>());
+
+    auto topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
+    topology->add_host(writer_host);
+    topology->add_host(reader_host);
+
+    EXPECT_CALL(*mock_ts, get_topology(_, false))
+        .WillOnce(Return(topology));
+    EXPECT_CALL(*mock_ts, get_topology(_, true))
+        .WillOnce(Return(topology));
+    
+    auto mock_failover_handler = std::make_shared<MOCK_FAILOVER_HANDLER>(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
+    EXPECT_CALL(*mock_failover_handler, host_to_IP(_))
+        .WillOnce(Return("10.10.10.10"))
+        .WillOnce(Return("20.20.20.20"));
+
+    mock_failover_handler->init_connection();
+    
+    EXPECT_EQ(std::string("writer-host.com"), std::string((const char*)ds->server8));
 }
