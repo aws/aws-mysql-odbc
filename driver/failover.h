@@ -167,7 +167,7 @@ class FAILOVER_HANDLER {
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
         std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> metrics_container);
     ~FAILOVER_HANDLER();
-    SQLRETURN init_cluster_info();
+    SQLRETURN init_connection();
     bool trigger_failover_if_needed(const char* error_code, const char*& new_error_code, const char*& error_msg);
     bool is_failover_enabled();
     bool is_rds();
@@ -190,15 +190,20 @@ class FAILOVER_HANDLER {
     bool m_is_rds_proxy = false;
     bool m_is_rds = false;
     bool m_is_rds_custom_cluster = false;
-    bool initialized = false;
+    bool is_cluster_info_initialized = false;
 
+    void init_cluster_info();
+    bool should_connect_to_new_writer();
+    void initialize_topology();
+    bool is_read_only();
+    virtual std::string host_to_IP(std::string host);
+    SQLRETURN reconnect(bool failover_enabled);
     static bool is_dns_pattern_valid(std::string host);
     static bool is_rds_dns(std::string host);
     static bool is_rds_cluster_dns(std::string host);
     static bool is_rds_proxy_dns(std::string host);
+    static bool is_rds_writer_cluster_dns(std::string host);
     static bool is_rds_custom_cluster_dns(std::string host);
-    SQLRETURN create_connection_and_initialize_topology();
-    SQLRETURN reconnect(bool failover_enabled);
     static std::string get_rds_cluster_host_url(std::string host);
     static std::string get_rds_instance_host_pattern(std::string host);
     bool is_ipv4(std::string host);
@@ -213,7 +218,7 @@ class FAILOVER_HANDLER {
     std::chrono::steady_clock::time_point failover_start_time_ms;
 
 #ifdef UNIT_TEST_BUILD
-    // Allows for testing private methods
+    // Allows for testing private/protected methods
     friend class TEST_UTILS;
 #endif
 };

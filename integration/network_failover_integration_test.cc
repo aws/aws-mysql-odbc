@@ -93,11 +93,11 @@ protected:
 
 TEST_F(NetworkFailoverIntegrationTest, connection_test) {
   test_connection(dbc, MYSQL_INSTANCE_1_URL, MYSQL_PORT);
-  test_connection(dbc, MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
+  test_connection_with_proxy_pattern(dbc, MYSQL_INSTANCE_1_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
   test_connection(dbc, MYSQL_CLUSTER_URL, MYSQL_PORT);
-  test_connection(dbc, MYSQL_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
+  test_connection_with_proxy_pattern(dbc, MYSQL_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
   test_connection(dbc, MYSQL_RO_CLUSTER_URL, MYSQL_PORT);
-  test_connection(dbc, MYSQL_RO_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
+  test_connection_with_proxy_pattern(dbc, MYSQL_RO_CLUSTER_URL + PROXIED_DOMAIN_NAME_SUFFIX, MYSQL_PROXY_PORT);
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_writer) {
