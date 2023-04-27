@@ -36,6 +36,15 @@
 #include <sstream>
 
 #include "driver.h"
+#include "mylog.h"
+
+#if defined(__APPLE__) || defined(__linux__)
+    #include <arpa/inet.h>    
+    #include <netdb.h>
+    #include <netinet/in.h>
+    #include <sys/socket.h>
+    #include <sys/types.h>
+#endif
 
 namespace {
 const std::regex AURORA_DNS_PATTERN(
@@ -46,6 +55,9 @@ const std::regex AURORA_PROXY_DNS_PATTERN(
     std::regex_constants::icase);
 const std::regex AURORA_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-|cluster-ro-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
+    std::regex_constants::icase);
+const std::regex AURORA_WRITER_CLUSTER_PATTERN(
+    R"#((.+)\.(cluster-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
     std::regex_constants::icase);
 const std::regex AURORA_CUSTOM_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
@@ -59,6 +71,9 @@ const std::regex AURORA_CHINA_PROXY_DNS_PATTERN(
 const std::regex AURORA_CHINA_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-|cluster-ro-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
+const std::regex AURORA_CHINA_WRITER_CLUSTER_PATTERN(
+    R"#((.+)\.(cluster-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    std::regex_constants::icase);
 const std::regex AURORA_CHINA_CUSTOM_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
@@ -67,6 +82,8 @@ const std::regex IPV4_PATTERN(
 const std::regex IPV6_PATTERN(R"#(^[0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4}){7}$)#");
 const std::regex IPV6_COMPRESSED_PATTERN(
     R"#(^(([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4}){0,5})?)::(([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4}){0,5})?)$)#");
+
+const char* MYSQL_READONLY_QUERY = "SELECT @@innodb_read_only AS is_reader";
 }  // namespace
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
@@ -108,18 +125,45 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
 
 FAILOVER_HANDLER::~FAILOVER_HANDLER() {}
 
-SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
-    SQLRETURN rc = SQL_ERROR;
-    if (initialized) {
+SQLRETURN FAILOVER_HANDLER::init_connection() {
+    SQLRETURN rc = connection_handler->do_connect(dbc, ds, false);
+    if (SQL_SUCCEEDED(rc)) {
+        metrics_container->register_invalid_initial_connection(false);
+    }
+    else {
+        metrics_container->register_invalid_initial_connection(true);
         return rc;
+    }
+
+    bool reconnect_with_updated_timeouts = false;
+    if (ds->enable_cluster_failover) {
+        this->init_cluster_info();
+
+        if (is_failover_enabled()) {
+            // Since we can't determine whether failover should be enabled
+            // before we connect, there is a possibility we need to reconnect
+            // again with the correct connection settings for failover.
+            const unsigned int connect_timeout = get_connect_timeout(ds->connect_timeout);
+            const unsigned int network_timeout = get_network_timeout(ds->network_timeout);
+
+            reconnect_with_updated_timeouts = (connect_timeout != dbc->login_timeout ||
+                                               network_timeout != ds->read_timeout ||
+                                               network_timeout != ds->write_timeout);
+        }
+    }
+
+    if (should_connect_to_new_writer() || reconnect_with_updated_timeouts) {
+        rc = reconnect(reconnect_with_updated_timeouts);
+    }
+
+    return rc;
+}
+
+void FAILOVER_HANDLER::init_cluster_info() {
+    if (is_cluster_info_initialized) {
+        return;
     }
     
-    if (!ds->enable_cluster_failover) {
-        // Use a standard default connection - no further initialization required
-        rc = connection_handler->do_connect(dbc, ds, false);
-        initialized = true;
-        return rc;
-    }
     std::stringstream err;
     // Cluster-aware failover is enabled
 
@@ -199,7 +243,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             }
         }
 
-        rc = create_connection_and_initialize_topology();
+        initialize_topology();
     } else if (is_ipv4(main_host) || is_ipv6(main_host)) {
         // TODO: do we need to setup host template in this case?
         // HOST_INFO* host_template = new HOST_INFO();
@@ -211,7 +255,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
             set_cluster_id(clid_str);
         }
 
-        rc = create_connection_and_initialize_topology();
+        initialize_topology();
 
         if (m_is_cluster_topology_available) {
             err << "Host Pattern configuration setting is required when IP "
@@ -242,7 +286,7 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                 set_cluster_id(clid_str);
             }
 
-            rc = create_connection_and_initialize_topology();
+            initialize_topology();
 
             if (m_is_cluster_topology_available) {
               err << "The provided host appears to be a custom domain. The "
@@ -288,12 +332,58 @@ SQLRETURN FAILOVER_HANDLER::init_cluster_info() {
                 }
             }
 
-            rc = create_connection_and_initialize_topology();
+            initialize_topology();
         }
     }
 
-    initialized = true;
-    return rc;
+    is_cluster_info_initialized = true;
+}
+
+bool FAILOVER_HANDLER::should_connect_to_new_writer() {
+    auto host = (const char*)ds->server8;
+    if (host == nullptr || host == "") {
+        return false;
+    }
+
+    if (!is_rds_writer_cluster_dns(host)) {
+        return false;
+    }
+
+    std::string host_ip = host_to_IP(host);
+    if (host_ip == "") {
+        return false;
+    }
+
+    this->init_cluster_info();
+
+    // We need to force refresh the topology if we are connected to a read only instance.
+    auto topology = topology_service->get_topology(dbc->connection_proxy, is_read_only());
+
+    std::shared_ptr<HOST_INFO> writer;
+    try {
+        writer = topology->get_writer();
+    }
+    catch (std::runtime_error) {
+        return false;
+    }
+
+    std::string writer_host = writer->get_host();
+    if (is_rds_cluster_dns(writer_host.c_str())) {
+        return false;
+    }
+
+    std::string writer_host_ip = host_to_IP(writer_host);
+    if (writer_host_ip == "" || writer_host_ip == host_ip) {
+        return false;
+    }
+
+    // DNS must have resolved the cluster endpoint to a wrong writer
+    // so we should reconnect to a proper writer node.
+    const sqlwchar_string writer_host_wstr = to_sqlwchar_string(writer_host);
+    ds_set_wstrnattr(&ds->server, (SQLWCHAR*)writer_host_wstr.c_str(), writer_host_wstr.size());
+    ds_set_strnattr(&ds->server8, (SQLCHAR*)writer_host.c_str(), writer_host.size());
+
+    return true;
 }
 
 void FAILOVER_HANDLER::set_cluster_id(std::string host, int port) {
@@ -322,8 +412,53 @@ bool FAILOVER_HANDLER::is_rds_proxy_dns(std::string host) {
     return std::regex_match(host, AURORA_PROXY_DNS_PATTERN) || std::regex_match(host, AURORA_CHINA_PROXY_DNS_PATTERN);
 }
 
+bool FAILOVER_HANDLER::is_rds_writer_cluster_dns(std::string host) {
+    return std::regex_match(host, AURORA_WRITER_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_WRITER_CLUSTER_PATTERN);
+}
+
 bool FAILOVER_HANDLER::is_rds_custom_cluster_dns(std::string host) {
     return std::regex_match(host, AURORA_CUSTOM_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_CUSTOM_CLUSTER_PATTERN);
+}
+
+bool FAILOVER_HANDLER::is_read_only() {
+    bool read_only = false;
+    if (dbc->connection_proxy->query(MYSQL_READONLY_QUERY) == 0) {
+        auto result = dbc->connection_proxy->store_result();
+        MYSQL_ROW row;
+        if (row = dbc->connection_proxy->fetch_row(result)) {
+            read_only = (strcmp(row[0], "1") == 0);
+        }
+        dbc->connection_proxy->free_result(result);
+    }
+
+    return read_only;
+}
+
+std::string FAILOVER_HANDLER::host_to_IP(std::string host) {
+    int status;
+    struct addrinfo hints;
+    struct addrinfo* servinfo;
+    struct addrinfo* p;
+    char ipstr[INET_ADDRSTRLEN];
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET; //IPv4
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((status = getaddrinfo(host.c_str(), NULL, &hints, &servinfo)) != 0) {
+        return "";
+    }
+
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+        void* addr;
+
+        struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
+        addr = &(ipv4->sin_addr);
+        inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
+    }
+
+    freeaddrinfo(servinfo);
+    return std::string(ipstr);
 }
 
 #if defined(__APPLE__) || defined(__linux__)
@@ -398,14 +533,8 @@ bool FAILOVER_HANDLER::is_cluster_topology_available() {
     return m_is_cluster_topology_available;
 }
 
-SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
-    SQLRETURN rc = connection_handler->do_connect(dbc, ds, false);
-    if (!SQL_SUCCEEDED(rc)) {
-        metrics_container->register_invalid_initial_connection(true);
-        return rc;
-    }
-
-    metrics_container->register_invalid_initial_connection(false);
+void FAILOVER_HANDLER::initialize_topology() {
+    
     current_topology = topology_service->get_topology(dbc->connection_proxy, false);
     if (current_topology) {
         m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster;
@@ -413,24 +542,10 @@ SQLRETURN FAILOVER_HANDLER::create_connection_and_initialize_topology() {
         MYLOG_DBC_TRACE(dbc,
                     "[FAILOVER_HANDLER] m_is_cluster_topology_available=%s",
                     m_is_cluster_topology_available ? "true" : "false");
-
-        // Since we can't determine whether failover should be enabled
-        // before we connect, there is a possibility we need to reconnect
-        // again with the correct connection settings for failover.
-        const unsigned int connect_timeout = get_connect_timeout(ds->connect_timeout);
-        const unsigned int network_timeout = get_network_timeout(ds->network_timeout);
-
-        if (is_failover_enabled() && (connect_timeout != dbc->login_timeout ||
-                                      network_timeout != ds->read_timeout ||
-                                      network_timeout != ds->write_timeout)) {
-            rc = reconnect(true);
-        }
         if (is_failover_enabled()) {
             this->dbc->env->failover_thread_pool.resize(current_topology->total_hosts());
         }
     }
-
-    return rc;
 }
 
 SQLRETURN FAILOVER_HANDLER::reconnect(bool failover_enabled) {
