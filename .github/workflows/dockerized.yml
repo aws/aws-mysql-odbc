@@ -206,7 +206,7 @@ jobs:
 
       - name: 'Display and save log'
         if: always()
-        working-directory: ${{ github.workspace }}/build
+        working-directory: ${{ github.workspace }}
         run: |
           echo "Displaying logs"
           mkdir -p ./reports/tests
