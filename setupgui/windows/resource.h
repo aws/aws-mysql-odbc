@@ -55,6 +55,7 @@
 #define IDD_TAB6                        137
 #define IDD_TAB7                        138
 #define IDD_TAB8                        139
+#define IDD_TAB9                        140
 #define IDC_LOGO                        1000
 #define IDC_EDIT_DRVNAME                1004
 #define IDC_EDIT_DRVDESC                1005

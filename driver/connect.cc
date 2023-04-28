@@ -513,13 +513,13 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 #ifdef WIN32
     /* load client authentication plugin if required */
     struct st_mysql_client_plugin* plugin =
-      mysql_client_find_plugin(mysql,
+        mysql_proxy->client_find_plugin(
         "authentication_kerberos_client",
         MYSQL_CLIENT_AUTHENTICATION_PLUGIN);
 
     if (!plugin)
     {
-      return set_error("HY000", mysql_error(mysql), 0);
+      return set_error("HY000", mysql_proxy->error(), 0);
     }
 
     if (mysql_plugin_options(plugin, "plugin_authentication_kerberos_client_mode",
@@ -701,7 +701,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
 
   for (auto &val : attr_list)
   {
-    mysql_options4(mysql, MYSQL_OPT_CONNECT_ATTR_ADD,
+    mysql_proxy->options4(MYSQL_OPT_CONNECT_ATTR_ADD,
       val[0].c_str(), val[1].c_str());
   }
 
@@ -1600,64 +1600,56 @@ void DBC::execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
 }
 
 SQLRETURN DBC::execute_query(const char* query,
-  SQLULEN query_length, my_bool req_lock)
-{
-  SQLRETURN result = SQL_SUCCESS;
-  LOCK_DBC_DEFER(this);
+                             SQLULEN query_length, my_bool req_lock) {
+    SQLRETURN result = SQL_SUCCESS;
+    LOCK_DBC_DEFER(this);
 
-  if (req_lock)
-  {
-    DO_LOCK_DBC();
-  }
+    if (req_lock) {
+        DO_LOCK_DBC();
+    }
 
-  if (query_length == SQL_NTS)
-  {
-    query_length = strlen(query);
-  }
+    if (query_length == SQL_NTS) {
+        query_length = strlen(query);
+    }
 
-  // return immediately if not connected
-  if (!dbc->mysql_proxy->is_connected()) 
-  {
-    return set_error(MYERR_08S01, "The active SQL connection was lost. Please discard this connection.", 0);
-  }
+    // return immediately if not connected
+    if (!this->mysql_proxy->is_connected()) {
+        return set_error(MYERR_08S01, "The active SQL connection was lost. Please discard this connection.", 0);
+    }
 
-  bool server_alive = is_server_alive(dbc);
-  if (!server_alive || dbc->mysql_proxy->real_query(query, query_length))
-  {
-      const unsigned int mysql_error_code = dbc->mysql_proxy->error_code();
+    bool server_alive = is_server_alive(this);
+    if (!server_alive || this->mysql_proxy->real_query(query, query_length)) {
+        const unsigned int mysql_error_code = this->mysql_proxy->error_code();
 
-      MYLOG_DBC_TRACE(dbc, dbc->mysql_proxy->error());
-      result = set_error(MYERR_S1000, dbc->mysql_proxy->error(), mysql_error_code);
+        MYLOG_DBC_TRACE(this, this->mysql_proxy->error());
+        result =
+            set_error(MYERR_S1000, this->mysql_proxy->error(), mysql_error_code);
 
-      if (!server_alive || is_connection_lost(mysql_error_code))
-      {
-          bool rollback = (!autocommit_on(dbc) && trans_supported(dbc)) || dbc->transaction_open;
-          if (rollback)
-          {
-              MYLOG_DBC_TRACE(dbc, "Rolling back");
-              dbc->mysql_proxy->real_query("ROLLBACK", 8);
-          }
+        if (!server_alive || is_connection_lost(mysql_error_code)) {
+            bool rollback = (!autocommit_on(this) && trans_supported(this)) ||
+                this->transaction_open;
+            if (rollback) {
+                MYLOG_DBC_TRACE(this, "Rolling back");
+                this->mysql_proxy->real_query("ROLLBACK", 8);
+            }
 
-          const char *error_code, *error_msg;
-          if (dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
-          {
-              if (strcmp(error_code, "08007") == 0)
-              {
-                  result = set_error(MYERR_08007, "Connection failure during transaction.", 0);
-              }
-              else if (strcmp(error_code, "08S02") == 0)
-              {
-                  result = set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
-              }
-              else {
-                  result = set_error(MYERR_08S01, "The active SQL connection was lost.", 0);
-              }
-          }
+            const char *error_code, *error_msg;
+            if (this->fh->trigger_failover_if_needed("08S01", error_code,
+                                                     error_msg)) {
+                if (strcmp(error_code, "08007") == 0) {
+                    result = set_error(MYERR_08007, "Connection failure during transaction.", 0);
+                }
+                else if (strcmp(error_code, "08S02") == 0) {
+                    result = set_error(MYERR_08S02, "The active SQL connection has changed.", 0);
+                }
+                else {
+                    result = set_error(MYERR_08S01, "The active SQL connection was lost.", 0);
+                }
+            }
 
-          dbc->transaction_open = false;
-      }
-  }
+            this->transaction_open = false;
+        }
+    }
 
-  return result;
-
+    return result;
 }
