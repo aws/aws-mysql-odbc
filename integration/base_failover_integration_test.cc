@@ -60,7 +60,7 @@
 
 #include "connection_string_builder.cc"
 
-#define MAX_NAME_LEN 255
+#define MAX_NAME_LEN 4096
 #define SQL_MAX_MESSAGE_LENGTH 512
 
 #define AS_SQLCHAR(str) const_cast<SQLCHAR*>(reinterpret_cast<const SQLCHAR*>(str))
