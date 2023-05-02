@@ -256,3 +256,4 @@ jobs:
             --db-cluster-identifier ${{ secrets.TEST_DB_CLUSTER_IDENTIFIER }}-${{ github.run_id }}-${{ github.run_attempt }} \
             --skip-final-snapshot \
           2>&1 > /dev/null;
+
