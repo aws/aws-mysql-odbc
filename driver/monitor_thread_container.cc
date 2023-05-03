@@ -29,6 +29,10 @@
 
 #include "monitor_thread_container.h"
 
+    
+static std::shared_ptr<MONITOR_THREAD_CONTAINER> singleton{nullptr};
+static std::mutex thread_container_singleton_mutex;
+
 std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
     if (singleton) {
         return singleton;
