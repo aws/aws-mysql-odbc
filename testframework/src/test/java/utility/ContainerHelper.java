@@ -94,7 +94,7 @@ public class ContainerHelper {
                 builder
                     .from(testContainerImageName)
                     .run("mkdir", "app")
-                    //.run("yum", "-y", "install", "gdb")
+                    .run("yum", "-y", "install", "gdb")
                     .workDir("/app")
                     .entryPoint("/bin/sh -c \"while true; do sleep 30; done;\"")
                     .build()))
