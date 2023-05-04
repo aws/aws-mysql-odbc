@@ -73,6 +73,7 @@ MONITOR::MONITOR(
 }
 
 MONITOR::~MONITOR() {
+    MYLOG_TRACE(this->logger, 0, "[MONITOR] Destructor %p", this);
     if (this->ds) {
         ds_delete(this->ds);
         this->ds = nullptr;
@@ -144,6 +145,7 @@ void MONITOR::run(std::shared_ptr<MONITOR_SERVICE> service) {
         {
             std::unique_lock<std::mutex> lock(mutex_);
             have_contexts = !this->contexts.empty();
+            MYLOG_TRACE(this->logger, 0, "[MONITOR] %p number of contexts %zu", this, this->contexts.size());
         }
         if (have_contexts) {
             auto status_check_start_time = this->get_current_time();

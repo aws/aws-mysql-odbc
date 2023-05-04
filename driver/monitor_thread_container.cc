@@ -28,6 +28,7 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include "monitor_thread_container.h"
+#include "mylog.h"
 
     
 static std::shared_ptr<MONITOR_THREAD_CONTAINER> singleton{nullptr};
@@ -35,15 +36,18 @@ static std::mutex thread_container_singleton_mutex;
 
 std::shared_ptr<MONITOR_THREAD_CONTAINER> MONITOR_THREAD_CONTAINER::get_instance() {
     if (singleton) {
+        MYLOG_TRACE(init_log_file(), 0, "[MONITOR_THREAD_CONTAINER] singleton %p", singleton.get());
         return singleton;
     }
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
     if (singleton) {
+        MYLOG_TRACE(init_log_file(), 0, "[MONITOR_THREAD_CONTAINER] singleton %p", singleton.get());
         return singleton;
     }
 
     singleton = std::shared_ptr<MONITOR_THREAD_CONTAINER>(new MONITOR_THREAD_CONTAINER);
+    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_THREAD_CONTAINER] singleton %p", singleton.get());
     return singleton;
 }
 
@@ -54,6 +58,7 @@ void MONITOR_THREAD_CONTAINER::release_instance() {
 
     std::lock_guard<std::mutex> guard(thread_container_singleton_mutex);
     singleton->release_resources();
+    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_THREAD_CONTAINER] resetting singleton %p", singleton.get())
     singleton.reset();
 }
 
@@ -216,8 +221,12 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
     }
 
     // Wait for monitor threads to finish
+    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_THREAD_CONTAINER] thread pool size %d",  thread_pool.size())
+    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_THREAD_CONTAINER] number of idle threads in pool %d",  thread_pool.n_idle());
+    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_THREAD_CONTAINER] stoping thread pool.");
+   
     this->thread_pool.stop(true);
-
+    
     {
         std::unique_lock<std::mutex> lock(monitor_map_mutex);
         this->monitor_map.clear();
@@ -233,4 +242,5 @@ void MONITOR_THREAD_CONTAINER::release_resources() {
         std::queue<std::shared_ptr<MONITOR>> empty;
         std::swap(available_monitors, empty);
     }
+
 }
