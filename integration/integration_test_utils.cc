@@ -28,6 +28,11 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include <gtest/gtest.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "integration_test_utils.h"
 
