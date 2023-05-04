@@ -30,8 +30,6 @@
 #ifndef __INTEGRATIONTESTUTILS_H__
 #define __INTEGRATIONTESTUTILS_H__
 
-#include <httplib.h>
-
 #define MAX_NAME_LEN 4096
 #define SQL_MAX_MESSAGE_LENGTH 512
 
