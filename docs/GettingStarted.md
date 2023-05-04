@@ -1,6 +1,6 @@
 # Getting Started
 
-## Obtaining the AWS Advanced JDBC Wrapper
+## Obtaining the AWS ODBC Driver for MySQL
 
 You will find installers for Windows, MacOS and Linux that can be downloaded directly from [GitHub Releases](https://github.com/awslabs/aws-mysql-odbc/releases) to install the AWS ODBC Driver for MySQL.
 
