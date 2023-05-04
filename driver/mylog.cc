@@ -124,7 +124,9 @@ std::shared_ptr<FILE> init_log_file() {
 
 void end_log_file() {
   std::lock_guard<std::mutex> guard(log_file_mutex);
+  fprintf(log_file.get(), "-------------- log file handle use count %ld-------------------\n", log_file.use_count());
   if (log_file && log_file.use_count() == 1) { // static var
+    fprintf(log_file.get(), "-------------- log file handle resetting-------------------\n");
     log_file.reset();
   }
 }
