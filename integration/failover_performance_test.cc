@@ -402,8 +402,8 @@ INSTANTIATE_TEST_SUITE_P(
   FailoverPerformanceTest,
   // Test Type, Sleep_Delay_ms, Failover_Timeout_ms, Connection_Timeout_s, Network_Timeout_s
   ::testing::Values(
-    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 5000,  30000, 30, 30)//,
-    // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 10000, 30000, 30, 30),
+    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 5000,  30000, 30, 30),
+    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 10000, 30000, 30, 30)//,
     // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 15000, 30000, 30, 30),
     // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 20000, 30000, 30, 30),
     // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 25000, 30000, 30, 30),
@@ -416,8 +416,8 @@ INSTANTIATE_TEST_SUITE_P(
   FailoverPerformanceTest,
   // Test Type, Sleep Delay, detection grace time, detection interval, detection count
   ::testing::Values(
-    std::make_tuple(EFM_FAILOVER_TEST_ID, 5000,  30000, 5000, 3)//,
-    // std::make_tuple(EFM_FAILOVER_TEST_ID, 10000, 30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 5000,  30000, 5000, 3),
+    std::make_tuple(EFM_FAILOVER_TEST_ID, 10000, 30000, 5000, 3)//,
     // std::make_tuple(EFM_FAILOVER_TEST_ID, 15000, 30000, 5000, 3),
     // std::make_tuple(EFM_FAILOVER_TEST_ID, 20000, 30000, 5000, 3),
     // std::make_tuple(EFM_FAILOVER_TEST_ID, 25000, 30000, 5000, 3),
@@ -434,8 +434,8 @@ INSTANTIATE_TEST_SUITE_P(
   FailoverPerformanceTest,
   // Test Type, Sleep Delay, detection grace time, detection interval, detection count
   ::testing::Values(
-    std::make_tuple(EFM_DETECTION_TEST_ID, 5000,  30000, 5000, 3)//,
-    // std::make_tuple(EFM_DETECTION_TEST_ID, 10000, 30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 5000,  30000, 5000, 3),
+    std::make_tuple(EFM_DETECTION_TEST_ID, 10000, 30000, 5000, 3)//,
     // std::make_tuple(EFM_DETECTION_TEST_ID, 15000, 30000, 5000, 3),
     // std::make_tuple(EFM_DETECTION_TEST_ID, 20000, 30000, 5000, 3),
     // std::make_tuple(EFM_DETECTION_TEST_ID, 25000, 30000, 5000, 3),

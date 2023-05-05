@@ -131,6 +131,9 @@ void MONITOR::stop() {
 void MONITOR::clear_contexts() {
     {
         std::unique_lock<std::mutex> lock(mutex_);
+        for (auto context : contexts) {
+            context->invalidate();
+        }
         this->contexts.clear();
     }
 

@@ -121,11 +121,8 @@ void MONITOR_CONNECTION_CONTEXT::invalidate() {
     active_context.store(false);
 }
 
-DBC* MONITOR_CONNECTION_CONTEXT::get_connection_to_abort() {
-    return connection_to_abort;
-}
-
 unsigned long MONITOR_CONNECTION_CONTEXT::get_dbc_id() {
+    std::lock_guard<std::mutex> lock(mutex_);
     return connection_to_abort ? connection_to_abort->id : 0;
 }
 
@@ -185,9 +182,10 @@ void MONITOR_CONNECTION_CONTEXT::set_connection_valid(
 
 void MONITOR_CONNECTION_CONTEXT::abort_connection() {
     std::lock_guard<std::mutex> lock(mutex_);
-    if ((!get_connection_to_abort()) || (!is_active_context())) {
+    if ((!connection_to_abort) || (!is_active_context())) {
         return;
     }
+    MYLOG_TRACE(init_log_file(), 0, "close socket from abort_connection");
     connection_to_abort->connection_proxy->close_socket();
 }
 

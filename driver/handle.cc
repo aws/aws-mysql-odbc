@@ -146,6 +146,7 @@ void DBC::init_proxy_chain(DataSource* dsrc)
 
 DBC::~DBC()
 {
+  MYLOG_TRACE(init_log_file(), 0, "==========DBC Destructor=========");
   if (env)
     env->remove_dbc(this);
 

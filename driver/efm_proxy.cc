@@ -76,6 +76,7 @@ void EFM_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> cont
     }
     monitor_service->stop_monitoring(context);
     if (context->is_node_unhealthy() && is_connected()) {
+        MYLOG_TRACE(init_log_file(), 0, "close socket from efm proxy stop monitoring");
         close_socket();
     }
 }
