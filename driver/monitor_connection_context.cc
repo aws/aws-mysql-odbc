@@ -118,6 +118,9 @@ bool MONITOR_CONNECTION_CONTEXT::is_active_context() {
 }
 
 void MONITOR_CONNECTION_CONTEXT::invalidate() {
+    MYLOG_TRACE(
+            logger, get_dbc_id(),
+            "[MONITOR_CONNECTION_CONTEXT] Invalidating context %p", this);
     active_context.store(false);
 }
 
@@ -185,8 +188,8 @@ void MONITOR_CONNECTION_CONTEXT::abort_connection() {
     if ((!connection_to_abort) || (!is_active_context())) {
         return;
     }
-    MYLOG_TRACE(init_log_file(), 0, "close socket from abort_connection");
-    MYLOG_TRACE(init_log_file(), 0, "connection_to_abort %p", connection_to_abort);
+    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_CONNECTION_CONTEXT] close socket from abort_connection from context %p", this);
+    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_CONNECTION_CONTEXT] connection_to_abort %p from context", connection_to_abort, this);
     connection_to_abort->connection_proxy->close_socket();
 }
 

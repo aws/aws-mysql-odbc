@@ -79,7 +79,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         dbc ? dbc->connection_handler : nullptr,
         enable_logging);
     MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "[MONITOR_SERVICE] MONITOR got or created %p", monitor.get());
-    MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "DBC %p", dbc);
+    MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "[MONITOR_SERVICE] DBC %p", dbc);
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         dbc,
         node_keys,
@@ -87,7 +87,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         failure_detection_interval,
         failure_detection_count,
         enable_logging);
-
+    MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "[MONITOR_SERVICE] start_monitoringcontext %p", context.get());
     monitor->start_monitoring(context);
     this->thread_container->add_task(monitor, shared_from_this());
 
@@ -114,6 +114,7 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
 
     auto monitor = this->thread_container->get_monitor(node);
     if (monitor != nullptr) {
+        MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "[MONITOR_SERVICE] stop_monitoring context %p", context.get());
         monitor->stop_monitoring(context);
     }
 }

@@ -395,15 +395,16 @@ void MYSQL_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
 void MYSQL_PROXY::close_socket() {
     MYLOG_TRACE(init_log_file(), 0, "Closing socket");
     int ret = 0;
+    MYLOG_TRACE(init_log_file(), 0, "Before Shutdown");
     if (mysql->net.fd != INVALID_SOCKET && (ret = shutdown(mysql->net.fd, SHUT_RDWR))) {
-        MYLOG_TRACE(init_log_file(), 0, "Before Shutdown");
+        MYLOG_TRACE(init_log_file(), 0, "After Shutdown");
        MYLOG_DBC_TRACE(dbc, "shutdown() with return code: %d, error message: %s,", ret, strerror(socket_errno));
     }
     // Yield to main thread to handle socket shutdown
-    MYLOG_TRACE(init_log_file(), 0, "Before sleep");
     std::this_thread::sleep_for(SOCKET_CLOSE_DELAY);
+    MYLOG_TRACE(init_log_file(), 0, "Before closesocket");
     if (mysql->net.fd != INVALID_SOCKET && (ret = ::closesocket(mysql->net.fd))) {
-        MYLOG_TRACE(init_log_file(), 0, "Before closesocket");
+        MYLOG_TRACE(init_log_file(), 0, "After closesocket");
         MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", ret, strerror(socket_errno));
     }
 }

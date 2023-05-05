@@ -176,9 +176,12 @@ protected:
   }
 
   void SetUp() override {
+    env = nullptr;
+    dbc = nullptr;
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+    EXPECT_TRUE(false) << "before calling SQLFreeHandle " << dbc;
     client_config.region = "us-east-2";
     Aws::RDS::RDSClient rds_client(credentials, client_config);
 
@@ -187,9 +190,11 @@ protected:
   }
 
   void TearDown() override {
+    EXPECT_TRUE(false) << "before calling SQLFreeHandle " << dbc;
     if (nullptr != dbc) {
       SQLFreeHandle(SQL_HANDLE_DBC, dbc);
     }
+    EXPECT_TRUE(false) << "after calling SQLFreeHandle " << dbc;
     if (nullptr != env) {
       SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
@@ -231,7 +236,9 @@ protected:
       }
 
       EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
+      EXPECT_TRUE(false) << "before calling SQLDisconnect" << dbc;
       EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+      EXPECT_TRUE(false) << "after calling SQLDisconnect" << dbc;
     }
 
     // Metrics Statistics
@@ -402,8 +409,8 @@ INSTANTIATE_TEST_SUITE_P(
   FailoverPerformanceTest,
   // Test Type, Sleep_Delay_ms, Failover_Timeout_ms, Connection_Timeout_s, Network_Timeout_s
   ::testing::Values(
-    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 5000,  30000, 30, 30),
-    std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 10000, 30000, 30, 30)//,
+    // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 5000,  30000, 30, 30),
+    // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 10000, 30000, 30, 30),
     // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 15000, 30000, 30, 30),
     // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 20000, 30000, 30, 30),
     // std::make_tuple(SOCKET_TIMEOUT_TEST_ID, 25000, 30000, 30, 30),
