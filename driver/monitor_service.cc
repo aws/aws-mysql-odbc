@@ -78,7 +78,8 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         ds,
         dbc ? dbc->connection_handler : nullptr,
         enable_logging);
-    MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "[MONITOR_SERVICE] MONITOR Created %p", monitor.get());
+    MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "[MONITOR_SERVICE] MONITOR got or created %p", monitor.get());
+    MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "DBC %p", dbc);
     auto context = std::make_shared<MONITOR_CONNECTION_CONTEXT>(
         dbc,
         node_keys,

@@ -83,6 +83,7 @@ DBC::DBC(ENV *p_env)
       txn_isolation(DEFAULT_TXN_ISOLATION),
       last_query_time((time_t)time((time_t *)0))
 {
+  MYLOG_TRACE(init_log_file(), id, "==========DBC Constructor=========, %p", this);
   //mysql->net.vio = nullptr;
   myodbc_ov_init(env->odbc_ver);
   env->add_dbc(this);
@@ -146,7 +147,7 @@ void DBC::init_proxy_chain(DataSource* dsrc)
 
 DBC::~DBC()
 {
-  MYLOG_TRACE(init_log_file(), 0, "==========DBC Destructor=========");
+  MYLOG_TRACE(init_log_file(), id, "==========DBC Destructor=========, %p", this);
   if (env)
     env->remove_dbc(this);
 

@@ -186,6 +186,7 @@ void MONITOR_CONNECTION_CONTEXT::abort_connection() {
         return;
     }
     MYLOG_TRACE(init_log_file(), 0, "close socket from abort_connection");
+    MYLOG_TRACE(init_log_file(), 0, "connection_to_abort %p", connection_to_abort);
     connection_to_abort->connection_proxy->close_socket();
 }
 
