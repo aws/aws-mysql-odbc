@@ -392,7 +392,7 @@ void MYSQL_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
 }
 
 void MYSQL_PROXY::close_socket() {
-    MYLOG_DBC_TRACE(dbc, "Closing socket");
+    MYLOG_TRACE(init_log_file(), 0, "Closing socket");
     int ret = 0;
     if (mysql->net.fd != INVALID_SOCKET && (ret = shutdown(mysql->net.fd, SHUT_RDWR))) {
        MYLOG_DBC_TRACE(dbc, "shutdown() with return code: %d, error message: %s,", ret, strerror(socket_errno));
