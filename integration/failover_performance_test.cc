@@ -181,7 +181,7 @@ protected:
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-    EXPECT_TRUE(false) << "before calling SQLFreeHandle " << dbc;
+    EXPECT_TRUE(false) << "After calling SQLAllocHandle " << dbc;
     client_config.region = "us-east-2";
     Aws::RDS::RDSClient rds_client(credentials, client_config);
 

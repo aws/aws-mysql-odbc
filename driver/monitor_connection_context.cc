@@ -47,9 +47,12 @@ MONITOR_CONNECTION_CONTEXT::MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
                                    node_unhealthy{false} {
     if (enable_logging)
         this->logger = init_log_file();
+    MYLOG_TRACE(this->logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Contructor %p", this);
 }
 
-MONITOR_CONNECTION_CONTEXT::~MONITOR_CONNECTION_CONTEXT() {}
+MONITOR_CONNECTION_CONTEXT::~MONITOR_CONNECTION_CONTEXT() {
+    MYLOG_TRACE(this->logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Destructor %p", this);
+}
 
 std::chrono::steady_clock::time_point MONITOR_CONNECTION_CONTEXT::get_start_monitor_time() {
     return start_monitor_time;
@@ -118,9 +121,7 @@ bool MONITOR_CONNECTION_CONTEXT::is_active_context() {
 }
 
 void MONITOR_CONNECTION_CONTEXT::invalidate() {
-    MYLOG_TRACE(
-            logger, get_dbc_id(),
-            "[MONITOR_CONNECTION_CONTEXT] Invalidating context %p", this);
+    MYLOG_TRACE(logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Invalidating context %p", this);
     active_context.store(false);
 }
 
@@ -189,7 +190,7 @@ void MONITOR_CONNECTION_CONTEXT::abort_connection() {
         return;
     }
     MYLOG_TRACE(init_log_file(), 0, "[MONITOR_CONNECTION_CONTEXT] close socket from abort_connection from context %p", this);
-    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_CONNECTION_CONTEXT] connection_to_abort %p from context", connection_to_abort, this);
+    MYLOG_TRACE(init_log_file(), 0, "[MONITOR_CONNECTION_CONTEXT] connection_to_abort %p from context %p", connection_to_abort, this);
     connection_to_abort->connection_proxy->close_socket();
 }
 
