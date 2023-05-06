@@ -114,7 +114,7 @@ void MONITOR_SERVICE::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT
 
     auto monitor = this->thread_container->get_monitor(node);
     if (monitor != nullptr) {
-        MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "[MONITOR_SERVICE] stop_monitoring context %p", context.get());
+        MYLOG_TRACE(this->logger, context->get_dbc_id(), "[MONITOR_SERVICE] stop_monitoring context %p", context.get());
         monitor->stop_monitoring(context);
     }
 }
