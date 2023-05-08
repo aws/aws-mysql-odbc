@@ -48,9 +48,11 @@ MONITOR_CONNECTION_CONTEXT::MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
     if (enable_logging)
         this->logger = init_log_file();
     MYLOG_TRACE(this->logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Contructor %p", this);
+    MYLOG_TRACE(this->logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] connection_to_abort %p", connection_to_abort);
 }
 
 MONITOR_CONNECTION_CONTEXT::~MONITOR_CONNECTION_CONTEXT() {
+    MYLOG_TRACE(this->logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] connection_to_abort %p", connection_to_abort);
     MYLOG_TRACE(this->logger, get_dbc_id(), "[MONITOR_CONNECTION_CONTEXT] Destructor %p", this);
 }
 

@@ -160,11 +160,6 @@ public:
 
     void close_socket() override;
 
-protected:
-    DBC* dbc = nullptr;
-    DataSource* ds = nullptr;
-    MYSQL_PROXY* next_proxy = nullptr;
-
 private:
     MYSQL* mysql = nullptr;
     std::shared_ptr<HOST_INFO> host = nullptr;

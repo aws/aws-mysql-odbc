@@ -28,6 +28,7 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include "driver.h"
+#include "mylog.h"
 
 CONNECTION_PROXY::CONNECTION_PROXY(DBC* dbc, DataSource* ds) : dbc{dbc}, ds{ds} {
     if (!this->dbc) {
@@ -397,6 +398,8 @@ void CONNECTION_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
 }
 
 void CONNECTION_PROXY::close_socket() {
+    MYLOG_TRACE(init_log_file(), 0, "[CONNECTION_PROXY] about to call next_proxy->close_socket()");
+    MYLOG_TRACE(init_log_file(), 0, "[CONNECTION_PROXY] this->dbc %p", this->dbc);
     next_proxy->close_socket();
 }
 
