@@ -234,12 +234,6 @@ jobs:
           brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
 
-      # https://github.com/Homebrew/homebrew-core/issues/130258
-      - name: Work around Homebrew MySQL being broken
-        run: |
-          brew install zlib
-          ln -sv $(brew --prefix zlib)/lib/libz.dylib $(brew --prefix)/lib/libzlib.dylib
-
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
         uses: actions/cache@v3
@@ -274,6 +268,7 @@ jobs:
         shell: bash
         run: |
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
+          export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zlib)/lib/
           cmake --build .
 
       # Test driver
