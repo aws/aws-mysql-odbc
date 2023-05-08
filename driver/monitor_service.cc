@@ -87,7 +87,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         failure_detection_interval,
         failure_detection_count,
         enable_logging);
-    MYLOG_TRACE(this->logger, dbc ? dbc->id : 0, "[MONITOR_SERVICE] start_monitoring context %p", context.get());
+    MYLOG_TRACE(this->logger, context->get_dbc_id(), "[MONITOR_SERVICE] start_monitoring context %p", context.get());
     monitor->start_monitoring(context);
     this->thread_container->add_task(monitor, shared_from_this());
 

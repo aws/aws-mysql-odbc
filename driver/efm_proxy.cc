@@ -57,8 +57,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> EFM_PROXY::start_monitoring() {
     if (failure_detection_timeout == 0) {
         failure_detection_timeout = ds->network_timeout == 0 ? failure_detection_timeout_default : ds->network_timeout;
     }
-
-    return monitor_service->start_monitoring(
+    auto ret = monitor_service->start_monitoring(
         dbc,
         ds,
         node_keys,
@@ -68,12 +67,17 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> EFM_PROXY::start_monitoring() {
         std::chrono::milliseconds{ds->failure_detection_interval},
         ds->failure_detection_count,
         std::chrono::milliseconds{ds->monitor_disposal_time});
+
+    MYLOG_TRACE(init_log_file(), 0, "[EFM_PROXY] start_monitoring context %p", ret.get());
+
+    return ret;
 }
 
 void EFM_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
     if (!ds || !ds->enable_failure_detection || context == nullptr) {
         return;
     }
+    MYLOG_TRACE(init_log_file(), 0, "[EFM_PROXY] stop_monitoring context %p", context.get());
     monitor_service->stop_monitoring(context);
     if (context->is_node_unhealthy() && is_connected()) {
         MYLOG_TRACE(init_log_file(), 0, "close socket from efm proxy stop monitoring");

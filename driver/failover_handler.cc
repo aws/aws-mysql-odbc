@@ -153,6 +153,7 @@ SQLRETURN FAILOVER_HANDLER::init_connection() {
     }
 
     if (should_connect_to_new_writer() || reconnect_with_updated_timeouts) {
+        MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Reconnceting");
         rc = reconnect(reconnect_with_updated_timeouts);
     }
 
