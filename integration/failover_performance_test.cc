@@ -225,16 +225,21 @@ protected:
       std::thread network_shutdown_thread(network_shutdown_function, std::cref(writer_id), std::cref(sleep_delay), std::ref(downtime));
 
       // Execute long query and wait for error / failover.
+      EXPECT_TRUE(false) << "before calling SQLExecDirect";
       if (SQL_ERROR == SQLExecDirect(handle, LONG_QUERY, SQL_NTS)) {
+        EXPECT_TRUE(false) << "after calling SQLExecDirect";
         int failover_time = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - downtime.load(std::memory_order_relaxed)).count());
         recorded_metrics.push_back(failover_time);
       }
 
       // Ensure thread stops
       if (network_shutdown_thread.joinable()) {
+        EXPECT_TRUE(false) << "before joining network_shutdown_thread";
         network_shutdown_thread.join();
+        EXPECT_TRUE(false) << "after joining network_shutdown_thread";
       }
 
+      EXPECT_TRUE(false) << "before calling SQLFreeHandle";
       EXPECT_EQ(SQL_SUCCESS, SQLFreeHandle(SQL_HANDLE_STMT, handle));
       EXPECT_TRUE(false) << "before calling SQLDisconnect" << dbc;
       EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));

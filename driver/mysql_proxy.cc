@@ -400,11 +400,21 @@ void MYSQL_PROXY::close_socket() {
         MYLOG_TRACE(init_log_file(), 0, "After Shutdown");
        MYLOG_DBC_TRACE(dbc, "shutdown() with return code: %d, error message: %s,", ret, strerror(socket_errno));
     }
+
+    MYLOG_TRACE(init_log_file(), 0, "before accessing dbc->id");
+    ulong q = dbc->id;
+    MYLOG_TRACE(init_log_file(), 0, "after accessing dbc->id %ld", q);
+
+    MYLOG_TRACE(init_log_file(), 0, "before accessing dbc->log_file");
+    auto a = dbc->log_file;
+    MYLOG_TRACE(init_log_file(), 0, "after accessing dbc->log_file");
+
     // Yield to main thread to handle socket shutdown
     std::this_thread::sleep_for(SOCKET_CLOSE_DELAY);
     MYLOG_TRACE(init_log_file(), 0, "Before closesocket");
     if (mysql->net.fd != INVALID_SOCKET && (ret = ::closesocket(mysql->net.fd))) {
         MYLOG_TRACE(init_log_file(), 0, "After closesocket");
+        MYLOG_TRACE(init_log_file(), 0, "closesocket() with return code: %d, error message: %s,", ret, strerror(socket_errno));
         MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", ret, strerror(socket_errno));
     }
 }
