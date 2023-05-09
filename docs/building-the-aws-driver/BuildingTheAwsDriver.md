@@ -19,6 +19,7 @@
      - `cmake`
      - `mysql-client`
      - `mysql`
+     - `aws-sdk-cpp`
 2. Set the environment variable MYSQL_DIR as the path to your `mysql-client` installation location:
     ```
     export MYSQL_DIR=/usr/local/opt/mysql-client

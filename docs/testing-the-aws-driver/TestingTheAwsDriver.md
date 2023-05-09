@@ -17,7 +17,7 @@
         cmake --build build --config Release
         ```
 2. There are two options to run the unit tests:
-    - Run `ctest` directly from the `unit_testing` directory.
+    - Run `ctest` directly from the `build/unit_testing` directory.
     - Navigate to `unit_testing/bin/Release` and run `unit_testing.exe`. To specify a particular test or test suite, include `--gtest_filter` in the command.
 
 The following example demonstrates running all the tests in the `TopologyServiceTest` suite with the `.\unit_testing.exe --gtest_filter=TopologyServiceTest.*` command:
