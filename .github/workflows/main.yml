@@ -155,11 +155,11 @@ jobs:
 
           brew update
           brew unlink unixodbc
-          brew install libiodbc mysql
+          brew install libiodbc mysql mysql-client
           brew link --overwrite --force libiodbc
 
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar -o mysql.tar
-          tar -xzvf mysql.tar
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
+          tar -xzvf mysql.tar.gz
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk

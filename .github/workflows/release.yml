@@ -14,7 +14,6 @@ jobs:
     runs-on: macos-13
     env:
       CMAKE_GENERATOR: Unix Makefiles
-      MYSQL_DIR: /usr/local/opt/mysql-client
       ODBC_DM_INCLUDES: /usr/local/include
     steps:
       - name: Checkout source code
@@ -37,11 +36,11 @@ jobs:
 
           brew update
           brew unlink unixodbc
-          brew install libiodbc
+          brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
 
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar -o mysql.tar
-          tar -xzvf mysql.tar
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
+          tar -xzvf mysql.tar.gz
           
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
