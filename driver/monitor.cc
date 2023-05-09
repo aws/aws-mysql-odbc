@@ -228,7 +228,6 @@ bool MONITOR::connect() {
         this->ds->read_timeout = timeout_sec;
     }
 
-    this->ds->enable_cluster_failover = false;
     this->ds->enable_failure_detection= false;
 
     this->connection_proxy = this->connection_handler->connect(this->host, this->ds);
