@@ -133,7 +133,6 @@ jobs:
     runs-on: macos-11
     env:
       CMAKE_GENERATOR: Unix Makefiles
-      MYSQL_DIR: /usr/local/opt/mysql-client
       ODBC_DM_INCLUDES: /usr/local/include
     steps:
       - name: Checkout source code
