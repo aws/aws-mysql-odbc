@@ -277,6 +277,10 @@ jobs:
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
           cmake --build .
 
+      - uses: actions/checkout@v2
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        
       # Test driver
       - name: Run driver tests
         if: success()
