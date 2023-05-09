@@ -35,8 +35,8 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs and include files
         run: |
-          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
-          curl https://cdn.mysql.com/archives/mysql-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug-test.zip -o mysql-debug.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug-test.zip -o mysql-debug.zip
           unzip -d C:/ mysql.zip
           mkdir C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug
           unzip -d C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug mysql-debug.zip
@@ -231,8 +231,11 @@ jobs:
 
           brew update
           brew unlink unixodbc
-          brew install libiodbc mysql-client
+          brew install libiodbc
           brew link --overwrite --force libiodbc
+          
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
+          tar -xzvf mysql.tar.gz
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
@@ -261,6 +264,7 @@ jobs:
                 -DODBC_INCLUDES=$ODBC_DM_INCLUDES
                 -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
+                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64
 
       # Build driver
       - name: Build driver
@@ -268,7 +272,6 @@ jobs:
         shell: bash
         run: |
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
-          export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zlib)/lib/
           cmake --build .
 
       # Test driver
