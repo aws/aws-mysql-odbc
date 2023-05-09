@@ -83,7 +83,7 @@ jobs:
       - name: 'Set up Temp AWS Credentials'
         run: |
           creds=($(aws sts get-session-token \
-            --duration-seconds 10800 \
+            --duration-seconds 14400 \
             --query 'Credentials.[AccessKeyId, SecretAccessKey, SessionToken]' \
             --output text \
           | xargs));
@@ -124,7 +124,7 @@ jobs:
 
       - name: 'Display and save log'
         if: always()
-        working-directory: ${{ github.workspace }}/build
+        working-directory: ${{ github.workspace }}
         run: |
           echo "Displaying logs"
           mkdir -p ./reports/tests
@@ -147,7 +147,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: 'performance-test-logs'
-          path: build/reports/tests/
+          path: reports/tests/
           retention-days: 3
 
       - name: 'Delete Test Clusters if Ungraceful Cancel'

@@ -234,7 +234,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: 'integration-test-logs'
-          path: build/reports/tests/
+          path: reports/tests/
           retention-days: 3
 
       - name: 'Delete Test Clusters if Ungraceful Cancel'
