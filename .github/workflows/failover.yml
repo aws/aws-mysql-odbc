@@ -205,7 +205,7 @@ jobs:
 
   build-mac:
     name: MacOS
-    runs-on: macos-11
+    runs-on: macos-13
     env:
       CMAKE_GENERATOR: Unix Makefiles
       ODBC_DM_INCLUDES: /usr/local/include
