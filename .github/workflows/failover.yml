@@ -234,8 +234,8 @@ jobs:
           brew link --overwrite --force libiodbc
 
           brew install openssl@1.1
-          rm /usr/local/lib/libssl.1.1.dylib
-          rm /usr/local/lib/libcrypto.1.1.dylib
+          rm -f /usr/local/lib/libssl.1.1.dylib
+          rm -f /usr/local/lib/libcrypto.1.1.dylib
           ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/
           ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/
           
