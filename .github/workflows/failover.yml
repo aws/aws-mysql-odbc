@@ -269,6 +269,9 @@ jobs:
                 -DENABLE_INTEGRATION_TESTS=FALSE
                 -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64
 
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        
       # Build driver
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
@@ -277,10 +280,6 @@ jobs:
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
           cmake --build .
 
-      - uses: actions/checkout@v2
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        
       # Test driver
       - name: Run driver tests
         if: success()
