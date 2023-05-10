@@ -44,12 +44,10 @@
   @purpose : internal function to execute query and return result
   frees query if query != stmt->query
 */
-SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
+SQLRETURN do_query(STMT *stmt, std::string query)
 {
-    if (stmt && stmt->dbc && stmt->dbc->fh) {
-      stmt->dbc->fh->invoke_start_time();
-    }
-
+    int error= SQL_ERROR, native_error= 0;
+    SQLULEN query_length = query.length();
     assert(stmt);
 
     SQLRETURN error = SQL_ERROR;
@@ -58,7 +56,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     LOCK_STMT_DEFER(stmt);
 
-    if (!query)
+    if (query.empty())
     {
       /* Probably error from insert_param */
       goto exit;
@@ -76,12 +74,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       goto exit;
     }
 
-    if (query_length == 0)
-    {
-      query_length= strlen(query);
-    }
-
-    MYLOG_STMT_TRACE(stmt, query);
+    MYLOG_STMT_TRACE(stmt, query.c_str());
     DO_LOCK_STMT();
 
     if ( !is_server_alive( stmt->dbc ) )
@@ -99,24 +92,24 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
      * and when no musltiple statements is allowed - we can't now parse query
      * that well to detect multiple queries.
      */
-    if (stmt->dbc->ds->cursor_prefetch_number > 0
-        && !stmt->dbc->ds->allow_multiple_statements
+    if (stmt->dbc->ds.opt_PREFETCH > 0
+        && !stmt->dbc->ds.opt_MULTI_STATEMENTS
         && stmt->stmt_options.cursor_type == SQL_CURSOR_FORWARD_ONLY
-        && scrollable(stmt, query, query+query_length)
+        && scrollable(stmt, query.c_str(), query.c_str() + query_length)
         && !ssps_used(stmt))
     {
       /* we might want to read primary key info at this point, but then we have to
          know if we have a select from a single table...
        */
       ssps_close(stmt);
-      scroller_reset(stmt);
+      stmt->scroller.reset();
 
       stmt->scroller.row_count= calc_prefetch_number(
-                                      stmt->dbc->ds->cursor_prefetch_number,
+                                      stmt->dbc->ds.opt_PREFETCH,
                                       stmt->ard->array_size,
                                       stmt->stmt_options.max_rows);
 
-      scroller_create(stmt, query, query_length);
+      scroller_create(stmt, query.c_str(), query_length);
       scroller_move(stmt);
       MYLOG_STMT_TRACE(stmt, stmt->scroller.query);
 
@@ -129,7 +122,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       }
     }
       /* Not using ssps for scroller so far. Relaxing a bit condition
-       if allow_multiple_statements option selected by primitive check if
+       if MULTI_STATEMENTS option selected by primitive check if
        this is a batch of queries */
     else if (ssps_used(stmt))
     {
@@ -270,19 +263,14 @@ exit:
         stmt->set_error(error_code, error_msg, 0);
     }
 
-    if (query != GET_QUERY(&stmt->query))
-    {
-      x_free(query);
-    }
-
     /*
       If the original query was modified, we reset stmt->query so that the
       next execution re-starts with the original query.
     */
     if (GET_QUERY(&stmt->orig_query))
     {
-      copy_parsed_query(&stmt->orig_query, &stmt->query);
-      reset_parsed_query(&stmt->orig_query, NULL, NULL, NULL);
+      stmt->query = stmt->orig_query;
+      stmt->orig_query.reset(NULL, NULL, NULL);
     }
 
     return error;
@@ -300,11 +288,10 @@ exit:
              so passing stmt->query->query can lead to memory leak.
 */
 
-SQLRETURN insert_params(STMT *stmt, SQLULEN row, char **finalquery,
-                        SQLULEN *finalquery_length)
+SQLRETURN insert_params(STMT *stmt, SQLULEN row, std::string &finalquery)
 {
   assert(stmt);
-  char *query= GET_QUERY(&stmt->query);
+  const char *query= GET_QUERY(&stmt->query);
   uint i,length, had_info= 0;
   SQLRETURN rc= SQL_SUCCESS;
 
@@ -316,7 +303,7 @@ SQLRETURN insert_params(STMT *stmt, SQLULEN row, char **finalquery,
   {
     DESCREC *aprec= desc_get_rec(stmt->apd, i, FALSE);
     DESCREC *iprec= desc_get_rec(stmt->ipd, i, FALSE);
-    char *pos;
+    const char *pos;
     MYSQL_BIND * bind;
 
     if (stmt->dummy_state != ST_DUMMY_PREPARED &&
@@ -338,7 +325,7 @@ SQLRETURN insert_params(STMT *stmt, SQLULEN row, char **finalquery,
     }
     else
     {
-      pos= get_param_pos(&stmt->query, i);
+      pos = stmt->query.get_param_pos(i);
       length= (uint) (pos-query);
 
       if (stmt->add_to_buffer(query, length) == NULL)
@@ -381,22 +368,7 @@ SQLRETURN insert_params(STMT *stmt, SQLULEN row, char **finalquery,
       goto memerror;
     }
 
-    if (finalquery_length!= NULL)
-    {
-      *finalquery_length = stmt->buf_pos();
-    }
-
-    if (finalquery!=NULL)
-    {
-      char *dupquery = NULL;
-
-      if (!(dupquery = (char*)myodbc_memdup(stmt->buf(),
-        stmt->buf_pos(), MYF(0))))
-      {
-        goto memerror;
-      }
-      *finalquery= dupquery;
-    }
+    finalquery = std::string(stmt->buf(), stmt->buf_pos());
   }
 
   return rc;
@@ -452,7 +424,7 @@ BOOL allocate_param_buffer(MYSQL_BIND *bind, unsigned long length)
   }
   else if(bind->buffer_length < length)
   {
-    bind->buffer= myodbc_realloc(bind->buffer, length, MYF(0));
+    bind->buffer= myodbc_realloc(bind->buffer, length);
     bind->buffer_length= length;
   }
 
@@ -654,7 +626,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
     case SQL_C_TYPE_DATE:
       {
         DATE_STRUCT *date= (DATE_STRUCT*) *res;
-        if (stmt->dbc->ds->min_date_to_zero && !date->year
+        if (stmt->dbc->ds.opt_MIN_DATE_TO_ZERO && !date->year
           && (date->month == date->day == 1))
         {
           *length = myodbc_snprintf(buff, buff_max, "0000-00-00");
@@ -687,7 +659,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
       {
         TIMESTAMP_STRUCT *time= (TIMESTAMP_STRUCT*) *res;
 
-        if (stmt->dbc->ds->min_date_to_zero &&
+        if (stmt->dbc->ds.opt_MIN_DATE_TO_ZERO &&
             !time->year && (time->month == time->day == 1))
         {
           *length = myodbc_snprintf(buff, buff_max, "0000-00-00 %02d:%02d:%02d",
@@ -1014,11 +986,6 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
         {
           TIMESTAMP_STRUCT ts;
 
-          /* For now I think it is safer to assume a dot is always a
-              separator */
-          /* aprec->concise_type == SQL_C_TYPE_TIMESTAMP
-          || aprec->concise_type == SQL_C_TIMESTAMP
-          || stmt->dbc->ds->dont_use_set_locale */
           str_to_ts(&ts, data, length, 1, TRUE);
 
           /* Overflow also possible if converted from other C types
@@ -1032,7 +999,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
               Not sure if fraction should be considered as an overflow.
               In fact specs say about "time fields only"
             */
-          if (!stmt->dbc->ds->no_date_overflow && TIME_FIELDS_NONZERO(ts))
+          if (!stmt->dbc->ds.opt_NO_DATE_OVERFLOW && TIME_FIELDS_NONZERO(ts))
           {
             return stmt->set_error("22008", "Date overflow", 0);
           }
@@ -1217,12 +1184,12 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
         {
           char *to= buff, *from= data;
           char *end= from+length;
-          char *local_thousands_sep= thousands_sep;
-          char *local_decimal_point= decimal_point;
-          uint local_thousands_sep_length= thousands_sep_length;
-          uint local_decimal_point_length= decimal_point_length;
+          const char *local_thousands_sep = thousands_sep.c_str();
+          const char *local_decimal_point = decimal_point.c_str();
+          uint local_thousands_sep_length = thousands_sep.length();
+          uint local_decimal_point_length = decimal_point.length();
 
-          if (!stmt->dbc->ds->dont_use_set_locale)
+          if (!stmt->dbc->ds.opt_NO_LOCALE)
           {
             /* force use of . as decimal point */
             local_thousands_sep= ",";
@@ -1328,7 +1295,7 @@ memerror:
 
 SQLRETURN do_my_pos_cursor_std( STMT *pStmt, STMT *pStmtCursor )
 {
-  char *          pszQuery= GET_QUERY(&pStmt->query);
+  const char *    pszQuery= GET_QUERY(&pStmt->query);
   std::string     query;
   SQLRETURN       nReturn;
 
@@ -1411,8 +1378,10 @@ BOOL map_error_to_param_status( SQLUSMALLINT *param_status_ptr, SQLRETURN rc)
 
 SQLRETURN my_SQLExecute( STMT *pStmt )
 {
-  char       *query, *cursor_pos;
-  int         dae_rec, is_select_stmt, one_of_params_not_succeded= 0;
+  std::string query;
+  char *cursor_pos;
+  int         dae_rec, one_of_params_not_succeded= 0;
+  bool is_select_stmt;
   int         connection_failure= 0;
   STMT       *pStmtCursor = pStmt;
   SQLRETURN   rc = 0;
@@ -1441,10 +1410,7 @@ SQLRETURN my_SQLExecute( STMT *pStmt )
   if ((cursor_pos= check_if_positioned_cursor_exists(pStmt, &pStmtCursor)))
   {
     /* Save a copy of the query, because we're about to modify it. */
-    if (copy_parsed_query(&pStmt->query, &pStmt->orig_query))
-    {
-      return pStmt->set_error(MYERR_S1001,NULL,4001);
-    }
+    pStmt->orig_query = pStmt->query;
 
     /* Cursor statement use mysql_use_result - thus any operation
        will couse commands out of sync */
@@ -1463,7 +1429,7 @@ SQLRETURN my_SQLExecute( STMT *pStmt )
 
   query= GET_QUERY(&pStmt->query);
 
-  is_select_stmt= is_select_statement(&pStmt->query);
+  is_select_stmt = pStmt->query.is_select_statement();
 
   /* if ssps is used for select query then convert it to non ssps
    single statement using UNION
@@ -1547,11 +1513,13 @@ SQLRETURN my_SQLExecute( STMT *pStmt )
          query. */
       if (is_select_stmt && row < pStmt->apd->array_size - 1)
       {
-        rc= insert_params(pStmt, row, NULL, &length);
+        // Just ignore the dummy query
+        std::string dummy;
+        rc= insert_params(pStmt, row, dummy);
       }
       else
       {
-        rc= insert_params(pStmt, row, &query, &length);
+        rc= insert_params(pStmt, row, query);
       }
 
       /* Setting status for this paramset*/
@@ -1589,23 +1557,18 @@ SQLRETURN my_SQLExecute( STMT *pStmt )
     {
       if (!connection_failure)
       {
-        rc= do_query(pStmt, query, length);
+        rc = do_query(pStmt, query);
       }
       else
       {
-        if (query != GET_QUERY(&pStmt->query))
-        {
-          x_free(query);
-        }
-
         /*
           If the original query was modified, we reset stmt->query so that the
           next execution re-starts with the original query.
         */
         if (GET_QUERY(&pStmt->orig_query))
         {
-          copy_parsed_query(&pStmt->orig_query, &pStmt->query);
-          reset_parsed_query(&pStmt->orig_query, NULL, NULL, NULL);
+          pStmt->query = pStmt->orig_query;
+          pStmt->orig_query.reset(NULL, NULL, NULL);
         }
 
         /* with broken connection we always return error for all next queries */
@@ -1748,17 +1711,16 @@ static SQLRETURN find_next_dae_param(STMT *stmt,  SQLPOINTER *token)
 
 static SQLRETURN execute_dae(STMT *stmt)
 {
-  SQLRETURN rc = SQL_ERROR;
-  char *query;
-  SQLULEN query_len = 0;
+  SQLRETURN rc;
+  std::string query;
 
   switch (stmt->dae_type)
   {
   case DAE_NORMAL:
-    query= GET_QUERY(&stmt->query);
-    if (!SQL_SUCCEEDED(rc= insert_params(stmt, 0, &query, &query_len)))
+    query = GET_QUERY(&stmt->query);
+    if (!SQL_SUCCEEDED(rc= insert_params(stmt, 0, query)))
       break;
-    rc= do_query(stmt, query, query_len);
+    rc= do_query(stmt, query);
     break;
   case DAE_SETPOS_INSERT:
     stmt->dae_type= DAE_SETPOS_DONE;

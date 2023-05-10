@@ -242,7 +242,7 @@ extern std::mutex global_fido_mutex;
 /* data-at-exec handling done for current SQLSetPos() call */
 #define DAE_SETPOS_DONE 10
 
-#define DONT_USE_LOCALE_CHECK(STMT) if (!STMT->dbc->ds->dont_use_set_locale)
+#define DONT_USE_LOCALE_CHECK(STMT) if (!STMT->dbc->ds.opt_NO_LOCALE)
 
 #if defined _WIN32
 
@@ -257,7 +257,7 @@ extern std::mutex global_fido_mutex;
 
   #define __LOCALE_RESTORE() \
     { \
-      setlocale(LC_NUMERIC, default_locale); \
+      setlocale(LC_NUMERIC, default_locale.c_str()); \
       _configthreadlocale(loc); \
     }
 
@@ -286,7 +286,7 @@ extern std::mutex global_fido_mutex;
 
   #define __LOCALE_RESTORE() \
       { \
-        setlocale(LC_NUMERIC, default_locale); \
+        setlocale(LC_NUMERIC, default_locale.c_str()); \
       }
 #endif
 
@@ -315,36 +315,8 @@ typedef struct {
   size_t offset; /* offset of field in struct */
 } desc_field;
 
-struct tempBuf
-{
-	char *buf;
-	size_t buf_len;
-  size_t cur_pos;
-
-	tempBuf(size_t size = 16384);
-
-  tempBuf(const tempBuf& b);
-
-  char* extend_buffer(char *to, size_t len);
-  char* extend_buffer(size_t len);
-
-  // Append data to the current buffer
-  char* add_to_buffer(const char *from, size_t len);
-
-  char* add_to_buffer(char *to, const char *from, size_t len);
-  void remove_trail_zeroes();
-  void reset();
-
-  operator bool();
-
-  void operator =(const tempBuf& b);
-
-	~tempBuf();
-};
-
 /* descriptor */
 struct STMT;
-
 
 struct DESCREC{
   /* ODBC spec fields */
@@ -635,14 +607,20 @@ struct DBC
 
   std::recursive_mutex lock;
 
-  bool               unicode = false;              // Whether SQL*ConnectW was used 
-  CHARSET_INFO       *ansi_charset_info = nullptr, // 'ANSI' charset (SQL_C_CHAR)
-                     *cxn_charset_info = nullptr;  // Connection charset ('ANSI' or utf-8)
-  MY_SYNTAX_MARKERS  *syntax = nullptr;
-  DataSource         *ds = nullptr;                // data source used to connect (parsed or stored)
-  SQLULEN            sql_select_limit = -1;        // value of the sql_select_limit currently set for a session
-                                                   //   (SQLULEN)(-1) if wasn't set
-  int                need_to_wakeup = 0;           // Connection have been put to the pool
+  // Whether SQL*ConnectW was used
+  bool          unicode = false;
+  // 'ANSI' charset (SQL_C_CHAR)
+  CHARSET_INFO  *ansi_charset_info = nullptr,
+  // Connection charset ('ANSI' or utf-8)
+                *cxn_charset_info = nullptr;
+  MY_SYNTAX_MARKERS *syntax = nullptr;
+  // data source used to connect (parsed or stored)
+  DataSource    ds;
+  // value of the sql_select_limit currently set for a session
+  //   (SQLULEN)(-1) if wasn't set
+  SQLULEN       sql_select_limit = -1;
+  // Connection have been put to the pool
+  int           need_to_wakeup = 0;
   bool               transaction_open = false;     // Flag to indicate whether we have a transaction open
   fido_callback_func fido_callback = nullptr;
 
@@ -691,7 +669,7 @@ struct MY_LIMIT_CLAUSE
 {
   unsigned long long  offset;
   unsigned int        row_count;
-  char                *begin, *end;
+  const char                *begin, *end;
   MY_LIMIT_CLAUSE(unsigned long long offs, unsigned int rc, char* b, char *e) :
     offset(offs), row_count(rc), begin(b), end(e)
   {}
@@ -700,16 +678,19 @@ struct MY_LIMIT_CLAUSE
 
 struct MY_LIMIT_SCROLLER
 {
-   char               *query, *offset_pos;
+   tempBuf buf;
+   char *query, *offset_pos;
    unsigned int       row_count;
    unsigned long long start_offset;
    unsigned long long next_offset, total_rows, query_len;
 
-   MY_LIMIT_SCROLLER() : query(NULL), offset_pos(NULL), row_count(0),
-                         start_offset(0), next_offset(0), total_rows(0),
-                         query_len(0)
-     {}
+   MY_LIMIT_SCROLLER() : buf(1024), query(buf.buf), offset_pos(query),
+                         row_count(0), start_offset(0), next_offset(0),
+                         total_rows(0), query_len(0)
+   {}
 
+   void extend_buf(size_t new_size) { buf.extend_buffer(new_size); }
+   void reset() { next_offset = 0; offset_pos = query; }
 };
 
 /* Statement primary key handler for cursors */
@@ -750,13 +731,13 @@ enum OUT_PARAM_STATE
 
 #define CAT_SCHEMA_SET_FULL(STMT, C, S, V, CZ, SZ, CL, SL) { \
   bool cat_is_set = false; \
-  if (!STMT->dbc->ds->no_catalog && (CL || !SL)) \
+  if (!STMT->dbc->ds.opt_NO_CATALOG && (CL || !SL)) \
   { \
     C = V;\
     S = nullptr; \
     cat_is_set = true; \
   } \
-  if (!STMT->dbc->ds->no_schema && !cat_is_set && SZ) \
+  if (!STMT->dbc->ds.opt_NO_SCHEMA && !cat_is_set && SZ) \
   { \
     S = V; \
     C = nullptr; \
@@ -989,14 +970,52 @@ struct ODBC_STMT
 };
 
 
+class charPtrBuf {
+  private:
+
+  std::vector<char*> m_buf;
+  MYSQL_ROW m_external_val = nullptr;
+
+  public:
+
+  void reset() {
+     m_buf.clear();
+     m_external_val = nullptr;
+   }
+
+   void set_size(size_t size) {
+     m_buf.resize(size);
+     m_external_val = nullptr;
+   }
+
+  void set(const void* data, size_t size) {
+    set_size(size);
+    char *buf = (char*)data;
+    std::vector<char*> tmpVec(size, buf);
+    m_buf = tmpVec;
+  }
+
+  operator MYSQL_ROW() const {
+    if (m_external_val || m_buf.size())
+      return (MYSQL_ROW)(m_external_val ? m_external_val : m_buf.data());
+    return nullptr;
+  }
+
+  charPtrBuf &operator=(const MYSQL_ROW external_val) {
+    reset();
+    m_external_val = external_val;
+    return *this;
+  }
+};
+
 struct STMT
 {
   DBC               *dbc;
   MYSQL_RES         *result;
-  MEM_ROOT          alloc_root;
   my_bool           fake_result;
-  MYSQL_ROW	        array; // Holds row data directly from mysql resultset
-  MYSQL_ROW         result_array, current_values;
+  charPtrBuf        array;
+  charPtrBuf        result_array;
+  MYSQL_ROW         current_values;
   MYSQL_ROW         (*fix_fields)(STMT *stmt, MYSQL_ROW row);
   MYSQL_FIELD	      *fields;
   MYSQL_ROW_OFFSET  end_of_set;
@@ -1007,6 +1026,7 @@ struct STMT
   MYERROR           error;
   STMT_OPTIONS      stmt_options;
   std::string       table_name;
+  std::string       catalog_name;
 
   MY_PARSED_QUERY	query, orig_query;
   std::vector<MYSQL_BIND> param_bind;
@@ -1100,7 +1120,7 @@ struct STMT
   */
   SQLRETURN set_error(const char *state);
 
-  STMT(DBC *d) : dbc(d), result(NULL), fake_result(FALSE), array(NULL), result_array(NULL),
+  STMT(DBC *d) : dbc(d), result(NULL), array(), result_array(),
     current_values(NULL), fields(NULL), end_of_set(NULL),
     tempbuf(),
     stmt_options(dbc->stmt_options), lengths(nullptr), affected_rows(0),
@@ -1122,8 +1142,6 @@ struct STMT
     imp_ard(ard), imp_apd(apd)
   {
     //list.data = this;
-    init_parsed_query(&query);
-    init_parsed_query(&orig_query);
     allocate_param_bind(10);
 
     LOCK_DBC(dbc);
@@ -1175,9 +1193,9 @@ namespace myodbc {
     {
       SQLWSTRING  string_connect_in;
 
-      assert(params->driver && *params->driver);
-      ds_set_wstrattr(&params->name, NULL);
-      ds_to_kvpair(params, string_connect_in, ';');
+      assert((bool)params->opt_DRIVER);
+      params->opt_DSN = nullptr;
+      string_connect_in = params->to_kvpair(';');
       if (SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc) != SQL_SUCCESS)
       {
         throw MYERROR(SQL_HANDLE_ENV, henv, SQL_ERROR);
@@ -1228,8 +1246,7 @@ namespace myodbc {
   };
 };
 
-extern char *default_locale, *decimal_point, *thousands_sep;
-extern uint decimal_point_length,thousands_sep_length;
+extern std::string thousands_sep, decimal_point, default_locale;
 #ifndef _UNIX_
 extern HINSTANCE NEAR s_hModule;  /* DLL handle. */
 #endif
@@ -1255,9 +1272,7 @@ extern std::string default_plugin_location;
 # define MYSQL_TYPE_BIT 16
 #endif
 
-MY_LIMIT_CLAUSE find_position4limit(CHARSET_INFO* cs, char *query, char * query_end);
-void          delete_param_bind(DYNAMIC_ARRAY *param_bind);
-
+MY_LIMIT_CLAUSE find_position4limit(CHARSET_INFO* cs, const char *query, const char * query_end);
 
 #include "myutil.h"
 #include "util/stringutil.h"
@@ -1322,7 +1337,7 @@ SQLRETURN SQL_API MySQLGetStmtAttr(SQLHSTMT hstmt, SQLINTEGER Attribute,
                                   SQLINTEGER *StringLengthPtr);
 SQLRETURN SQL_API MySQLGetTypeInfo(SQLHSTMT hstmt, SQLSMALLINT fSqlType);
 SQLRETURN SQL_API MySQLPrepare(SQLHSTMT hstmt, SQLCHAR *query, SQLINTEGER len,
-                               bool dupe, bool reset_select_limit,
+                               bool reset_select_limit,
                                bool force_prepare);
 SQLRETURN SQL_API MySQLPrimaryKeys(SQLHSTMT hstmt,
                                    SQLCHAR *catalog, SQLSMALLINT catalog_len,
