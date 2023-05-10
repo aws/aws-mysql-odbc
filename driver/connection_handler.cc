@@ -57,7 +57,7 @@ CONNECTION_HANDLER::CONNECTION_HANDLER(DBC* dbc) : dbc{dbc} {}
 CONNECTION_HANDLER::~CONNECTION_HANDLER() = default;
 
 SQLRETURN CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled, bool is_monitor_connection) {
-    return dbc_ptr->connect(ds, failover_enabled);
+    return dbc_ptr->connect(ds, failover_enabled, is_monitor_connection);
 }
 
 CONNECTION_PROXY* CONNECTION_HANDLER::connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds, bool is_monitor_connection) {
