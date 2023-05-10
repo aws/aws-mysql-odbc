@@ -149,7 +149,7 @@ void fix_result_types(STMT *stmt)
   MYSQL_RES *result= stmt->result;
   DESCREC *irrec;
   MYSQL_FIELD *field;
-  int capint32= stmt->dbc->ds->limit_column_size ? 1 : 0;
+  int capint32= stmt->dbc->ds.opt_COLUMN_SIZE_S32 ? 1 : 0;
 
   stmt->state= ST_EXECUTED;  /* Mark set found */
 
@@ -356,27 +356,6 @@ char *fix_str(char *to, const char *from, int length)
 
 
 /*
-  @type    : myodbc internal
-  @purpose : duplicate the string
-*/
-
-char *dupp_str(char *from,int length)
-{
-    char *to;
-    if ( !from )
-        return myodbc_strdup("",MYF(MY_WME));
-    if ( length == SQL_NTS )
-        length= strlen(from);
-    if ( (to= (char*)myodbc_malloc(length+1,MYF(MY_WME))) )
-    {
-        memcpy(to,from,length);
-        to[length]= 0;
-    }
-    return to;
-}
-
-
-/*
   Copy a field to a byte string.
 
   @param[in]     stmt         Pointer to statement
@@ -467,7 +446,7 @@ copy_ansi_result(STMT *stmt,
 
   my_bool convert_binary= (field->charsetnr == BINARY_CHARSET_NUMBER ? 1 : 0) &&
                           (field->org_table_length == 0 ? 1 : 0) &&
-                          stmt->dbc->ds->handle_binary_as_char;
+                          stmt->dbc->ds.opt_NO_BINARY_RESULT;
 
   CHARSET_INFO *to_cs= stmt->dbc->ansi_charset_info,
                *from_cs= get_charset(field->charsetnr && (!convert_binary) ?
@@ -1178,7 +1157,7 @@ SQLSMALLINT get_sql_data_type(STMT *stmt, MYSQL_FIELD *field, char *buff)
 {
   my_bool field_is_binary= (field->charsetnr == BINARY_CHARSET_NUMBER ? 1 : 0) &&
                            ((field->org_table_length > 0 ? 1 : 0) ||
-                            !stmt->dbc->ds->handle_binary_as_char);
+                            !stmt->dbc->ds.opt_NO_BINARY_RESULT);
 
   switch (field->type) {
   case MYSQL_TYPE_BIT:
@@ -1236,7 +1215,7 @@ SQLSMALLINT get_sql_data_type(STMT *stmt, MYSQL_FIELD *field, char *buff)
   case MYSQL_TYPE_LONGLONG:
     if (buff)
     {
-      if (stmt->dbc->ds->change_bigint_columns_to_int)
+      if (stmt->dbc->ds.opt_NO_BIGINT)
         buff= myodbc_stpmov(buff, "int");
       else
         buff= myodbc_stpmov(buff, "bigint");
@@ -1245,7 +1224,7 @@ SQLSMALLINT get_sql_data_type(STMT *stmt, MYSQL_FIELD *field, char *buff)
         (void)myodbc_stpmov(buff, " unsigned");
     }
 
-    if (stmt->dbc->ds->change_bigint_columns_to_int)
+    if (stmt->dbc->ds.opt_NO_BIGINT)
       return SQL_INTEGER;
 
     return SQL_BIGINT;
@@ -1470,7 +1449,7 @@ SQLULEN fill_column_size_buff(char *buff, size_t buff_size, STMT *stmt, MYSQL_FI
 */
 static SQLLEN cap_length(STMT *stmt, unsigned long real_length)
 {
-  if (stmt->dbc->ds->limit_column_size != 0 && real_length > INT_MAX32)
+  if (stmt->dbc->ds.opt_COLUMN_SIZE_S32 != 0 && real_length > INT_MAX32)
     return INT_MAX32;
 
   return real_length;
@@ -1526,7 +1505,7 @@ SQLULEN get_column_size(STMT *stmt, MYSQL_FIELD *field)
     return 0;
 
   case MYSQL_TYPE_LONGLONG:
-    if (stmt->dbc->ds->change_bigint_columns_to_int)
+    if (stmt->dbc->ds.opt_NO_BIGINT)
       return 10; /* same as MYSQL_TYPE_LONG */
     else
       return (field->flags & UNSIGNED_FLAG) ? 20 : 19;
@@ -1648,7 +1627,7 @@ SQLSMALLINT get_decimal_digits(STMT *stmt __attribute__((unused)),
 */
 SQLLEN get_transfer_octet_length(STMT *stmt, MYSQL_FIELD *field)
 {
-  int capint32= stmt->dbc->ds->limit_column_size ? 1 : 0;
+  int capint32= stmt->dbc->ds.opt_COLUMN_SIZE_S32 ? 1 : 0;
   SQLLEN length;
   /* cap at INT_MAX32 due to signed value */
   if (field->length > INT_MAX32)
@@ -1708,7 +1687,7 @@ SQLLEN get_transfer_octet_length(STMT *stmt, MYSQL_FIELD *field)
     return (field->length + 7) / 8;
 
   case MYSQL_TYPE_STRING:
-    if (stmt->dbc->ds->pad_char_to_full_length)
+    if (stmt->dbc->ds.opt_PAD_SPACE)
     {
       unsigned int csmaxlen = get_charset_maxlen(field->charsetnr);
       if (!csmaxlen)
@@ -1756,7 +1735,7 @@ SQLLEN get_transfer_octet_length(STMT *stmt, MYSQL_FIELD *field)
 */
 SQLLEN get_display_size(STMT *stmt __attribute__((unused)),MYSQL_FIELD *field)
 {
-  int capint32= stmt->dbc->ds->limit_column_size ? 1 : 0;
+  int capint32 = stmt->dbc->ds.opt_COLUMN_SIZE_S32 ? 1 : 0;
   CHARSET_INFO *charset= get_charset(field->charsetnr, MYF(0));
   unsigned int mbmaxlen= charset ? charset->mbmaxlen : 1;
 
@@ -2148,7 +2127,7 @@ SQLLEN get_bookmark_value(SQLSMALLINT fCType, SQLPOINTER rgbValue)
     return atol((const char*) rgbValue);
 
   case SQL_C_WCHAR:
-    return sqlwchartoul((SQLWCHAR *)rgbValue, NULL);
+    return sqlwchartoul((SQLWCHAR *)rgbValue);
 
   case SQL_C_TINYINT:
   case SQL_C_STINYINT:
@@ -2585,14 +2564,82 @@ int myodbc_casecmp(const char *s, const char *t, uint len)
 
 
 /*
-  @type    : myodbc internal
-  @purpose : frees the result and additional allocated buffers for STMT
+  @type    : myodbc3 internal
+  @purpose : logs the queries sent to server
 */
 
-void free_internal_result_buffers(STMT *stmt)
+void query_print(FILE *log_file,char *query)
 {
-  stmt->alloc_root.Clear();
+    if ( log_file && query )
+    {
+      /*
+        because of bug 68201 we bring the result of time() call
+        to 64-bits in any case
+      */
+      long long time_now= time(NULL);
+
+      fprintf(log_file, "%lld:%s;\n", time_now, query);
+    }
 }
+
+
+FILE *init_query_log(void)
+{
+    FILE *query_log;
+#ifdef _WIN32
+    char filename[MAX_PATH];
+    size_t buffsize;
+
+    getenv_s(&buffsize, filename, sizeof(filename), "TEMP");
+
+    if (buffsize)
+    {
+      sprintf(filename + buffsize - 1, "\\%s", DRIVER_QUERY_LOGFILE);
+    }
+    else
+    {
+      sprintf(filename, "c:\\%s", DRIVER_QUERY_LOGFILE);
+    }
+
+    if ( (query_log= fopen(filename, "a+")) )
+#else
+    if ( (query_log= fopen(DRIVER_QUERY_LOGFILE, "a+")) )
+#endif
+    {
+        fprintf(query_log,"-- Query logging\n");
+        fprintf(query_log,"--\n");
+        fprintf(query_log,"--  Driver name: %s  Version: %s\n",DRIVER_NAME,
+                DRIVER_VERSION);
+#ifdef HAVE_LOCALTIME_R
+        {
+            time_t now= time(NULL);
+            struct tm start;
+            localtime_r(&now,&start);
+
+            fprintf(query_log,"-- Timestamp: %02d%02d%02d %2d:%02d:%02d\n",
+                    start.tm_year % 100,
+                    start.tm_mon+1,
+                    start.tm_mday,
+                    start.tm_hour,
+                    start.tm_min,
+                    start.tm_sec);
+        }
+#endif /* HAVE_LOCALTIME_R */
+      fprintf(query_log,"\n");
+    }
+    return query_log;
+}
+
+
+void end_query_log(FILE *query_log)
+{
+  if ( query_log )
+  {
+      fclose(query_log);
+      query_log= 0;
+  }
+}
+
 
 my_bool is_minimum_version(const char *server_version,const char *version)
 {
@@ -3790,10 +3837,12 @@ get_fractional_part(const char * str, int len, BOOL dont_use_set_locale,
   }
   else
   {
-    decpoint_len= decimal_point_length;
+    decpoint_len = decimal_point.length();
+    const char *locale_decimal_point = decimal_point.c_str();
     while (*str && str < end)
     {
-      if (str[0] == decimal_point[0] && is_prefix(str,decimal_point) )
+      if (str[0] == locale_decimal_point[0] &&
+          is_prefix(str, locale_decimal_point))
       {
         decptr= str;
         break;
@@ -3901,6 +3950,9 @@ tempBuf::tempBuf(const tempBuf& b)
   *this = b;
 }
 
+tempBuf::tempBuf(const char* src, size_t len) {
+  add_to_buffer(src, len);
+}
 
 char *tempBuf::extend_buffer(size_t len)
 {
@@ -4000,7 +4052,7 @@ void tempBuf::operator=(const tempBuf& b)
 
   @return the position where LIMIT OFFS, ROWS is ending
 */
-char* get_limit_numbers(CHARSET_INFO* cs, char *query, char * query_end,
+const char* get_limit_numbers(CHARSET_INFO* cs, const char *query, const char * query_end,
                        unsigned long long *offs_out, unsigned int *rows_out)
 {
   char digit_buf[30];
@@ -4066,7 +4118,7 @@ char* get_limit_numbers(CHARSET_INFO* cs, char *query, char * query_end,
   @return position of "FOR UPDATE" or "LOCK IN SHARE MODE" inside a query.
           Otherwise returns NULL.
 */
-const char* check_row_locking(CHARSET_INFO* cs, char * query, char * query_end, BOOL is_share_mode)
+const char* check_row_locking(CHARSET_INFO* cs, const char * query, const char * query_end, BOOL is_share_mode)
 {
   const char *before_token= query_end;
   const char *token= NULL;
@@ -4092,7 +4144,7 @@ const char* check_row_locking(CHARSET_INFO* cs, char * query, char * query_end, 
 }
 
 
-MY_LIMIT_CLAUSE find_position4limit(CHARSET_INFO* cs, char *query, char * query_end)
+MY_LIMIT_CLAUSE find_position4limit(CHARSET_INFO* cs, const char *query, const char * query_end)
 {
   MY_LIMIT_CLAUSE result(0,0,NULL,NULL);
   char *limit_pos = NULL;

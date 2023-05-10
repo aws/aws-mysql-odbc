@@ -53,6 +53,12 @@
 #define reset_ptr(x) {if (x) x= 0;}
 #define digit(A) ((int) (A - '0'))
 
+#define MYLOG_QUERY(A,B) {if ((A)->dbc->ds.opt_LOG_QUERY) \
+               query_print((A)->dbc->query_log,(char*) B);}
+
+#define MYLOG_DBC_QUERY(A,B) {if((A)->ds.opt_LOG_QUERY) \
+               query_print((A)->query_log,(char*) B);}
+
 /* A few character sets we care about. */
 #define ASCII_CHARSET_NUMBER  11
 #define BINARY_CHARSET_NUMBER 63
@@ -120,7 +126,7 @@ typedef char * DYNAMIC_ELEMENT;
 */
 
 SQLRETURN         my_SQLPrepare (SQLHSTMT hstmt, SQLCHAR *szSqlStr,
-                                 SQLINTEGER cbSqlStr, bool dupe,
+                                 SQLINTEGER cbSqlStr,
                                  bool reset_select_limit,
                                  bool force_prepare);
 SQLRETURN         my_SQLExecute         (STMT * stmt);
@@ -128,9 +134,8 @@ SQLRETURN SQL_API my_SQLFreeStmt        (SQLHSTMT hstmt,SQLUSMALLINT fOption);
 SQLRETURN SQL_API my_SQLFreeStmtExtended(SQLHSTMT hstmt, SQLUSMALLINT fOption,
                                          SQLUSMALLINT fExtra);
 SQLRETURN SQL_API my_SQLAllocStmt       (SQLHDBC hdbc,SQLHSTMT *phstmt);
-SQLRETURN         do_query              (STMT *stmt,char *query, SQLULEN query_length);
-SQLRETURN         insert_params         (STMT *stmt, SQLULEN row, char **finalquery,
-                                        SQLULEN *length);
+SQLRETURN         do_query              (STMT *stmt, std::string query);
+SQLRETURN         insert_params         (STMT *stmt, SQLULEN row, std::string &finalquery);
 void      myodbc_link_fields (STMT *stmt,MYSQL_FIELD *fields,uint field_count);
 void      fix_row_lengths   (STMT *stmt, const long* fix_rules, uint row, uint field_count);
 void      fix_result_types  (STMT *stmt);
@@ -144,8 +149,6 @@ SQLRETURN my_pos_update_std (STMT *stmt,STMT *stmtParam,
 char *    check_if_positioned_cursor_exists (STMT *stmt, STMT **stmtNew);
 SQLRETURN insert_param  (STMT *stmt, MYSQL_BIND *bind, DESC *apd,
                         DESCREC *aprec, DESCREC *iprec, SQLULEN row);
-
-void reset_getdata_position   (STMT *stmt);
 
 SQLRETURN set_sql_select_limit(DBC *dbc, SQLULEN new_value, my_bool reqLock);
 SQLRETURN exec_stmt_query(STMT *stmt, const char *query, SQLULEN query_length,
@@ -312,7 +315,10 @@ void *ptr_offset_adjust   (void *ptr, SQLULEN *bind_offset,
                           SQLINTEGER bind_type, SQLINTEGER default_size,
                           SQLULEN row);
 
-void free_internal_result_buffers(STMT *stmt);
+/* Functions used when debugging */
+void query_print          (FILE *log_file,char *query);
+FILE *init_query_log      (void);
+void end_query_log        (FILE *query_log);
 
 enum enum_field_types map_sql2mysql_type(SQLSMALLINT sql_type);
 
@@ -424,16 +430,16 @@ void stmt_result_free(STMT * stmt)
 
 
 /* scroller-related functions */
-void          scroller_reset      (STMT *stmt);
 unsigned int  calc_prefetch_number(unsigned int selected, SQLULEN app_fetchs,
                                    SQLULEN max_rows);
 BOOL          scroller_exists     (STMT * stmt);
-void          scroller_create     (STMT * stmt, char *query, SQLULEN len);
+void          scroller_create     (STMT * stmt, const char *query, SQLULEN len);
 
 unsigned long long  scroller_move (STMT * stmt);
 
 SQLRETURN     scroller_prefetch   (STMT * stmt);
-BOOL          scrollable          (STMT * stmt, char * query, char * query_end);
+bool          scrollable          (STMT * stmt, const char * query,
+                                  const char * query_end);
 
 /* my_prepared_stmt.c */
 void        ssps_init             (STMT *stmt);
