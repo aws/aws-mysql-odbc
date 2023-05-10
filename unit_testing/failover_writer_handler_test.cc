@@ -126,11 +126,11 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBEmptyReaderResult) {
     EXPECT_CALL(*mock_reader_handler, get_reader_connection(_, _))
         .WillRepeatedly(Return(std::make_shared<READER_FAILOVER_RESULT>(false, nullptr, nullptr)));
 
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(writer_host, nullptr, false))
         .WillRepeatedly(Return(mock_writer_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_a_host, nullptr, false))
         .WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_b_host, nullptr, false))
         .WillRepeatedly(Return(nullptr));
 
     FAILOVER_WRITER_HANDLER writer_handler(
@@ -170,9 +170,9 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
 
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(writer_host, nullptr, false))
         .WillRepeatedly(Return(mock_writer_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_b_host, nullptr, false))
         .WillRepeatedly(Return(nullptr));
 
     EXPECT_CALL(*mock_ts, get_topology(mock_writer_proxy, true))
@@ -220,12 +220,12 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_TaskBDefers) {
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
 
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(writer_host, nullptr, false))
         .WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_writer_proxy;
         }));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_b_host, nullptr, false))
         .WillRepeatedly(Return(nullptr));
 
     EXPECT_CALL(*mock_ts, get_topology(_, true))
@@ -281,13 +281,13 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
 
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(writer_host, nullptr, false))
         .WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_writer_proxy;
         }));
 
-    EXPECT_CALL(*mock_connection_handler, connect(new_writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(new_writer_host, nullptr, false))
         .WillRepeatedly(Return(mock_new_writer_proxy));
 
     EXPECT_CALL(*mock_ts, get_topology(mock_writer_proxy, true))
@@ -341,12 +341,12 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_TaskADefers) {
     EXPECT_CALL(*mock_reader_a_proxy, is_connected()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mock_reader_a_proxy, mock_connection_proxy_destructor());
 
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(writer_host, nullptr, false))
         .WillOnce(Return(mock_writer_proxy))
         .WillRepeatedly(Return(nullptr)); // Connection is deleted after first connect
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_a_host, nullptr, false))
         .WillRepeatedly(Return(mock_reader_a_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(new_writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(new_writer_host, nullptr, false))
         .WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_new_writer_proxy;
@@ -403,16 +403,16 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_FailoverTimeout) {
 
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(writer_host, nullptr, false))
         .WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_writer_proxy;
         }));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_a_host, nullptr, false))
         .WillRepeatedly(Return(mock_reader_a_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_b_host, nullptr, false))
         .WillRepeatedly(Return(mock_reader_b_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(new_writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(new_writer_host, nullptr, false))
         .WillRepeatedly(Invoke([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             return mock_new_writer_proxy;
@@ -461,13 +461,13 @@ TEST_F(FailoverWriterHandlerTest, FailedToConnect_TaskAFailed_TaskBWriterFailed)
 
     EXPECT_CALL(*mock_reader_b_proxy, is_connected()).WillRepeatedly(Return(true));
 
-    EXPECT_CALL(*mock_connection_handler, connect(writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(writer_host, nullptr, false))
         .WillRepeatedly(Return(nullptr));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_a_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_a_host, nullptr, false))
         .WillRepeatedly(Return(mock_reader_a_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(reader_b_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(reader_b_host, nullptr, false))
         .WillRepeatedly(Return(mock_reader_b_proxy));
-    EXPECT_CALL(*mock_connection_handler, connect(new_writer_host, nullptr))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(new_writer_host, nullptr, false))
         .WillRepeatedly(Return(nullptr));
 
     EXPECT_CALL(*mock_ts, get_topology(_, _))

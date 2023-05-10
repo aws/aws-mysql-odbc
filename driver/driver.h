@@ -656,7 +656,7 @@ struct DBC
   void remove_desc(DESC *desc);
   SQLRETURN set_error(char *state, const char *message, uint errcode);
   SQLRETURN set_error(char *state);
-  SQLRETURN connect(DataSource *dsrc, bool failover_enabled);
+  SQLRETURN connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_connection = false);
   void execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
     MYSQL_BIND *param_bind, MYSQL_BIND *result_bind);
   void init_proxy_chain(DataSource *dsrc);
