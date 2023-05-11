@@ -51,8 +51,8 @@ class CONNECTION_HANDLER {
         CONNECTION_HANDLER(DBC* dbc);
         virtual ~CONNECTION_HANDLER();
 
-        virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled);
-        virtual CONNECTION_PROXY* connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds);
+        virtual SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled, bool is_monitor_connection = false);
+        virtual CONNECTION_PROXY* connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds, bool is_monitor_connection = false);
         void update_connection(CONNECTION_PROXY* new_connection, const std::string& new_host_name);
 
     private:

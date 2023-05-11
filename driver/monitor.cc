@@ -226,12 +226,12 @@ bool MONITOR::connect() {
     } else {
         // cannot change login_timeout here because no access to dbc
         this->ds->read_timeout = timeout_sec;
+        this->ds->write_timeout = timeout_sec;
     }
 
-    this->ds->enable_cluster_failover = false;
     this->ds->enable_failure_detection= false;
 
-    this->connection_proxy = this->connection_handler->connect(this->host, this->ds);
+    this->connection_proxy = this->connection_handler->connect(this->host, this->ds, true);
     if (!this->connection_proxy) {
         return false;
     }
