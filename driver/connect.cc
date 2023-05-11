@@ -326,7 +326,7 @@ class dbc_guard
   @return Standard SQLRETURN code. If it is @c SQL_SUCCESS or @c
   SQL_SUCCESS_WITH_INFO, a connection has been established.
 */
-SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
+SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_connection)
 {
   SQLRETURN rc = SQL_SUCCESS;
   unsigned long flags;
@@ -385,7 +385,12 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled)
       read_timeout = get_network_timeout(dsrc->network_timeout);
       write_timeout = read_timeout;
   }
-  else
+  else if (is_monitor_connection)
+  {
+      connect_timeout = get_network_timeout(dsrc->read_timeout);
+      read_timeout = get_network_timeout(dsrc->read_timeout);
+      write_timeout = get_network_timeout(dsrc->write_timeout);
+  } else
   {
       connect_timeout = get_connect_timeout(login_timeout);
       read_timeout = get_network_timeout(dsrc->read_timeout);
