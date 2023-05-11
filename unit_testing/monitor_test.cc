@@ -144,7 +144,7 @@ TEST_F(MonitorTest, StopMonitoringTwiceWithSameContext) {
 TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
     mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
-    EXPECT_CALL(*mock_connection_handler, connect(host, _))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(host, _, true))
         .WillOnce(Return(mock_proxy));
 
     EXPECT_CALL(*mock_proxy, is_connected()).WillRepeatedly(Return(true));
@@ -158,7 +158,7 @@ TEST_F(MonitorTest, IsConnectionHealthyWithNoExistingConnection) {
 TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
     mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
-    EXPECT_CALL(*mock_connection_handler, connect(host, _))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(host, _, true))
         .WillRepeatedly(Return(mock_proxy));
 
     EXPECT_CALL(*mock_proxy, is_connected())
@@ -181,7 +181,7 @@ TEST_F(MonitorTest, IsConnectionHealthyOrUnhealthy) {
 TEST_F(MonitorTest, IsConnectionHealthyAfterFailedConnection) {
     mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
-    EXPECT_CALL(*mock_connection_handler, connect(host, _))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(host, _, true))
         .WillOnce(Return(mock_proxy));
 
     EXPECT_CALL(*mock_proxy, is_connected())
@@ -226,7 +226,7 @@ TEST_F(MonitorTest, RunWithoutContext) {
 TEST_F(MonitorTest, RunWithContext) {
     auto proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
-    EXPECT_CALL(*mock_connection_handler, connect(host, _))
+    EXPECT_CALL(*mock_connection_handler, connect_impl(host, _, true))
         .WillOnce(Return(proxy));
 
     EXPECT_CALL(*proxy, is_connected()).WillRepeatedly(Return(true));
@@ -280,10 +280,11 @@ TEST_F(MonitorTest, ZeroEFMTimeout) {
     EXPECT_CALL(*proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_connection_handler,
-                connect(host,
+                connect_impl(host,
                     AllOf(
                         Field("connect_timeout",&DataSource::connect_timeout, Eq(failure_detection_timeout_default)),
-                        Field("network_timeout", &DataSource::network_timeout, Eq(failure_detection_timeout_default)))))
+                        Field("network_timeout", &DataSource::network_timeout, Eq(failure_detection_timeout_default))),
+                    true))
         .WillOnce(Return(proxy));
 
     EXPECT_CALL(*proxy, ping()).WillRepeatedly(Return(0));
@@ -305,10 +306,11 @@ TEST_F(MonitorTest, NonZeroEFMTimeout) {
     EXPECT_CALL(*proxy, is_connected()).WillRepeatedly(Return(true));
 
     EXPECT_CALL(*mock_connection_handler,
-                connect(host,
+                connect_impl(host,
                     AllOf(
                         Field("connect_timeout", &DataSource::connect_timeout, Eq(timeout.count())),
-                        Field("network_timeout", &DataSource::network_timeout, Eq(timeout.count())))))
+                        Field("network_timeout", &DataSource::network_timeout, Eq(timeout.count()))),
+                    true))
         .WillOnce(Return(proxy));
 
     EXPECT_CALL(*proxy, ping()).WillRepeatedly(Return(0));

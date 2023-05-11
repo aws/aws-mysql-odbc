@@ -117,9 +117,19 @@ class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
 
 class MOCK_CONNECTION_HANDLER : public CONNECTION_HANDLER {
  public:
+
+    CONNECTION_PROXY* connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds, bool is_monitor_connection = false) {
+        return connect_impl(host_info, ds, is_monitor_connection);
+    }
+    
+    SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled, bool is_monitor_connection = false) {
+        return do_connect_impl(dbc_ptr, ds, failover_enabled, is_monitor_connection);
+    }
+
     MOCK_CONNECTION_HANDLER() : CONNECTION_HANDLER(nullptr) {}
-    MOCK_METHOD(CONNECTION_PROXY*, connect, (std::shared_ptr<HOST_INFO>, DataSource*));
-    MOCK_METHOD(SQLRETURN, do_connect, (DBC*, DataSource*, bool));
+    MOCK_METHOD(CONNECTION_PROXY*, connect_impl, (std::shared_ptr<HOST_INFO>, DataSource*, bool));
+    MOCK_METHOD(SQLRETURN, do_connect_impl, (DBC*, DataSource*, bool, bool));
+
 };
 
 class MOCK_FAILOVER_HANDLER : public FAILOVER_HANDLER {

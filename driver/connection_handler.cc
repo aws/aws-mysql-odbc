@@ -56,11 +56,11 @@ CONNECTION_HANDLER::CONNECTION_HANDLER(DBC* dbc) : dbc{dbc} {}
 
 CONNECTION_HANDLER::~CONNECTION_HANDLER() = default;
 
-SQLRETURN CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled) {
-    return dbc_ptr->connect(ds, failover_enabled);
+SQLRETURN CONNECTION_HANDLER::do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled, bool is_monitor_connection) {
+    return dbc_ptr->connect(ds, failover_enabled, is_monitor_connection);
 }
 
-CONNECTION_PROXY* CONNECTION_HANDLER::connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds) {
+CONNECTION_PROXY* CONNECTION_HANDLER::connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds, bool is_monitor_connection) {
 
     if (dbc == nullptr || host_info == nullptr) {
         return nullptr;
@@ -76,7 +76,7 @@ CONNECTION_PROXY* CONNECTION_HANDLER::connect(std::shared_ptr<HOST_INFO> host_in
 
     CONNECTION_PROXY* new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
-    const SQLRETURN rc = do_connect(dbc_clone, ds_to_use, ds_to_use->enable_cluster_failover);
+    const SQLRETURN rc = do_connect(dbc_clone, ds_to_use, ds_to_use->enable_cluster_failover, is_monitor_connection);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
         new_connection = dbc_clone->connection_proxy;
