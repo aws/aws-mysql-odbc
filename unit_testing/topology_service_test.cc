@@ -51,8 +51,8 @@ namespace {
     char* reader2[4] = { "replica-instance-2", "Replica", "2020-09-15 17:51:53.0", "13.5" };
     char* writer[4] = { "writer-instance", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
     char* writer1[4] = { "writer-instance-1", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
-    char* writer2[4] = { "writer-instance-2", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
-    char* writer3[4] = { "writer-instance-3", WRITER_SESSION_ID, "2020-09-15 17:51:53.0", "13.5" };
+    char* writer2[4] = { "writer-instance-2", WRITER_SESSION_ID, "2020-09-15 17:51:54.0", "13.5" };
+    char* writer3[4] = { "writer-instance-3", WRITER_SESSION_ID, "2020-09-15 17:51:55.0", "13.5" };
 }  // namespace
 
 class TopologyServiceTest : public testing::Test {
@@ -101,7 +101,6 @@ TEST_F(TopologyServiceTest, TopologyQuery) {
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mock_proxy);
     ASSERT_NE(nullptr, topology);
 
-    EXPECT_FALSE(topology->is_multi_writer_cluster);
     EXPECT_EQ(3, topology->total_hosts());
     EXPECT_EQ(2, topology->num_readers());
 
@@ -116,7 +115,7 @@ TEST_F(TopologyServiceTest, TopologyQuery) {
     EXPECT_EQ("13.5", writer_host->replica_lag);
 }
 
-TEST_F(TopologyServiceTest, MultiWriter) {
+TEST_F(TopologyServiceTest, StaleRecord) {
     EXPECT_CALL(*mock_proxy, query(StrEq(RETRIEVE_TOPOLOGY_SQL)))
         .WillRepeatedly(Return(0));
     EXPECT_CALL(*mock_proxy, fetch_row(_))
@@ -128,9 +127,8 @@ TEST_F(TopologyServiceTest, MultiWriter) {
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mock_proxy);
     ASSERT_NE(nullptr, topology);
 
-    EXPECT_TRUE(topology->is_multi_writer_cluster);
-    EXPECT_EQ(3, topology->total_hosts());
-    EXPECT_EQ(2, topology->num_readers()); // 2 writers are marked as readers
+    EXPECT_EQ(1, topology->total_hosts());
+    EXPECT_EQ(0, topology->num_readers());
 
     std::shared_ptr<HOST_INFO> writer_host = topology->get_writer();
     ASSERT_NE(nullptr, writer_host);
@@ -139,7 +137,7 @@ TEST_F(TopologyServiceTest, MultiWriter) {
     EXPECT_EQ(1234, writer_host->get_port());
     EXPECT_EQ("writer-instance-1", writer_host->instance_name);
     EXPECT_EQ(WRITER_SESSION_ID, writer_host->session_id);
-    EXPECT_EQ("2020-09-15 17:51:53.0", writer_host->last_updated);
+    EXPECT_EQ("2020-09-15 17:51:55.0", writer_host->last_updated); // Only latest updated writer is counted
     EXPECT_EQ("13.5", writer_host->replica_lag);
 }
 
@@ -155,7 +153,6 @@ TEST_F(TopologyServiceTest, DuplicateInstances) {
   std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology = ts->get_topology(mock_proxy);
   ASSERT_NE(nullptr, topology);
 
-  EXPECT_TRUE(topology->is_multi_writer_cluster);
   EXPECT_EQ(1, topology->total_hosts());
   EXPECT_EQ(0, topology->num_readers());
 

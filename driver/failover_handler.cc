@@ -521,8 +521,7 @@ bool FAILOVER_HANDLER::is_failover_enabled() {
     return (dbc != nullptr && ds != nullptr &&
             ds->enable_cluster_failover &&
             m_is_cluster_topology_available &&
-            !m_is_rds_proxy &&
-            !m_is_multi_writer_cluster);
+            !m_is_rds_proxy);
 }
 
 bool FAILOVER_HANDLER::is_rds() { return m_is_rds; }
@@ -537,7 +536,6 @@ void FAILOVER_HANDLER::initialize_topology() {
     
     current_topology = topology_service->get_topology(dbc->connection_proxy, false);
     if (current_topology) {
-        m_is_multi_writer_cluster = current_topology->is_multi_writer_cluster;
         m_is_cluster_topology_available = current_topology->total_hosts() > 0;
         MYLOG_DBC_TRACE(dbc,
                     "[FAILOVER_HANDLER] m_is_cluster_topology_available=%s",

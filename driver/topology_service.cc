@@ -29,6 +29,7 @@
 
 #include "cluster_aware_metrics_container.h"
 #include "topology_service.h"
+#include "driver.h"
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging)
     : dbc_id{dbc_id},
@@ -279,27 +280,31 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
         topology_info = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
         std::map<std::string, std::shared_ptr<HOST_INFO>> instances;
         MYSQL_ROW row;
-        int writer_count = 0;
+        std::shared_ptr<HOST_INFO> latest_writer = nullptr;
         while ((row = connection_proxy->fetch_row(result))) {
             std::shared_ptr<HOST_INFO> host_info = create_host(row);
             if (host_info) {
-                // Only mark the first/latest writer as true writer
                 if (host_info->is_host_writer()) {
-                    if (writer_count > 0) {
-                        host_info->mark_as_writer(false);
+                    // Only mark the latest writer as true writer. Ignore other writers (possible stale records, multi-writer not supported)
+                    // Date in lexographic order, so str comparison works for most recent date
+                    if (!latest_writer || host_info->last_updated > latest_writer->last_updated) {
+                        latest_writer = host_info;
                     }
-                    writer_count++;
                 }
-                // Add to topology if instance not seen before
-                if (!TOPOLOGY_SERVICE::does_instance_exist(instances, host_info)) {
+                else if (!TOPOLOGY_SERVICE::does_instance_exist(instances, host_info)) {
+                    // Add readers to topology if instance not seen before
                     topology_info->add_host(host_info);
                 }
             }
         }
+        if (!TOPOLOGY_SERVICE::does_instance_exist(instances, latest_writer))
+        {
+            topology_info->add_host(latest_writer);
+        }
+
         connection_proxy->free_result(result);
 
-        topology_info->is_multi_writer_cluster = writer_count > 1;
-        if (writer_count == 0) {
+        if (!latest_writer) { // No writer found
             MYLOG_TRACE(logger, dbc_id,
                         "[TOPOLOGY_SERVICE] The topology query returned an "
                         "invalid topology - no writer instance detected");
