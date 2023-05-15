@@ -297,7 +297,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::query_for_topology(CONN
                 }
             }
         }
-        if (!TOPOLOGY_SERVICE::does_instance_exist(instances, latest_writer))
+        if (latest_writer && !TOPOLOGY_SERVICE::does_instance_exist(instances, latest_writer))
         {
             topology_info->add_host(latest_writer);
         }

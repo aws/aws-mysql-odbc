@@ -133,9 +133,9 @@ TEST_F(TopologyServiceTest, StaleRecord) {
     std::shared_ptr<HOST_INFO> writer_host = topology->get_writer();
     ASSERT_NE(nullptr, writer_host);
 
-    EXPECT_EQ("writer-instance-1.XYZ.us-east-2.rds.amazonaws.com", writer_host->get_host());
+    EXPECT_EQ("writer-instance-3.XYZ.us-east-2.rds.amazonaws.com", writer_host->get_host());
     EXPECT_EQ(1234, writer_host->get_port());
-    EXPECT_EQ("writer-instance-1", writer_host->instance_name);
+    EXPECT_EQ("writer-instance-3", writer_host->instance_name);
     EXPECT_EQ(WRITER_SESSION_ID, writer_host->session_id);
     EXPECT_EQ("2020-09-15 17:51:55.0", writer_host->last_updated); // Only latest updated writer is counted
     EXPECT_EQ("13.5", writer_host->replica_lag);
