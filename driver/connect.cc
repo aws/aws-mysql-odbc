@@ -1363,7 +1363,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     }
 
     /* refresh our DataSource */
-    ds.clear();
+    ds.reset();
     if (ds.from_kvpair(prompt_outstr, ';'))
     {
       rc= dbc->set_error( "HY000",

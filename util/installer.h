@@ -100,7 +100,6 @@ class optionBase {
     m_is_default = false;
     return *this;
   };
-  virtual void clear() = 0;
 };
 
 template<typename T>
@@ -139,12 +138,6 @@ class optionVal : public optionBase {
   virtual const optionBase &operator=(const SQLWSTRING &val) {
     m_val = (T)sqlwchartoul(val.c_str());
     return optionBase::operator=(val);
-  }
-
-  virtual void clear() {
-    m_is_set = false;
-    m_is_default = false;
-    m_val = (T)0;
   }
 
   void set_default(T val) {
@@ -193,15 +186,7 @@ class optionStr : public optionBase {
 
   optionStr() : optionBase(opt_type::STRING) { }
 
-  virtual void clear() {
-    m_is_set = false;
-    m_is_default = false;
-    m_is_null = false;
-    m_wstr.clear();
-    m_str.clear();
-  }
-
-  void set_default(nullptr_t) {
+  void set_default(std::nullptr_t) {
     set_null();
     m_is_default = true;
   }
@@ -224,7 +209,7 @@ class optionStr : public optionBase {
   const optionBase& operator=(const SQLWCHAR *val);
 
   // Assigning nullptr is equivalent to clearing the option
-  const optionStr &operator=(nullptr_t) { set_null(); return *this; }
+  const optionStr &operator=(std::nullptr_t) { set_null(); return *this; }
   const optionStr &operator=(const std::string &val);
   operator const SQLCHAR *() const { return get(); }
   operator SQLCHAR *() const { return (SQLCHAR *)get(); }
@@ -405,7 +390,7 @@ class DataSource {
 
   SQLWSTRING to_kvpair(SQLWCHAR delim);
 
-  void clear();
+  void reset();
   int add();
   bool write_opt(const SQLWCHAR *name, const SQLWCHAR *val);
   bool exists();
