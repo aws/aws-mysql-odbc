@@ -1005,7 +1005,7 @@ macro(bundle_plugins ignored)
     install(FILES "${lib}"
       CONFIGURATIONS Release RelWithDebInfo
       DESTINATION "${LIB_SUBDIR}/plugin"
-      COMPONENT ODBCDll
+      COMPONENT ODBCPlugin
     )
      
     configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/plugin/${lib_name}.dll COPYONLY)
