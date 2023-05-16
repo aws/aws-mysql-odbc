@@ -29,7 +29,6 @@
 
 #include "cluster_aware_metrics_container.h"
 #include "topology_service.h"
-#include "driver.h"
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging)
     : dbc_id{dbc_id},
