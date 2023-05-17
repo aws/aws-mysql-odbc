@@ -268,15 +268,13 @@ DECLARE_TEST(t_get_all_info)
         size = sizeof(data2);
       }
 
-      SQLSetStmtAttr(hstmt1, stmt_opt[i], p, size);
+      SQLSetStmtAttr(hstmt1, stmt_opt[i], p, (SQLINTEGER)size);
       printf("** SQLSetStmtAttr [%d]\n", (int)stmt_opt[i]);
-      SQLGetStmtAttr(hstmt1, stmt_opt[i], p, size, &str_len_ptr);
+      SQLGetStmtAttr(hstmt1, stmt_opt[i], p, (SQLINTEGER)size, &str_len_ptr);
       printf("** SQLGetStmtAttr [%d]\n", (int)stmt_opt[i]);
     }
 
-    printf("** Freeing Handles!\n");
     free_basic_handles(NULL, &hdbc1, &hstmt1);
-    printf("**Finished Freeing Handles!\n");
     return OK;
 }
 
@@ -287,7 +285,6 @@ DECLARE_TEST(t_bug28385722)
   SQLSMALLINT val_len = 0;
 
   DECLARE_BASIC_HANDLES(henv1, hdbc1, hstmt1);
-  SQLCHAR   conn[512];
 
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
                                         NULL, NULL, NULL, "NO_SCHEMA=0"));

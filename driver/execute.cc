@@ -571,38 +571,38 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
     case SQL_C_BIT:
     case SQL_C_TINYINT:
     case SQL_C_STINYINT:
-        *length= my_int2str((long)*((signed char *)*res), buff, -10, 0) - buff;
+        *length = (long)(my_int2str((long)*((signed char *)*res), buff, -10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_UTINYINT:
-        *length= my_int2str((long)*((unsigned char *)*res), buff, -10, 0) - buff;
+        *length = (long)(my_int2str((long)*((unsigned char *)*res), buff, -10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_SHORT:
     case SQL_C_SSHORT:
-        *length= my_int2str((long)*((short int *)*res), buff, -10, 0) - buff;
+        *length = (long)(my_int2str((long)*((short int *)*res), buff, -10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_USHORT:
-        *length= my_int2str((long)*((unsigned short int *)*res), buff, -10, 0) -
-                  buff;
+        *length = (long)(my_int2str((long)*((unsigned short int *)*res), buff, -10, 0) -
+                  buff);
         *res= buff;
         break;
     case SQL_C_LONG:
     case SQL_C_SLONG:
-        *length= my_int2str(*((SQLINTEGER*) *res), buff, -10, 0) - buff;
+        *length = (long)(my_int2str(*((SQLINTEGER*) *res), buff, -10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_ULONG:
-        *length= my_int2str(*((SQLUINTEGER*) *res), buff, 10, 0) - buff;
+        *length = (long)(my_int2str(*((SQLUINTEGER*) *res), buff, 10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_SBIGINT:
-        *length= myodbc_ll2str(*((longlong*) *res), buff, -10) - buff;
+        *length = (long)(myodbc_ll2str(*((longlong*) *res), buff, -10) - buff);
         *res= buff;
         break;
     case SQL_C_UBIGINT:
-        *length= myodbc_ll2str(*((ulonglong*) *res), buff, 10) - buff;
+        *length = (long)(myodbc_ll2str(*((ulonglong*) *res), buff, 10) - buff);
         *res= buff;
         break;
     case SQL_C_FLOAT:
@@ -616,7 +616,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
         // We should perpare this data for string comparison, less precision
         myodbc_d2str(*((float *)*res), buff, buff_max, false);
       }
-      *length= strlen(*res= buff);
+      *length = (long)strlen(*res= buff);
       break;
     case SQL_C_DOUBLE:
       if ( iprec->concise_type != SQL_NUMERIC && iprec->concise_type != SQL_DECIMAL )
@@ -628,7 +628,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
         // We should perpare this data for string comparison, less precision
         myodbc_d2str(*((double*)*res), buff, buff_max, false);
       }
-      *length= strlen(*res= buff);
+      *length = (long)strlen(*res= buff);
       break;
     case SQL_C_DATE:
     case SQL_C_TYPE_DATE:
@@ -720,7 +720,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
                       (SQLCHAR **) res,
                       (SQLCHAR) iprec->precision,
                       (SQLSCHAR) iprec->scale, &trunc);
-        *length= strlen(*res);
+        *length = (long)strlen(*res);
         /* TODO no way to return an error here? */
         if (trunc == SQLNUM_TRUNC_FRAC)
         {/* 01S07 SQL_SUCCESS_WITH_INFO */
@@ -847,7 +847,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
                                           apd->bind_offset_ptr,
                                           apd->bind_type,
                                           sizeof(SQLLEN), row);
-      length= *octet_length_ptr;
+      length = (long)*octet_length_ptr;
     }
 
     indicator_ptr= (SQLLEN*)ptr_offset_adjust(aprec->indicator_ptr,
@@ -858,7 +858,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
     if (aprec->data_ptr)
     {
       SQLINTEGER default_size= bind_length(aprec->concise_type,
-                                           aprec->octet_length);
+                                           (ulong)aprec->octet_length);
       data= (char*)ptr_offset_adjust(aprec->data_ptr, apd->bind_offset_ptr,
                               apd->bind_type, default_size, row);
     }
@@ -882,17 +882,17 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
       {
         if (aprec->concise_type == SQL_C_WCHAR)
         {
-          length= sqlwcharlen((SQLWCHAR *)data) * sizeof(SQLWCHAR);
+          length = (long)sqlwcharlen((SQLWCHAR *)data) * sizeof(SQLWCHAR);
         }
         else
         {
-          length= strlen(data);
+          length = (long)strlen(data);
         }
 
         if (!octet_length_ptr && aprec->octet_length > 0 &&
             aprec->octet_length != SQL_SETPARAM_VALUE_MAX)
         {
-          length= myodbc_min(length, aprec->octet_length);
+          length = (long)myodbc_min(length, aprec->octet_length);
         }
       }
       else
@@ -919,7 +919,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
     }
     else if (IS_DATA_AT_EXEC(octet_length_ptr))
     {
-        length= aprec->par.val_length();
+        length = (long)aprec->par.val_length();
         if ( !(data= aprec->par.val()) )
         {
           put_default_value(stmt, bind);
@@ -1194,8 +1194,8 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
           char *end= from+length;
           const char *local_thousands_sep = thousands_sep.c_str();
           const char *local_decimal_point = decimal_point.c_str();
-          uint local_thousands_sep_length = thousands_sep.length();
-          uint local_decimal_point_length = decimal_point.length();
+          size_t local_thousands_sep_length = thousands_sep.length();
+          size_t local_decimal_point_length = decimal_point.length();
 
           if (!stmt->dbc->ds.opt_NO_LOCALE)
           {
@@ -1553,7 +1553,7 @@ SQLRETURN my_SQLExecute( STMT *pStmt )
         if (row < pStmt->apd->array_size - 1)
         {
           const char * stmtsBinder= " UNION ALL ";
-          const ulong binderLength= strlen(stmtsBinder);
+          const size_t binderLength= strlen(stmtsBinder);
 
           pStmt->add_to_buffer(stmtsBinder, binderLength);
           length+= binderLength;
@@ -1663,7 +1663,7 @@ static SQLRETURN select_dae_param_desc(STMT *stmt, DESC **apd, unsigned int *par
     case DAE_SETPOS_INSERT:
     case DAE_SETPOS_UPDATE:
       *apd= stmt->setpos_apd.get();
-      *param_count= stmt->ard->rcount();
+      *param_count = (unsigned int)stmt->ard->rcount();
       break;
     default:
       return stmt->set_error("HY010",
@@ -1697,7 +1697,7 @@ static SQLRETURN find_next_dae_param(STMT *stmt,  SQLPOINTER *token)
     if (IS_DATA_AT_EXEC(octet_length_ptr))
     {
       SQLINTEGER default_size= bind_length(aprec->concise_type,
-                                            aprec->octet_length);
+                                          (ulong)aprec->octet_length);
       stmt->current_param= i + 1;
       if (token)
       {
@@ -1762,7 +1762,7 @@ static SQLRETURN find_next_out_stream(STMT *stmt, SQLPOINTER *token)
     if (token)
     {
       SQLINTEGER default_size= bind_length(rec->concise_type,
-                                          rec->octet_length);
+                                          (ulong)rec->octet_length);
       *token= ptr_offset_adjust(rec->data_ptr,
                                     stmt->ipd->bind_offset_ptr,
                                     stmt->ipd->bind_type,
@@ -1957,7 +1957,7 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     char buff[40];
     /* buff is always big enough because max length of %lu is 15 */
     myodbc_snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->connection_proxy->thread_id());
-    if (proxy->real_query(buff, strlen(buff)))
+    if (proxy->real_query(buff, (unsigned long)strlen(buff)))
     {
       proxy->close();
       /* We do not set the SQLSTATE here, per the ODBC spec. */

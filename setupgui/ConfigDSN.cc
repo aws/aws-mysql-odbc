@@ -72,7 +72,7 @@ BOOL Driver_Prompt(HWND hWnd, SQLWCHAR *instr, SQLUSMALLINT completion,
     out = ds.to_kvpair((SQLWCHAR)';');
     size_t len = out.length();
     if (outlen)
-      *outlen = len;
+      *outlen = (SQLSMALLINT)len;
 
     if (outstr == nullptr || outmax == 0)
     {
@@ -113,6 +113,10 @@ BOOL INSTAPI ConfigDSNW(HWND hWnd, WORD nRequest, LPCWSTR pszDriver,
   DataSource ds;
   BOOL rc= TRUE;
   SQLWSTRING origdsn;
+
+  if (!utf8_charset_info)
+    utf8_charset_info =
+      get_charset_by_csname(transport_charset, MYF(MY_CS_PRIMARY), MYF(0));
 
   if (pszAttributes && *pszAttributes)
   {

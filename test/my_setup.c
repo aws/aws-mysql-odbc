@@ -53,7 +53,7 @@ DECLARE_TEST(t_bug66548)
   sprintf((char*)attrs, "DSN=bug66548dsn;SERVER=%s;USER=%s;PASSWORD=%s;"
     "PORT=%d;DATABASE=%s;\0", myserver, myuid, mypwd, myport, mydb);
 
-  len= strlen((char*)attrs);
+  len = (int)strlen(attrs);
 
   /* replacing ';' by '\0' */
   for (i= 0; i < len; ++i)
@@ -65,7 +65,7 @@ DECLARE_TEST(t_bug66548)
   /* Adding the extra string termination to get \0\0 */
   attrs[i]= '\0';
 
-  len= strlen((char*)mydriver);
+  len = (int)strlen(mydriver);
 
   if (mydriver[0] == '{')
   {

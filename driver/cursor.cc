@@ -123,7 +123,7 @@ char *check_if_positioned_cursor_exists(STMT *pStmt, STMT **pStmtCursor)
   {
 
     DBC  *dbc= (DBC *)pStmt->dbc;
-    const char *wherePos = pStmt->query.get_token(pStmt->query.token_count() - 4);
+    const char *wherePos = pStmt->query.get_token((uint)pStmt->query.token_count() - 4);
 
     if (wherePos > GET_QUERY(&pStmt->query))
     {
@@ -227,7 +227,7 @@ static my_bool check_if_usable_unique_key_exists(STMT *stmt)
 
   /* Use SHOW KEYS FROM table to check for keys. */
   pos= myodbc_stpmov(buff, "SHOW KEYS FROM `");
-  pos+= stmt->dbc->connection_proxy->real_escape_string(pos, table, strlen(table));
+  pos+= stmt->dbc->connection_proxy->real_escape_string(pos, table, (unsigned long)strlen(table));
   pos= myodbc_stpmov(pos, "`");
 
   MYLOG_STMT_TRACE(stmt, buff);
@@ -417,7 +417,7 @@ static SQLRETURN copy_rowdata(STMT *stmt, DESCREC *aprec,
 {
     SQLRETURN rc;
     /* Negative length means either NULL or DEFAULT, so we need 7 chars. */
-    SQLUINTEGER length= (*aprec->octet_length_ptr > 0 ?
+    size_t length = (*aprec->octet_length_ptr > 0 ?
                          *aprec->octet_length_ptr + 1 : 7);
 
     if (stmt->extend_buffer(length) == NULL)
@@ -796,7 +796,7 @@ static SQLRETURN build_set_clause_std(STMT *stmt, SQLULEN irow,
                                              stmt->ard->bind_offset_ptr,
                                              stmt->ard->bind_type,
                                              bind_length(arrec->concise_type,
-                                                         arrec->octet_length),
+                                                         (ulong)arrec->octet_length),
                                              irow);
         aprec->octet_length= arrec->octet_length;
         if (length == SQL_NTS)
@@ -878,7 +878,8 @@ SQLRETURN my_pos_update_std( STMT *             pStmtCursor,
 
     pStmtTemp = (STMT *)hStmtTemp;
 
-    if (my_SQLPrepare(pStmtTemp, (SQLCHAR *)query.c_str(), query.size(),
+    if (my_SQLPrepare(pStmtTemp, (SQLCHAR *)query.c_str(),
+                      (SQLINTEGER)query.size(),
                       true, false) != SQL_SUCCESS)
     {
         my_SQLFreeStmt( pStmtTemp, SQL_DROP );
@@ -907,7 +908,8 @@ SQLRETURN my_pos_update_std( STMT *             pStmtCursor,
         statement that is a non-positioned update.
         To check: do we really need that?
       */
-      if (my_SQLPrepare(pStmt, (SQLCHAR *)query.c_str(), query.size(),
+      if (my_SQLPrepare(pStmt, (SQLCHAR *)query.c_str(),
+                        (SQLINTEGER)query.size(),
                         true, false) != SQL_SUCCESS)
         return SQL_ERROR;
       pStmt->dae_type= DAE_NORMAL;
@@ -927,12 +929,12 @@ SQLRETURN my_pos_update_std( STMT *             pStmtCursor,
 
 static SQLRETURN fetch_bookmark(STMT *stmt)
 {
-  SQLUINTEGER  rowset_pos,rowset_end;
+  size_t rowset_pos, rowset_end;
   SQLRETURN    nReturn= SQL_SUCCESS;
   DESCREC *arrec;
   SQLPOINTER TargetValuePtr= NULL;
   long curr_bookmark_index= 0;
-  long tmp_array_size= 0;
+  size_t tmp_array_size= 0;
 
   IS_BOOKMARK_VARIABLE(stmt);
   arrec= desc_get_rec(stmt->ard, -1, FALSE);
@@ -961,7 +963,8 @@ static SQLRETURN fetch_bookmark(STMT *stmt)
       TargetValuePtr= ptr_offset_adjust(arrec->data_ptr,
                                         stmt->ard->bind_offset_ptr,
                                         stmt->ard->bind_type,
-                                        arrec->octet_length, rowset_pos - 1);
+                                        (SQLINTEGER)arrec->octet_length,
+                                        rowset_pos - 1);
     }
 
     curr_bookmark_index= atol((const char*) TargetValuePtr);
@@ -977,7 +980,7 @@ static SQLRETURN fetch_bookmark(STMT *stmt)
   } while ( ++rowset_pos <= rowset_end );
 
   stmt->ard->array_size= tmp_array_size;
-  stmt->rows_found_in_set= rowset_pos - 1;
+  stmt->rows_found_in_set = (uint)rowset_pos - 1;
 
   return nReturn;
 }
@@ -990,10 +993,10 @@ static SQLRETURN fetch_bookmark(STMT *stmt)
 
 static SQLRETURN setpos_delete_bookmark_std(STMT *stmt, std::string &query)
 {
-  SQLUINTEGER  rowset_pos,rowset_end;
+  size_t rowset_pos,rowset_end;
   my_ulonglong affected_rows= 0;
   SQLRETURN    nReturn= SQL_SUCCESS;
-  ulong        query_length;
+  size_t        query_length;
   const char   *table_name;
   DESCREC *arrec;
   SQLPOINTER TargetValuePtr= NULL;
@@ -1010,7 +1013,7 @@ static SQLRETURN setpos_delete_bookmark_std(STMT *stmt, std::string &query)
 
   /* appened our table name to our DELETE statement */
   myodbc_append_quoted_name_std(query, table_name);
-  query_length= query.size();
+  query_length = query.size();
 
   IS_BOOKMARK_VARIABLE(stmt);
   arrec= desc_get_rec(stmt->ard, -1, FALSE);
@@ -1038,7 +1041,8 @@ static SQLRETURN setpos_delete_bookmark_std(STMT *stmt, std::string &query)
       TargetValuePtr= ptr_offset_adjust(arrec->data_ptr,
                                         stmt->ard->bind_offset_ptr,
                                         stmt->ard->bind_type,
-                                        arrec->octet_length, rowset_pos);
+                                        (SQLINTEGER)arrec->octet_length,
+                                        rowset_pos);
     }
 
     curr_bookmark_index= atol((const char*) TargetValuePtr);
@@ -1089,7 +1093,7 @@ static SQLRETURN setpos_delete_std(STMT *stmt, SQLUSMALLINT irow,
   SQLUINTEGER  rowset_pos,rowset_end;
   my_ulonglong affected_rows= 0;
   SQLRETURN    nReturn= SQL_SUCCESS;
-  ulong        query_length;
+  size_t       query_length;
   const char   *table_name;
 
   /* we want to work with base table name - we expect call to fail if more than one base table involved */
@@ -1155,10 +1159,10 @@ static SQLRETURN setpos_delete_std(STMT *stmt, SQLUSMALLINT irow,
 */
 static SQLRETURN setpos_update_bookmark_std(STMT *stmt, std::string &query)
 {
-  SQLUINTEGER  rowset_pos,rowset_end;
+  size_t rowset_pos,rowset_end;
   my_ulonglong affected= 0;
   SQLRETURN    nReturn= SQL_SUCCESS;
-  ulong        query_length;
+  size_t        query_length;
   const char   *table_name;
   DESCREC *arrec;
   SQLPOINTER TargetValuePtr= NULL;
@@ -1198,7 +1202,8 @@ static SQLRETURN setpos_update_bookmark_std(STMT *stmt, std::string &query)
       TargetValuePtr= ptr_offset_adjust(arrec->data_ptr,
                                         stmt->ard->bind_offset_ptr,
                                         stmt->ard->bind_type,
-                                        arrec->octet_length, rowset_pos);
+                                        (SQLINTEGER)arrec->octet_length,
+                                        rowset_pos);
     }
 
     curr_bookmark_index= atol((const char*) TargetValuePtr);
@@ -1253,7 +1258,7 @@ static SQLRETURN setpos_update_std(STMT *stmt, SQLUSMALLINT irow,
   SQLUINTEGER  rowset_pos,rowset_end;
   my_ulonglong affected= 0;
   SQLRETURN    nReturn= SQL_SUCCESS;
-  ulong        query_length;
+  size_t       query_length;
   const char   *table_name;
 
   if ( !(table_name= find_used_table(stmt)) )
@@ -1353,7 +1358,7 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
     SQLLEN       length;
     SQLUSMALLINT ncol;
     long i;
-    ulong        query_length= 0;           /* our original query len so we can reset pos if break_insert   */
+    size_t       query_length= 0;           /* our original query len so we can reset pos if break_insert   */
     my_bool      break_insert= FALSE;       /* true if we are to exceed max data size for transmission
                                                but this seems to be misused */
     DESCREC aprec_(DESC_PARAM, DESC_APP),
@@ -1435,7 +1440,7 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
                                                        stmt->ard->bind_offset_ptr,
                                                        stmt->ard->bind_type,
                                                        bind_length(arrec->concise_type,
-                                                                   arrec->octet_length),
+                                                                   (ulong)arrec->octet_length),
                                                        count);
                 }
 
@@ -1516,7 +1521,7 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
             TargetValuePtr= ptr_offset_adjust(arrec->data_ptr,
                                               stmt->ard->bind_offset_ptr,
                                               stmt->ard->bind_type,
-                                              arrec->octet_length,
+                                              (SQLINTEGER)arrec->octet_length,
                                               i);
           }
 
@@ -1530,7 +1535,8 @@ static SQLRETURN batch_insert_std( STMT *stmt, SQLULEN irow, std::string &query 
           std::string sval = std::to_string(i + 1);
           res = sql_get_bookmark_data(stmt, arrec->concise_type, (uint)0,
                                 TargetValuePtr, arrec->octet_length,
-                                pcbValue, (char*)sval.data(), sval.length(), arrec);
+                                pcbValue, (char*)sval.data(),
+                                (ulong)sval.length(), arrec);
 
           if (!SQL_SUCCEEDED(res))
           {
@@ -1718,7 +1724,7 @@ SQLRETURN SQL_API my_SQLSetPos(SQLHSTMT hstmt, SQLSETPOSIROW irow,
                 std::string del_query("DELETE FROM ");
                 del_query.reserve(1024);
 
-                ret = setpos_delete_std( stmt, irow, del_query );
+                ret = setpos_delete_std( stmt, (SQLUSMALLINT)irow, del_query );
                 break;
             }
 
@@ -1739,14 +1745,14 @@ SQLRETURN SQL_API my_SQLSetPos(SQLHSTMT hstmt, SQLSETPOSIROW irow,
                 std::string upd_query("UPDATE ");
                 upd_query.reserve(1024);
 
-                ret= setpos_update_std(stmt, irow, upd_query);
+                ret = setpos_update_std(stmt, (SQLUSMALLINT)irow, upd_query);
                 break;
             }
 
         case SQL_ADD:
             {
                 const char  *   table_name;
-                SQLUSMALLINT    nCol        = 0;
+                unsigned int    nCol        = 0;
 
                 if (!stmt->dae_type && stmt->is_dynamic_cursor() &&
                     set_dynamic_result(stmt))
@@ -1828,7 +1834,7 @@ MySQLSetCursorName(SQLHSTMT hstmt, SQLCHAR *name, SQLSMALLINT len)
     return stmt->set_error( MYERR_S1009, NULL, 0);
 
   if (len == SQL_NTS)
-    len= strlen((char *)name);
+    len = (SQLSMALLINT)strlen((char *)name);
 
   if (len < 0)
     return stmt->set_error( MYERR_S1009, NULL, 0);

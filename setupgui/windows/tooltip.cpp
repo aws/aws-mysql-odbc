@@ -107,7 +107,7 @@ BOOL CALLBACK EnumChildProc(HWND hwndCtrl, LPARAM lParam)
         ti.uId = (UINT)(size_t)hwndCtrl;
         ti.hinst = g_hinst;
         ti.lpszText = LPSTR_TEXTCALLBACK;
-        int res = SendMessage(g_hwndTT, TTM_ADDTOOL, 0,
+        int res = (int)SendMessage(g_hwndTT, TTM_ADDTOOL, 0,
             (LPARAM) (LPTOOLINFO) &ti);
 		GetLastError();
 		res++;

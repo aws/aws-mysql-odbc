@@ -456,7 +456,7 @@ int adjust_param_bind_array(STMT *stmt)
   @type    : myodbc3 internal
   @purpose : allocates the statement handle
 */
-SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc,SQLHSTMT *phstmt)
+SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc, SQLHSTMT *phstmt)
 {
   std::unique_ptr<STMT> stmt;
   DBC   *dbc= (DBC*) hdbc;
@@ -467,7 +467,7 @@ SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc,SQLHSTMT *phstmt)
 
   try
   {
-    stmt.reset (new STMT(dbc));
+    stmt.reset(new STMT(dbc));
   }
   catch (...)
   {

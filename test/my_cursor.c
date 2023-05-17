@@ -3311,8 +3311,9 @@ DECLARE_TEST(t_bug41946)
 */
 DECLARE_TEST(t_sqlputdata)
 {
+  SQLRETURN rc;
   SQLINTEGER  id, i;
-  SQLLEN resId, resData;
+  SQLLEN resId = 0, resData;
   SQLWCHAR wbuff[MAX_ROW_DATA_LEN+1];
   SQLWCHAR *wcdata= W(L"S\x00e3o Paolo");
 
@@ -3321,7 +3322,6 @@ DECLARE_TEST(t_sqlputdata)
 
   ok_stmt(hstmt, SQLPrepare(hstmt, (SQLCHAR*)"INSERT INTO t_sqlputdata VALUES ( ?, ?)", SQL_NTS));
   id= 1;
-  resId = 0;
   resData = SQL_LEN_DATA_AT_EXEC(0);
 
   ok_stmt(hstmt, SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG,

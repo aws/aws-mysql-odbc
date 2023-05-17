@@ -117,7 +117,7 @@ SQLCHAR* sqlchardup(const SQLCHAR* str, const size_t len);
 int sqlwcharcasecmp(const SQLWCHAR *s1, const SQLWCHAR *s2);
 const SQLWCHAR *sqlwcharchr(const SQLWCHAR *wstr, SQLWCHAR wchr);
 size_t sqlwcharlen(const SQLWCHAR *wstr);
-SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, size_t charlen);
+SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, SQLINTEGER charlen);
 unsigned long sqlwchartoul(const SQLWCHAR *wstr);
 void sqlwcharfromul(SQLWCHAR *wstr, unsigned long v);
 size_t sqlwcharncat2(SQLWCHAR *dest, const SQLWCHAR *src, size_t *n);

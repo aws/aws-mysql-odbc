@@ -1054,7 +1054,7 @@ DECLARE_TEST(t_bug63844)
   ok_env(henv, SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc1));
 
   ok_con(hdbc1, SQLSetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
-                                  DatabaseName, strlen((char*)DatabaseName)));
+                                  DatabaseName, (SQLINTEGER)strlen(DatabaseName)));
 
   /* The driver crashes here on getting connected */
   ok_con(hdbc1, get_connection(&hdbc1, NULL, NULL, NULL, NULL, NULL));
@@ -1076,8 +1076,8 @@ DECLARE_TEST(t_bug52996)
 
   /* TODO: remove #ifdef _WIN32 when Linux and MacOS setup is released */
 #ifdef _WIN32
-  int i, len;
-  char attrs[8192];
+  size_t i, len;
+  SQLCHAR attrs[8192];
   SQLCHAR drv[128];
   SQLLEN row_count= 0;
   DECLARE_BASIC_HANDLES(henv1, hdbc1, hstmt1);
@@ -1522,7 +1522,6 @@ DECLARE_TEST(t_tls_versions)
 
 DECLARE_TEST(t_bug107307)
 {
-  SQLCHAR buff[128];
   SQLRETURN rc;
   double value = 0;
   SQLLEN ind = 0;
