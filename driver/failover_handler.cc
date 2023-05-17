@@ -37,6 +37,7 @@
 
 #include "driver.h"
 #include "mylog.h"
+#include "secrets_manager_proxy.h"
 
 #if defined(__APPLE__) || defined(__linux__)
     #include <arpa/inet.h>    
@@ -59,6 +60,9 @@ const std::regex AURORA_CLUSTER_PATTERN(
 const std::regex AURORA_WRITER_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
     std::regex_constants::icase);
+const std::regex AURORA_READER_CLUSTER_PATTERN(
+    R"#((.+)\.(cluster-ro-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
+    std::regex_constants::icase);
 const std::regex AURORA_CUSTOM_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
     std::regex_constants::icase);
@@ -73,6 +77,9 @@ const std::regex AURORA_CHINA_CLUSTER_PATTERN(
     std::regex_constants::icase);
 const std::regex AURORA_CHINA_WRITER_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    std::regex_constants::icase);
+const std::regex AURORA_CHINA_READER_CLUSTER_PATTERN(
+    R"#((.+)\.(cluster-ro-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
 const std::regex AURORA_CHINA_CUSTOM_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
@@ -113,7 +120,8 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
         this->topology_service, this->connection_handler, dbc->env->failover_thread_pool, ds->failover_timeout,
-        ds->failover_reader_connect_timeout, ds->enable_strict_reader_failover,
+        ds->failover_reader_connect_timeout,
+        !myodbc_strcasecmp(FAILOVER_MODE_STRICT_READER, ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8)),
         dbc->id, ds->save_queries);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
@@ -149,6 +157,14 @@ SQLRETURN FAILOVER_HANDLER::init_connection() {
             reconnect_with_updated_timeouts = (connect_timeout != dbc->login_timeout ||
                                                network_timeout != ds->read_timeout ||
                                                network_timeout != ds->write_timeout);
+        }
+
+        if (!ds->failover_mode) {
+            if (is_rds_reader_cluster_dns(this->current_host->get_host())) {
+                ds_set_wstrnattr(&ds->failover_mode, (SQLWCHAR*)to_sqlwchar_string(FAILOVER_MODE_READER_OR_WRITER).c_str(), SQL_NTS);
+            } else {
+                ds_set_wstrnattr(&ds->failover_mode, (SQLWCHAR*)to_sqlwchar_string(FAILOVER_MODE_STRICT_WRITER).c_str(), SQL_NTS);
+            }
         }
     }
 
@@ -416,6 +432,10 @@ bool FAILOVER_HANDLER::is_rds_writer_cluster_dns(std::string host) {
     return std::regex_match(host, AURORA_WRITER_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_WRITER_CLUSTER_PATTERN);
 }
 
+bool FAILOVER_HANDLER::is_rds_reader_cluster_dns(std::string host) {
+    return std::regex_match(host, AURORA_READER_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_READER_CLUSTER_PATTERN);
+}
+
 bool FAILOVER_HANDLER::is_rds_custom_cluster_dns(std::string host) {
     return std::regex_match(host, AURORA_CUSTOM_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_CUSTOM_CLUSTER_PATTERN);
 }
@@ -593,7 +613,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
         failover_start_time_ms = std::chrono::steady_clock::now();
 
         if (current_topology && current_topology->total_hosts() > 1 &&
-            ds->allow_reader_connections) {  // there are readers in topology
+            myodbc_strcasecmp(FAILOVER_MODE_STRICT_WRITER, ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8))) {
             failover_success = failover_to_reader(new_error_code, error_msg);
             elasped_time_ms =
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();

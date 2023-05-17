@@ -314,11 +314,7 @@ void syncTabsData(HWND hwnd, DataSource *params)
   
   /* 4 - Failover */
   GET_BOOL_TAB(FAILOVER_TAB, enable_cluster_failover);
-  GET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
-  if (READ_BOOL_TAB(FAILOVER_TAB, allow_reader_connections))
-  {
-      GET_BOOL_TAB(FAILOVER_TAB, enable_strict_reader_failover);
-  }
+  GET_COMBO_TAB(FAILOVER_TAB, failover_mode);
   GET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
   if (READ_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics))
   {
@@ -456,16 +452,7 @@ void syncTabs(HWND hwnd, DataSource *params)
 
   /* 4 - Failover */
   SET_BOOL_TAB(FAILOVER_TAB, enable_cluster_failover);
-  SET_BOOL_TAB(FAILOVER_TAB, allow_reader_connections);
-  if (READ_BOOL_TAB(FAILOVER_TAB, allow_reader_connections))
-  {
-#ifdef _WIN32
-      SET_ENABLED(FAILOVER_TAB, IDC_CHECK_enable_strict_reader_failover, TRUE);
-#endif
-      SET_CHECKED_TAB(FAILOVER_TAB, allow_reader_connections, TRUE);
-      SET_BOOL_TAB(FAILOVER_TAB, enable_strict_reader_failover);
-  }
-  SET_BOOL_TAB(FAILOVER_TAB, enable_strict_reader_failover);
+  SET_COMBO_TAB(FAILOVER_TAB, failover_mode);
   SET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
   if(READ_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics))
   {

@@ -166,7 +166,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers_strict_reader_failover) {
-  connection_string = builder.withServer(reader_endpoint).withAllowReaderConnections(true).withEnableStrictReaderFailover(true).build();
+  connection_string = builder.withServer(reader_endpoint).withFailoverMode("strict reader").build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (const auto& x : proxy_map) {
