@@ -7,7 +7,10 @@
     - [Visual Studio](https://visualstudio.microsoft.com/downloads/)
       > The driver has been built successfully using `Visual Studio 2019`, and it may not build correctly with other versions. When installing Visual Studio, ensure the `Visual C++ 2019` and `Visual Studio Tools for CMake` packages are also installed.
     - [MySQL Server](https://dev.mysql.com/downloads/installer/)
-2. Build the driver in the `build` directory with the following commands:
+
+2. Refer to [Building the AWS SDK for C++](./BuildingAwsSdkCpp.md) to install required AWS dependencies.
+   
+3. Build the driver in the `build` directory with the following commands:
     ```
     cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE
     cmake --build build --config Release
@@ -19,11 +22,15 @@
      - `cmake`
      - `mysql-client`
      - `mysql`
-2. Set the environment variable MYSQL_DIR as the path to your `mysql-client` installation location:
+     - `aws-sdk-cpp`
+
+2. Refer to [Building the AWS SDK for C++](./BuildingAwsSdkCpp.md) to install required AWS dependencies.
+   
+3. Set the environment variable MYSQL_DIR as the path to your `mysql-client` installation location:
     ```
     export MYSQL_DIR=/usr/local/opt/mysql-client
     ```
-3. Build the driver in the `build` directory with the following commands:
+4. Build the driver in the `build` directory with the following commands:
     ```
     cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DODBC_INCLUDES=/usr/local/Cellar/libiodbc/3.52.15/include
     cmake --build build --config Release
@@ -51,7 +58,10 @@ export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/opt/openssl@1.1/lib/
     sudo apt-get update
     sudo apt-get install build-essential libgtk-3-dev libmysqlclient-dev unixodbc unixodbc-dev
     ```
-2. Build the driver in the `build` directory with the following commands:
+
+2. Refer to [Building the AWS SDK for C++](./BuildingAwsSdkCpp.md) to install required AWS dependencies.
+
+3. Build the driver in the `build` directory with the following commands:
     ```
     cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DWITH_UNIXODBC=1
     cmake --build build --config Release
