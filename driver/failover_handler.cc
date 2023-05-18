@@ -612,6 +612,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
         failover_start_time_ms = std::chrono::steady_clock::now();
 
         if (current_topology && current_topology->total_hosts() > 1 &&
+            // Trigger reader failover if failover mode is not strict writer 
             myodbc_strcasecmp(FAILOVER_MODE_STRICT_WRITER, ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8))) {
             failover_success = failover_to_reader(new_error_code, error_msg);
             elasped_time_ms =

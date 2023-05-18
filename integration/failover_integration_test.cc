@@ -359,7 +359,7 @@ TEST_F(FailoverIntegrationTest, test_failFromReaderToWriterToAnyAvailableInstanc
   ConnectionStringBuilder proxied_builder = ConnectionStringBuilder();
   proxied_builder.withDSN(dsn).withUID(user).withPWD(pwd).withConnectTimeout(10).withNetworkTimeout(10);
   proxied_builder.withPort(MYSQL_PROXY_PORT).withHostPattern(PROXIED_CLUSTER_TEMPLATE).withLogQuery(true);
-  connection_string = proxied_builder.withServer(initial_reader_endpoint).build();
+  connection_string = proxied_builder.withServer(initial_reader_endpoint).withFailoverMode("reader or writer").build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(initial_reader_id);
