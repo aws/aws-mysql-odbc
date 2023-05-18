@@ -514,7 +514,7 @@ TEST_F(FailoverHandlerTest, DefaultFailoverModeWriterCluster) {
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
 
-    EXPECT_STREQ(to_sqlwchar_string(FAILOVER_MODE_STRICT_WRITER).c_str(), (ds->failover_mode));
+    EXPECT_EQ(std::string(FAILOVER_MODE_STRICT_WRITER), std::string(ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8)));
 }
 
 TEST_F(FailoverHandlerTest, DefaultFailoverModeReaderCluster) {
@@ -527,6 +527,5 @@ TEST_F(FailoverHandlerTest, DefaultFailoverModeReaderCluster) {
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
-
-    EXPECT_STREQ(to_sqlwchar_string(FAILOVER_MODE_READER_OR_WRITER).c_str(), (ds->failover_mode));
+    EXPECT_EQ(std::string(FAILOVER_MODE_READER_OR_WRITER), std::string(ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8)));
 }
