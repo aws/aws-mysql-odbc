@@ -345,37 +345,6 @@ TEST_F(FailoverHandlerTest, RDS_ReaderCluster) {
     EXPECT_TRUE(failover_handler.is_failover_enabled());
 }
 
-TEST_F(FailoverHandlerTest, RDS_MultiWriterCluster) {
-    SQLCHAR server[] = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
-
-    ds_setattr_from_utf8(&ds->server, server);
-    ds->port = 1234;
-    ds->enable_cluster_failover = true;
-
-    EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false)).WillOnce(Return(SQL_SUCCESS));
-
-    auto multi_writer_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
-    multi_writer_topology->add_host(writer_host);
-    multi_writer_topology->add_host(reader_host);
-    multi_writer_topology->is_multi_writer_cluster = true;
-
-    EXPECT_CALL(*mock_ts, get_topology(_, false))
-        .WillOnce(Return(multi_writer_topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts,
-        set_cluster_id(StrEq(
-            "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com:1234")))
-        .Times(AtLeast(1));
-
-    FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
-    failover_handler.init_connection();
-
-    EXPECT_TRUE(failover_handler.is_rds());
-    EXPECT_FALSE(failover_handler.is_rds_proxy());
-    EXPECT_TRUE(failover_handler.is_cluster_topology_available());
-    EXPECT_FALSE(failover_handler.is_failover_enabled());
-}
-
 TEST_F(FailoverHandlerTest, ReconnectWithFailoverSettings) {
     SQLCHAR server[] = "10.10.10.10";
     SQLCHAR host_pattern[] = "?.my-custom-domain.com";

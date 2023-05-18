@@ -49,8 +49,7 @@ CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO() {
 CLUSTER_TOPOLOGY_INFO::CLUSTER_TOPOLOGY_INFO(const CLUSTER_TOPOLOGY_INFO& src_info)
     : current_reader{src_info.current_reader},
       last_updated{src_info.last_updated},
-      last_used_reader{src_info.last_used_reader},
-      is_multi_writer_cluster{src_info.is_multi_writer_cluster} {
+      last_used_reader{src_info.last_used_reader} {
     for (auto host_info_source : src_info.writers) {
         writers.push_back(std::make_shared<HOST_INFO>(*host_info_source)); //default copy
     }

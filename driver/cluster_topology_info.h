@@ -58,7 +58,6 @@ public:
     std::shared_ptr<HOST_INFO> get_reader(int i);
     std::vector<std::shared_ptr<HOST_INFO>> get_writers();
     std::vector<std::shared_ptr<HOST_INFO>> get_readers();
-    bool is_multi_writer_cluster = false;
 
 private:
     int current_reader = -1;
