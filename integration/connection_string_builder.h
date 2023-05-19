@@ -42,8 +42,8 @@ class ConnectionString {
     friend class ConnectionStringBuilder;
 
     ConnectionString() : m_dsn(""), m_server(""), m_port(-1),
-                         m_uid(""), m_pwd(""), m_db(""), m_log_query(true), m_allow_reader_connections(false),
-                         m_enable_strict_reader_failover(false), m_multi_statements(false), m_enable_cluster_failover(true),
+                         m_uid(""), m_pwd(""), m_db(""), m_log_query(true),
+                         m_failover_mode(""), m_multi_statements(false), m_enable_cluster_failover(true),
                          m_failover_timeout(-1), m_connect_timeout(-1), m_network_timeout(-1), m_host_pattern(""),
                          m_enable_failure_detection(true), m_failure_detection_time(-1), m_failure_detection_timeout(-1),
                          m_failure_detection_interval(-1), m_failure_detection_count(-1), m_monitor_disposal_time(-1),
@@ -51,7 +51,7 @@ class ConnectionString {
                          m_auth_port(-1), m_auth_expiration(-1), m_secret_id(""),
                          
                          is_set_uid(false), is_set_pwd(false), is_set_db(false), is_set_log_query(false),
-                         is_set_allow_reader_connections(false), is_set_enable_strict_reader_failover(false),
+                         is_set_failover_mode(false),
                          is_set_multi_statements(false), is_set_enable_cluster_failover(false),
                          is_set_failover_timeout(false), is_set_connect_timeout(false), is_set_network_timeout(false), is_set_host_pattern(false),
                          is_set_enable_failure_detection(false), is_set_failure_detection_time(false), is_set_failure_detection_timeout(false),
@@ -76,11 +76,8 @@ class ConnectionString {
       if (is_set_log_query) {
         length += sprintf(conn_in + length, "LOG_QUERY=%d;", m_log_query ? 1 : 0); 
       }
-      if (is_set_allow_reader_connections) {
-        length += sprintf(conn_in + length, "ALLOW_READER_CONNECTIONS=%d;", m_allow_reader_connections ? 1 : 0); 
-      }
-      if (is_set_enable_strict_reader_failover) {
-        length += sprintf(conn_in + length, "ENABLE_STRICT_READER_FAILOVER=%d;", m_enable_strict_reader_failover ? 1 : 0);
+      if (is_set_failover_mode) {
+        length += sprintf(conn_in + length, "failover_mode=%s;", m_failover_mode.c_str());
       }
       if (is_set_multi_statements) {
         length += sprintf(conn_in + length, "MULTI_STATEMENTS=%d;", m_multi_statements ? 1 : 0);
@@ -155,16 +152,16 @@ class ConnectionString {
 
     // Optional fields
     std::string m_uid, m_pwd, m_db;
-    bool m_log_query, m_allow_reader_connections, m_enable_strict_reader_failover, m_multi_statements, m_enable_cluster_failover;
+    bool m_log_query, m_multi_statements, m_enable_cluster_failover;
     int m_failover_timeout, m_connect_timeout, m_network_timeout;
-    std::string m_host_pattern;
+    std::string m_host_pattern, m_failover_mode;
     bool m_enable_failure_detection;
     int m_failure_detection_time, m_failure_detection_timeout, m_failure_detection_interval, m_failure_detection_count, m_monitor_disposal_time, m_read_timeout, m_write_timeout;
     std::string m_auth_mode, m_auth_region, m_auth_host, m_secret_id;
     int m_auth_port, m_auth_expiration;
 
     bool is_set_uid, is_set_pwd, is_set_db;
-    bool is_set_log_query, is_set_allow_reader_connections, is_set_enable_strict_reader_failover, is_set_multi_statements;
+    bool is_set_log_query, is_set_failover_mode, is_set_multi_statements;
     bool is_set_enable_cluster_failover;
     bool is_set_failover_timeout, is_set_connect_timeout, is_set_network_timeout;
     bool is_set_host_pattern;
@@ -206,14 +203,9 @@ class ConnectionString {
       is_set_log_query = true;
     }
 
-    void set_allow_reader_connections(const bool& allow_reader_connections) {
-      m_allow_reader_connections = allow_reader_connections;
-      is_set_allow_reader_connections = true;
-    }
-
-    void set_enable_strict_reader_failover(const bool& enable_strict_reader_failover) {
-      m_enable_strict_reader_failover = enable_strict_reader_failover;
-      is_set_enable_strict_reader_failover = true;
+    void set_failover_mode(const std::string& failover_mode) {
+      m_failover_mode = failover_mode;
+      is_set_failover_mode = true;
     }
 
     void set_multi_statements(const bool& multi_statements) {
@@ -358,13 +350,8 @@ class ConnectionStringBuilder {
       return *this;
     }
 
-    ConnectionStringBuilder& withAllowReaderConnections(const bool& allow_reader_connections) {
-      connection_string->set_allow_reader_connections(allow_reader_connections);
-      return *this;
-    }
-
-    ConnectionStringBuilder& withEnableStrictReaderFailover(const bool& enable_strict_reader_failover) {
-      connection_string->set_enable_strict_reader_failover(enable_strict_reader_failover);
+    ConnectionStringBuilder& withFailoverMode(const std::string& failover_mode) {
+      connection_string->set_failover_mode(failover_mode);
       return *this;
     }
 

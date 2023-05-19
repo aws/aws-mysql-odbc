@@ -311,7 +311,7 @@ TEST_P(FailoverPerformanceTest, test_measure_failover) {
   
   builder.withDSN(dsn).withServer(server).withPort(MYSQL_PROXY_PORT)
     .withDatabase(db).withUID(user).withPWD(pwd).withHostPattern(PROXIED_CLUSTER_TEMPLATE)
-    .withAllowReaderConnections(true);
+    .withFailoverMode("reader or writer");
 
   switch (test_type) {
     case SOCKET_TIMEOUT_TEST_ID: {

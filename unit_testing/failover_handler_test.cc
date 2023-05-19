@@ -502,3 +502,30 @@ TEST_F(FailoverHandlerTest, ConnectToNewWriter) {
     
     EXPECT_EQ(std::string("writer-host.com"), std::string((const char*)ds->server8));
 }
+
+TEST_F(FailoverHandlerTest, DefaultFailoverModeWriterCluster) {
+    SQLCHAR *server = (SQLCHAR *)US_EAST_REGION_CLUSTER.c_str();
+
+    ds_setattr_from_utf8(&ds->server, server);
+
+    EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
+        .WillOnce(Return(SQL_SUCCESS));
+
+    FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
+    failover_handler.init_connection();
+
+    EXPECT_EQ(std::string(FAILOVER_MODE_STRICT_WRITER), std::string(ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8)));
+}
+
+TEST_F(FailoverHandlerTest, DefaultFailoverModeReaderCluster) {
+    SQLCHAR *server = (SQLCHAR *)US_EAST_REGION_CLUSTER_READ_ONLY.c_str();
+
+    ds_setattr_from_utf8(&ds->server, server);
+
+    EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
+        .WillOnce(Return(SQL_SUCCESS));
+
+    FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
+    failover_handler.init_connection();
+    EXPECT_EQ(std::string(FAILOVER_MODE_READER_OR_WRITER), std::string(ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8)));
+}
