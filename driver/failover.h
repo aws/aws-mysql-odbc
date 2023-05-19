@@ -207,6 +207,7 @@ class FAILOVER_HANDLER {
     static bool is_rds_custom_cluster_dns(std::string host);
     static std::string get_rds_cluster_host_url(std::string host);
     static std::string get_rds_instance_host_pattern(std::string host);
+    static bool is_failover_mode(const char* expected_mode, DataSource* ds);
     bool is_ipv4(std::string host);
     bool is_ipv6(std::string host);
     bool failover_to_reader(const char*& new_error_code, const char*& error_msg);
