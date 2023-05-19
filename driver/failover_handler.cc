@@ -119,8 +119,7 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
         this->topology_service, this->connection_handler, dbc->env->failover_thread_pool, ds->failover_timeout,
-        ds->failover_reader_connect_timeout,
-        is_failover_mode(FAILOVER_MODE_STRICT_READER, ds),
+        ds->failover_reader_connect_timeout, is_failover_mode(FAILOVER_MODE_STRICT_READER, ds),
         dbc->id, ds->save_queries);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
@@ -614,6 +613,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
         if (current_topology && current_topology->total_hosts() > 1 &&
             // Trigger reader failover if failover mode is not strict writer
             !is_failover_mode(FAILOVER_MODE_STRICT_WRITER, ds)) {
+
             failover_success = failover_to_reader(new_error_code, error_msg);
             elasped_time_ms =
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - failover_start_time_ms).count();
