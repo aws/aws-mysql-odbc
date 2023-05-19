@@ -213,14 +213,13 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CONTROL         "&Enable Cluster Failover",IDC_CHECK_enable_cluster_failover,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 12, 89, 10
-    CONTROL         "&Allow reader connections", IDC_CHECK_allow_reader_connections,
+    CONTROL         "&Gather performance metrics", IDC_CHECK_gather_perf_metrics,
                     "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 12, 27, 100, 10
-    CONTROL         "&Enable strict reader failover", IDC_CHECK_enable_strict_reader_failover,
+    CONTROL         "&Gather instance-specific metrics", IDC_CHECK_gather_metrics_per_instance,
                     "Button", BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED, 132, 27, 100, 10
-    CONTROL         "&Gather performance metrics",IDC_CHECK_gather_perf_metrics,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 42, 100, 10
-    CONTROL         "&Gather instance-specific metrics",IDC_CHECK_gather_metrics_per_instance,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED, 132, 42, 115, 10
+    RTEXT           "Failover Mode:", IDC_STATIC, 12, 43, 116, 8
+    COMBOBOX        IDC_EDIT_failover_mode, 132, 41, 196, 12,
+                    CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     RTEXT           "&Host pattern:",IDC_STATIC,12,60,117,8
     EDITTEXT        IDC_EDIT_host_pattern,132,58,196,12,ES_AUTOHSCROLL
     RTEXT           "&Cluster ID:",IDC_STATIC,12,77,116,8

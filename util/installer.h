@@ -231,14 +231,14 @@ typedef struct DataSource {
   
   /* Failover */
   BOOL enable_cluster_failover;
-  BOOL allow_reader_connections;
-  BOOL enable_strict_reader_failover;
   BOOL gather_perf_metrics;
   BOOL gather_metrics_per_instance;
   SQLCHAR *host_pattern8;
   SQLCHAR *cluster_id8;
+  SQLCHAR *failover_mode8;
   SQLWCHAR *host_pattern;
   SQLWCHAR *cluster_id;
+  SQLWCHAR *failover_mode;
   unsigned int topology_refresh_rate;
   unsigned int failover_timeout;
   unsigned int failover_topology_refresh_rate;
@@ -293,6 +293,10 @@ extern const SQLWCHAR W_INVALID_ATTR_STR[];
 
 #define AUTH_MODE_IAM              "IAM"
 #define AUTH_MODE_SECRETS_MANAGER  "SECRETS MANAGER"
+
+#define FAILOVER_MODE_STRICT_WRITER     "STRICT WRITER"
+#define FAILOVER_MODE_STRICT_READER     "STRICT READER"
+#define FAILOVER_MODE_READER_OR_WRITER  "READER OR WRITER"
 
 /*
  * Deprecated connection parameters

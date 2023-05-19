@@ -166,7 +166,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_all_readers_strict_reader_failover) {
-  connection_string = builder.withServer(reader_endpoint).withAllowReaderConnections(true).withEnableStrictReaderFailover(true).build();
+  connection_string = builder.withServer(reader_endpoint).withFailoverMode("strict reader").build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (const auto& x : proxy_map) {
@@ -192,7 +192,7 @@ TEST_F(NetworkFailoverIntegrationTest, lost_connection_to_reader_instance) {
 }
 
 TEST_F(NetworkFailoverIntegrationTest, lost_connection_read_only) {
-  connection_string = builder.withServer(reader_endpoint).withAllowReaderConnections(true).build();
+  connection_string = builder.withServer(reader_endpoint).withFailoverMode("reader or writer").build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(reader_id);
@@ -231,7 +231,7 @@ TEST_F(NetworkFailoverIntegrationTest, fail_from_reader_to_reader_with_some_read
   // Assert there are at least 2 readers in the cluster.
   EXPECT_LE(2, readers.size());
 
-  connection_string = builder.withServer(reader_endpoint).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).withAllowReaderConnections(true).build();
+  connection_string = builder.withServer(reader_endpoint).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).withFailoverMode("reader or writer").build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   for (size_t index = 0; index < readers.size() - 1; ++index) {
@@ -258,7 +258,7 @@ TEST_F(NetworkFailoverIntegrationTest, failover_back_to_the_previously_down_read
   const std::string server = get_proxied_endpoint(first_reader);
   previous_readers.push_back(first_reader);
 
-  connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).withAllowReaderConnections(true).build();
+  connection_string = builder.withServer(server).withFailoverTimeout(GLOBAL_FAILOVER_TIMEOUT).withFailoverMode("reader or writer").build();
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out, MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
   disable_instance(first_reader);

@@ -409,7 +409,7 @@ void btnDetails_Click (HWND hwnd)
                     TRUE);                      // stretch tab page to fit tab ctrl
     flag = true;
 
-
+    // Auth mode dropdown
     HWND auth_tab = TabCtrl_1.hTabPages[AWS_AUTH_TAB - 1];
     HWND auth_mode_dlg = GetDlgItem(auth_tab, IDC_EDIT_auth_mode);
 
@@ -418,7 +418,19 @@ void btnDetails_Click (HWND hwnd)
     ComboBox_AddString(auth_mode_dlg, L"");
     ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_IAM));
     ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
-    
+
+    // Failover mode dropdown
+    HWND failover_tab = TabCtrl_1.hTabPages[FAILOVER_TAB - 1];
+    HWND failover_mode_dlg = GetDlgItem(failover_tab, IDC_EDIT_failover_mode);
+
+    ComboBox_ResetContent(failover_mode_dlg);
+
+    ComboBox_AddString(failover_mode_dlg, L"");
+    ComboBox_AddString(failover_mode_dlg, LSTR(FAILOVER_MODE_STRICT_WRITER));
+    ComboBox_AddString(failover_mode_dlg, LSTR(FAILOVER_MODE_STRICT_READER));
+    ComboBox_AddString(failover_mode_dlg, LSTR(FAILOVER_MODE_READER_OR_WRITER));
+
+    // SSL mode dropdown
     HWND ssl_tab = TabCtrl_1.hTabPages[SSL_TAB-1];
     HWND sslmode_dlg = GetDlgItem(ssl_tab, IDC_EDIT_sslmode);
 
@@ -704,18 +716,6 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         EnableWindow(secret_id, usingSecretsManager);
       }
       break;
-    case IDC_CHECK_allow_reader_connections:
-    {
-        HWND failoverTab = TabCtrl_1.hTabPages[FAILOVER_TAB - 1];
-        assert(failoverTab);
-        HWND prefetch = GetDlgItem(failoverTab, IDC_CHECK_enable_strict_reader_failover);
-        assert(prefetch);
-
-        EnableWindow(prefetch, !!Button_GetCheck(GetDlgItem(failoverTab,
-            IDC_CHECK_allow_reader_connections)));
-        setBoolFieldData(failoverTab, IDC_CHECK_enable_strict_reader_failover, Button_GetCheck(prefetch));
-    }
-    break;
     case IDC_CHECK_gather_perf_metrics:
       {
         HWND failoverTab = TabCtrl_1.hTabPages[FAILOVER_TAB-1];

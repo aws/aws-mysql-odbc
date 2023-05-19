@@ -525,6 +525,7 @@ int list_datasource_details(DataSource *ds)
   /* Failover */
   if (ds->host_pattern) printf("Failover Instance Host pattern:   %s\n", ds_get_utf8attr(ds->host_pattern, &ds->host_pattern8));
   if (ds->cluster_id) printf("Failover Cluster ID:   %s\n", ds_get_utf8attr(ds->cluster_id, &ds->cluster_id8));
+  if (ds->failover_mode) printf("Failover Mode:   %s\n", ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8));
 
   printf("Options:\n");
   if (ds->return_matching_rows) printf("\tFOUND_ROWS\n");
@@ -578,8 +579,7 @@ int list_datasource_details(DataSource *ds)
   if (ds->auth_secret_id) printf("\tSECRET_ID");
   /* Failover */
   if (ds->enable_cluster_failover) printf("\tENABLE_CLUSTER_FAILOVER\n");
-  if (ds->allow_reader_connections) printf("\tALLOW_READER_CONNECTIONS\n");
-  if (ds->enable_strict_reader_failover) printf("\tENABLE_STRICT_READER_FAILOVER\n");
+  if (ds->failover_mode) printf("\tFAILOVER_MODE\n");
   if (ds->gather_perf_metrics) printf("\tGATHER_PERF_METRICS\n");
   if (ds->gather_metrics_per_instance) printf("\tGATHER_METRICS_PER_INSTANCE\n");
   if (ds->topology_refresh_rate) printf("\tTOPOLOGY_REFRESH_RATE=%d\n", ds->topology_refresh_rate);
