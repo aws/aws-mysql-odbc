@@ -48,7 +48,7 @@ endif(WIN32)
 include(FetchContent)
 FetchContent_Declare(
   googletest
-  URL https://github.com/google/googletest/archive/refs/tags/v1.13.0.zip
+  URL https://github.com/google/googletest/archive/refs/tags/release-1.8.0.zip
 )
 FetchContent_Declare(
   toxiproxy
