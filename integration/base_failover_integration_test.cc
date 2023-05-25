@@ -90,8 +90,6 @@ protected:
   int MYSQL_PROXY_PORT = INTEGRATION_TEST_UTILS::str_to_int(std::getenv("MYSQL_PROXY_PORT"));
   Aws::String cluster_id = MYSQL_CLUSTER_URL.substr(0, MYSQL_CLUSTER_URL.find('.'));
 
-  static const int GLOBAL_FAILOVER_TIMEOUT = 120000;
-
   ConnectionStringBuilder builder;
   std::string connection_string;
 

@@ -40,6 +40,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.ToxiproxyContainer;
@@ -68,6 +69,9 @@ public class IntegrationContainerTest {
   private static final String TEST_DB_CLUSTER_IDENTIFIER = System.getenv("TEST_DB_CLUSTER_IDENTIFIER");
   private static final String PROXIED_DOMAIN_NAME_SUFFIX = ".proxied";
   private static List<ToxiproxyContainer> proxyContainers = new ArrayList<>();
+
+  private static final String ODBCINI_LOCATION = "/app/build/test/odbc.ini";
+  private static final String ODBCINSTINI_LOCATION = "/app/build/test/odbcinst.ini";
 
   private static final ContainerHelper containerHelper = new ContainerHelper();
   private static final AuroraTestUtility auroraUtil = new AuroraTestUtility("us-east-2");
@@ -126,7 +130,7 @@ public class IntegrationContainerTest {
       fail("Test container was not initialized correctly");
     }
 
-    containerHelper.runCTest(testContainer, "build/test");
+    containerHelper.runCTest(testContainer, "/app/build/test");
   }
 
   @Test
@@ -147,10 +151,69 @@ public class IntegrationContainerTest {
         .withEnv("TEST_PASSWORD", TEST_PASSWORD)
         .withEnv("TEST_DATABASE", TEST_DATABASE)
         .withEnv("MYSQL_PORT", Integer.toString(MYSQL_PORT))
-        .withEnv("ODBCINI", "/etc/odbc.ini")
-        .withEnv("ODBCINST", "/etc/odbcinst.ini")
-        .withEnv("ODBCSYSINI", "/etc")
+        .withEnv("ODBCINI", ODBCINI_LOCATION)
+        .withEnv("ODBCINST", ODBCINSTINI_LOCATION)
+        .withEnv("ODBCSYSINI", "/app/build/test")
         .withEnv("TEST_DRIVER", "/app/build/lib/awsmysqlodbca.so");
+  }
+
+  private void buildDriver(boolean enableIntegrationTests, boolean enablePerformanceTests, boolean enableUnitTests) {
+    try {
+      System.out.println("apt-get update");
+      Container.ExecResult result = testContainer.execInContainer("apt-get", "update");
+      System.out.println(result.getStdout());
+
+      System.out.println(
+        "apt-get install build-essential cmake git libgtk-3-dev libmysqlclient-dev unixodbc " +
+        "unixodbc-dev curl libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev -y");
+      result = testContainer.execInContainer(
+        "apt-get", "install", "build-essential", "cmake", "git", "libgtk-3-dev", "libmysqlclient-dev",
+        "unixodbc", "unixodbc-dev", "curl", "libcurl4-openssl-dev", "libssl-dev", "uuid-dev", "zlib1g-dev", "-y");
+      System.out.println(result.getStdout());
+
+      System.out.println("cmake -E make_directory ./build");
+      result = testContainer.execInContainer("cmake",  "-E",  "make_directory", "./build");
+      System.out.println(result.getStdout());
+
+      String buildCommand = "cmake -S . -B build " +
+        "-DCMAKE_BUILD_TYPE=Debug " +
+        "-DMYSQLCLIENT_STATIC_LINKING=TRUE " +
+        "-DENABLE_INTEGRATION_TESTS=" + (enableIntegrationTests ? "TRUE " : "FALSE ") +
+        "-DENABLE_PERFORMANCE_TESTS=" + (enablePerformanceTests ? "TRUE " : "FALSE ") +
+        "-DENABLE_UNIT_TESTS=" + (enableUnitTests ? "TRUE " : "FALSE ") +
+        "-DWITH_UNIXODBC=1";
+      System.out.println(buildCommand);
+
+      result = testContainer.execInContainer(
+        "cmake", "-S", ".", "-B", "build", 
+          "-DCMAKE_BUILD_TYPE=Debug", 
+          "-DMYSQLCLIENT_STATIC_LINKING=TRUE",
+          "-DENABLE_INTEGRATION_TESTS=" + (enableIntegrationTests ? "TRUE" : "FALSE"),
+          "-DENABLE_PERFORMANCE_TESTS=" + (enablePerformanceTests ? "TRUE" : "FALSE"),
+          "-DENABLE_UNIT_TESTS=" + (enableUnitTests ? "TRUE" : "FALSE"),
+          "-DWITH_UNIXODBC=1");
+      System.out.println(result.getStdout());
+
+      System.out.println("cmake --build ./build --config Debug");
+      result = testContainer.execInContainer("cmake",  "--build",  "./build", "--config", "Debug");
+      System.out.println(result.getStdout());
+    } catch (Exception e) {
+      fail("Test container failed during driver/test building process.");
+    }
+  }
+
+  private void displayIniFiles() {
+    try {
+      System.out.println("Using the following odbc.ini:");
+      Container.ExecResult result = testContainer.execInContainer("cat", ODBCINI_LOCATION);
+      System.out.println(result.getStdout());
+
+      System.out.println("Using the following odbcinst.ini:");
+      result = testContainer.execInContainer("cat", ODBCINSTINI_LOCATION);
+      System.out.println(result.getStdout());
+    } catch (Exception e) {
+      fail("Test container failed.");
+    }
   }
 
   private void setupFailoverIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
@@ -223,6 +286,10 @@ public class IntegrationContainerTest {
     testContainer.addEnv("MYSQL_PROXY_PORT", Integer.toString(mySQLProxyPort));
     testContainer.start();
 
+    buildDriver(true, false, false);
+
+    displayIniFiles();
+
     System.out.println("Toxyproxy Instances port: " + mySQLProxyPort);
   }
 
@@ -231,8 +298,11 @@ public class IntegrationContainerTest {
     mysqlContainer.start();
 
     testContainer
-      .withEnv("TEST_SERVER", COMMUNITY_SERVER)
-      .withCreateContainerCmdModifier(cmd -> cmd.withUser(DOCKER_UID + ":" + DOCKER_UID));
+      .withEnv("TEST_SERVER", COMMUNITY_SERVER);
     testContainer.start();
+
+    buildDriver(false, false, false);
+
+    displayIniFiles();
   }
 }

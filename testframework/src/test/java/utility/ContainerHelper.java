@@ -31,7 +31,9 @@ package utility;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.amazonaws.util.StringUtils;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.ExecCreateCmd;
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.exception.DockerException;
@@ -58,7 +60,7 @@ import org.testcontainers.utility.MountableFile;
 import org.testcontainers.utility.TestEnvironment;
 
 public class ContainerHelper {
-  private static final String TEST_CONTAINER_IMAGE_NAME = "kitware/cmake:ci-fedora35-x86_64-2022-02-01";
+  private static final String TEST_CONTAINER_IMAGE_NAME = "ubuntu:20.04";
   private static final DockerImageName TOXIPROXY_IMAGE =
       DockerImageName.parse("shopify/toxiproxy:2.1.0");
 
@@ -75,7 +77,7 @@ public class ContainerHelper {
       throws IOException, InterruptedException {
     System.out.println("==== Container console feed ==== >>>>");
     Consumer<OutputFrame> consumer = new ConsoleConsumer();
-    Long exitCode = execInContainer(container, consumer, "ctest", "--test-dir", testDir, "--output-on-failure");
+    Long exitCode = execInContainerWithWorkingDir(container, consumer, testDir, "ctest", "--output-on-failure");
     System.out.println("==== Container console feed ==== <<<<");
     assertEquals(0, exitCode, "Some tests failed.");
   }
@@ -98,6 +100,7 @@ public class ContainerHelper {
                     .entryPoint("/bin/sh -c \"while true; do sleep 30; done;\"")
                     .build()))
         .withEnv("LD_LIBRARY_PATH", "$LD_LIBRARY_PATH:/app/aws_sdk/install/lib")
+        .withEnv("DEBIAN_FRONTEND", "noninteractive")
         .withFileSystemBind(driverPath, "/app", BindMode.READ_WRITE)
         .withPrivilegedMode(true) // it's needed to control Linux core settings like TcpKeepAlive
         .withCopyFileToContainer(MountableFile.forHostPath("./gradlew"), "app/gradlew")
@@ -143,6 +146,46 @@ public class ContainerHelper {
         .withCmd(command)
         .exec();
 
+    try (final FrameConsumerResultCallback callback = new FrameConsumerResultCallback()) {
+      callback.addConsumer(OutputFrame.OutputType.STDOUT, consumer);
+      callback.addConsumer(OutputFrame.OutputType.STDERR, consumer);
+      dockerClient.execStartCmd(execCreateCmdResponse.getId()).exec(callback).awaitCompletion();
+    }
+
+    return dockerClient.inspectExecCmd(execCreateCmdResponse.getId()).exec().getExitCodeLong();
+  }
+
+  protected Long execInContainerWithWorkingDir(
+      GenericContainer<?> container,
+      Consumer<OutputFrame> consumer,
+      String workingDir,
+      String... command)
+      throws UnsupportedOperationException, IOException, InterruptedException {
+    if (!TestEnvironment.dockerExecutionDriverSupportsExec()) {
+      // at time of writing, this is the expected result in CircleCI.
+      throw new UnsupportedOperationException(
+          "Your docker daemon is running the \"lxc\" driver, which doesn't support \"docker exec\".");
+    }
+
+    InspectContainerResponse containerInfo = container.getContainerInfo();
+    if (!isRunning(containerInfo)) {
+      throw new IllegalStateException(
+          "execInContainer can only be used while the Container is running");
+    }
+
+    final String containerId = containerInfo.getId();
+    final DockerClient dockerClient = DockerClientFactory.instance().client();
+    final ExecCreateCmd cmd = dockerClient
+        .execCreateCmd(containerId)
+        .withAttachStdout(true)
+        .withAttachStderr(true)
+        .withCmd(command);
+
+    if (!StringUtils.isNullOrEmpty(workingDir)) {
+      cmd.withWorkingDir(workingDir);
+    }
+
+    final ExecCreateCmdResponse execCreateCmdResponse = cmd.exec();
     try (final FrameConsumerResultCallback callback = new FrameConsumerResultCallback()) {
       callback.addConsumer(OutputFrame.OutputType.STDOUT, consumer);
       callback.addConsumer(OutputFrame.OutputType.STDERR, consumer);

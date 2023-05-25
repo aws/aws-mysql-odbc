@@ -29,6 +29,8 @@
 
 #include "base_failover_integration_test.cc"
 
+static const int GLOBAL_FAILOVER_TIMEOUT = 120000;
+
 class NetworkFailoverIntegrationTest : public BaseFailoverIntegrationTest {
 protected:
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
