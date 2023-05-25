@@ -44,11 +44,42 @@
 std::mutex log_file_mutex;
 std::shared_ptr<FILE> log_file;
 
-void trace_print(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *fmt, ...) {
-  if (file && fmt) {
-    time_t now = time(nullptr);
+inline void set_time_buffer(char* time_buf, size_t buf_size) {
+  time_t now = time(nullptr);
+  strftime(time_buf, buf_size, "%Y/%m/%d %X ", localtime(&now));
+}
+
+inline void log_data(std::shared_ptr<FILE> file, char *time_buf,
+                     unsigned long dbc_id, const char* data) {
+
+#ifdef _WIN32
+  int pid;
+  pid = _getpid();
+#else
+  pid_t pid;
+  pid = getpid();
+#endif
+  {
+    std::lock_guard<std::mutex> guard(log_file_mutex);
+    fprintf(file.get(), "%s - Process ID %ld -  DBC ID %lu - %s\n", time_buf,
+            pid, dbc_id, data);
+    fflush(file.get());
+  }
+}
+
+void trace_print(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *message) {
+  if (file && message) {
     char time_buf[256];
-    strftime(time_buf, sizeof(time_buf), "%Y/%m/%d %X ", localtime(&now));
+    set_time_buffer(time_buf, sizeof(time_buf));
+
+    log_data(file, time_buf, dbc_id, message);
+  }
+}
+
+void trace_print_va_args(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *fmt, ...) {
+  if (file && fmt) {
+    char time_buf[256];
+    set_time_buffer(time_buf, sizeof(time_buf));
 
     va_list args1;
     va_start(args1, fmt);
@@ -59,19 +90,7 @@ void trace_print(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *f
     vsnprintf(buf.data(), buf.size(), fmt, args2);
     va_end(args2);
 
-#ifdef _WIN32
-    int pid;
-    pid = _getpid();
-#else
-    pid_t pid;
-    pid = getpid();
-#endif
-    {
-      std::lock_guard<std::mutex> guard(log_file_mutex);
-      fprintf(file.get(), "%s - Process ID %ld -  DBC ID %lu - %s\n", time_buf, pid,
-          dbc_id, buf.data());
-      fflush(file.get());
-    }
+    log_data(file, time_buf, dbc_id, buf.data());
   }
 }
 
