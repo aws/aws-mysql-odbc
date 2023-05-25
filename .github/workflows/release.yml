@@ -95,6 +95,9 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
 
+      - name: Install gcc7
+        run: sudo apt install g++-7
+
       # Configure build environment/dependencies
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install 
