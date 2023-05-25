@@ -100,7 +100,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     secrets_manager_proxy.cc
     topology_service.cc
     transact.cc
-    utility.cc)
+    utility.cc
+    telemetry.cc)
 
   IF(UNICODE)
     SET(DRIVER_SRCS ${DRIVER_SRCS} unicode.cc)
@@ -141,6 +142,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    mysql_proxy.h
                                    myutil.h
                                    parse.h
+                                   telemetry.h
                                    query_parsing.h
                                    secrets_manager_proxy.h
                                    topology_service.h
@@ -241,9 +243,9 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
 
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ODBC_DRIVER_LINK_FLAGS}")
     TARGET_LINK_LIBRARIES(${DRIVER_NAME}
-                          ${MYSQL_CLIENT_LIBS} ${CMAKE_THREAD_LIBS_INIT} m myodbc-util)
+                          ${MYSQL_CLIENT_LIBS} ${CMAKE_THREAD_LIBS_INIT} m myodbc-util otel_api)
     TARGET_LINK_LIBRARIES(${DRIVER_NAME_STATIC}
-                          ${MYSQL_CLIENT_LIBS} ${CMAKE_THREAD_LIBS_INIT} m myodbc-util)
+                          ${MYSQL_CLIENT_LIBS} ${CMAKE_THREAD_LIBS_INIT} m myodbc-util otel_api)
 
     IF(NOT ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
       TARGET_LINK_LIBRARIES(${DRIVER_NAME} resolv)

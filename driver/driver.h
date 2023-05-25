@@ -42,6 +42,7 @@
 #include "../MYODBC_MYSQL.h"
 #include "../MYODBC_CONF.h"
 #include "../MYODBC_ODBC.h"
+#include "telemetry.h"
 #include "util/installer.h"
 
 #include "connection_handler.h"
@@ -579,11 +580,16 @@ struct	ENV
   {}
 };
 
+enum OTEL_MODE
+{
+  OTEL_DISABLED = 0,
+  OTEL_PREFERRED,
+  OTEL_REQUIRED
+};
 
 static std::atomic_ulong last_dbc_id{1};
 
 /* Connection handler */
-
 struct DBC
 {
   ENV              *env;
@@ -623,6 +629,8 @@ struct DBC
   int           need_to_wakeup = 0;
   bool               transaction_open = false;     // Flag to indicate whether we have a transaction open
   fido_callback_func fido_callback = nullptr;
+  OTEL_MODE     otel_mode = OTEL_PREFERRED;
+  std::unique_ptr<MyODBC_Telemetry> telemetry;
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
   std::shared_ptr<CONNECTION_HANDLER> connection_handler = nullptr;
@@ -727,7 +735,6 @@ enum OUT_PARAM_STATE
   OPS_PREFETCHED,
   OPS_STREAMS_PENDING
 };
-
 
 #define CAT_SCHEMA_SET_FULL(STMT, C, S, V, CZ, SZ, CL, SL) { \
   bool cat_is_set = false; \
@@ -1069,6 +1076,7 @@ struct STMT
   DESC *imp_apd;
 
   std::recursive_mutex lock;
+  std::unique_ptr<MyODBC_Telemetry> telemetry;
 
   int ssps_bind_result();
 

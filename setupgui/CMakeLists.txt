@@ -171,6 +171,7 @@ if(use_gtk)
 
     target_link_libraries(${${gtk}_target} PRIVATE
        ${${gtk}_LIBS} myodbc-util ${ODBCLIB} ${MYSQL_CLIENT_LIBS} ${PLATFORM_LIBS}
+       otel_api
     )
 
     target_include_directories(${${gtk}_target} PRIVATE ${${gtk}_INCLUDE_DIRS})

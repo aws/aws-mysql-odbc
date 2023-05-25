@@ -233,6 +233,8 @@ static SQLWCHAR W_SSL_CRL[] =
 { 'S', 'S', 'L', '-', 'C', 'R', 'L', 0 };
 static SQLWCHAR W_SSL_CRLPATH[] =
 { 'S', 'S', 'L', '-', 'C', 'R', 'L', 'P', 'A', 'T', 'H', 0};
+static SQLWCHAR W_OPENTELEMETRY[] =
+{ 'O', 'P', 'E', 'N', 'T', 'E', 'L', 'E', 'M', 'E', 'T', 'R', 'Y', 0};
 
 /* AWS Authentication */
 static SQLWCHAR W_AUTH_MODE[] = { 'A', 'U', 'T', 'H', 'E', 'N', 'T', 'I', 'C', 'A', 'T', 'I', 'O', 'N', '_', 'M', 'O', 'D', 'E', 0};
