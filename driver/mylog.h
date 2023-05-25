@@ -42,11 +42,11 @@
   }
 
 #define MYLOG_DBC_TRACE(A, ...) \
-  { trace_print((A)->log_file, (A)->id, __VA_ARGS__); }
+  { trace_print_va_args((A)->log_file, (A)->id, __VA_ARGS__); }
 
-#define MYLOG_TRACE(A, B, ...)                            \
-  {                                                       \
-    if ((A) != nullptr) trace_print((A), B, __VA_ARGS__); \
+#define MYLOG_TRACE(A, B, ...)                                    \
+  {                                                               \
+    if ((A) != nullptr) trace_print_va_args((A), B, __VA_ARGS__); \
   }
 
 // stateless functor object for deleting FILE handle
@@ -65,6 +65,7 @@ extern std::mutex log_file_mutex;
 /* Functions used when debugging */
 std::shared_ptr<FILE> init_log_file();
 void end_log_file();
-void trace_print(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *fmt, ...);
+void trace_print(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *message);
+void trace_print_va_args(std::shared_ptr<FILE> file, unsigned long dbc_id, const char *fmt, ...);
 
 #endif /* __MYLOG_H__ */
