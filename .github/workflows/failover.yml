@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install gcc7
-        run: apt install g++-7
+        run: sudo apt install g++-7
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs & other dependencies
