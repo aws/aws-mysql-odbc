@@ -25,10 +25,14 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
+      CXX: g++-7
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
+
+      - name: Install gcc7
+        run: sudo apt install g++-7
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs & other dependencies
@@ -64,6 +68,7 @@ jobs:
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DCMAKE_CXX_COMPILER=g++-7
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
                 -DENABLE_PERFORMANCE_TESTS=FALSE
@@ -147,6 +152,7 @@ jobs:
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DCMAKE_CXX_COMPILER=g++-7
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_INTEGRATION_TESTS=TRUE
                 -DENABLE_PERFORMANCE_TESTS=FALSE
