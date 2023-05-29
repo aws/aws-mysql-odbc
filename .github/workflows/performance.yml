@@ -16,14 +16,10 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
-      CXX: g++-7
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
-
-      - name: Install gcc7
-        run: sudo apt install g++-7
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs & other dependencies
