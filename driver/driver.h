@@ -630,7 +630,7 @@ struct DBC
   bool               transaction_open = false;     // Flag to indicate whether we have a transaction open
   fido_callback_func fido_callback = nullptr;
   OTEL_MODE     otel_mode = OTEL_PREFERRED;
-  std::unique_ptr<MyODBC_Telemetry> telemetry;
+  telemetry::Span_ptr span;
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
   std::shared_ptr<CONNECTION_HANDLER> connection_handler = nullptr;
@@ -1033,7 +1033,7 @@ struct STMT
   MY_PARSED_QUERY	query, orig_query;
   std::vector<MYSQL_BIND> param_bind;
   std::vector<MYSQL_BIND> query_attr_bind;
-  std::vector<char*>      query_attr_names;
+  std::vector<const char*>      query_attr_names;
 
   std::unique_ptr<my_bool[]> rb_is_null;
   std::unique_ptr<my_bool[]> rb_err;
@@ -1076,7 +1076,7 @@ struct STMT
   DESC *imp_apd;
 
   std::recursive_mutex lock;
-  std::unique_ptr<MyODBC_Telemetry> telemetry;
+  telemetry::Span_ptr span;
 
   int ssps_bind_result();
 
@@ -1117,6 +1117,8 @@ struct STMT
     Error message and errno is taken from dbc->mysql
   */
   SQLRETURN set_error(myodbc_errid errid);
+
+  void add_query_attr(const char *name, std::string &val);
 
   /*
     Error message and errno is taken from dbc->mysql

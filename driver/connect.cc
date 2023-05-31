@@ -803,15 +803,9 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
       otel_mode = OTEL_REQUIRED;
   }
 
-  if (!MyODBC_Telemetry::otel_libs_loaded() && otel_mode == OTEL_REQUIRED)
+  if (otel_mode != OTEL_DISABLED)
   {
-    return set_error("HY000", "OPT_OPENTELEMETRY is set to OTEL_REQUIRED, "
-      "but OpenTelemetry libraries are not loaded", 0);
-  }
-
-  if (MyODBC_Telemetry::otel_libs_loaded() && otel_mode != OTEL_DISABLED)
-  {
-    telemetry.reset(new MyODBC_Telemetry("connection"));
+    span = telemetry::mk_span(this);
   }
 
   auto do_connect = [this,&dsrc,&flags](
@@ -1126,8 +1120,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   rc = dbc->fh->init_connection();
 
   if (!SQL_SUCCEEDED(rc)) {
-    dbc->telemetry->set_status(MyODBC_Telemetry::Status::ERROR, dbc->error.message);
-    dbc->telemetry.reset();
+    telemetry::set_error(dbc->span, dbc->error.message);
   }
 
   if (!dbc->ds)
@@ -1250,8 +1243,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     rc = dbc->fh->init_connection();
 
     if (!SQL_SUCCEEDED(rc)) {
-      dbc->telemetry->set_status(MyODBC_Telemetry::Status::ERROR, dbc->error.message);
-      dbc->telemetry.reset();
+      telemetry::set_error(dbc->span, dbc->error.message);
     }
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
@@ -1429,8 +1421,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   rc = dbc->fh->init_connection();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
   {
-    dbc->telemetry->set_status(MyODBC_Telemetry::Status::ERROR, dbc->error.message);
-    dbc->telemetry.reset();
+    telemetry::set_error(dbc->span, dbc->error.message);
     goto error;
   }
 
