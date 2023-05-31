@@ -35,8 +35,9 @@
 
 #include "driver.h"
 #include "installer.h"
+#include "stringutil.h"
+#include "telemetry.h"
 
-#include <opentelemetry/trace/provider.h>
 #include <map>
 #include <vector>
 #include <sstream>
@@ -793,20 +794,34 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
   }
 
-  if (dsrc->opt_OPENTELEMETRY)
+  // Handle OPENTELEMETRY option.
+
+  otel_mode = OTEL_PREFERRED;
+
+  while (dsrc->opt_OPENTELEMETRY)
   {
-    if (!myodbc_strcasecmp(ODBC_OTEL_DISABLED, dsrc->opt_OPENTELEMETRY))
-      otel_mode = OTEL_DISABLED;
-    if (!myodbc_strcasecmp(ODBC_SSL_MODE_PREFERRED, dsrc->opt_OPENTELEMETRY))
-      otel_mode = OTEL_PREFERRED;
-    if (!myodbc_strcasecmp(ODBC_SSL_MODE_REQUIRED, dsrc->opt_OPENTELEMETRY))
-      otel_mode = OTEL_REQUIRED;
+#ifndef TELEMETRY
+
+    return set_error("HY000",
+      "OPENTELEMETRY option is not supported on this platform."
+    ,0);
+
+#else
+
+#define SET_OTEL_MODE(X) \
+    if (!myodbc_strcasecmp(#X, dsrc->opt_OPENTELEMETRY)) \
+    { otel_mode = OTEL_ ## X; break; }
+
+    ODBC_OTEL_MODE(SET_OTEL_MODE)
+
+    return set_error("HY000",
+      "OPENTELEMETRY option can be set only to DISABLED or PREFERRED"
+    , 0);
+
+#endif
   }
 
-  if (otel_mode != OTEL_DISABLED)
-  {
-    span = telemetry::mk_span(this);
-  }
+  TELEMETRY_SPAN_START(otel_mode, this)
 
   auto do_connect = [this,&dsrc,&flags](
                     const char *host,
@@ -1118,10 +1133,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_connection();
-
-  if (!SQL_SUCCEEDED(rc)) {
-    telemetry::set_error(dbc->span, dbc->error.message);
-  }
+  TELEMETRY_SET_ERROR(rc, dbc->span, dbc->error.message);
 
   if (!dbc->ds)
     ds_delete(ds);
@@ -1242,9 +1254,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
     rc = dbc->fh->init_connection();
 
-    if (!SQL_SUCCEEDED(rc)) {
-      telemetry::set_error(dbc->span, dbc->error.message);
-    }
+    TELEMETRY_SET_ERROR(rc, dbc->span, dbc->error.message);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
       goto connected;
@@ -1421,7 +1431,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   rc = dbc->fh->init_connection();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
   {
-    telemetry::set_error(dbc->span, dbc->error.message);
+    TELEMETRY_SET_ERROR(rc, dbc->span, dbc->error.message);
     goto error;
   }
 

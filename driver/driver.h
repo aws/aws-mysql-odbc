@@ -629,8 +629,11 @@ struct DBC
   int           need_to_wakeup = 0;
   bool               transaction_open = false;     // Flag to indicate whether we have a transaction open
   fido_callback_func fido_callback = nullptr;
+
+#ifdef TELEMETRY
   OTEL_MODE     otel_mode = OTEL_PREFERRED;
   telemetry::Span_ptr span;
+#endif
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
   std::shared_ptr<CONNECTION_HANDLER> connection_handler = nullptr;
@@ -1076,7 +1079,9 @@ struct STMT
   DESC *imp_apd;
 
   std::recursive_mutex lock;
+#ifdef TELEMETRY
   telemetry::Span_ptr span;
+#endif
 
   int ssps_bind_result();
 

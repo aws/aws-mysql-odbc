@@ -100,8 +100,11 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     secrets_manager_proxy.cc
     topology_service.cc
     transact.cc
-    utility.cc
-    telemetry.cc)
+    utility.cc)
+
+  if(TELEMETRY)
+      list(APPEND DRIVER_SRCS telemetry.cc)
+  endif()
 
   IF(UNICODE)
     SET(DRIVER_SRCS ${DRIVER_SRCS} unicode.cc)
@@ -114,6 +117,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   INCLUDE_DIRECTORIES(../util)
 
   IF(WIN32)
+
     # Headers added for convenience of VS users
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.def.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.def @ONLY)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
@@ -142,11 +146,13 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    mysql_proxy.h
                                    myutil.h
                                    parse.h
-                                   telemetry.h
                                    query_parsing.h
                                    secrets_manager_proxy.h
                                    topology_service.h
                                    ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
+    if(TELEMETRY)
+        list(APPEND DRIVER_SRCS telemetry.h)
+    endif()
   ENDIF(WIN32)
 
   # Note: We build driver as a MODULE, because this is what it really is
