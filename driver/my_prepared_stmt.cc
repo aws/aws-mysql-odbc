@@ -1036,9 +1036,7 @@ SQLRETURN STMT::bind_query_attrs(bool use_ssps)
   MYSQL_BIND *bind = query_attr_bind.data();
   const char** names = (const char**)query_attr_names.data();
 
-  if (dbc->connection_proxy->bind_param(rcount - param_count,
-                             query_attr_bind.data(),
-                             (const char**)query_attr_names.data()))
+  if (dbc->connection_proxy->bind_param((unsigned int)query_attr_bind.size(), bind, names))
   {
     set_error("HY000");
     return SQL_SUCCESS_WITH_INFO;
