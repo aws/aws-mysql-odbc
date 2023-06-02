@@ -1431,7 +1431,6 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
   rc = dbc->fh->init_connection();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
   {
-    TELEMETRY_SET_ERROR(rc, dbc->span, dbc->error.message);
     goto error;
   }
 
@@ -1492,6 +1491,7 @@ connected:
   }
 
 error:
+  TELEMETRY_SET_ERROR(rc, dbc->span, dbc->error.message);
   if (hModule)
     FreeLibrary(hModule);
 

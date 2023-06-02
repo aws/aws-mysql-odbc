@@ -233,6 +233,10 @@ SQLRETURN do_query(STMT *stmt, std::string query)
         error= SQL_SUCCESS;     /* no result set */
         stmt->state= ST_EXECUTED;
         update_affected_rows(stmt);
+        #ifdef TELEMETRY
+        // The query without results can end spans here.
+        telemetry::end_span(stmt->span);
+        #endif
         goto exit;
       }
     }
@@ -265,6 +269,11 @@ SQLRETURN do_query(STMT *stmt, std::string query)
     error= SQL_SUCCESS;
 
 exit:
+    #ifdef TELEMETRY
+    if (!SQL_SUCCEEDED(error)) {
+      telemetry::set_error(stmt->span, stmt->error.message);
+    }
+    #endif
     if (trigger_failover_upon_error && error == SQL_ERROR) {
       const char *error_code, *error_msg;
       if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), error_code, error_msg))
@@ -283,7 +292,6 @@ exit:
 
     return error;
 }
-
 
 /*
   @type    : myodbc3 internal
