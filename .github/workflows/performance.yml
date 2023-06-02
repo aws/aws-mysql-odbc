@@ -16,25 +16,10 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
-      CXX: g++-7
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
-
-      - name: Install gcc7
-        run: sudo apt install g++-7
-
-      # Configure build environment/dependencies
-      - name: Install MySQL client libs & other dependencies
-        run: sudo apt-get update && sudo apt-get install 
-                build-essential 
-                libgtk-3-dev 
-                libmysqlclient-dev 
-                unixodbc
-                unixodbc-dev
-                curl
-                libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
@@ -49,28 +34,6 @@ jobs:
         if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
         run: |
           ./build_aws_sdk_unix.sh $BUILD_TYPE
-
-      - name: Create build environment
-        shell: bash
-        run: cmake -E make_directory ${{ github.workspace }}/build
-
-      - name: Configure CMake
-        shell: bash
-        # Performance tests are disabled by default
-        run: cmake -S . -B build
-                -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-                -DMYSQLCLIENT_STATIC_LINKING=TRUE
-                -DENABLE_INTEGRATION_TESTS=TRUE
-                -DENABLE_PERFORMANCE_TESTS=TRUE
-                -DENABLE_UNIT_TESTS=FALSE
-                -DWITH_UNIXODBC=1
-
-      # Build driver
-      - name: Build driver
-        working-directory: ${{ github.workspace }}/build
-        shell: bash
-        run: cmake --build . --config $BUILD_TYPE
 
       - name: 'Set up JDK 8'
         uses: actions/setup-java@v1
@@ -101,9 +64,9 @@ jobs:
       - name: 'Run Performance Tests'
         working-directory: ${{ github.workspace }}/testframework
         run: |
-          ./gradlew --no-parallel --no-daemon test-failover --info
+          ./gradlew --no-parallel --no-daemon test-performance --info
         env:
-          TEST_DSN: atlas
+          TEST_DSN: awsmysqlodbca
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
           TEST_DB_CLUSTER_IDENTIFIER: ${{ secrets.TEST_DB_CLUSTER_IDENTIFIER }}-${{ github.run_id }}-${{ github.run_attempt }}

@@ -140,6 +140,13 @@ public class IntegrationContainerTest {
     containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
   }
 
+  @Test
+  public void testRunPerformanceTestInContainer()
+      throws UnsupportedOperationException, IOException, InterruptedException {
+    setupPerformanceIntegrationTests(NETWORK);
+    containerHelper.runExecutable(testContainer, "build/integration/bin", "integration");
+  }
+
   protected static GenericContainer<?> createTestContainer(final Network network) {
     return containerHelper.createTestContainer(
             "odbc/rds-test-container",
@@ -216,7 +223,7 @@ public class IntegrationContainerTest {
     }
   }
 
-  private void setupFailoverIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
+  private void setupTestContainer(final Network network) throws InterruptedException, UnknownHostException {
     if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY)) {
       // Comment out below to not create a new cluster & instances
       AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, TEST_DB_CLUSTER_IDENTIFIER, TEST_DATABASE);
@@ -286,11 +293,23 @@ public class IntegrationContainerTest {
     testContainer.addEnv("MYSQL_PROXY_PORT", Integer.toString(mySQLProxyPort));
     testContainer.start();
 
+    System.out.println("Toxyproxy Instances port: " + mySQLProxyPort);
+  }
+
+  private void setupFailoverIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
+    setupTestContainer(network);
+
     buildDriver(true, false, false);
 
     displayIniFiles();
+  }
 
-    System.out.println("Toxyproxy Instances port: " + mySQLProxyPort);
+  private void setupPerformanceIntegrationTests(final Network network) throws InterruptedException, UnknownHostException {
+    setupTestContainer(network);
+
+    buildDriver(true, true, false);
+
+    displayIniFiles();
   }
 
   private void setupCommunityTests(final Network network) {
