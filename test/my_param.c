@@ -94,6 +94,7 @@ DECLARE_TEST(my_param_data)
 
   }
 
+  ok_stmt(hstmt1, SQLFreeStmt(hstmt1, SQL_RESET_PARAMS));
   ok_sql(hstmt1, "SELECT * FROM test_param_data ORDER BY c1");
 
   ok_stmt(hstmt1, SQLBindCol(hstmt1, 1, SQL_C_ULONG, &c1, sizeof(c1), &c1_len_or_ind));
@@ -1355,6 +1356,7 @@ DECLARE_TEST(t_odbcoutparams)
   ok_stmt(hstmt, SQLMoreResults(hstmt));
 
   expect_stmt(hstmt, SQLMoreResults(hstmt), SQL_NO_DATA);
+  ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_RESET_PARAMS));
 
   ok_sql(hstmt, "DROP PROCEDURE t_odbcoutparams");
   ok_sql(hstmt, "CREATE PROCEDURE t_odbcoutparams("
@@ -1392,6 +1394,7 @@ DECLARE_TEST(t_odbcoutparams)
   is_num(my_fetch_int(hstmt, 2), 200);
 
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
+  ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_RESET_PARAMS));
 
   ok_sql(hstmt, "DROP PROCEDURE t_odbcoutparams");
 

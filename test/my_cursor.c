@@ -3397,6 +3397,7 @@ DECLARE_TEST(t_18805455)
 
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_UNBIND));
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
+  ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_RESET_PARAMS));
 
   /* Now fetch and verify the data */
   ok_sql(hstmt, "SELECT * FROM t_18805455");
