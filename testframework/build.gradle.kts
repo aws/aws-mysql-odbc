@@ -33,6 +33,10 @@ tasks.register<Test>("test-community") {
     filter.includeTestsMatching("host.IntegrationContainerTest.testRunCommunityTestInContainer")
 }
 
+tasks.register<Test>("test-performance") {
+    filter.includeTestsMatching("host.IntegrationContainerTest.testRunPerformanceTestInContainer")
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
     group = "verification"
