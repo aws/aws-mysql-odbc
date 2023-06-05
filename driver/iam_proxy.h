@@ -79,12 +79,14 @@ public:
 
     std::string get_auth_token(
         const char* host,const char* region, unsigned int port,
-        const char* user, unsigned int time_until_expiration);
+        const char* user, unsigned int time_until_expiration,
+        bool force_generate_new_token = false);
 
 protected:
     static std::unordered_map<std::string, TOKEN_INFO> token_cache;
     static std::mutex token_cache_mutex;
     std::shared_ptr<Aws::RDS::RDSClient> rds_client;
+    bool using_cached_token = false;
 
     static std::string build_cache_key(
         const char* host, const char* region, unsigned int port, const char* user);

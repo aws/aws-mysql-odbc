@@ -79,7 +79,8 @@ bool IAM_PROXY::change_user(const char* user, const char* passwd, const char* db
 
 std::string IAM_PROXY::get_auth_token(
     const char* host, const char* region, unsigned int port,
-    const char* user, unsigned int time_until_expiration) {
+    const char* user, unsigned int time_until_expiration,
+    bool force_generate_new_token) {
 
     if (!host) {
         host = "";
@@ -93,20 +94,25 @@ std::string IAM_PROXY::get_auth_token(
 
     std::string auth_token;
     std::string cache_key = build_cache_key(host, region, port, user);
+    using_cached_token = false;
 
     {
         std::unique_lock<std::mutex> lock(token_cache_mutex);
 
-        // Search for token in cache
-        auto find_token = token_cache.find(cache_key);
-        if (find_token != token_cache.end())
-        {
-            TOKEN_INFO info = find_token->second;
-            if (info.is_expired()) {
-                token_cache.erase(cache_key);
-            }
-            else {
-                return info.token;
+        if (force_generate_new_token) {
+            token_cache.erase(cache_key);
+        }
+        else {
+            // Search for token in cache
+            auto find_token = token_cache.find(cache_key);
+            if (find_token != token_cache.end()) {
+                TOKEN_INFO info = find_token->second;
+                if (info.is_expired()) {
+                    token_cache.erase(cache_key);
+                } else {
+                    using_cached_token = true;
+                    return info.token;
+                }
             }
         }
 
@@ -143,15 +149,27 @@ void IAM_PROXY::clear_token_cache() {
 bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)> func) {
 
     // Use user provided auth host if present, otherwise, use server host
-    const char* auth_host = ds->auth_host ? ds_get_utf8attr(ds->auth_host, &ds->auth_host8) : (const char*)ds->server8;
+    const char* auth_host = ds->auth_host ? ds_get_utf8attr(ds->auth_host, &ds->auth_host8) : 
+                                            (const char*)ds->server8;
 
     // Go with default region if region is not provided.
-    const char* region = ds->auth_region8 ? (const char*)ds->auth_region8 : Aws::Region::US_EAST_1;
+    const char* region = ds->auth_region8 ? (const char*)ds->auth_region8 : 
+                                            Aws::Region::US_EAST_1;
 
-    std::string auth_token = this->get_auth_token(auth_host, region, ds->auth_port, (const char*)ds->uid8, ds->auth_expiration);
+    std::string auth_token = this->get_auth_token(auth_host, region, ds->auth_port, 
+                                                  (const char*)ds->uid8, ds->auth_expiration);
 
     bool connect_result = func(auth_token.c_str());
     if (!connect_result) {
+        if (using_cached_token) {
+            // Retry func with a fresh token
+            auth_token = this->get_auth_token(auth_host, region, ds->auth_port, (const char *)ds->uid8,
+                                              ds->auth_expiration, true);
+            if (func(auth_token.c_str())) {
+                return true;
+            }
+        }
+        
         Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
         Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
         if (credentials.IsEmpty()) {
