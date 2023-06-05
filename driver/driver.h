@@ -580,14 +580,6 @@ struct	ENV
   {}
 };
 
-enum OTEL_MODE
-{
-  OTEL_DISABLED = 0,
-  OTEL_PREFERRED,
-  OTEL_REQUIRED
-};
-
-static std::atomic_ulong last_dbc_id{1};
 
 /* Connection handler */
 struct DBC
@@ -630,10 +622,7 @@ struct DBC
   bool               transaction_open = false;     // Flag to indicate whether we have a transaction open
   fido_callback_func fido_callback = nullptr;
 
-  OTEL_MODE     otel_mode = OTEL_PREFERRED;
-#ifdef TELEMETRY
-  telemetry::Span_ptr span;
-#endif
+  telemetry::Telemetry<DBC> telemetry;
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
   std::shared_ptr<CONNECTION_HANDLER> connection_handler = nullptr;
@@ -1079,9 +1068,13 @@ struct STMT
   DESC *imp_apd;
 
   std::recursive_mutex lock;
-#ifdef TELEMETRY
-  telemetry::Span_ptr span;
-#endif
+  telemetry::Telemetry<STMT> telemetry;
+
+  telemetry::Telemetry<DBC>& conn_telemetry()
+  {
+    assert(dbc);
+    return dbc->telemetry;
+  }
 
   int ssps_bind_result();
 
@@ -1123,7 +1116,7 @@ struct STMT
   */
   SQLRETURN set_error(myodbc_errid errid);
 
-  void add_query_attr(const char *name, std::string &val);
+  void add_query_attr(const char *name, std::string val);
   bool query_attr_exists(const char *name);
   /*
     Error message and errno is taken from dbc->mysql

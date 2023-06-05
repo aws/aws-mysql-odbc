@@ -796,7 +796,8 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
   // Handle OPENTELEMETRY option.
 
-  otel_mode = OTEL_PREFERRED;
+  // Note: Using while() instead of if() to be able to get out of it with
+  // `break` statement.
 
   while (dsrc->opt_OPENTELEMETRY)
   {
@@ -808,9 +809,9 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
 #else
 
-#define SET_OTEL_MODE(X) \
+#define SET_OTEL_MODE(X,N) \
     if (!myodbc_strcasecmp(#X, dsrc->opt_OPENTELEMETRY)) \
-    { otel_mode = OTEL_ ## X; break; }
+    { telemetry.set_mode(OTEL_ ## X); break; }
 
     ODBC_OTEL_MODE(SET_OTEL_MODE)
 
@@ -821,7 +822,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 #endif
   }
 
-  TELEMETRY_SPAN_START(otel_mode, this)
+  telemetry.span_start(this);
 
   auto do_connect = [this,&dsrc,&flags](
                     const char *host,
@@ -1133,7 +1134,8 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_connection();
-  TELEMETRY_SET_ERROR(rc, dbc->span, dbc->error.message);
+  if (!SQL_SUCCEEDED(rc))
+    dbc->telemetry.set_error(dbc, dbc->error.message);
 
   if (!dbc->ds)
     ds_delete(ds);
@@ -1254,7 +1256,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
     rc = dbc->fh->init_connection();
 
-    TELEMETRY_SET_ERROR(rc, dbc->span, dbc->error.message);
+    if (!SQL_SUCCEEDED(rc))
+      dbc->telemetry.set_error(dbc, dbc->error.message);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
       goto connected;
@@ -1491,7 +1494,9 @@ connected:
   }
 
 error:
-  TELEMETRY_SET_ERROR(rc, dbc->span, dbc->error.message);
+
+  if (!SQL_SUCCEEDED(rc))
+    dbc->telemetry.set_error(dbc, dbc->error.message);
   if (hModule)
     FreeLibrary(hModule);
 

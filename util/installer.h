@@ -39,6 +39,7 @@
 #include "../MYODBC_ODBC.h"
 #include <map>
 #include <vector>
+#include <string>
 
 #define UNDEFINED_PORT -1
 
@@ -515,9 +516,12 @@ extern const SQLWCHAR W_INVALID_ATTR_STR[];
 #define ODBC_SSL_MODE_VERIFY_CA          "VERIFY_CA"
 #define ODBC_SSL_MODE_VERIFY_IDENTITY    "VERIFY_IDENTITY"
 
-#define ODBC_OTEL_DISABLED           "DISABLED"
-#define ODBC_OTEL_PREFERRED          "PREFERRED"
-#define ODBC_OTEL_REQUIRED           "REQUIRED"
+
+// Possible values of OPENTELEMETRY option.
+
+#define ODBC_OTEL_MODE(X) \
+  X(DISABLED,0) \
+  X(PREFERRED,1)
 
 
 #define LPASTE(X) L ## X
