@@ -43,6 +43,7 @@ namespace {
     const std::string TEST_USER{"test_user"};
     const std::string TEST_TOKEN{"test_token"};
     const unsigned int TEST_PORT = 3306;
+    const unsigned int TEST_EXPIRATION = 100;
 }
 
 static SQLHENV env;
@@ -70,6 +71,12 @@ protected:
         SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
         dbc = static_cast<DBC *>(hdbc);
         ds = ds_new();
+
+        ds_setattr_from_utf8(&ds->auth_host, (SQLCHAR*)TEST_HOST.c_str());
+        ds_setattr_from_utf8(&ds->auth_region, (SQLCHAR*)TEST_REGION.c_str());
+        ds_setattr_from_utf8(&ds->uid, (SQLCHAR*)TEST_USER.c_str());
+        ds->auth_port = TEST_PORT;
+        ds->auth_expiration = TEST_EXPIRATION;
 
         mock_connection_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
         mock_token_generator = std::make_shared<MOCK_TOKEN_GENERATOR>();
@@ -167,6 +174,55 @@ TEST_F(IamProxyTest, RegenerateTokenAfterExpiration) {
         TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str(), time_to_expire);
 
     EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(cache_key));
+
+    TEST_UTILS::clear_token_cache(iam_proxy);
+}
+
+TEST_F(IamProxyTest, ForceGenerateNewToken) {
+    // We expect a token to be generated twice because the 2nd call to get_auth_token forces a fresh token.
+    EXPECT_CALL(*mock_token_generator, 
+        generate_auth_token(TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str()))
+        .WillOnce(Return(TEST_TOKEN))
+        .WillOnce(Return(TEST_TOKEN));
+
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+
+    const unsigned int time_to_expire = 100;
+    iam_proxy.get_auth_token(
+        TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str(), time_to_expire);
+    
+    // 2nd call to get_auth_token should still generate a new token because we are forcing it
+    // even though the first token has not yet expired 
+    iam_proxy.get_auth_token(
+        TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str(), time_to_expire, true);
+
+    TEST_UTILS::clear_token_cache(iam_proxy);
+}
+
+TEST_F(IamProxyTest, RetryConnectionWithFreshTokenAfterFailingWithCachedToken) {
+    // 1st connect is to get a token cached.
+    // 2nd connect is a failed connection using that cached token.
+    // 3rd connect is a successful connection using a fresh token.
+    EXPECT_CALL(*mock_connection_proxy, connect(_, _, _, _, _, _, _))
+        .WillOnce(Return(true))
+        .WillOnce(Return(false))
+        .WillOnce(Return(true));
+
+    // Only called twice because one of the above connection attempts used a cached token.
+    EXPECT_CALL(*mock_token_generator, generate_auth_token(_, _, _, _))
+        .WillOnce(Return(TEST_TOKEN))
+        .WillOnce(Return(TEST_TOKEN));
+
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+
+    // First successful connection to get a token cached.
+    bool ret = iam_proxy.connect(TEST_HOST.c_str(), TEST_USER.c_str(), "", "", TEST_PORT, "", 0);
+    EXPECT_TRUE(ret);
+
+    // This will first try to connect with the token that was cached in the above connection. 
+    // After failing that attempt it will try again with a fresh token and succeed.
+    ret = iam_proxy.connect(TEST_HOST.c_str(), TEST_USER.c_str(), "", "", TEST_PORT, "", 0);
+    EXPECT_TRUE(ret);
 
     TEST_UTILS::clear_token_cache(iam_proxy);
 }
