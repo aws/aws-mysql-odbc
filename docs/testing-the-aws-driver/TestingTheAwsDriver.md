@@ -125,3 +125,49 @@ There are two types of integration tests you can run. One type is an integration
    ```
 5. Navigate to the `testframework` directory and run the command: `./gradlew --no-parallel --no-daemon test-failover --info`.
 6. Log files are written to the `build` directory as `myodbc.log`.
+
+## Performance Test Metrics
+
+### Failover Performance with EFM disabled
+
+| NetworkOutageDelayMillis | FailoverTimeoutMillis | ConnectTimeoutSecs | NetworkTimeoutSecs | MinFailoverTimeMillis | MaxFailoverTimeMillis | AvgFailoverTimeMillis |
+|--------------------------|-----------------------|--------------------|--------------------|-----------------------|-----------------------|-----------------------|
+| 10000                    | 30000                 | 30                 | 30                 | 20187                 | 20243                 | 20209                 |
+| 15000                    | 30000                 | 30                 | 30                 | 15197                 | 15229                 | 15211                 |
+| 20000                    | 30000                 | 30                 | 30                 | 10185                 | 10238                 | 10211                 |
+| 25000                    | 30000                 | 30                 | 30                 | 5167                  | 5230                  | 5206                  |
+| 30000                    | 30000                 | 30                 | 30                 | 179                   | 257                   | 211                   |
+
+![](../images/failover_performance.png)
+
+### Enhanced Failure Monitoring Performance with failover disabled
+
+| NetworkOutageDelayMillis | DetectionTimeMillis   | DetectionIntervalMillis | DetectionCount | MinFailureDectionTimeMillis | MaxFailureDetectionTimeMillis | AvgFailureDetectionTimeMillis |
+|--------------------------|-----------------------|-------------------------|----------------|-----------------------------|-------------------------------|-------------------------------|
+| 10000                    | 30000                 | 5000                    | 3              | 35078                       | 35084                         | 35080                         |
+| 15000                    | 30000                 | 5000                    | 3              | 30067                       | 30074                         | 30071                         |
+| 20000                    | 30000                 | 5000                    | 3              | 25066                       | 25074                         | 25070                         |
+| 25000                    | 30000                 | 5000                    | 3              | 20057                       | 20068                         | 20063                         |
+| 30000                    | 30000                 | 5000                    | 3              | 20061                       | 20072                         | 20067                         |
+| 35000                    | 30000                 | 5000                    | 3              | 20060                       | 20071                         | 20066                         |
+| 40000                    | 30000                 | 5000                    | 3              | 20062                       | 20072                         | 20066                         |
+| 45000                    | 30000                 | 5000                    | 3              | 20066                       | 20072                         | 20069                         |
+| 50000                    | 30000                 | 5000                    | 3              | 20063                       | 20075                         | 20070                         |
+
+![](../images/efm_detection_performance.png)
+
+### Failover Performance with Enhanced Failure Monitoring enabled
+
+| NetworkOutageDelayMillis | DetectionTimeMillis   | DetectionIntervalMillis | DetectionCount | MinFailoverTimeMillis | MaxFailoverTimeMillis | AvgFailoverTimeMillis |
+|--------------------------|-----------------------|-------------------------|----------------|-----------------------|-----------------------|-----------------------|
+| 10000                    | 30000                 | 5000                    | 3              | 30310                 | 35089                 | 31121                 |
+| 15000                    | 30000                 | 5000                    | 3              | 25309                 | 30095                 | 26133                 |
+| 20000                    | 30000                 | 5000                    | 3              | 20331                 | 25090                 | 21135                 |
+| 25000                    | 30000                 | 5000                    | 3              | 15316                 | 20073                 | 16916                 |
+| 30000                    | 30000                 | 5000                    | 3              | 15325                 | 20051                 | 16897                 |
+| 35000                    | 30000                 | 5000                    | 3              | 15311                 | 20174                 | 16927                 |
+| 40000                    | 30000                 | 5000                    | 3              | 15314                 | 20087                 | 16127                 |
+| 45000                    | 30000                 | 5000                    | 3              | 15309                 | 20070                 | 16123                 |
+| 50000                    | 30000                 | 5000                    | 3              | 15309                 | 20007                 | 16100                 |
+
+![](../images/efm_failover_performance.png)
