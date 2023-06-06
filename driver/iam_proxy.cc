@@ -27,7 +27,6 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <functional>
 
 #include "aws_sdk_helper.h"
@@ -56,11 +55,20 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
         client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     }
 
-    this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
+    this->token_generator = std::make_shared<TOKEN_GENERATOR>(credentials, client_config);
 }
 
+#ifdef UNIT_TEST_BUILD
+IAM_PROXY::IAM_PROXY(DBC *dbc, DataSource *ds, CONNECTION_PROXY *next_proxy,
+                     std::shared_ptr<TOKEN_GENERATOR> token_generator) : CONNECTION_PROXY(dbc, ds) {
+
+    this->next_proxy = next_proxy;
+    this->token_generator = token_generator;
+}
+#endif
+
 IAM_PROXY::~IAM_PROXY() {
-    this->rds_client.reset();
+    this->token_generator.reset();
     --SDK_HELPER;
 }
 
@@ -117,7 +125,7 @@ std::string IAM_PROXY::get_auth_token(
         }
 
         // Generate new token
-        auth_token = generate_auth_token(host, region, port, user);
+        auth_token = token_generator->generate_auth_token(host, region, port, user);
 
         token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
     }
@@ -133,12 +141,6 @@ std::string IAM_PROXY::build_cache_key(
         .append(":").append(host)
         .append(":").append(std::to_string(port))
         .append(":").append(user);
-}
-
-std::string IAM_PROXY::generate_auth_token(
-    const char* host, const char* region, unsigned int port, const char* user) {
-
-    return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
 }
 
 void IAM_PROXY::clear_token_cache() {
