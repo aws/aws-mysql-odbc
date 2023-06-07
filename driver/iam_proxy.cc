@@ -27,7 +27,6 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <functional>
 
 #include "aws_sdk_helper.h"
@@ -56,11 +55,20 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
         client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
     }
 
-    this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
+    this->token_generator = std::make_shared<TOKEN_GENERATOR>(credentials, client_config);
 }
 
+#ifdef UNIT_TEST_BUILD
+IAM_PROXY::IAM_PROXY(DBC *dbc, DataSource *ds, CONNECTION_PROXY *next_proxy,
+                     std::shared_ptr<TOKEN_GENERATOR> token_generator) : CONNECTION_PROXY(dbc, ds) {
+
+    this->next_proxy = next_proxy;
+    this->token_generator = token_generator;
+}
+#endif
+
 IAM_PROXY::~IAM_PROXY() {
-    this->rds_client.reset();
+    this->token_generator.reset();
     --SDK_HELPER;
 }
 
@@ -79,7 +87,8 @@ bool IAM_PROXY::change_user(const char* user, const char* passwd, const char* db
 
 std::string IAM_PROXY::get_auth_token(
     const char* host, const char* region, unsigned int port,
-    const char* user, unsigned int time_until_expiration) {
+    const char* user, unsigned int time_until_expiration,
+    bool force_generate_new_token) {
 
     if (!host) {
         host = "";
@@ -93,25 +102,30 @@ std::string IAM_PROXY::get_auth_token(
 
     std::string auth_token;
     std::string cache_key = build_cache_key(host, region, port, user);
+    using_cached_token = false;
 
     {
         std::unique_lock<std::mutex> lock(token_cache_mutex);
 
-        // Search for token in cache
-        auto find_token = token_cache.find(cache_key);
-        if (find_token != token_cache.end())
-        {
-            TOKEN_INFO info = find_token->second;
-            if (info.is_expired()) {
-                token_cache.erase(cache_key);
-            }
-            else {
-                return info.token;
+        if (force_generate_new_token) {
+            token_cache.erase(cache_key);
+        }
+        else {
+            // Search for token in cache
+            auto find_token = token_cache.find(cache_key);
+            if (find_token != token_cache.end()) {
+                TOKEN_INFO info = find_token->second;
+                if (info.is_expired()) {
+                    token_cache.erase(cache_key);
+                } else {
+                    using_cached_token = true;
+                    return info.token;
+                }
             }
         }
 
         // Generate new token
-        auth_token = generate_auth_token(host, region, port, user);
+        auth_token = token_generator->generate_auth_token(host, region, port, user);
 
         token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
     }
@@ -129,12 +143,6 @@ std::string IAM_PROXY::build_cache_key(
         .append(":").append(user);
 }
 
-std::string IAM_PROXY::generate_auth_token(
-    const char* host, const char* region, unsigned int port, const char* user) {
-
-    return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
-}
-
 void IAM_PROXY::clear_token_cache() {
     std::unique_lock<std::mutex> lock(token_cache_mutex);
     token_cache.clear();
@@ -143,15 +151,27 @@ void IAM_PROXY::clear_token_cache() {
 bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)> func) {
 
     // Use user provided auth host if present, otherwise, use server host
-    const char* auth_host = ds->auth_host ? ds_get_utf8attr(ds->auth_host, &ds->auth_host8) : (const char*)ds->server8;
+    const char* auth_host = ds->auth_host ? ds_get_utf8attr(ds->auth_host, &ds->auth_host8) : 
+                                            (const char*)ds->server8;
 
     // Go with default region if region is not provided.
-    const char* region = ds->auth_region8 ? (const char*)ds->auth_region8 : Aws::Region::US_EAST_1;
+    const char* region = ds->auth_region8 ? (const char*)ds->auth_region8 : 
+                                            Aws::Region::US_EAST_1;
 
-    std::string auth_token = this->get_auth_token(auth_host, region, ds->auth_port, (const char*)ds->uid8, ds->auth_expiration);
+    std::string auth_token = this->get_auth_token(auth_host, region, ds->auth_port, 
+                                                  (const char*)ds->uid8, ds->auth_expiration);
 
     bool connect_result = func(auth_token.c_str());
     if (!connect_result) {
+        if (using_cached_token) {
+            // Retry func with a fresh token
+            auth_token = this->get_auth_token(auth_host, region, ds->auth_port, (const char *)ds->uid8,
+                                              ds->auth_expiration, true);
+            if (func(auth_token.c_str())) {
+                return true;
+            }
+        }
+        
         Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
         Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
         if (credentials.IsEmpty()) {
