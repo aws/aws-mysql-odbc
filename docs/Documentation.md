@@ -47,3 +47,7 @@
         - [Failover Specific Integration Tests](./testing-the-aws-driver/TestingTheAwsDriver.md#failover-specific-integration-tests)
             - [Prerequisites](./testing-the-aws-driver/TestingTheAwsDriver.md#prerequisites-1)
             - [Steps](./testing-the-aws-driver/TestingTheAwsDriver.md#steps-1)
+    - [Performance Tests](./testing-the-aws-driver/TestingTheAwsDriver.md#performance-test-metrics)
+        - [Failover Performance with EFM disabled](./testing-the-aws-driver/TestingTheAwsDriver.md#failover-performance-with-efm-disabled)
+        - [Enhanced Failure Monitoring Performance with failover disabled](./testing-the-aws-driver/TestingTheAwsDriver.md#enhanced-failure-monitoring-performance-with-failover-disabled)
+        - [Failover Performance with Enhanced Failure Monitoring enabled](./testing-the-aws-driver/TestingTheAwsDriver.md#failover-performance-with-enhanced-failure-monitoring-enabled)
