@@ -88,13 +88,6 @@ class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
     MOCK_METHOD(unsigned int, error_code, ());
 };
 
-class MOCK_IAM_PROXY : public IAM_PROXY {
-public:
-    MOCK_IAM_PROXY() : IAM_PROXY() {};
-    
-    MOCK_METHOD(std::string , generate_auth_token, (const char*, const char*, unsigned int, const char*));
-};
-
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
  public:
     MOCK_TOPOLOGY_SERVICE() : TOPOLOGY_SERVICE(0) {};
@@ -231,6 +224,13 @@ public:
     MOCK_SECRETS_MANAGER_CLIENT() : SecretsManagerClient() {};
 
     MOCK_METHOD(Aws::SecretsManager::Model::GetSecretValueOutcome, GetSecretValue, (const Aws::SecretsManager::Model::GetSecretValueRequest&), (const));
+};
+
+class MOCK_TOKEN_GENERATOR : public TOKEN_GENERATOR {
+public:
+    MOCK_TOKEN_GENERATOR() : TOKEN_GENERATOR() {};
+
+    MOCK_METHOD(std::string, generate_auth_token, (const char*, const char*, unsigned, const char*));
 };
 
 #endif /* __MOCKOBJECTS_H__ */

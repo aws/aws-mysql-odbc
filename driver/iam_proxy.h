@@ -31,6 +31,7 @@
 #ifndef __IAM_PROXY__
 #define __IAM_PROXY__
 
+#include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/rds/RDSClient.h>
 #include <unordered_map>
 
@@ -58,11 +59,34 @@ private:
     std::chrono::system_clock::time_point expiration_time;
 };
 
+class TOKEN_GENERATOR {
+public:
+    TOKEN_GENERATOR() {} // Default constructor used only in unit tests
+    TOKEN_GENERATOR(Aws::Auth::AWSCredentials credentials, Aws::RDS::RDSClientConfiguration client_config) {
+        this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
+    }
+    ~TOKEN_GENERATOR() {
+        this->rds_client.reset();
+    }
+
+    virtual std::string generate_auth_token(
+        const char* host, const char* region, unsigned int port, const char* user) {
+
+        return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
+    }
+
+private:
+    std::shared_ptr<Aws::RDS::RDSClient> rds_client;
+};
+
 class IAM_PROXY : public CONNECTION_PROXY {
 public:
     IAM_PROXY() = default;
     IAM_PROXY(DBC* dbc, DataSource* ds);
     IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
+#ifdef UNIT_TEST_BUILD
+    IAM_PROXY(DBC *dbc, DataSource *ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<TOKEN_GENERATOR> token_generator);
+#endif
     ~IAM_PROXY() override;
 
     bool connect(
@@ -79,17 +103,16 @@ public:
 
     std::string get_auth_token(
         const char* host,const char* region, unsigned int port,
-        const char* user, unsigned int time_until_expiration);
+        const char* user, unsigned int time_until_expiration,
+        bool force_generate_new_token = false);
 
 protected:
     static std::unordered_map<std::string, TOKEN_INFO> token_cache;
     static std::mutex token_cache_mutex;
-    std::shared_ptr<Aws::RDS::RDSClient> rds_client;
+    std::shared_ptr<TOKEN_GENERATOR> token_generator;
+    bool using_cached_token = false;
 
     static std::string build_cache_key(
-        const char* host, const char* region, unsigned int port, const char* user);
-
-    virtual std::string generate_auth_token(
         const char* host, const char* region, unsigned int port, const char* user);
 
     static void clear_token_cache();
