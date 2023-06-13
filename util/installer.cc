@@ -753,7 +753,7 @@ DataSource *ds_new()
   memset(ds, 0, sizeof(DataSource));
 
   /* non-zero DataSource defaults here */
-  ds->port = 3306;
+  ds->port = MYSQL_PORT;
   ds->has_port = false;
   ds->no_schema = 1;
   ds->auth_port = -1; // -1 to indicate that the user has not yet provided a value.

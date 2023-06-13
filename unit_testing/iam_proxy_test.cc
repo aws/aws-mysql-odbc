@@ -226,3 +226,15 @@ TEST_F(IamProxyTest, RetryConnectionWithFreshTokenAfterFailingWithCachedToken) {
 
     TEST_UTILS::clear_token_cache(iam_proxy);
 }
+
+TEST_F(IamProxyTest, UseRegularPortWhenAuthPortIsNotProvided) {
+    ds->auth_port = -1; // -1 indicates the user did not provide the port
+    
+    // Verify that we generate the token with the regular port when we do not have auth port.
+    EXPECT_CALL(*mock_token_generator, generate_auth_token(_, _, TEST_PORT, _))
+        .WillOnce(Return(TEST_TOKEN));
+
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+
+    iam_proxy.connect(TEST_HOST.c_str(), TEST_USER.c_str(), "", "", TEST_PORT, "", 0);
+}
