@@ -756,7 +756,7 @@ DataSource *ds_new()
   ds->port = MYSQL_PORT;
   ds->has_port = false;
   ds->no_schema = 1;
-  ds->auth_port = -1; // -1 to indicate that the user has not yet provided a value.
+  ds->auth_port = UNDEFINED_PORT;
   ds->auth_expiration = 900; // 15 minutes
   ds->enable_cluster_failover = true;
   ds->gather_perf_metrics = false;

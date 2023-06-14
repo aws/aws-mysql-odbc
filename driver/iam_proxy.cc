@@ -159,7 +159,7 @@ bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)
                                             Aws::Region::US_EAST_1;
 
     int iam_port = ds->auth_port;
-    if (iam_port == -1) {
+    if (iam_port == UNDEFINED_PORT) {
         // Use regular port if user does not provide IAM port
         iam_port = ds->port;
     }
@@ -171,7 +171,7 @@ bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)
     if (!connect_result) {
         if (using_cached_token) {
             // Retry func with a fresh token
-            auth_token = this->get_auth_token(auth_host, region, iam_port, (const char *)ds->uid8,
+            auth_token = this->get_auth_token(auth_host, region, iam_port, (const char*)ds->uid8,
                                               ds->auth_expiration, true);
             if (func(auth_token.c_str())) {
                 return true;

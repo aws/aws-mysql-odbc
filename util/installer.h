@@ -48,6 +48,8 @@ extern "C" {
 #define CONFIG_VIEW 3
 #define CONFIG_DRIVER_CONNECT 4
 
+#define UNDEFINED_PORT -1
+
 UWORD config_get();
 UWORD config_set(UWORD mode);
 
