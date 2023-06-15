@@ -753,10 +753,10 @@ DataSource *ds_new()
   memset(ds, 0, sizeof(DataSource));
 
   /* non-zero DataSource defaults here */
-  ds->port = 3306;
+  ds->port = MYSQL_PORT;
   ds->has_port = false;
   ds->no_schema = 1;
-  ds->auth_port = 3306;
+  ds->auth_port = UNDEFINED_PORT;
   ds->auth_expiration = 900; // 15 minutes
   ds->enable_cluster_failover = true;
   ds->gather_perf_metrics = false;

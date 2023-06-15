@@ -42,6 +42,8 @@
 extern "C" {
 #endif
 
+#define UNDEFINED_PORT -1
+
 /* the different modes used when calling MYODBCSetupDataSourceConfig */
 #define CONFIG_ADD 1
 #define CONFIG_EDIT 2
