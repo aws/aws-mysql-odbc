@@ -42,13 +42,13 @@
 extern "C" {
 #endif
 
+#define UNDEFINED_PORT -1
+
 /* the different modes used when calling MYODBCSetupDataSourceConfig */
 #define CONFIG_ADD 1
 #define CONFIG_EDIT 2
 #define CONFIG_VIEW 3
 #define CONFIG_DRIVER_CONNECT 4
-
-#define UNDEFINED_PORT -1
 
 UWORD config_get();
 UWORD config_set(UWORD mode);
