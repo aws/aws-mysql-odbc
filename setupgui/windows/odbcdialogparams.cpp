@@ -409,7 +409,7 @@ void btnDetails_Click (HWND hwnd)
 
     ComboBox_ResetContent(auth_mode_dlg);
 
-    HWND ssl_tab = TabCtrl_1.hTabPages[4];
+    HWND ssl_tab = TabCtrl_1.hTabPages[5];
     HWND combo = GetDlgItem(ssl_tab, IDC_EDIT_SSL_MODE);
 
     ComboBox_AddString(auth_mode_dlg, L"");
@@ -595,12 +595,7 @@ void processDbCombobox(HWND hwnd, HWND hwndCtl, UINT codeNotify)
       FillParameters(hwnd, pParams);
       std::vector<SQLWSTRING> dbs;
 
-      try
-      {
-        dbs = mygetdatabases(hwnd, pParams);
-      }
-      catch (MYERROR&) {
-      }
+      dbs = mygetdatabases(hwnd, pParams);
 
       ComboBox_ResetContent(hwndCtl);
 
