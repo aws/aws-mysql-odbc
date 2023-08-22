@@ -456,7 +456,10 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
       if (plugin)
       {
-        std::string opt_name = plugin_type + "_messages_callback";
+        std::string opt_name = (plugin_type == "webauthn" ?
+          "plugin_authentication_webauthn_client" :
+          plugin_type) + "_messages_callback";
+
         if (mysql_plugin_options(plugin, opt_name.c_str(),
              (const void*)fido_func))
         {
