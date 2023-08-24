@@ -941,7 +941,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
       if(do_connect(el->name.c_str(), el->port) == SQL_SUCCESS)
       {
         connected = true;
-        telemetry.set_attribs(this);
+        telemetry.set_attribs(this, dsrc);
         break;
       }
       else
