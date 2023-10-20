@@ -150,7 +150,8 @@ SQLRETURN do_query(STMT *stmt, std::string query)
 
         /* For some errors - translating to more appropriate status */
         translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                        stmt->dbc->connection_proxy->stmt_errno(stmt->ssps));
+                        stmt->error.native_error);
+        error = stmt->error.retcode;
         goto exit;
       }
       MYLOG_STMT_TRACE(stmt, "ssps has been executed");
@@ -225,7 +226,7 @@ SQLRETURN do_query(STMT *stmt, std::string query)
       /* Query was supposed to return result, but result is NULL*/
       if (returned_result(stmt))
       {
-        stmt->set_error(MYERR_S1000);
+        error = stmt->set_error(MYERR_S1000);
         goto exit;
       }
       else /* Query was not supposed to return a result */
@@ -241,7 +242,7 @@ SQLRETURN do_query(STMT *stmt, std::string query)
 
     if (bind_result(stmt) || get_result(stmt))
     {
-        stmt->set_error(MYERR_S1000);
+        error = stmt->set_error(MYERR_S1000);
         goto exit;
     }
     /* Caching row counts for queries returning resultset as well */
