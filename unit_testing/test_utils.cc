@@ -29,6 +29,9 @@
 
 #include "test_utils.h"
 
+//std::unordered_map<std::string, TOKEN_INFO> IAM_PROXY::token_cache;
+//std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue> SECRETS_MANAGER_PROXY::secrets_cache;
+
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds) {
     SQLHDBC hdbc = nullptr;
 
@@ -116,7 +119,7 @@ std::string TEST_UTILS::build_cache_key(const char* host, const char* region, un
 }
 
 bool TEST_UTILS::token_cache_contains_key(std::string cache_key) {
-    return IAM_PROXY::token_cache.find(cache_key) != IAM_PROXY::token_cache.end();
+    return IAM_PROXY::get_token_cache().find(cache_key) != IAM_PROXY::get_token_cache().end();
 }
 
 void TEST_UTILS::clear_token_cache(IAM_PROXY &iam_proxy) {
@@ -124,7 +127,7 @@ void TEST_UTILS::clear_token_cache(IAM_PROXY &iam_proxy) {
 }
 
 std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& TEST_UTILS::get_secrets_cache() {
-    return std::ref(SECRETS_MANAGER_PROXY::secrets_cache);
+    return std::ref(SECRETS_MANAGER_PROXY::get_secrets_cache());
 }
 
 bool TEST_UTILS::try_parse_region_from_secret(std::string secret, std::string& region) {

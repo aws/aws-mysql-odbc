@@ -41,8 +41,8 @@ struct DBC;
 
 // Monitoring context for each connection. This contains each connection's criteria for
 // whether a server should be considered unhealthy.
-class MONITOR_CONNECTION_CONTEXT {
-public:
+class __declspec(dllexport) MONITOR_CONNECTION_CONTEXT {
+ public:
     MONITOR_CONNECTION_CONTEXT(DBC* connection_to_abort,
                                std::set<std::string> node_keys,
                                std::chrono::milliseconds failure_detection_time,

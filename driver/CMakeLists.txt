@@ -151,15 +151,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   # but a dynamic module that will be loaded by ODBC manager. One
   # consequence of this is that on Windows import libraries will not
   # be generated nor installed.
-  IF(WIN32)
-    IF(ENABLE_UNIT_TESTS)
-      ADD_LIBRARY(${DRIVER_NAME} ${DRIVER_SRCS} ${AWSSDK_LIB_DIR})
-    ELSE(ENABLE_UNIT_TESTS)
-      ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS} ${AWSSDK_LIB_DIR})
-    ENDIF(ENABLE_UNIT_TESTS)
-  ELSE(WIN32)
-    ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS} ${AWSSDK_LIB_DIR})
-  ENDIF(WIN32)
+  ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS} ${AWSSDK_LIB_DIR})
 
   ADD_COVERAGE(${DRIVER_NAME})
 

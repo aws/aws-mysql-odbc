@@ -276,7 +276,7 @@ SQLRETURN SQL_API my_SQLAllocConnect  (SQLHENV henv, SQLHDBC *phdbc);
 SQLRETURN SQL_API my_SQLFreeConnect   (SQLHDBC hdbc);
 SQLRETURN SQL_API my_SQLFreeEnv       (SQLHENV henv);
 
-void myodbc_end();
+void  __declspec(dllexport) myodbc_end();
 my_bool set_dynamic_result        (STMT *stmt);
 void    set_current_cursor_data   (STMT *stmt,SQLUINTEGER irow);
 my_bool is_minimum_version        (const char *server_version,const char *version);

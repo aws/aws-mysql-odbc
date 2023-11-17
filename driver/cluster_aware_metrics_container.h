@@ -42,7 +42,7 @@
 struct DBC;
 struct DataSource;
 
-class CLUSTER_AWARE_METRICS_CONTAINER {
+class __declspec(dllexport) CLUSTER_AWARE_METRICS_CONTAINER {
 public:
     CLUSTER_AWARE_METRICS_CONTAINER();
     CLUSTER_AWARE_METRICS_CONTAINER(DBC* dbc, DataSource* ds);

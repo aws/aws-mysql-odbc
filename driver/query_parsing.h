@@ -33,6 +33,6 @@
 #include <string>
 #include <vector>
 
-std::vector<std::string> parse_query_into_statements(const char* original_query);
+std::vector<std::string> __declspec(dllexport) parse_query_into_statements(const char* original_query);
 
 #endif /* __QUERY_PARSING_H__ */

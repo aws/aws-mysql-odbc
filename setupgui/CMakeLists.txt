@@ -97,7 +97,7 @@ add_compile_options(${PLATFORM_CFLAGS})
 
 add_library(awsmysqlodbcS SHARED ${SETUP_SRCS})
 
-target_link_libraries(awsmysqlodbcS ${ODBCLIB} ${ODBCINSTLIB})
+target_link_libraries(awsmysqlodbcS ${ODBCLIB} ${ODBCINSTLIB} awsmysqlodbca)
 
 # Note: When using GTK+, these libraries will be linked to -gtk modules.
 

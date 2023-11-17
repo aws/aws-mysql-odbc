@@ -38,7 +38,11 @@
 #include "connection_proxy.h"
 #include "driver.h"
 
-class SECRETS_MANAGER_PROXY : public CONNECTION_PROXY {
+#ifdef UNIT_TEST_BUILD
+    class TEST_UTILS;
+#endif
+
+class __declspec(dllexport) SECRETS_MANAGER_PROXY : public CONNECTION_PROXY {
 public:
     SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds);
 #ifdef UNIT_TEST_BUILD
@@ -51,6 +55,8 @@ public:
     
     bool change_user(const char* user, const char* passwd,
                      const char* db) override;
+
+    static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& get_secrets_cache();
 
 private:
     std::shared_ptr<Aws::SecretsManager::SecretsManagerClient> sm_client;

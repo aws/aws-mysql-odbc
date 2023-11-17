@@ -192,3 +192,8 @@ bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)
 
     return connect_result;
 }
+
+std::unordered_map<std::string, TOKEN_INFO>& IAM_PROXY::get_token_cache() {
+         return token_cache;
+}
+

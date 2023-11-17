@@ -39,7 +39,7 @@
 // This class holds topology information for one cluster.
 // Cluster topology consists of an instance endpoint, a set of nodes in the cluster,
 // the type of each node in the cluster, and the status of each node in the cluster.
-class CLUSTER_TOPOLOGY_INFO {
+class __declspec(dllexport) CLUSTER_TOPOLOGY_INFO {
 public:
     CLUSTER_TOPOLOGY_INFO();
     CLUSTER_TOPOLOGY_INFO(const CLUSTER_TOPOLOGY_INFO& src_info); //copy constructor

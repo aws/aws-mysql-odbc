@@ -46,7 +46,7 @@ struct DataSource;
 class CONNECTION_PROXY;
 typedef short SQLRETURN;
 
-class CONNECTION_HANDLER {
+class __declspec(dllexport) CONNECTION_HANDLER {
     public:
         CONNECTION_HANDLER(DBC* dbc);
         virtual ~CONNECTION_HANDLER();

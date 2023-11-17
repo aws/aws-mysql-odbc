@@ -38,8 +38,8 @@
 #include <map>
 #include <queue>
 
-class MONITOR_THREAD_CONTAINER {
-public:
+class __declspec(dllexport) MONITOR_THREAD_CONTAINER {
+ public:
     MONITOR_THREAD_CONTAINER(MONITOR_THREAD_CONTAINER const&) = delete;
     MONITOR_THREAD_CONTAINER& operator=(MONITOR_THREAD_CONTAINER const&) = delete;
     virtual ~MONITOR_THREAD_CONTAINER() = default;

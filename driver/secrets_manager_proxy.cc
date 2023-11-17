@@ -215,3 +215,8 @@ bool SECRETS_MANAGER_PROXY::try_parse_region_from_secret(std::string secret, std
 
     return false;
 }
+
+std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& SECRETS_MANAGER_PROXY::get_secrets_cache() {
+        return secrets_cache;
+}
+

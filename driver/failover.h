@@ -37,7 +37,7 @@
 
 #include <condition_variable>
 
-struct READER_FAILOVER_RESULT {
+struct __declspec(dllexport) READER_FAILOVER_RESULT {
     bool connected = false;
     std::shared_ptr<HOST_INFO> new_host;
     CONNECTION_PROXY* new_connection;
@@ -53,7 +53,7 @@ struct READER_FAILOVER_RESULT {
 };
 
 // FAILOVER_SYNC enables synchronization between threads
-class FAILOVER_SYNC {
+class __declspec(dllexport) FAILOVER_SYNC {
    public:
     FAILOVER_SYNC(int num_tasks);
     void increment_task();
@@ -67,7 +67,7 @@ class FAILOVER_SYNC {
     std::condition_variable cv;
 };
 
-class FAILOVER_READER_HANDLER {
+class __declspec(dllexport) FAILOVER_READER_HANDLER {
    public:
     FAILOVER_READER_HANDLER(
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
@@ -109,7 +109,7 @@ class FAILOVER_READER_HANDLER {
 };
 
 // This struct holds results of Writer Failover Process.
-struct WRITER_FAILOVER_RESULT {
+struct __declspec(dllexport) WRITER_FAILOVER_RESULT {
     bool connected = false;
     bool is_new_host = false;  // True if process connected to a new host. False if
                                // process re-connected to the same host
@@ -131,7 +131,7 @@ struct WRITER_FAILOVER_RESULT {
           new_connection{new_connection} {}
 };
 
-class FAILOVER_WRITER_HANDLER {
+class __declspec(dllexport) FAILOVER_WRITER_HANDLER {
    public:
     FAILOVER_WRITER_HANDLER(
         std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
@@ -158,7 +158,7 @@ class FAILOVER_WRITER_HANDLER {
     ctpl::thread_pool& thread_pool;
 };
 
-class FAILOVER_HANDLER {
+class __declspec(dllexport) FAILOVER_HANDLER {
    public:
     FAILOVER_HANDLER(DBC* dbc, DataSource* ds);
     FAILOVER_HANDLER(
@@ -230,7 +230,7 @@ class FAILOVER_HANDLER {
 // file, but here for now
 //
 
-class FAILOVER {
+class __declspec(dllexport) FAILOVER {
    public:
     FAILOVER(std::shared_ptr<CONNECTION_HANDLER> connection_handler,
              std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
@@ -264,7 +264,7 @@ public:
         std::shared_ptr<READER_FAILOVER_RESULT> result);
 };
 
-class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
+class __declspec(dllexport) RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
    public:
     RECONNECT_TO_WRITER_HANDLER(
         std::shared_ptr<CONNECTION_HANDLER> connection_handler,
@@ -286,7 +286,7 @@ class RECONNECT_TO_WRITER_HANDLER : public FAILOVER {
         std::shared_ptr<CLUSTER_TOPOLOGY_INFO> latest_topology);
 };
 
-class WAIT_NEW_WRITER_HANDLER : public FAILOVER {
+class __declspec(dllexport) WAIT_NEW_WRITER_HANDLER : public FAILOVER {
    public:
     WAIT_NEW_WRITER_HANDLER(
         std::shared_ptr<CONNECTION_HANDLER> connection_handler,

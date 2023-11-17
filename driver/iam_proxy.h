@@ -39,7 +39,11 @@
 
 constexpr auto DEFAULT_TOKEN_EXPIRATION_SEC = 15 * 60;
 
-class TOKEN_INFO {
+#ifdef UNIT_TEST_BUILD
+    class TEST_UTILS;
+#endif
+
+class __declspec(dllexport) TOKEN_INFO {
 public:
     TOKEN_INFO() {};
     TOKEN_INFO(std::string token) : TOKEN_INFO(token, DEFAULT_TOKEN_EXPIRATION_SEC) {};
@@ -59,7 +63,7 @@ private:
     std::chrono::system_clock::time_point expiration_time;
 };
 
-class TOKEN_GENERATOR {
+class __declspec(dllexport) TOKEN_GENERATOR {
 public:
     TOKEN_GENERATOR() {} // Default constructor used only in unit tests
     TOKEN_GENERATOR(Aws::Auth::AWSCredentials credentials, Aws::RDS::RDSClientConfiguration client_config) {
@@ -79,7 +83,7 @@ private:
     std::shared_ptr<Aws::RDS::RDSClient> rds_client;
 };
 
-class IAM_PROXY : public CONNECTION_PROXY {
+class __declspec(dllexport) IAM_PROXY : public CONNECTION_PROXY {
 public:
     IAM_PROXY() = default;
     IAM_PROXY(DBC* dbc, DataSource* ds);
@@ -105,6 +109,8 @@ public:
         const char* host,const char* region, unsigned int port,
         const char* user, unsigned int time_until_expiration,
         bool force_generate_new_token = false);
+
+     static std::unordered_map<std::string, TOKEN_INFO>& get_token_cache();
 
 protected:
     static std::unordered_map<std::string, TOKEN_INFO> token_cache;

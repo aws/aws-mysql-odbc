@@ -34,7 +34,7 @@
 #include "driver.h"
 #include "monitor_service.h"
 
-class EFM_PROXY : public CONNECTION_PROXY {
+class __declspec(dllexport) EFM_PROXY : public CONNECTION_PROXY {
 public:
     EFM_PROXY(DBC* dbc, DataSource* ds);
     EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);

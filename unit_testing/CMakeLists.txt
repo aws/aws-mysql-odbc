@@ -41,6 +41,8 @@ FetchContent_Declare(
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+message(STATUS "CMAKE_BINARY_DIR is ${CMAKE_BINARY_DIR}")
 
 FetchContent_MakeAvailable(googletest)
 
@@ -70,15 +72,28 @@ add_executable(
   topology_service_test.cc
 )
 
+file(COPY
+    ${CMAKE_BINARY_DIR}/lib/Release/awsmysqlodbca.dll
+    ${CMAKE_BINARY_DIR}/lib/Release/awsmysqlodbca.lib
+    ${CMAKE_BINARY_DIR}/lib/Release/awsmysqlodbca.exp
+    ${CMAKE_BINARY_DIR}/lib/Release/libcrypto-3-x64.dll
+    ${CMAKE_BINARY_DIR}/lib/Release/libssl-3-x64.dll
+    DESTINATION ${CMAKE_BINARY_DIR}/unit_testing/bin/Release
+)
+
+TARGET_INCLUDE_DIRECTORIES(unit_testing PUBLIC ${AWSSDK_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/driver)
 target_link_libraries(
   unit_testing
   gtest_main
   gmock_main
   awsmysqlodbca
+  myodbc-util
+  ${AWSSDK_LINK_LIBRARIES}
 )
 
+
 include(GoogleTest)
-gtest_discover_tests(unit_testing PROPERTIES DISCOVERY_TIMEOUT 30)
+#gtest_discover_tests(unit_testing PROPERTIES DISCOVERY_TIMEOUT 30)
 
 set_target_properties(unit_testing PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)

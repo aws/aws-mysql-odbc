@@ -53,8 +53,8 @@
 static std::map<std::string, std::shared_ptr<CLUSTER_TOPOLOGY_INFO>> topology_cache;
 static std::mutex topology_cache_mutex;
 
-class TOPOLOGY_SERVICE {
-public:
+class __declspec(dllexport) TOPOLOGY_SERVICE {
+ public:
     TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging = false);
     TOPOLOGY_SERVICE(const TOPOLOGY_SERVICE&);
     virtual ~TOPOLOGY_SERVICE();

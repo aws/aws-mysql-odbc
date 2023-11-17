@@ -37,7 +37,7 @@
 #include <atomic>
 #include <list>
 
-struct CONNECTION_STATUS {
+struct __declspec(dllexport) CONNECTION_STATUS {
     bool is_valid;
     std::chrono::milliseconds elapsed_time;
 };
@@ -51,8 +51,9 @@ namespace {
     const unsigned int failure_detection_timeout_default = 5;
 }
 
-class MONITOR : public std::enable_shared_from_this<MONITOR> {
-public:
+class __declspec(dllexport) MONITOR
+    : public std::enable_shared_from_this<MONITOR> {
+   public:
     MONITOR(
         std::shared_ptr<HOST_INFO> host_info,
         std::shared_ptr<CONNECTION_HANDLER> connection_handler,
