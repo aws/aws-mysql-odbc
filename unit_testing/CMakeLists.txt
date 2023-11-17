@@ -74,11 +74,11 @@ target_link_libraries(
   unit_testing
   gtest_main
   gmock_main
-  awsmysqlodbca
+  awsmysqlodbca-static
 )
 
 include(GoogleTest)
-gtest_discover_tests(unit_testing PROPERTIES DISCOVERY_TIMEOUT 30)
+#gtest_discover_tests(unit_testing PROPERTIES DISCOVERY_TIMEOUT 30)
 
 set_target_properties(unit_testing PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
