@@ -77,8 +77,7 @@ target_link_libraries(
   awsmysqlodbca-static
 )
 
-include(GoogleTest)
-#gtest_discover_tests(unit_testing PROPERTIES DISCOVERY_TIMEOUT 30)
-
+add_test(NAME unit_testing COMMAND unit_testing)
 set_target_properties(unit_testing PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+
