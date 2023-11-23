@@ -33,7 +33,9 @@
         cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DWITH_UNIXODBC=1 -DENABLE_UNIT_TESTS=TRUE
         cmake --build build --config Release
         ```
-2. There are two options to run the unit tests:
+2. To run the unit test, AWS SDK dynamic link libraries path needs to be added to system environment `path` firstly for Windows. The AWS SDK dynamic link libraries could be found under `<repository root>/build/lib` or `<repository root>/build/lib/<build type>`. 
+
+   There are two options to run the unit tests:
     - Run `ctest` directly from the `build/unit_testing` directory.
     - Navigate to `unit_testing/bin/Release` and run `unit_testing.exe`. To specify a particular test or test suite, include `--gtest_filter` in the command.
 

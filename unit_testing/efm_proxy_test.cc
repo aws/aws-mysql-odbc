@@ -96,11 +96,12 @@ TEST_F(EFMProxyTest, FailureDetectionEnabled) {
 
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).WillOnce(Return(mock_context));
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(mock_context)).Times(1);
-    EXPECT_CALL(*mock_connection_proxy, query(""));
+    const char *q = nullptr;
+    EXPECT_CALL(*mock_connection_proxy, query(q));
     EXPECT_CALL(*mock_connection_proxy, mock_connection_proxy_destructor());
 
     EFM_PROXY efm_proxy(dbc, ds, mock_connection_proxy, mock_monitor_service);
-    efm_proxy.query("");
+    efm_proxy.query(q);
 }
 
 TEST_F(EFMProxyTest, DoesNotNeedMonitoring) {

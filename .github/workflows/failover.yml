@@ -57,7 +57,7 @@ jobs:
         working-directory: ./scripts
         if: steps.cache-static-aws-sdk.outputs.cache-hit != 'true'
         run: |
-          .\build_aws_sdk_win.ps1 x64 ${{ env.WINDOWS_BUILD_TYPE}} OFF "${{env.CMAKE_GENERATOR}}"
+          .\build_aws_sdk_win.ps1 x64 ${{ env.WINDOWS_BUILD_TYPE}} ON "${{env.CMAKE_GENERATOR}}"
 
       - name: Create build environment
         shell: bash
@@ -83,7 +83,9 @@ jobs:
         if: always()
         working-directory: ${{ github.workspace }}/build/unit_testing
         shell: bash
-        run: ctest -C $WINDOWS_BUILD_TYPE --output-on-failure
+        run: |
+          export PATH="${{ github.workspace }}/build/lib/${{env.WINDOWS_BUILD_TYPE}}":$PATH
+          ctest -C $WINDOWS_BUILD_TYPE --output-on-failure
 
       - name: Check memory leaks
         if: always()
