@@ -956,11 +956,18 @@ struct ODBCEXCEPTION
 
 struct ODBC_STMT
 {
-  MYSQL_STMT *m_stmt;
+  MYSQL_STMT *m_stmt = nullptr;
+  CONNECTION_PROXY *connection_proxy = nullptr;
 
-  ODBC_STMT(CONNECTION_PROXY *connection_proxy) { m_stmt = connection_proxy->stmt_init(); }
+  ODBC_STMT(CONNECTION_PROXY *connection_proxy) {
+    if (connection_proxy)
+    m_stmt = connection_proxy->stmt_init();;
+  }
   operator MYSQL_STMT*() { return m_stmt; }
-  ~ODBC_STMT() { mysql_stmt_close(m_stmt); } // TODO Replace with proxy call
+  ~ODBC_STMT() {
+    if (m_stmt)
+    connection_proxy->stmt_close(m_stmt);
+  }
 };
 
 
@@ -1145,34 +1152,15 @@ struct STMT
     ipd(&m_ipd),
     imp_ard(ard), imp_apd(apd)
   {
-    //list.data = this;
     allocate_param_bind(10);
 
     LOCK_DBC(dbc);
     dbc->stmt_list.emplace_back(this);
-    //dbc->statements = list_add(dbc->statements, &list);
   }
 
   ~STMT();
-  void clear_param_bind();
-
-  private:
-  /*
-    Create a phony, non-functional STMT handle used as a placeholder.
-
-    Warning: The hanlde should not be used other than for storing attributes added using `add_query_attr()`.
-  */
-
-  STMT(DBC *d, size_t param_cnt)
-    : dbc{d}
-    , query_attr_names{param_cnt}
-    , ssps(nullptr)
-    , m_ard(this, SQL_DESC_ALLOC_AUTO, DESC_APP, DESC_ROW)
-    , m_ird(this, SQL_DESC_ALLOC_AUTO, DESC_IMP, DESC_ROW)
-    , m_apd(this, SQL_DESC_ALLOC_AUTO, DESC_APP, DESC_PARAM)
-    , m_ipd(this, SQL_DESC_ALLOC_AUTO, DESC_IMP, DESC_PARAM)
-  {}
-  friend DBC;
+  void clear_query_attr_bind();
+  void reset_result_array();
 };
 
 
