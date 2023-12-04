@@ -148,7 +148,8 @@ SQLRETURN do_query(STMT *stmt, std::string query)
 #if MYSQL_VERSION_ID >= 80300
       // For older servers that don't support named params
       // we just don't count them and specify the number of unnamed params.
-      unsigned int p_number = is_minimum_version(stmt->dbc->connection_proxy->get_server_version(), "8.3.0") ?
+      unsigned int p_number =
+        stmt->dbc->connection_proxy->get_server_capabilities() & CLIENT_QUERY_ATTRIBUTES ?
         stmt->query_attr_names.size() : stmt->param_count;
 
       if (p_number)
