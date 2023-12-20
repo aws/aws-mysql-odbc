@@ -996,6 +996,10 @@ SQLGetEnvAttr(SQLHENV    henv,
     return SQL_SUCCESS;
 }
 
+#ifdef USE_IODBC
+
+// iODBC has problems mapping SQLGetStmtOption()/SQLSetStmtOption() to
+// SQLGetStmtAttr()/SQLSetStmtAttr()
 
 SQLRETURN SQL_API
 SQLGetStmtOption(SQLHSTMT hstmt,SQLUSMALLINT option, SQLPOINTER param)
@@ -1013,3 +1017,6 @@ SQLSetStmtOption(SQLHSTMT hstmt, SQLUSMALLINT option, SQLULEN param)
 
   return MySQLSetStmtAttr(hstmt, option, (SQLPOINTER)param, SQL_NTS);
 }
+
+#endif
+

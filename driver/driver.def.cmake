@@ -42,13 +42,10 @@ VERSION 0@CONNECTOR_MAJOR@.@CONNECTOR_MINOR_PADDED@
 ;INIT_TEXT PRELOAD
 ;DATA PRELOAD
 ;HEAPSIZE 10000
-; 
+;
 ; Export definitions
 EXPORTS
 ;
-SQLAllocConnect
-SQLAllocEnv
-SQLAllocStmt
 SQLAllocHandle
 SQLBindCol
 SQLBindParameter
@@ -58,7 +55,6 @@ SQLCancel
 SQLCancelHandle
 SQLCloseCursor
 SQLColAttribute@WIDECHARCALL@
-SQLColAttributes@WIDECHARCALL@
 SQLColumnPrivileges@WIDECHARCALL@
 SQLColumns@WIDECHARCALL@
 SQLConnect@WIDECHARCALL@
@@ -68,19 +64,15 @@ SQLDescribeParam
 SQLDisconnect
 SQLDriverConnect@WIDECHARCALL@
 SQLEndTran
-SQLError@WIDECHARCALL@
 SQLExecDirect@WIDECHARCALL@
 SQLExecute
 SQLExtendedFetch
 SQLFetch
 SQLFetchScroll
-SQLFreeConnect
-SQLFreeEnv
 SQLFreeStmt
 SQLFreeHandle
 SQLForeignKeys@WIDECHARCALL@
 SQLGetConnectAttr@WIDECHARCALL@
-SQLGetConnectOption@WIDECHARCALL@
 SQLGetCursorName@WIDECHARCALL@
 SQLGetDescField@WIDECHARCALL@
 SQLGetDescRec@WIDECHARCALL@
@@ -91,14 +83,12 @@ SQLGetEnvAttr
 SQLGetFunctions
 SQLGetInfo@WIDECHARCALL@
 SQLGetStmtAttr@WIDECHARCALL@
-SQLGetStmtOption
 SQLGetTypeInfo@WIDECHARCALL@
 SQLMoreResults
 SQLNativeSql@WIDECHARCALL@
 SQLNumParams
 SQLNumResultCols
 SQLParamData
-SQLParamOptions
 SQLPrepare@WIDECHARCALL@
 SQLPrimaryKeys@WIDECHARCALL@
 SQLProcedureColumns@WIDECHARCALL@
@@ -110,17 +100,12 @@ SQLSetDescField@WIDECHARCALL@
 SQLSetDescRec@WIDECHARCALL@
 SQLSetEnvAttr
 SQLSetConnectAttr@WIDECHARCALL@
-SQLSetConnectOption@WIDECHARCALL@
-SQLSetParam
 SQLSetPos
-SQLSetScrollOptions
 SQLSetStmtAttr@WIDECHARCALL@
-SQLSetStmtOption
 SQLSpecialColumns@WIDECHARCALL@
 SQLStatistics@WIDECHARCALL@
 SQLTables@WIDECHARCALL@
 SQLTablePrivileges@WIDECHARCALL@
-SQLTransact
 ;
 DllMain
 LoadByOrdinal
