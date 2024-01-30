@@ -75,7 +75,7 @@ BEGIN
             VALUE "FileDescription", "AWS ODBC Driver for MySQL Setup Library\0"
             VALUE "FileVersion", MYODBC_STRFILEVER
             VALUE "InternalName", "awsmysqlodbcS\0"
-            VALUE "LegalCopyright", "Copyright (c) 1995, 2018, Oracle and/or its affiliates.\0"
+            VALUE "LegalCopyright", "Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. Copyright (c) 1995, 2018, Oracle and/or its affiliates.\0"
             VALUE "LegalTrademarks", "MySQL, MyODBC, Connector/ODBC are trademarks of Oracle Corporation\0"
             VALUE "OriginalFilename", "awsmysqlodbcS.dll\0"
             VALUE "PrivateBuild", "Production\0"
