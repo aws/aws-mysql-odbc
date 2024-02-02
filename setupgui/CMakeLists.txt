@@ -97,7 +97,12 @@ add_compile_options(${PLATFORM_CFLAGS})
 
 add_library(awsmysqlodbcS SHARED ${SETUP_SRCS})
 
-target_link_libraries(awsmysqlodbcS ${ODBCLIB} ${ODBCINSTLIB})
+add_version_info(awsmysqlodbcS
+  "AWS ODBC Driver for MySQL setup library."
+  "Provides driver configuration GUI."
+)
+
+target_link_libraries(myodbc8S ${ODBCLIB} ${ODBCINSTLIB} otel_api)
 
 # Note: When using GTK+, these libraries will be linked to -gtk modules.
 

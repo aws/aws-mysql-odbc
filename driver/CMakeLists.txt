@@ -153,6 +153,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     if(TELEMETRY)
         list(APPEND DRIVER_SRCS telemetry.h)
     endif()
+
   ENDIF(WIN32)
 
   # Note: We build driver as a MODULE, because this is what it really is
@@ -162,6 +163,13 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   # be generated nor installed.
   ADD_LIBRARY(${DRIVER_NAME_STATIC} STATIC ${DRIVER_SRCS} ${AWSSDK_LIB_DIR})
   ADD_LIBRARY(${DRIVER_NAME} SHARED ${DRIVER_SRCS} ${AWSSDK_LIB_DIR})
+
+  ADD_LIBRARY(${DRIVER_NAME} MODULE ${DRIVER_SRCS})
+
+  add_version_info(${DRIVER_NAME}
+   "AWS ODBC ${DRIVER_TYPE} Driver For MySQL."
+   "Provides core driver functionality."
+  )
 
   ADD_COVERAGE(${DRIVER_NAME})
 
