@@ -28,7 +28,7 @@ jobs:
       MYSQL_DIR: C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs
@@ -37,11 +37,11 @@ jobs:
           unzip -d C:/ mysql.zip
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             aws_sdk
@@ -105,25 +105,25 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-sln
           path: ${{ github.workspace }}/build/MySQL_Connector_ODBC.sln
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-community-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload community test artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-community-results
           path: ${{ github.workspace }}/build/test/Testing/Temporary/LastTest.log
@@ -136,7 +136,7 @@ jobs:
       ODBC_DM_INCLUDES: /usr/local/include
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Configure build environment/dependencies
       # Removing some /usr/local/bin files to avoid symlink issues wih brew update
@@ -173,7 +173,7 @@ jobs:
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             aws_sdk
@@ -236,19 +236,19 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macos-community-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macos-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macos-community-results
           path: ${{ github.workspace }}/build/test/Testing/Temporary/LastTest.log
