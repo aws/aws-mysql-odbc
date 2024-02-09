@@ -155,8 +155,12 @@ jobs:
 
           brew update
           brew unlink unixodbc
-          brew install libiodbc mysql mysql-client
+          brew install libiodbc mysql@8.0 mysql-client@8.0
           brew link --overwrite --force libiodbc
+          brew link --overwrite --force mysql@8.0
+          echo 'export PATH="/usr/local/opt/mysql@8.0/bin:$PATH"' >> /Users/runner/.bash_profile
+          echo 'export PATH="/usr/local/opt/mysql-client@8.0/bin:$PATH"' >> /Users/runner/.bash_profile
+          source /Users/runner/.bash_profile
 
           brew install openssl@1.1
           rm -f /usr/local/lib/libssl.1.1.dylib
@@ -219,7 +223,8 @@ jobs:
         if: success()
         working-directory: ${{ github.workspace }}/build/test
         shell: bash
-        run: ctest --output-on-failure
+        run: |
+          ctest --output-on-failure
         env:
           TEST_DSN: awsmysqlodbca
           TEST_UID: root
