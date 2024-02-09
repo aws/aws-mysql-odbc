@@ -30,7 +30,7 @@ jobs:
       MYSQL_DIR: C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs and include files
@@ -43,11 +43,11 @@ jobs:
           mv -Force C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/debug/mysqlclient.lib C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/mysqlclient.lib
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Cache AWS SDK libraries
         id: cache-static-aws-sdk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             aws_sdk
@@ -97,25 +97,25 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-failover-sln
           path: ${{ github.workspace }}/build/MySQL_Connector_ODBC.sln
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-failover-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-failover-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload failover test artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: windows-failover-results
           path: ${{ github.workspace }}/build/unit_testing/Testing/Temporary/LastTest.log
@@ -128,7 +128,7 @@ jobs:
       CXX: g++-7
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install gcc7
         run: sudo apt install g++-7
@@ -145,7 +145,7 @@ jobs:
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             aws_sdk
@@ -192,19 +192,19 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: linux-failover-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: linux-failover-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: linux-failover-results
           path: ${{ github.workspace }}/build/unit_testing/Testing/Temporary/LastTest.log
@@ -217,7 +217,7 @@ jobs:
       ODBC_DM_INCLUDES: /usr/local/include
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Configure build environment/dependencies
       # Removing some /usr/local/bin files to avoid symlink issues wih brew update
@@ -250,7 +250,7 @@ jobs:
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             aws_sdk
@@ -303,25 +303,25 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macos-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macos-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macos-failover-results
           path: ${{ github.workspace }}/build/unit_testing/Testing/Temporary/LastTest.log
       - name: Upload memory leaks check
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macos-memory-leaks-results
           path: ${{ github.workspace }}/build/unit_testing/leaks_unit_testing.txt
