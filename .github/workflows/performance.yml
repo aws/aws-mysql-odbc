@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk

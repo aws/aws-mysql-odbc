@@ -30,7 +30,7 @@ jobs:
       MYSQL_DIR: C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs and include files
@@ -128,7 +128,7 @@ jobs:
       CXX: g++-7
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install gcc7
         run: sudo apt install g++-7
@@ -217,7 +217,7 @@ jobs:
       ODBC_DM_INCLUDES: /usr/local/include
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Configure build environment/dependencies
       # Removing some /usr/local/bin files to avoid symlink issues wih brew update
