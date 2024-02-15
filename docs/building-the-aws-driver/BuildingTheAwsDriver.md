@@ -15,11 +15,11 @@
     cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE
     cmake --build build --config Release
     ```
-4. To build the installer, MySQL 8.0.31 is required. Other MySQL versions may not work. Download the [MySQL 8.0.31](https://downloads.mysql.com/archives/community/) ZIP archive or msi installer. If the zip archive is used, unzip it to a folder before using it.
+4. To build the installer, MySQL 8.0.36 is required. Other MySQL versions may not work. Download the [MySQL 8.0.36](https://downloads.mysql.com/archives/community/) ZIP archive or msi installer. If the zip archive is used, unzip it to a folder before using it.
 
-    Run `build_installer.ps1` with specified MySQL 8.0.31 installation or unzipped folder path in a developer powershell. For example
+    Run `build_installer.ps1` with specified MySQL 8.0.36 installation or unzipped folder path in a developer powershell. For example
     ```
-    .\build_installer.ps1 x64 Release "Visual Studio 16 2019"  "C:\Users\Roy\Downloads\mysql-8.0.31-winx64\mysql-8.0.31-winx64"
+    .\build_installer.ps1 x64 Release "Visual Studio 16 2019"  "C:\Users\MyUser\Downloads\mysql-8.0.36-winx64\mysql-8.0.36-winx64"
     ```
 
 ### Troubleshooting:
