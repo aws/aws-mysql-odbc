@@ -162,11 +162,7 @@ jobs:
           echo 'export PATH="/usr/local/opt/mysql-client@8.0/bin:$PATH"' >> /Users/runner/.bash_profile
           source /Users/runner/.bash_profile
 
-          brew install openssl@1.1
-          rm -f /usr/local/lib/libssl.1.1.dylib
-          rm -f /usr/local/lib/libcrypto.1.1.dylib
-          ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/
-          ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/
+          brew install openssl
 
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
