@@ -244,6 +244,8 @@ jobs:
           rm -f /usr/local/lib/libcrypto.1.1.dylib
           ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/
           ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/
+
+          source /Users/runner/.bash_profile
           
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
@@ -284,6 +286,10 @@ jobs:
         run: |
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
           cmake --build .
+          ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/
+          ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/bin/
+          ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/
+          ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/bin/
 
       # Test driver
       - name: Run driver tests
