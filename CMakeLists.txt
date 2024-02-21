@@ -763,7 +763,7 @@ set(AUTH_PLUGINS
 )
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "SunOS")
-  list(APPEND AUTH_PLUGINS webauthn fido)
+  list(APPEND AUTH_PLUGINS webauthn)
   # Note: Kerberos authentication plugin is not supported on macOS
   if(NOT APPLE)
     list(APPEND AUTH_PLUGINS kerberos)
@@ -821,7 +821,12 @@ endif(APPLE)
 # List plugins and other libraries that can be found bundled with the server
 # but which are not relevant on client-side and can be safely ignored.
 
-set(IGNORED_PLUGINS qa_auth_client telemetry_client)
+set(IGNORED_PLUGINS
+  qa_auth_client
+  # note: we have our own telemetry code, not using the client library plugin
+  telemetry_client
+  authentication_fido_client  # note: replaced by webauthn plugin
+)
 
 set(IGNORED_LIBS
   abseil_dll  # Added in 8.0.37
