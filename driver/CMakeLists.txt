@@ -1,23 +1,23 @@
 # Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
-# Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License, version 2.0, as
 # published by the Free Software Foundation.
 #
-# This program is also distributed with certain software (including
-# but not limited to OpenSSL) that is licensed under separate terms,
-# as designated in a particular file or component or in included license
-# documentation. The authors of MySQL hereby grant you an
-# additional permission to link the program and your derivative works
-# with the separately licensed software that they have included with
-# MySQL.
+# This program is designed to work with certain software (including
+# but not limited to OpenSSL) that is licensed under separate terms, as
+# designated in a particular file or component or in included license
+# documentation. The authors of MySQL hereby grant you an additional
+# permission to link the program and your derivative works with the
+# separately licensed software that they have either included with
+# the program or referenced in the documentation.
 #
 # Without limiting anything contained in the foregoing, this file,
-# which is part of MySQL Connector/ODBC, is also subject to the
+# which is part of Connector/ODBC, is also subject to the
 # Universal FOSS Exception, version 1.0, a copy of which can be found at
-# http://oss.oracle.com/licenses/universal-foss-exception.
+# https://oss.oracle.com/licenses/universal-foss-exception.
 #
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -116,8 +116,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     # Headers added for convenience of VS users
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.def.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.def @ONLY)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
-    SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc  
-                                   aws_sdk_helper.h                                   
+    SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc
+                                   aws_sdk_helper.h
                                    base_metrics_holder.h
                                    catalog.h
                                    cluster_aware_hit_metrics_holder.h

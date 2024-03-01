@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2000, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -424,8 +424,8 @@ bool is_odbc3_subclass(std::string sqlstate)
   char *states[]= { "01S00", "01S01", "01S02", "01S06", "01S07", "07S01",
     "08S01", "08S02", "08007", "21S01", "21S02", "25S01", "25S02", "25S03",
     "42S01", "42S02", "42S11", "42S12", "42S21", "42S22", "HY095", "HY097",
-    "HY098", "HY099", "HY100", "HY101", "HY105", "HY107", "HY109", "HY110", 
-    "HY111", "HYT00", "HYT01", "IM001", "IM002", "IM003", "IM004", "IM005", 
+    "HY098", "HY099", "HY100", "HY101", "HY105", "HY107", "HY109", "HY110",
+    "HY111", "HYT00", "HYT01", "IM001", "IM002", "IM003", "IM004", "IM005",
     "IM006", "IM007", "IM008", "IM010", "IM011", "IM012"};
   size_t i;
 
