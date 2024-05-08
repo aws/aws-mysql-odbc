@@ -29,14 +29,6 @@
 
 package host;
 
-import com.amazonaws.util.StringUtils;
-
-import static org.junit.jupiter.api.Assertions.fail;
-
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,9 +36,18 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.ToxiproxyContainer;
+
 import utility.AuroraClusterInfo;
 import utility.AuroraTestUtility;
 import utility.ContainerHelper;
+import utility.StringUtils;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class IntegrationContainerTest {
   private static final int MYSQL_PORT = 3306;
@@ -62,19 +63,21 @@ public class IntegrationContainerTest {
   private static final String ACCESS_KEY = System.getenv("AWS_ACCESS_KEY_ID");
   private static final String SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
   private static final String SESSION_TOKEN = System.getenv("AWS_SESSION_TOKEN");
+  private static final String ENDPOINT = System.getenv("RDS_ENDPOINT");
+  private static final String REGION = System.getenv("RDS_REGION");
   private static final String DOCKER_UID = "1001";
   private static final String COMMUNITY_SERVER = "mysql-instance";
 
   private static final String DRIVER_LOCATION = System.getenv("DRIVER_PATH");
-  private static final String TEST_DB_CLUSTER_IDENTIFIER = System.getenv("TEST_DB_CLUSTER_IDENTIFIER");
   private static final String PROXIED_DOMAIN_NAME_SUFFIX = ".proxied";
   private static List<ToxiproxyContainer> proxyContainers = new ArrayList<>();
+  private static String dbClusterIdentifier = System.getenv("TEST_DB_CLUSTER_IDENTIFIER");
 
   private static final String ODBCINI_LOCATION = "/app/build/test/odbc.ini";
   private static final String ODBCINSTINI_LOCATION = "/app/build/test/odbcinst.ini";
 
   private static final ContainerHelper containerHelper = new ContainerHelper();
-  private static final AuroraTestUtility auroraUtil = new AuroraTestUtility("us-east-2");
+  private static final AuroraTestUtility auroraUtil = new AuroraTestUtility(REGION, ENDPOINT);
 
   private static int mySQLProxyPort;
   private static List<String> mySqlInstances = new ArrayList<>();
@@ -89,17 +92,17 @@ public class IntegrationContainerTest {
   private static final Network NETWORK = Network.newNetwork();
 
   @BeforeAll
-  static void setUp() throws InterruptedException, UnknownHostException {
+  static void setUp() {
     testContainer = createTestContainer(NETWORK);
   }
 
   @AfterAll
   static void tearDown() {
     if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY) && !StringUtils.isNullOrEmpty(dbHostCluster)) {
-      if (StringUtils.isNullOrEmpty(TEST_DB_CLUSTER_IDENTIFIER)) {
+      if (StringUtils.isNullOrEmpty(dbClusterIdentifier)) {
         auroraUtil.deleteCluster();
       } else {
-        auroraUtil.deleteCluster(TEST_DB_CLUSTER_IDENTIFIER);
+        auroraUtil.deleteCluster(dbClusterIdentifier);
       }
 
       if (!StringUtils.isNullOrEmpty(secretsArn)) {
@@ -124,7 +127,7 @@ public class IntegrationContainerTest {
     setupCommunityTests(NETWORK);
 
     try {
-      // Allow the non root user to access this folder which contains log files. Required to run tests
+      // Allow the non-root user to access this folder which contains log files. Required to run tests
       testContainer.execInContainer("chown", DOCKER_UID, "/app/build/test/Testing/Temporary");
     } catch (Exception e) {
       fail("Test container was not initialized correctly");
@@ -226,7 +229,11 @@ public class IntegrationContainerTest {
   private void setupTestContainer(final Network network) throws InterruptedException, UnknownHostException {
     if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY)) {
       // Comment out below to not create a new cluster & instances
-      AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, TEST_DB_CLUSTER_IDENTIFIER, TEST_DATABASE);
+      if (StringUtils.isNullOrEmpty(dbClusterIdentifier)) {
+        dbClusterIdentifier = "test-mysql-" + System.nanoTime();
+      }
+
+      AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, dbClusterIdentifier, TEST_DATABASE);
 
       // Comment out getting public IP to not add & remove from EC2 whitelist
       runnerIP = auroraUtil.getPublicIPAddress();
@@ -269,6 +276,8 @@ public class IntegrationContainerTest {
       .withEnv("AWS_ACCESS_KEY_ID", ACCESS_KEY)
       .withEnv("AWS_SECRET_ACCESS_KEY", SECRET_ACCESS_KEY)
       .withEnv("AWS_SESSION_TOKEN", SESSION_TOKEN)
+      .withEnv("RDS_ENDPOINT", ENDPOINT == null ? "" : ENDPOINT)
+      .withEnv("RDS_REGION", REGION == null ? "" : "us-east-2")
       .withEnv("TOXIPROXY_CLUSTER_NETWORK_ALIAS", "toxiproxy-instance-cluster")
       .withEnv("TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS", "toxiproxy-ro-instance-cluster")
       .withEnv("PROXIED_DOMAIN_NAME_SUFFIX", PROXIED_DOMAIN_NAME_SUFFIX)
