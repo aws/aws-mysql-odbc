@@ -736,8 +736,8 @@ SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, SQLINTEGER charlen)
   SQLWCHAR *res= (SQLWCHAR *)myodbc_malloc((chars + 1) * sizeof(SQLWCHAR), MYF(0));
   if (!res)
     return nullptr;
-  memcpy(res, wstr, length * sizeof(SQLWCHAR));
-  res[length]= 0;
+  memcpy(res, wstr, charlen * sizeof(SQLWCHAR));
+  res[charlen]= 0;
   return res;
 }
 

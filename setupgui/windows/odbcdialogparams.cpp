@@ -405,20 +405,17 @@ void btnDetails_Click (HWND hwnd)
 
     // Auth mode dropdown
     HWND auth_tab = TabCtrl_1.hTabPages[AWS_AUTH_TAB - 1];
-    HWND auth_mode_dlg = GetDlgItem(auth_tab, IDC_EDIT_auth_mode);
+    HWND AUTH_MODE_dlg = GetDlgItem(auth_tab, IDC_EDIT_AUTH_MODE);
 
-    ComboBox_ResetContent(auth_mode_dlg);
+    ComboBox_ResetContent(AUTH_MODE_dlg);
 
-    HWND ssl_tab = TabCtrl_1.hTabPages[5];
-    HWND combo = GetDlgItem(ssl_tab, IDC_EDIT_SSL_MODE);
-
-    ComboBox_AddString(auth_mode_dlg, L"");
-    ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_IAM));
-    ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
+    ComboBox_AddString(AUTH_MODE_dlg, L"");
+    ComboBox_AddString(AUTH_MODE_dlg, LSTR(AUTH_MODE_IAM));
+    ComboBox_AddString(AUTH_MODE_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
 
     // Failover mode dropdown
     HWND failover_tab = TabCtrl_1.hTabPages[FAILOVER_TAB - 1];
-    HWND failover_mode_dlg = GetDlgItem(failover_tab, IDC_EDIT_failover_mode);
+    HWND failover_mode_dlg = GetDlgItem(failover_tab, IDC_EDIT_FAILOVER_MODE);
 
     ComboBox_ResetContent(failover_mode_dlg);
 
@@ -429,7 +426,7 @@ void btnDetails_Click (HWND hwnd)
 
     // SSL mode dropdown
     HWND ssl_tab = TabCtrl_1.hTabPages[SSL_TAB-1];
-    HWND sslmode_dlg = GetDlgItem(ssl_tab, IDC_EDIT_sslmode);
+    HWND sslmode_dlg = GetDlgItem(ssl_tab, IDC_EDIT_SSL_MODE);
 
     ComboBox_ResetContent(sslmode_dlg);
 
@@ -682,22 +679,22 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
     case IDC_RADIO_NAMED_PIPE:
       SwitchTcpOrPipe(hwnd, !!Button_GetCheck(GetDlgItem(hwnd, IDC_RADIO_NAMED_PIPE)));
       break;
-    case IDC_EDIT_auth_mode:
+    case IDC_EDIT_AUTH_MODE:
       {
         HWND authTab = TabCtrl_1.hTabPages[AWS_AUTH_TAB - 1];
         assert(authTab);
 
-        HWND host = GetDlgItem(authTab, IDC_EDIT_auth_host);
-        HWND port = GetDlgItem(authTab, IDC_EDIT_auth_port);
-        HWND expiration = GetDlgItem(authTab, IDC_EDIT_auth_expiration);
-        HWND secret_id = GetDlgItem(authTab, IDC_EDIT_auth_secret_id);
+        HWND host = GetDlgItem(authTab, IDC_EDIT_AUTH_HOST);
+        HWND port = GetDlgItem(authTab, IDC_EDIT_AUTH_PORT);
+        HWND expiration = GetDlgItem(authTab, IDC_EDIT_AUTH_EXPIRATION);
+        HWND secret_id = GetDlgItem(authTab, IDC_EDIT_AUTH_SECRET_ID);
         assert(port);
         assert(host);
         assert(expiration);
         assert(secret_id);
 
         wchar_t authMode[20];
-        ComboBox_GetText(GetDlgItem(authTab, IDC_EDIT_auth_mode), authMode, sizeof(authMode));
+        ComboBox_GetText(GetDlgItem(authTab, IDC_EDIT_AUTH_MODE), authMode, sizeof(authMode));
 
         BOOL usingIAM = wcscmp(authMode, L"IAM") == 0;
         EnableWindow(port, usingIAM);
@@ -708,40 +705,40 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         EnableWindow(secret_id, usingSecretsManager);
       }
       break;
-    case IDC_CHECK_gather_perf_metrics:
+    case IDC_CHECK_GATHER_PERF_METRICS:
       {
         HWND failoverTab = TabCtrl_1.hTabPages[FAILOVER_TAB-1];
         assert(failoverTab);
-        HWND prefetch = GetDlgItem(failoverTab, IDC_CHECK_gather_metrics_per_instance);
+        HWND prefetch = GetDlgItem(failoverTab, IDC_CHECK_GATHER_PERF_METRICS_PER_INSTANCE);
         assert(prefetch);
 
         EnableWindow(prefetch, !!Button_GetCheck(GetDlgItem(failoverTab,
-            IDC_CHECK_gather_perf_metrics)));
-        setBoolFieldData(failoverTab, IDC_CHECK_gather_metrics_per_instance, Button_GetCheck(prefetch));
+            IDC_CHECK_GATHER_PERF_METRICS)));
+        setBoolFieldData(failoverTab, IDC_CHECK_GATHER_PERF_METRICS_PER_INSTANCE, Button_GetCheck(prefetch));
       }
       break;
-    case IDC_CHECK_enable_failure_detection:
+    case IDC_CHECK_ENABLE_FAILURE_DETECTION:
       {
         HWND monitoringTab = TabCtrl_1.hTabPages[MONITORING_TAB - 1];
         assert(monitoringTab);
-        HWND detectionTime = GetDlgItem(monitoringTab, IDC_EDIT_failure_detection_time);
-        HWND detectionInterval= GetDlgItem(monitoringTab, IDC_EDIT_failure_detection_interval);
-        HWND detectionCount = GetDlgItem(monitoringTab, IDC_EDIT_failure_detection_count);
-        HWND disposalTime = GetDlgItem(monitoringTab, IDC_EDIT_monitor_disposal_time);
-        HWND detectionTimeout = GetDlgItem(monitoringTab, IDC_EDIT_failure_detection_timeout);
+        HWND detectionTime = GetDlgItem(monitoringTab, IDC_EDIT_FAILURE_DETECTION_TIME);
+        HWND detectionInterval= GetDlgItem(monitoringTab, IDC_EDIT_FAILURE_DETECTION_INTERVAL);
+        HWND detectionCount = GetDlgItem(monitoringTab, IDC_EDIT_FAILURE_DETECTION_COUNT);
+        HWND disposalTime = GetDlgItem(monitoringTab, IDC_EDIT_MONITOR_DISPOSAL_TIME);
+        HWND detectionTimeout = GetDlgItem(monitoringTab, IDC_EDIT_FAILURE_DETECTION_TIMEOUT);
         assert(detectionTime);
         assert(detectionInterval);
         assert(detectionCount);
         assert(disposalTime);
 
-        EnableWindow(detectionTime, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
-        EnableWindow(detectionInterval, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
-        EnableWindow(detectionCount, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
-        EnableWindow(disposalTime, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
-        EnableWindow(detectionTimeout, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_enable_failure_detection)));
+        EnableWindow(detectionTime, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_ENABLE_FAILURE_DETECTION)));
+        EnableWindow(detectionInterval, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_ENABLE_FAILURE_DETECTION)));
+        EnableWindow(detectionCount, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_ENABLE_FAILURE_DETECTION)));
+        EnableWindow(disposalTime, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_ENABLE_FAILURE_DETECTION)));
+        EnableWindow(detectionTimeout, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_ENABLE_FAILURE_DETECTION)));
       }
       break;
-    case IDC_CHECK_cursor_prefetch_active:
+    case IDC_CHECK_CURSOR_PREFETCH_ACTIVE:
       {
         HWND cursorTab= TabCtrl_1.hTabPages[CURSORS_TAB-1];
         assert(cursorTab);
@@ -749,7 +746,7 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         assert(prefetch);
 
         EnableWindow(prefetch, !!Button_GetCheck(GetDlgItem(cursorTab,
-                                            IDC_CHECK_cursor_prefetch_active)));
+                                            IDC_CHECK_CURSOR_PREFETCH_ACTIVE)));
 
         if (Edit_GetTextLength(prefetch) == 0)
         {

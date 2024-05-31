@@ -46,7 +46,7 @@
 */
 
 #define if_forward_cache(st) ((st)->stmt_options.cursor_type == SQL_CURSOR_FORWARD_ONLY && \
-           (st)->dbc->ds->dont_cache_result)
+           (st)->dbc->ds.opt_NO_CACHE)
 #define trans_supported(db) ((db)->connection_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS)
 #define autocommit_on(db) ((db)->connection_proxy->get_server_status() & SERVER_STATUS_AUTOCOMMIT)
 #define is_no_backslashes_escape_mode(db) ((db)->connection_proxy->get_server_status() & SERVER_STATUS_NO_BACKSLASH_ESCAPES)
@@ -317,8 +317,6 @@ void *ptr_offset_adjust   (void *ptr, SQLULEN *bind_offset,
 
 /* Functions used when debugging */
 void query_print          (FILE *log_file,char *query);
-FILE *init_query_log      (void);
-void end_query_log        (FILE *query_log);
 
 enum enum_field_types map_sql2mysql_type(SQLSMALLINT sql_type);
 

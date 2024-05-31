@@ -42,7 +42,7 @@ typedef std::wstring sqlwchar_string;
 sqlwchar_string to_sqlwchar_string(const std::string& src);
 
 struct DBC;
-struct DataSource;
+class DataSource;
 class CONNECTION_PROXY;
 typedef short SQLRETURN;
 

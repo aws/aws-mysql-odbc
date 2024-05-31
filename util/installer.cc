@@ -859,6 +859,20 @@ end:
   return rc;
 }
 
+void DataSource::copy(DataSource* ds_source) {
+  if (ds_source == NULL) {
+    return;
+  }
+
+#define COPY_STR_OPTS(X)                               \
+  this->opt_##X.set_remove_brackets(ds_source->opt_##X, \
+                                    sqlwcharlen(ds_source->opt_##X));
+#define COPY_INT_BOOL_OPTS(X) this->opt_##X = ds_source->opt_##X;
+
+  STR_OPTIONS_LIST(COPY_STR_OPTS)
+  INT_OPTIONS_LIST(COPY_INT_BOOL_OPTS)
+  BOOL_OPTIONS_LIST(COPY_INT_BOOL_OPTS)
+}
 
 void DataSource::set_val(SQLWCHAR* name, SQLWCHAR* val) {
   if (auto *opt = get_opt(name)) {
@@ -1006,6 +1020,24 @@ void DataSource::reset() {
 
   opt_PORT.set_default(3306);
   opt_NO_SCHEMA = 1;
+
+  /* non-zero DataSource defaults here */
+  this->opt_ENABLE_CLUSTER_FAILOVER.set_default(true);
+  this->opt_GATHER_PERF_METRICS.set_default(false);
+  this->opt_TOPOLOGY_REFRESH_RATE.set_default(TOPOLOGY_REFRESH_RATE_MS);
+  this->opt_FAILOVER_TIMEOUT.set_default(FAILOVER_TIMEOUT_MS);
+  this->opt_FAILOVER_READER_CONNECT_TIMEOUT.set_default(FAILOVER_READER_CONNECT_TIMEOUT_MS);
+  this->opt_FAILOVER_TOPOLOGY_REFRESH_RATE.set_default(FAILOVER_TOPOLOGY_REFRESH_RATE_MS);
+  this->opt_FAILOVER_WRITER_RECONNECT_INTERVAL.set_default(FAILOVER_WRITER_RECONNECT_INTERVAL_MS);
+  this->opt_CONNECT_TIMEOUT.set_default(DEFAULT_CONNECT_TIMEOUT_SECS);
+  this->opt_NETWORK_TIMEOUT.set_default(DEFAULT_NETWORK_TIMEOUT_SECS);
+
+  this->opt_ENABLE_FAILURE_DETECTION.set_default(true);
+  this->opt_FAILURE_DETECTION_TIME.set_default(FAILURE_DETECTION_TIME_MS);
+  this->opt_FAILURE_DETECTION_INTERVAL.set_default(FAILURE_DETECTION_INTERVAL_MS);
+  this->opt_FAILURE_DETECTION_COUNT.set_default(DEFAULT_FAILURE_DETECTION_COUNT);
+  this->opt_MONITOR_DISPOSAL_TIME.set_default(MONITOR_DISPOSAL_TIME_MS);
+  this->opt_FAILURE_DETECTION_TIMEOUT.set_default(FAILURE_DETECTION_TIMEOUT_SECS);
 }
 
 SQLWSTRING DataSource::to_kvpair(SQLWCHAR delim) {

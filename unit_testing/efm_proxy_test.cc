@@ -56,7 +56,7 @@ protected:
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
 
-        ds->enable_failure_detection = true;
+        ds->opt_ENABLE_FAILURE_DETECTION = true;
 
         mock_monitor_service = std::make_shared<MOCK_MONITOR_SERVICE>();
         mock_connection_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
@@ -78,7 +78,7 @@ TEST_F(EFMProxyTest, NullDS) {
 }
 
 TEST_F(EFMProxyTest, FailureDetectionDisabled) {
-    ds->enable_failure_detection = false;
+    ds->opt_ENABLE_FAILURE_DETECTION = false;
 
     EXPECT_CALL(*mock_monitor_service, start_monitoring(_, _, _, _, _, _, _, _, _)).Times(0);
     EXPECT_CALL(*mock_monitor_service, stop_monitoring(_)).Times(0);

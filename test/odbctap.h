@@ -129,7 +129,7 @@ const char * wstr4output(const wchar_t *wstr)
 #define _MY_NEWLINE "\n"
 #endif
 
-SQLCHAR *mydriver= (SQLCHAR *)"{MySQL ODBC 8.2 Driver}";
+SQLCHAR *mydriver= (SQLCHAR *)"{AWS ODBC Driver for MySQL}";
 SQLCHAR *mydsn= (SQLCHAR *)"test";
 SQLCHAR *myuid= (SQLCHAR *)"root";
 SQLCHAR *mypwd= (SQLCHAR *)"";
@@ -1301,7 +1301,7 @@ SQLRETURN get_connection(SQLHDBC *hdbc, const SQLCHAR *dsn, const SQLCHAR *uid,
   SQLCHAR     connOut[4096];
   SQLSMALLINT len;
   SQLRETURN   ret;
-  SQLCHAR     driver_name[16]; /* Should be enough for myodbc library file name */
+  SQLCHAR     driver_name[32]; /* Set length to 32 to account for the longer awsmysqlodbca library file name */
   SQLCHAR     *connIn;
 
   connIn = make_conn_str(dsn, uid, pwd, db, options, 0);

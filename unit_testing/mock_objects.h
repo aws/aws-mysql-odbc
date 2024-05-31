@@ -49,20 +49,16 @@
 #endif
 #endif
 
-DataSource* ds_new();
-void ds_delete(DataSource* ds);
-void ds_copy(DataSource* ds, DataSource* ds_source);
-
 class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
- public:
+public:
     MOCK_CONNECTION_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
-        this->ds = ds_new();
-        ds_copy(this->ds, ds);
+        this->ds = new DataSource();
+        this->ds->copy(ds);
     };
     ~MOCK_CONNECTION_PROXY() override {
         mock_connection_proxy_destructor();
         if (this->ds) {
-            ds_delete(this->ds);
+            delete ds;
             this->ds = nullptr;
         }
     }
@@ -89,7 +85,7 @@ class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
 };
 
 class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
- public:
+public:
     MOCK_TOPOLOGY_SERVICE() : TOPOLOGY_SERVICE(0) {};
 
     MOCK_METHOD(void, set_cluster_id, (std::string));
@@ -100,21 +96,21 @@ class MOCK_TOPOLOGY_SERVICE : public TOPOLOGY_SERVICE {
 };
 
 class MOCK_READER_HANDLER : public FAILOVER_READER_HANDLER {
- public:
+public:
     MOCK_READER_HANDLER() : FAILOVER_READER_HANDLER(nullptr, nullptr, thread_pool, 0, 0, false, 0) {}
     MOCK_METHOD(std::shared_ptr<READER_FAILOVER_RESULT>, get_reader_connection,
-                (std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, std::shared_ptr<FAILOVER_SYNC>));
+        (std::shared_ptr<CLUSTER_TOPOLOGY_INFO>, std::shared_ptr<FAILOVER_SYNC>));
 
     ctpl::thread_pool thread_pool;
 };
 
 class MOCK_CONNECTION_HANDLER : public CONNECTION_HANDLER {
- public:
+public:
 
     CONNECTION_PROXY* connect(std::shared_ptr<HOST_INFO> host_info, DataSource* ds, bool is_monitor_connection = false) {
         return connect_impl(host_info, ds, is_monitor_connection);
     }
-    
+
     SQLRETURN do_connect(DBC* dbc_ptr, DataSource* ds, bool failover_enabled, bool is_monitor_connection = false) {
         return do_connect_impl(dbc_ptr, ds, failover_enabled, is_monitor_connection);
     }
@@ -122,13 +118,12 @@ class MOCK_CONNECTION_HANDLER : public CONNECTION_HANDLER {
     MOCK_CONNECTION_HANDLER() : CONNECTION_HANDLER(nullptr) {}
     MOCK_METHOD(CONNECTION_PROXY*, connect_impl, (std::shared_ptr<HOST_INFO>, DataSource*, bool));
     MOCK_METHOD(SQLRETURN, do_connect_impl, (DBC*, DataSource*, bool, bool));
-
 };
 
 class MOCK_FAILOVER_HANDLER : public FAILOVER_HANDLER {
 public:
     MOCK_FAILOVER_HANDLER(DBC* dbc, DataSource* ds, std::shared_ptr<CONNECTION_HANDLER> ch,
-        std::shared_ptr<TOPOLOGY_SERVICE> ts, std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> mc) : 
+        std::shared_ptr<TOPOLOGY_SERVICE> ts, std::shared_ptr<CLUSTER_AWARE_METRICS_CONTAINER> mc) :
         FAILOVER_HANDLER(dbc, ds, ch, ts, mc) {}
     MOCK_METHOD(std::string, host_to_IP, (std::string));
 };
@@ -154,8 +149,8 @@ public:
 class MOCK_MONITOR : public MONITOR {
 public:
     MOCK_MONITOR(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time,
-                 CONNECTION_PROXY* monitor_proxy)
-     : MONITOR(host, nullptr, std::chrono::seconds{5}, disposal_time, nullptr, monitor_proxy) {}
+        CONNECTION_PROXY* monitor_proxy)
+        : MONITOR(host, nullptr, std::chrono::seconds{ 5 }, disposal_time, nullptr, monitor_proxy) {}
 
     MOCK_METHOD(void, start_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
@@ -167,7 +162,7 @@ public:
 class MOCK_MONITOR2 : public MONITOR {
 public:
     MOCK_MONITOR2(std::shared_ptr<HOST_INFO> host, std::chrono::milliseconds disposal_time)
-        : MONITOR(host, nullptr, std::chrono::seconds{5}, disposal_time, nullptr, nullptr) {}
+        : MONITOR(host, nullptr, std::chrono::seconds{ 5 }, disposal_time, nullptr, nullptr) {}
 
     MOCK_METHOD(void, run, (std::shared_ptr<MONITOR_SERVICE>));
 };
@@ -175,9 +170,9 @@ public:
 // Meant for tests that only need to mock get_current_time()
 class MOCK_MONITOR3 : public MONITOR {
 public:
-  MOCK_MONITOR3(std::shared_ptr<HOST_INFO> host,
-                std::chrono::milliseconds disposal_time)
-      : MONITOR(host, nullptr, std::chrono::seconds{5}, disposal_time, nullptr, nullptr) {}
+    MOCK_MONITOR3(std::shared_ptr<HOST_INFO> host,
+        std::chrono::milliseconds disposal_time)
+        : MONITOR(host, nullptr, std::chrono::seconds{ 5 }, disposal_time, nullptr, nullptr) {}
 
     MOCK_METHOD(std::chrono::steady_clock::time_point, get_current_time, ());
 };
@@ -190,7 +185,7 @@ public:
         MONITOR_THREAD_CONTAINER::release_resources();
     }
 
-    MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor, 
+    MOCK_METHOD(std::shared_ptr<MONITOR>, create_monitor,
         (std::shared_ptr<HOST_INFO>, std::shared_ptr<CONNECTION_HANDLER>, std::chrono::seconds, std::chrono::milliseconds, DataSource*, bool));
 };
 
@@ -200,9 +195,9 @@ public:
         std::set<std::string> node_keys,
         std::chrono::milliseconds failure_detection_time,
         std::chrono::milliseconds failure_detection_interval,
-        int failure_detection_count) : 
-            MONITOR_CONNECTION_CONTEXT(
-                nullptr, node_keys, failure_detection_time, failure_detection_interval, failure_detection_count) {}
+        int failure_detection_count) :
+        MONITOR_CONNECTION_CONTEXT(
+            nullptr, node_keys, failure_detection_time, failure_detection_interval, failure_detection_count) {}
 
     MOCK_METHOD(void, set_start_monitor_time, (std::chrono::steady_clock::time_point));
 };
@@ -212,9 +207,9 @@ public:
     MOCK_MONITOR_SERVICE() : MONITOR_SERVICE() {};
 
     MOCK_METHOD(std::shared_ptr<MONITOR_CONNECTION_CONTEXT>, start_monitoring,
-                (DBC*, DataSource*, std::set<std::string>,
-                    std::shared_ptr<HOST_INFO>, std::chrono::milliseconds,
-                    std::chrono::seconds, std::chrono::milliseconds, int, std::chrono::milliseconds));
+        (DBC*, DataSource*, std::set<std::string>,
+            std::shared_ptr<HOST_INFO>, std::chrono::milliseconds,
+            std::chrono::seconds, std::chrono::milliseconds, int, std::chrono::milliseconds));
     MOCK_METHOD(void, stop_monitoring, (std::shared_ptr<MONITOR_CONNECTION_CONTEXT>));
     MOCK_METHOD(void, stop_monitoring_for_all_connections, (std::set<std::string>));
 };

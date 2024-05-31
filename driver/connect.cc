@@ -278,19 +278,18 @@ std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource* ds) {
   std::vector<Srv_host_detail> hosts;
   std::stringstream err;
   try {
-    hosts =
-        parse_host_list(ds_get_utf8attr(ds->server, &ds->server8), ds->port);
+    hosts = parse_host_list(ds->opt_SERVER, ds->opt_PORT);
   } catch (std::string &) {
-    err << "Invalid server '" << ds->server8 << "'.";
-    if (ds->save_queries) {
+    err << "Invalid server '" << (const char*)ds->opt_SERVER << "'.";
+    if (ds->opt_LOG_QUERY) {
       MYLOG_TRACE(init_log_file(), 0, err.str().c_str());
     }
     throw std::runtime_error(err.str());
   }
 
-  if (hosts.size() == 0) {
+  if (hosts.empty()) {
     err << "No host was retrieved from the data source.";
-    if (ds->save_queries) {
+    if (ds->opt_LOG_QUERY) {
       MYLOG_TRACE(init_log_file(), 0, err.str().c_str());
     }
     throw std::runtime_error(err.str());
@@ -379,20 +378,20 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   unsigned int connect_timeout, read_timeout, write_timeout;
   if (failover_enabled)
   {
-      connect_timeout = get_connect_timeout(dsrc->connect_timeout);
-      read_timeout = get_network_timeout(dsrc->network_timeout);
+      connect_timeout = get_connect_timeout(dsrc->opt_CONNECT_TIMEOUT);
+      read_timeout = get_network_timeout(dsrc->opt_NETWORK_TIMEOUT);
       write_timeout = read_timeout;
   }
   else if (is_monitor_connection)
   {
-      connect_timeout = get_network_timeout(dsrc->read_timeout);
-      read_timeout = get_network_timeout(dsrc->read_timeout);
-      write_timeout = get_network_timeout(dsrc->write_timeout);
+      connect_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      read_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      write_timeout = get_network_timeout(dsrc->opt_WRITETIMEOUT);
   } else
   {
       connect_timeout = get_connect_timeout(login_timeout);
-      read_timeout = get_network_timeout(dsrc->read_timeout);
-      write_timeout = get_network_timeout(dsrc->write_timeout);
+      read_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      write_timeout = get_network_timeout(dsrc->opt_WRITETIMEOUT);
   }
 
   connection_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
@@ -689,7 +688,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 #if (MYSQL_VERSION_ID >= 50527 && MYSQL_VERSION_ID < 50600) || MYSQL_VERSION_ID >= 50607
   // IAM authentication requires the plugin to be set.
   if (dsrc->opt_ENABLE_CLEARTEXT_PLUGIN ||
-      (dsrc->auth_mode8 && !myodbc_strcasecmp(AUTH_MODE_IAM, (const char*)dsrc->auth_mode8)))
+      (dsrc->opt_AUTH_MODE && !myodbc_strcasecmp(AUTH_MODE_IAM, (const char*)dsrc->opt_AUTH_MODE)))
   {
     connection_proxy->options(MYSQL_ENABLE_CLEARTEXT_PLUGIN, (char *)&on);
   }
@@ -1028,8 +1027,8 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   const char *opt_db = ds.opt_DATABASE;
   database = opt_db ? opt_db : "";
 
-  if (ds.opt_LOG_QUERY && !query_log)
-    query_log = init_query_log();
+  if (ds.opt_LOG_QUERY && !log_file)
+      log_file = init_log_file();
 
   /* Set the statement error prefix based on the server version. */
   strxmov(st_error_prefix, MYODBC_ERROR_PREFIX, "[mysqld-",
@@ -1171,7 +1170,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
 {
   SQLRETURN rc;
   DBC *dbc= (DBC *)hdbc;
-  DataSource ds;
+  DataSource* ds = new DataSource();
 
 #ifdef NO_DRIVERMANAGER
   return ((DBC*)dbc)->set_error("HY000",
@@ -1191,12 +1190,14 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
       "Invalid connection parameters", 0);
   }
 
-  ds.opt_DSN.set_remove_brackets(szDSN, cbDSN);
-  ds.opt_UID.set_remove_brackets(szUID, cbUID);
-  ds.opt_PWD.set_remove_brackets(szAuth, cbAuth);
+  ds->opt_DSN.set_remove_brackets(szDSN, cbDSN);
+  ds->opt_UID.set_remove_brackets(szUID, cbUID);
+  ds->opt_PWD.set_remove_brackets(szAuth, cbAuth);
 
-  ds.lookup();
-  rc = dbc->connect(&ds);
+  ds->lookup();
+
+  if (ds->opt_LOG_QUERY && !dbc->log_file)
+      dbc->log_file = init_log_file();
 
   dbc->init_proxy_chain(ds);
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
@@ -1205,8 +1206,6 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
   if (!SQL_SUCCEEDED(rc))
     dbc->telemetry.set_error(dbc, dbc->error.message);
 
-  if (!dbc->ds)
-    ds_delete(ds);
   return rc;
 #endif
 }
@@ -1250,7 +1249,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 {
   SQLRETURN rc= SQL_SUCCESS;
   DBC *dbc= (DBC *)hdbc;
-  DataSource ds;
+  DataSource* ds = new DataSource();
   /* We may have to read driver info to find the setup library. */
   Driver driver;
   /* We never know how many new parameters might come out of the prompt */
@@ -1266,7 +1265,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     conn_str_in = szConnStrIn;
 
   /* Parse the incoming string */
-  if (ds.from_kvpair(conn_str_in.c_str(), (SQLWCHAR)';'))
+  if (ds->from_kvpair(conn_str_in.c_str(), (SQLWCHAR)';'))
   {
     rc= dbc->set_error( "HY000",
                       "Failed to parse the incoming connect string.", 0);
@@ -1281,21 +1280,21 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
    This also allows us to get pszDRIVER (if not already given).
   */
-  if (ds.opt_DSN)
+  if (ds->opt_DSN)
   {
-     ds.lookup();
+     ds->lookup();
 
     /*
       If DSN is used:
       1 - we want the connection string options to override DSN options
       2 - no need to check for parsing erros as it was done before
     */
-     ds.from_kvpair(conn_str_in.c_str(), (SQLWCHAR)';');
+     ds->from_kvpair(conn_str_in.c_str(), (SQLWCHAR)';');
   }
 #endif
 
   /* If FLAG_NO_PROMPT is not set, force prompting off. */
-  if (ds.opt_NO_PROMPT)
+  if (ds->opt_NO_PROMPT)
     fDriverCompletion= SQL_DRIVER_NOPROMPT;
 
   /*
@@ -1316,8 +1315,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   case SQL_DRIVER_COMPLETE:
   case SQL_DRIVER_COMPLETE_REQUIRED:
-  if (ds.opt_LOG_QUERY && !query_log)
-    query_log = init_query_log();
+      if (ds->opt_LOG_QUERY && !log_file)
+          log_file = init_log_file();
 
     dbc->init_proxy_chain(ds);
     dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
@@ -1368,13 +1367,13 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
      connect with a DSN which does not exist. A possible solution would be to
      hard-code some fall-back value for ds->pszDRIVER.
     */
-    if (!ds.opt_DRIVER)
+    if (!ds->opt_DRIVER)
     {
       char szError[1024];
       sprintf(szError,
               "Could not determine the driver name; "
               "could not lookup setup library. DSN=(%s)\n",
-              (const char*)ds.opt_DSN);
+              (const char*)ds->opt_DSN);
       rc= dbc->set_error("HY000", szError, 0);
       goto error;
     }
@@ -1388,17 +1387,17 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     }
 
     /* if given a named DSN, we will have the path in the DRIVER field */
-    if (ds.opt_DSN)
-      driver.lib = ds.opt_DRIVER;
+    if (ds->opt_DSN)
+      driver.lib = ds->opt_DRIVER;
     /* otherwise, it's the driver name */
     else
-      driver.name = ds.opt_DRIVER;
+      driver.name = ds->opt_DRIVER;
 
     if (driver.lookup())
     {
       char sz[1024];
       sprintf(sz, "Could not find driver '%s' in system information.",
-              (const char*)ds.opt_DRIVER);
+              (const char*)ds->opt_DRIVER);
 
       rc= dbc->set_error("IM003", sz, 0);
       goto error;
@@ -1452,9 +1451,9 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     }
 
     /* create a string for prompting, and add driver manually */
-    prompt_instr = ds.to_kvpair(';');
+    prompt_instr = ds->to_kvpair(';');
     prompt_instr.append(W_DRIVER_PARAM);
-    SQLWSTRING drv = (const SQLWSTRING&)ds.opt_DRIVER;
+    SQLWSTRING drv = (const SQLWSTRING&)ds->opt_DRIVER;
     prompt_instr.append(drv);
 
     /*
@@ -1470,8 +1469,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     }
 
     /* refresh our DataSource */
-    ds.reset();
-    if (ds.from_kvpair(prompt_outstr, ';'))
+    ds->reset();
+    if (ds->from_kvpair(prompt_outstr, ';'))
     {
       rc= dbc->set_error( "HY000",
                         "Failed to parse the prompt output string.", 0);
@@ -1492,8 +1491,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   }
 
-  if (ds.opt_LOG_QUERY && !query_log)
-    query_log = init_query_log();
+  if (ds->opt_LOG_QUERY && !log_file)
+      log_file = init_log_file();
 
   dbc->init_proxy_chain(ds);
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
@@ -1505,7 +1504,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     goto error;
   }
 
-  if (ds.opt_SAVEFILE)
+  if (ds->opt_SAVEFILE)
   {
     /* We must disconnect if File DSN is created */
     dbc->close();
@@ -1518,17 +1517,17 @@ connected:
   {
     size_t copylen;
     conn_str_out = conn_str_in;
-    if (ds.opt_SAVEFILE)
+    if (ds->opt_SAVEFILE)
     {
-      SQLWSTRING pwd_temp = (const SQLWSTRING &)ds.opt_PWD;
+      SQLWSTRING pwd_temp = (const SQLWSTRING &)ds->opt_PWD;
 
       /* make sure the password does not go into the output buffer */
-      ds.opt_PWD = nullptr;
+      ds->opt_PWD = nullptr;
 
-      conn_str_out = ds.to_kvpair(';');
+      conn_str_out = ds->to_kvpair(';');
 
       /* restore old values */
-      ds.opt_PWD = pwd_temp;
+      ds->opt_PWD = pwd_temp;
     }
 
     size_t inlen = conn_str_out.length();
@@ -1597,20 +1596,20 @@ void DBC::free_connection_stmts()
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 {
   DBC *dbc= (DBC *) hdbc;
-  DataSource* ds = dbc->ds;
+  DataSource ds = dbc->ds;
 
-  if (ds && ds->gather_perf_metrics) {
+  if (ds.opt_GATHER_PERF_METRICS) {
     std::string cluster_id_str = "";
     if (dbc->fh) {
       cluster_id_str = dbc->fh->cluster_id;
     }
 
-    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds->gather_metrics_per_instance) && dbc->connection_proxy) {
+    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds.opt_GATHER_PERF_METRICS_PER_INSTANCE) && dbc->connection_proxy) {
       cluster_id_str = dbc->connection_proxy->get_host();
       cluster_id_str.append(":").append(std::to_string(dbc->connection_proxy->get_port()));
     }
 
-    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds->gather_metrics_per_instance, dbc->log_file, dbc->id);
+    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds.opt_GATHER_PERF_METRICS_PER_INSTANCE, dbc->log_file, dbc->id);
   }
 
   CHECK_HANDLE(hdbc);
@@ -1619,8 +1618,8 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 
   dbc->close();
 
-  if (dbc->ds.opt_LOG_QUERY)
-    end_query_log(dbc->query_log);
+  if (ds.opt_LOG_QUERY)
+      end_log_file();
 
   /* free allocated packet buffer */
 

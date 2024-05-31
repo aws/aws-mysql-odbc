@@ -48,7 +48,7 @@ CONNECTION_PROXY::~CONNECTION_PROXY() {
 bool CONNECTION_PROXY::connect(const char* host, const char* user, const char* password,
     const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
-    if (ds->enable_dns_srv) {
+    if (ds->opt_ENABLE_DNS_SRV) {
         return this->real_connect_dns_srv(host, user, password, database, flags);
     }
 
@@ -115,10 +115,6 @@ void CONNECTION_PROXY::init() {
     next_proxy->init();
 }
 
-bool CONNECTION_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    return next_proxy->ssl_set(key, cert, ca, capath, cipher);
-}
-
 bool CONNECTION_PROXY::change_user(const char* user, const char* passwd, const char* db) {
     return next_proxy->change_user(user, passwd, db);
 }
@@ -161,6 +157,18 @@ void CONNECTION_PROXY::get_character_set_info(MY_CHARSET_INFO* charset) {
 
 bool CONNECTION_PROXY::autocommit(bool auto_mode) {
     return next_proxy->autocommit(auto_mode);
+}
+
+bool CONNECTION_PROXY::commit() {
+    return next_proxy->commit();
+}
+
+bool CONNECTION_PROXY::rollback() {
+    return next_proxy->rollback();
+}
+
+bool CONNECTION_PROXY::more_results() {
+    return next_proxy->more_results();
 }
 
 int CONNECTION_PROXY::next_result() {
@@ -230,10 +238,6 @@ MYSQL_FIELD* CONNECTION_PROXY::fetch_field(MYSQL_RES* result) {
     return next_proxy->fetch_field(result);
 }
 
-MYSQL_RES* CONNECTION_PROXY::list_fields(const char* table, const char* wild) {
-    return next_proxy->list_fields(table, wild);
-}
-
 unsigned long CONNECTION_PROXY::real_escape_string(char* to, const char* from, unsigned long length) {
     return next_proxy->real_escape_string(to, from, length);
 }
@@ -268,6 +272,13 @@ int CONNECTION_PROXY::stmt_store_result(MYSQL_STMT* stmt) {
 
 unsigned long CONNECTION_PROXY::stmt_param_count(MYSQL_STMT* stmt) {
     return next_proxy->stmt_param_count(stmt);
+}
+
+bool CONNECTION_PROXY::stmt_bind_named_param(MYSQL_STMT *stmt,
+                                             MYSQL_BIND *binds,
+                                             unsigned n_params,
+                                             const char **names) {
+  return next_proxy->stmt_bind_named_param(stmt, binds, n_params, names);
 }
 
 bool CONNECTION_PROXY::stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {

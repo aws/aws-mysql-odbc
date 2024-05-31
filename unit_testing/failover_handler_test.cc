@@ -77,8 +77,8 @@ class FailoverHandlerTest : public testing::Test {
 
     void SetUp() override {
         allocate_odbc_handles(env, dbc, ds);
-        ds->enable_cluster_failover = true;
-        ds->gather_perf_metrics = false;
+        ds->opt_ENABLE_CLUSTER_FAILOVER = true;
+        ds->opt_GATHER_PERF_METRICS = false;
 
         mock_ts = std::make_shared<MOCK_TOPOLOGY_SERVICE>();
         mock_connection_handler = std::make_shared<MOCK_CONNECTION_HANDLER>();
@@ -103,17 +103,13 @@ TEST_F(FailoverHandlerTest, NullDS) {
 }
 
 TEST_F(FailoverHandlerTest, CustomDomain) {
-    SQLCHAR server[] = "my-custom-domain.com";
-    SQLCHAR host_pattern[] = "?.my-custom-domain.com";
-
-    ds_setattr_from_utf8(&ds->server, server);
-    ds_setattr_from_utf8(&ds->host_pattern, host_pattern);
-    ds->port = 1234;
+    std::string server = "my-custom-domain.com";
+    std::string host_pattern = "?.my-custom-domain.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
+    ds->opt_HOST_PATTERN.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(host_pattern).c_str(), host_pattern.size());
+    ds->opt_PORT = 1234;
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_))
-        .Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(0);
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -130,7 +126,7 @@ TEST_F(FailoverHandlerTest, CustomDomain) {
 }
 
 TEST_F(FailoverHandlerTest, FailoverDisabled) {
-    ds->enable_cluster_failover = false;
+    ds->opt_ENABLE_CLUSTER_FAILOVER = false;
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false)).Times(1);
 
@@ -141,9 +137,8 @@ TEST_F(FailoverHandlerTest, FailoverDisabled) {
 }
 
 TEST_F(FailoverHandlerTest, IP_TopologyAvailable_PatternRequired) {
-    SQLCHAR server[] = "10.10.10.10";
-
-    ds_setattr_from_utf8(&ds->server, server);
+    std::string server = "10.10.10.10";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -155,9 +150,8 @@ TEST_F(FailoverHandlerTest, IP_TopologyAvailable_PatternRequired) {
 }
 
 TEST_F(FailoverHandlerTest, IP_TopologyNotAvailable) {
-    SQLCHAR server[] = "10.10.10.10";
-
-    ds_setattr_from_utf8(&ds->server, server);
+    std::string server = "10.10.10.10";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -175,11 +169,10 @@ TEST_F(FailoverHandlerTest, IP_TopologyNotAvailable) {
 }
 
 TEST_F(FailoverHandlerTest, IP_Cluster) {
-    SQLCHAR server[] = "10.10.10.10";
-    SQLCHAR host_pattern[] = "?.my-custom-domain.com";
-
-    ds_setattr_from_utf8(&ds->server, server);
-    ds_setattr_from_utf8(&ds->host_pattern, host_pattern);
+    std::string server = "10.10.10.10";
+    std::string host_pattern = "?.my-custom-domain.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
+    ds->opt_HOST_PATTERN.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(host_pattern).c_str(), host_pattern.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -187,8 +180,6 @@ TEST_F(FailoverHandlerTest, IP_Cluster) {
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(0);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
@@ -200,13 +191,12 @@ TEST_F(FailoverHandlerTest, IP_Cluster) {
 }
 
 TEST_F(FailoverHandlerTest, IP_Cluster_ClusterID) {
-    SQLCHAR server[] = "10.10.10.10";
-    SQLCHAR host_pattern[] = "?.my-custom-domain.com";
-    SQLCHAR cluster_id[] = "test-cluster-id";
-
-    ds_setattr_from_utf8(&ds->server, server);
-    ds_setattr_from_utf8(&ds->host_pattern, host_pattern);
-    ds_setattr_from_utf8(&ds->cluster_id, cluster_id);
+    std::string server = "10.10.10.10";
+    std::string host_pattern = "?.my-custom-domain.com";
+    std::string cluster_id = "test-cluster-id";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
+    ds->opt_HOST_PATTERN.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(host_pattern).c_str(), host_pattern.size());
+    ds->opt_CLUSTER_ID.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(cluster_id).c_str(), cluster_id.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -214,8 +204,6 @@ TEST_F(FailoverHandlerTest, IP_Cluster_ClusterID) {
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(StrEq(reinterpret_cast<const char*>(cluster_id)))).Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
@@ -227,10 +215,9 @@ TEST_F(FailoverHandlerTest, IP_Cluster_ClusterID) {
 }
 
 TEST_F(FailoverHandlerTest, RDS_Cluster) {
-    SQLCHAR server[] = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
-
-    ds_setattr_from_utf8(&ds->server, server);
-    ds->port = 1234;
+    std::string server = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
+    ds->opt_PORT = 1234;
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -238,8 +225,6 @@ TEST_F(FailoverHandlerTest, RDS_Cluster) {
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(StrEq("my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com:1234"))).Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
@@ -251,9 +236,8 @@ TEST_F(FailoverHandlerTest, RDS_Cluster) {
 }
 
 TEST_F(FailoverHandlerTest, RDS_CustomCluster) {
-    SQLCHAR server[] = "my-custom-cluster-name.cluster-custom-XYZ.us-east-2.rds.amazonaws.com";
-
-    ds_setattr_from_utf8(&ds->server, server);
+    std::string server = "my-custom-cluster-name.cluster-custom-XYZ.us-east-2.rds.amazonaws.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -261,8 +245,6 @@ TEST_F(FailoverHandlerTest, RDS_CustomCluster) {
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(1);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
@@ -274,9 +256,8 @@ TEST_F(FailoverHandlerTest, RDS_CustomCluster) {
 }
 
 TEST_F(FailoverHandlerTest, RDS_Instance) {
-    SQLCHAR server[] = "my-instance-name.XYZ.us-east-2.rds.amazonaws.com";
-
-    ds_setattr_from_utf8(&ds->server, server);
+    std::string server = "my-instance-name.XYZ.us-east-2.rds.amazonaws.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -284,8 +265,6 @@ TEST_F(FailoverHandlerTest, RDS_Instance) {
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(_)).Times(1);
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
@@ -297,17 +276,14 @@ TEST_F(FailoverHandlerTest, RDS_Instance) {
 }
 
 TEST_F(FailoverHandlerTest, RDS_Proxy) {
-    SQLCHAR server[] = "test-proxy.proxy-XYZ.us-east-2.rds.amazonaws.com";
-
-    ds_setattr_from_utf8(&ds->server, server);
-    ds->port = 1234;
+    std::string server = "test-proxy.proxy-XYZ.us-east-2.rds.amazonaws.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
+    ds->opt_PORT = 1234;
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts, set_cluster_id(StrEq("test-proxy.proxy-XYZ.us-east-2.rds.amazonaws.com:1234"))).Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
@@ -319,10 +295,9 @@ TEST_F(FailoverHandlerTest, RDS_Proxy) {
 }
 
 TEST_F(FailoverHandlerTest, RDS_ReaderCluster) {
-    SQLCHAR server[] = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
-
-    ds_setattr_from_utf8(&ds->server, server);
-    ds->port = 1234;
+    std::string server = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
+    ds->opt_PORT = 1234;
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -330,11 +305,6 @@ TEST_F(FailoverHandlerTest, RDS_ReaderCluster) {
         .WillOnce(Return(SQL_SUCCESS));
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_)).Times(AtLeast(1));
-    EXPECT_CALL(*mock_ts,
-                set_cluster_id(StrEq(
-                    "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com:1234")))
-        .Times(AtLeast(1));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
@@ -346,17 +316,15 @@ TEST_F(FailoverHandlerTest, RDS_ReaderCluster) {
 }
 
 TEST_F(FailoverHandlerTest, ReconnectWithFailoverSettings) {
-    SQLCHAR server[] = "10.10.10.10";
-    SQLCHAR host_pattern[] = "?.my-custom-domain.com";
+    std::string server = "10.10.10.10";
+    std::string host_pattern = "?.my-custom-domain.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
+    ds->opt_HOST_PATTERN.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(host_pattern).c_str(), host_pattern.size());
 
-    ds_setattr_from_utf8(&ds->server, server);
-    ds_setattr_from_utf8(&ds->host_pattern, host_pattern);
-    ds->connect_timeout = 100;
-    ds->network_timeout = 100;
+    ds->opt_CONNECT_TIMEOUT = 100;
+    ds->opt_NETWORK_TIMEOUT = 100;
 
     EXPECT_CALL(*mock_ts, get_topology(_, false)).WillOnce(Return(topology));
-    EXPECT_CALL(*mock_ts, set_cluster_instance_template(_))
-        .Times(AtLeast(1));
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -457,15 +425,15 @@ TEST_F(FailoverHandlerTest, GetRdsClusterHostUrl) {
 }
 
 TEST_F(FailoverHandlerTest, ConnectToNewWriter) {
-    SQLCHAR server[] = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
+    std::string server = "my-cluster-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(server).c_str(), server.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, _, false))
         .WillOnce(Return(SQL_SUCCESS))
         .WillOnce(Return(SQL_SUCCESS));
 
-    ds_setattr_from_utf8(&ds->server, server);
-    ds->port = 1234;
-    ds->enable_cluster_failover = true;
+    ds->opt_PORT = 1234;
+    ds->opt_ENABLE_CLUSTER_FAILOVER = true;
 
     auto mock_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
     delete dbc->connection_proxy;
@@ -500,13 +468,11 @@ TEST_F(FailoverHandlerTest, ConnectToNewWriter) {
 
     mock_failover_handler->init_connection();
     
-    EXPECT_EQ(std::string("writer-host.com"), std::string((const char*)ds->server8));
+    EXPECT_STREQ("writer-host.com", (const char*)ds->opt_SERVER);
 }
 
 TEST_F(FailoverHandlerTest, DefaultFailoverModeWriterCluster) {
-    SQLCHAR *server = (SQLCHAR *)US_EAST_REGION_CLUSTER.c_str();
-
-    ds_setattr_from_utf8(&ds->server, server);
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(US_EAST_REGION_CLUSTER).c_str(), US_EAST_REGION_CLUSTER.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
@@ -514,18 +480,16 @@ TEST_F(FailoverHandlerTest, DefaultFailoverModeWriterCluster) {
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
 
-    EXPECT_EQ(std::string(FAILOVER_MODE_STRICT_WRITER), std::string(ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8)));
+    EXPECT_STREQ(std::string(FAILOVER_MODE_STRICT_WRITER).c_str(), (const char*)ds->opt_FAILOVER_MODE);
 }
 
 TEST_F(FailoverHandlerTest, DefaultFailoverModeReaderCluster) {
-    SQLCHAR *server = (SQLCHAR *)US_EAST_REGION_CLUSTER_READ_ONLY.c_str();
-
-    ds_setattr_from_utf8(&ds->server, server);
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(US_EAST_REGION_CLUSTER_READ_ONLY).c_str(), US_EAST_REGION_CLUSTER_READ_ONLY.size());
 
     EXPECT_CALL(*mock_connection_handler, do_connect_impl(dbc, ds, false, false))
         .WillOnce(Return(SQL_SUCCESS));
 
     FAILOVER_HANDLER failover_handler(dbc, ds, mock_connection_handler, mock_ts, mock_metrics);
     failover_handler.init_connection();
-    EXPECT_EQ(std::string(FAILOVER_MODE_READER_OR_WRITER), std::string(ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8)));
+    EXPECT_STREQ(std::string(FAILOVER_MODE_READER_OR_WRITER).c_str(), (const char*)ds->opt_FAILOVER_MODE);
 }

@@ -44,6 +44,8 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
 
+INCLUDE_DIRECTORIES(../util)
+
 enable_testing()
 
 add_executable(
@@ -74,6 +76,7 @@ target_link_libraries(
   unit_testing
   gtest_main
   gmock_main
+  myodbc-util
   awsmysqlodbca-static
 )
 

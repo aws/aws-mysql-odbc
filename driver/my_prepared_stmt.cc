@@ -716,16 +716,15 @@ void STMT::free_fake_result(bool clear_all_results)
 
 }
 
-
 // Clear and free buffers bound in param_bind
 void STMT::clear_param_bind()
 {
-  for (auto bind : param_bind) {
-    x_free(bind.buffer);
-    bind.buffer = nullptr;
-  }
-  // No need to clear param_bind. It will be reused.
-  // param_bind.clear();
+    for (auto bind : param_bind) {
+        x_free(bind.buffer);
+        bind.buffer = nullptr;
+    }
+    // No need to clear param_bind. It will be reused.
+    // param_bind.clear();
 }
 
 // Reset result array in case when the row storage is not valid.

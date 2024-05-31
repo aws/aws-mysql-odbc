@@ -1,6 +1,7 @@
 name: Community Integration Tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -22,7 +23,7 @@ env:
 jobs:
   community-tests:
     name: Dockerized Community Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       CMAKE_GENERATOR: Unix Makefiles
 
@@ -32,14 +33,6 @@ jobs:
 
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install libcurl4 && sudo apt-get install libcurl4-openssl-dev
-
-      - name: Cache AWS SDK libraries
-        id: cache-dynamic-aws-sdk
-        uses: actions/cache@v4
-        with:
-          path: |
-            aws_sdk
-          key: ${{ runner.os }}-aws-sdk-dynamic-lib
 
       - name: Build and install AWS SDK C++
         working-directory: ./scripts

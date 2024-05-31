@@ -2271,7 +2271,7 @@ SQLRETURN SQL_API my_SQLExtendedFetch( SQLHSTMT             hstmt,
   long              brow= 0;
 
   auto span_stop_if_no_data = [](STMT *stmt) {
-    if (!mysql_more_results(stmt->dbc->mysql))
+    if (!stmt->dbc->connection_proxy->more_results())
     {
       stmt->telemetry.span_end(stmt);
     }

@@ -2581,65 +2581,6 @@ void query_print(FILE *log_file,char *query)
     }
 }
 
-
-FILE *init_query_log(void)
-{
-    FILE *query_log;
-#ifdef _WIN32
-    char filename[MAX_PATH];
-    size_t buffsize;
-
-    getenv_s(&buffsize, filename, sizeof(filename), "TEMP");
-
-    if (buffsize)
-    {
-      sprintf(filename + buffsize - 1, "\\%s", DRIVER_QUERY_LOGFILE);
-    }
-    else
-    {
-      sprintf(filename, "c:\\%s", DRIVER_QUERY_LOGFILE);
-    }
-
-    if ( (query_log= fopen(filename, "a+")) )
-#else
-    if ( (query_log= fopen(DRIVER_QUERY_LOGFILE, "a+")) )
-#endif
-    {
-        fprintf(query_log,"-- Query logging\n");
-        fprintf(query_log,"--\n");
-        fprintf(query_log,"--  Driver name: %s  Version: %s\n",DRIVER_NAME,
-                DRIVER_VERSION);
-#ifdef HAVE_LOCALTIME_R
-        {
-            time_t now= time(NULL);
-            struct tm start;
-            localtime_r(&now,&start);
-
-            fprintf(query_log,"-- Timestamp: %02d%02d%02d %2d:%02d:%02d\n",
-                    start.tm_year % 100,
-                    start.tm_mon+1,
-                    start.tm_mday,
-                    start.tm_hour,
-                    start.tm_min,
-                    start.tm_sec);
-        }
-#endif /* HAVE_LOCALTIME_R */
-      fprintf(query_log,"\n");
-    }
-    return query_log;
-}
-
-
-void end_query_log(FILE *query_log)
-{
-  if ( query_log )
-  {
-      fclose(query_log);
-      query_log= 0;
-  }
-}
-
-
 my_bool is_minimum_version(const char *server_version,const char *version)
 {
   /*

@@ -13,7 +13,7 @@ jobs:
       group: environment-${{ github.ref }}
       cancel-in-progress: true
     name: Dockerized Performance Tests 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       CMAKE_GENERATOR: Unix Makefiles
 
@@ -51,7 +51,7 @@ jobs:
       - name: 'Set up Temp AWS Credentials'
         run: |
           creds=($(aws sts get-session-token \
-            --duration-seconds 14400 \
+            --duration-seconds 21600 \
             --query 'Credentials.[AccessKeyId, SecretAccessKey, SessionToken]' \
             --output text \
           | xargs));

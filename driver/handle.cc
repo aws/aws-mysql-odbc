@@ -121,14 +121,14 @@ void DBC::init_proxy_chain(DataSource* dsrc)
 {
     CONNECTION_PROXY *head = new MYSQL_PROXY(this, dsrc);
 
-    if (dsrc->enable_failure_detection) {
+    if (dsrc->opt_ENABLE_FAILURE_DETECTION) {
         CONNECTION_PROXY* efm_proxy = new EFM_PROXY(this, dsrc);
         efm_proxy->set_next_proxy(head);
         head = efm_proxy;
     }
 
-    if (dsrc->auth_mode) {
-        const char* auth_mode = ds_get_utf8attr(dsrc->auth_mode, &dsrc->auth_mode8);
+    if (dsrc->opt_AUTH_MODE) {
+        const char* auth_mode = (const char*) dsrc->opt_AUTH_MODE;
         if (!myodbc_strcasecmp(AUTH_MODE_IAM, auth_mode)) {
             CONNECTION_PROXY* iam_proxy = new IAM_PROXY(this, dsrc);
             iam_proxy->set_next_proxy(head);

@@ -694,8 +694,7 @@ void ODBC_CATALOG::add_param(const char *qstr, SQLCHAR *data,
 {
   query.append(qstr);
   query.append("'");
-  auto cnt = mysql_real_escape_string(stmt->dbc->mysql,
-    temp.buf, (char*)data, len);
+  auto cnt = stmt->dbc->connection_proxy->real_escape_string(temp.buf, (char*)data, len);
   query.append(temp.buf, cnt);
   query.append("'");
 }
@@ -756,13 +755,13 @@ void ODBC_CATALOG::execute()
   if (!order_by.empty())
     query.append(" ORDER BY " + order_by);
 
-  MYLOG_QUERY(stmt, query.c_str());
+  MYLOG_STMT_TRACE(stmt, query.c_str());
   if (SQL_SUCCESS !=
       stmt->dbc->execute_query(query.c_str(), query.length(), true)) {
     // Throwing the error for NO_SSPS case.
     throw stmt->dbc->error;
   }
-  mysql_res = mysql_store_result(stmt->dbc->mysql);
+  mysql_res = stmt->dbc->connection_proxy->store_result();
 
   // Free if result data was not in row storage.
   stmt->reset_result_array();

@@ -86,8 +86,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     info.cc
     monitor.cc
     monitor_connection_context.cc
-    monitor_service.cc
     monitor_thread_container.cc
+    monitor_service.cc
     my_prepared_stmt.cc
     my_stmt.cc
     mylog.cc
@@ -140,8 +140,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    iam_proxy.h
                                    monitor.h
                                    monitor_connection_context.h
-                                   monitor_service.h
                                    monitor_thread_container.h
+                                   monitor_service.h
                                    mylog.h
                                    mysql_proxy.h
                                    myutil.h

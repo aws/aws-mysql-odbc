@@ -288,7 +288,7 @@ class Driver {
 // Monitoring default settings
 #define FAILURE_DETECTION_TIME_MS 30000
 #define FAILURE_DETECTION_INTERVAL_MS 5000
-#define FAILURE_DETECTION_COUNT 3
+#define DEFAULT_FAILURE_DETECTION_COUNT 3
 #define MONITOR_DISPOSAL_TIME_MS 60000
 #define FAILURE_DETECTION_TIMEOUT_SECS 5
 
@@ -305,39 +305,87 @@ unsigned int get_network_timeout(unsigned int seconds);
 #define MFA_OPTS(X)
 #endif
 
-#define STR_OPTIONS_LIST(X)                                                \
-  X(DSN)                                                                   \
-  X(DRIVER) X(DESCRIPTION) X(SERVER) X(UID) X(PWD) MFA_OPTS(X) X(DATABASE) \
-      X(SOCKET) X(INITSTMT) X(CHARSET) X(SSL_KEY) X(SSL_CERT) X(SSL_CA)    \
-          X(SSL_CAPATH) X(SSL_CIPHER) X(SSL_MODE) X(RSAKEY) X(SAVEFILE)    \
-              X(PLUGIN_DIR) X(DEFAULT_AUTH) X(LOAD_DATA_LOCAL_DIR)         \
-                  X(OCI_CONFIG_FILE) X(OCI_CONFIG_PROFILE)                 \
-                      X(AUTHENTICATION_KERBEROS_MODE) X(TLS_VERSIONS)      \
-                           X(SSL_CRL) X(SSL_CRLPATH) X(SSLVERIFY)          \
-                              X(OPENTELEMETRY)
+#define AWS_AUTH_STR_OPTIONS_LIST(X) \
+  X(AUTH_MODE)                       \
+  X(AUTH_REGION)                     \
+  X(AUTH_HOST)                       \
+  X(AUTH_SECRET_ID)
 
-#define INT_OPTIONS_LIST(X)                                         \
-  X(PORT)                                                           \
-  X(READTIMEOUT) X(WRITETIMEOUT) X(CLIENT_INTERACTIVE)              \
-      X(PREFETCH)
+#define AWS_AUTH_INT_OPTIONS_LIST(X) \
+  X(AUTH_PORT)                       \
+  X(AUTH_EXPIRATION)
+
+#define FAILOVER_BOOL_OPTIONS_LIST(X) \
+  X(ENABLE_CLUSTER_FAILOVER)          \
+  X(GATHER_PERF_METRICS)              \
+  X(GATHER_PERF_METRICS_PER_INSTANCE)
+
+#define FAILOVER_STR_OPTIONS_LIST(X) \
+  X(HOST_PATTERN)                    \
+  X(CLUSTER_ID)                      \
+  X(FAILOVER_MODE)
+
+#define FAILOVER_INT_OPTIONS_LIST(X)    \
+  X(TOPOLOGY_REFRESH_RATE)              \
+  X(FAILOVER_TIMEOUT)                   \
+  X(FAILOVER_TOPOLOGY_REFRESH_RATE)     \
+  X(FAILOVER_WRITER_RECONNECT_INTERVAL) \
+  X(FAILOVER_READER_CONNECT_TIMEOUT)    \
+  X(CONNECT_TIMEOUT)                    \
+  X(NETWORK_TIMEOUT)
+
+#define MONITORING_BOOL_OPTIONS_LIST(X) X(ENABLE_FAILURE_DETECTION)
+
+#define MONITORING_INT_OPTIONS_LIST(X) \
+  X(FAILURE_DETECTION_TIME)            \
+  X(FAILURE_DETECTION_INTERVAL)        \
+  X(FAILURE_DETECTION_COUNT)           \
+  X(FAILURE_DETECTION_TIMEOUT)         \
+  X(MONITOR_DISPOSAL_TIME)
+
+#define STR_OPTIONS_LIST(X)                                                   \
+  X(DSN)                                                                      \
+  X(DRIVER)                                                                   \
+  X(DESCRIPTION)                                                              \
+  X(SERVER)                                                                   \
+  X(UID)                                                                      \
+  X(PWD) MFA_OPTS(X) X(DATABASE) X(SOCKET) X(INITSTMT) X(CHARSET) X(SSL_KEY)  \
+      X(SSL_CERT) X(SSL_CA) X(SSL_CAPATH) X(SSL_CIPHER) X(SSL_MODE) X(RSAKEY) \
+          X(SAVEFILE) X(PLUGIN_DIR) X(DEFAULT_AUTH) X(LOAD_DATA_LOCAL_DIR)    \
+              X(OCI_CONFIG_FILE) X(OCI_CONFIG_PROFILE)                        \
+                  X(AUTHENTICATION_KERBEROS_MODE) X(TLS_VERSIONS) X(SSL_CRL)  \
+                      X(SSL_CRLPATH) X(SSLVERIFY) X(OPENTELEMETRY)            \
+                          AWS_AUTH_STR_OPTIONS_LIST(X)                        \
+                              FAILOVER_STR_OPTIONS_LIST(X)
+
+#define INT_OPTIONS_LIST(X)                                      \
+  X(PORT)                                                        \
+  X(READTIMEOUT)                                                 \
+  X(WRITETIMEOUT)                                                \
+  X(CLIENT_INTERACTIVE) X(PREFETCH) FAILOVER_INT_OPTIONS_LIST(X) \
+      AWS_AUTH_INT_OPTIONS_LIST(X) MONITORING_INT_OPTIONS_LIST(X)
 
 // TODO: remove AUTO_RECONNECT when special handling (warning)
 //       is not needed anymore.
 #define BOOL_OPTIONS_LIST(X)                                                   \
   X(FOUND_ROWS)                                                                \
-  X(BIG_PACKETS) X(COMPRESSED_PROTO) X(NO_BIGINT) X(SAFE) X(AUTO_RECONNECT)    \
-      X(AUTO_IS_NULL) X(NO_BINARY_RESULT) X(CAN_HANDLE_EXP_PWD)                \
-          X(ENABLE_CLEARTEXT_PLUGIN) X(GET_SERVER_PUBLIC_KEY) X(NO_PROMPT)     \
+  X(BIG_PACKETS)                                                               \
+  X(COMPRESSED_PROTO)                                                          \
+  X(NO_BIGINT)                                                                 \
+  X(SAFE)                                                                      \
+  X(AUTO_RECONNECT) X(AUTO_IS_NULL) X(NO_BINARY_RESULT) X(CAN_HANDLE_EXP_PWD)  \
+      X(ENABLE_CLEARTEXT_PLUGIN) X(GET_SERVER_PUBLIC_KEY) X(NO_PROMPT)         \
           X(DYNAMIC_CURSOR) X(NO_DEFAULT_CURSOR) X(NO_LOCALE) X(PAD_SPACE)     \
               X(NO_CACHE) X(FULL_COLUMN_NAMES) X(IGNORE_SPACE) X(NAMED_PIPE)   \
                   X(NO_CATALOG) X(NO_SCHEMA) X(USE_MYCNF) X(NO_TRANSACTIONS)   \
                       X(FORWARD_CURSOR) X(MULTI_STATEMENTS) X(COLUMN_SIZE_S32) \
-                          X(MIN_DATE_TO_ZERO) X(ZERO_DATE_TO_MIN)              \
-                              X(DFLT_BIGINT_BIND_STR) X(LOG_QUERY) X(NO_SSPS)  \
-                                  X(NO_TLS_1_2) X(NO_TLS_1_3)                  \
-                                      X(NO_DATE_OVERFLOW)                      \
-                                          X(ENABLE_LOCAL_INFILE)               \
-                                              X(ENABLE_DNS_SRV) X(MULTI_HOST)
+                          X(MIN_DATE_TO_ZERO) X(ZERO_DATE_TO_MIN) X(           \
+                              DFLT_BIGINT_BIND_STR) X(LOG_QUERY) X(NO_SSPS)    \
+                              X(NO_TLS_1_2) X(NO_TLS_1_3) X(NO_DATE_OVERFLOW)  \
+                                  X(ENABLE_LOCAL_INFILE) X(ENABLE_DNS_SRV)     \
+                                      X(MULTI_HOST)                            \
+                                          FAILOVER_BOOL_OPTIONS_LIST(X)        \
+                                              MONITORING_BOOL_OPTIONS_LIST(X)
 
 #define FULL_OPTIONS_LIST(X) \
   STR_OPTIONS_LIST(X) INT_OPTIONS_LIST(X) BOOL_OPTIONS_LIST(X)
@@ -354,7 +402,6 @@ unsigned int get_network_timeout(unsigned int seconds);
                   X(AUTO_IS_NULL) X(ZERO_DATE_TO_MIN) X(MIN_DATE_TO_ZERO)    \
                       X(MULTI_STATEMENTS) X(COLUMN_SIZE_S32)                 \
                           X(NO_BINARY_RESULT) X(DFLT_BIGINT_BIND_STR)
-
 
 #if MFA_ENABLED
 #define MFA_ALIASES(X) X(PWD1, PASSWORD1) X(PWD2, PASSWORD2) X(PWD3, PASSWORD3)
@@ -404,45 +451,7 @@ class DataSource {
   unsigned long get_numeric_options();
   int lookup();
   int from_kvpair(const SQLWCHAR *str, SQLWCHAR delim);
-
-    /* AWS Authentication */
-  SQLWCHAR     *auth_mode;
-  SQLWCHAR     *auth_region;
-  SQLWCHAR     *auth_host;
-  unsigned int auth_port;
-  unsigned int auth_expiration;
-  SQLWCHAR     *auth_secret_id;
-
-  SQLCHAR *auth_mode8;
-  SQLCHAR* auth_region8;
-  SQLCHAR* auth_host8;
-  SQLCHAR* auth_secret_id8;
-
-  /* Failover */
-  BOOL enable_cluster_failover;
-  BOOL gather_perf_metrics;
-  BOOL gather_metrics_per_instance;
-  SQLCHAR *host_pattern8;
-  SQLCHAR *cluster_id8;
-  SQLCHAR *failover_mode8;
-  SQLWCHAR *host_pattern;
-  SQLWCHAR *cluster_id;
-  SQLWCHAR *failover_mode;
-  unsigned int topology_refresh_rate;
-  unsigned int failover_timeout;
-  unsigned int failover_topology_refresh_rate;
-  unsigned int failover_writer_reconnect_interval;
-  unsigned int failover_reader_connect_timeout;
-  unsigned int connect_timeout;
-  unsigned int network_timeout;
-
-  /* Monitoring */
-  BOOL enable_failure_detection;
-  unsigned int failure_detection_time;
-  unsigned int failure_detection_interval;
-  unsigned int failure_detection_count;
-  unsigned int failure_detection_timeout;
-  unsigned int monitor_disposal_time;
+  void copy(DataSource* ds_source);
 };
 
 /* perhaps that is a good idea to have const ds object with defaults */
@@ -458,9 +467,6 @@ typedef struct{
 }SQLTypeMap;
 
 #define TYPE_MAP_SIZE 32
-
-int ds_set_strnattr(SQLWCHAR **attr, const SQLWCHAR *val, size_t charcount);
-char *ds_get_utf8attr(SQLWCHAR *attrw, SQLCHAR **attr8);
 
 extern const SQLWCHAR W_DRIVER_PARAM[];
 extern const SQLWCHAR W_DRIVER_NAME[];

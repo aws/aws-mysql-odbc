@@ -580,6 +580,7 @@ struct	ENV
   {}
 };
 
+static std::atomic_ulong last_dbc_id{ 1 };
 
 /* Connection handler */
 struct DBC
@@ -1159,8 +1160,27 @@ struct STMT
   }
 
   ~STMT();
-  void clear_query_attr_bind();
+  void clear_param_bind();
   void reset_result_array();
+
+  private:
+  /*
+    Create a phony, non-functional STMT handle used as a placeholder.
+
+    Warning: The hanlde should not be used other than for storing attributes
+    added using `add_query_attr()`.
+  */
+
+  STMT(DBC* d, size_t param_cnt)
+      : dbc{d},
+        query_attr_names{param_cnt},
+        ssps(nullptr),
+        m_ard(this, SQL_DESC_ALLOC_AUTO, DESC_APP, DESC_ROW),
+        m_ird(this, SQL_DESC_ALLOC_AUTO, DESC_IMP, DESC_ROW),
+        m_apd(this, SQL_DESC_ALLOC_AUTO, DESC_APP, DESC_PARAM),
+        m_ipd(this, SQL_DESC_ALLOC_AUTO, DESC_IMP, DESC_PARAM) {}
+  
+  friend DBC;
 };
 
 

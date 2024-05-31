@@ -171,7 +171,7 @@ std::shared_ptr<MONITOR> MONITOR_THREAD_CONTAINER::get_available_monitor() {
     if (!this->available_monitors.empty()) {
         std::shared_ptr<MONITOR> available_monitor = this->available_monitors.front();
         this->available_monitors.pop();
-        
+
         if (!available_monitor->is_stopped()) {
             return available_monitor;
         }

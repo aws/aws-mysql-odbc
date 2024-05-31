@@ -78,7 +78,7 @@ SQLRETURN do_query(STMT *stmt, std::string query)
 
     if (query_length == 0)
     {
-      query_length= strlen(query);
+      query_length= strlen(query.c_str());
     }
 
     MYLOG_STMT_TRACE(stmt, query.c_str());
@@ -160,7 +160,7 @@ SQLRETURN do_query(STMT *stmt, std::string query)
 #else
       if (stmt->param_bind.size() && stmt->param_count)
       {
-        bind_failed = mysql_stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
+        bind_failed = stmt->dbc->connection_proxy->stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
       }
 #endif
 
@@ -198,7 +198,7 @@ SQLRETURN do_query(STMT *stmt, std::string query)
       SQLRETURN rc = stmt->dbc->execute_query(query.c_str(), query_length, false);
       if (SQL_SUCCEEDED(rc))
       {
-          const std::vector<std::string> statements = parse_query_into_statements(query);
+          const std::vector<std::string> statements = parse_query_into_statements(query.c_str());
           for (int i = statements.size() - 1; i >= 0; i--)
           {
               std::string statement = statements[i];
@@ -2010,8 +2010,8 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     interfere with the existing one. Therefore, locking is not needed in
     the following block.
   */
-  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds->server8, dbc->ds->port);
-  CONNECTION_PROXY* proxy = dbc->connection_handler->connect(host, dbc->ds);
+  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds.opt_SERVER, dbc->ds.opt_PORT);
+  CONNECTION_PROXY* proxy = dbc->connection_handler->connect(host, &dbc->ds);
 
   /** @todo need to preserve and use ssl params */
   if (!proxy)

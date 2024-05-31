@@ -33,7 +33,7 @@
 #include "MYODBC_MYSQL.h"
 
 struct DBC;
-struct DataSource;
+class DataSource;
 
 class CONNECTION_PROXY {
 public:
@@ -65,8 +65,6 @@ public:
     virtual int set_character_set(const char* csname);
 
     virtual void init();
-    virtual bool ssl_set(const char* key, const char* cert, const char* ca,
-                         const char* capath, const char* cipher);
     virtual bool change_user(const char* user, const char* passwd,
                              const char* db);
     virtual bool real_connect(const char* host, const char* user,
@@ -94,7 +92,6 @@ public:
 
     virtual unsigned long* fetch_lengths(MYSQL_RES* result);
     virtual MYSQL_FIELD* fetch_field(MYSQL_RES* result);
-    virtual MYSQL_RES* list_fields(const char* table, const char* wild);
     virtual unsigned long real_escape_string(char* to, const char* from,
                                              unsigned long length);
 
@@ -109,6 +106,8 @@ public:
                                   unsigned int column, unsigned long offset);
     virtual int stmt_store_result(MYSQL_STMT* stmt);
     virtual unsigned long stmt_param_count(MYSQL_STMT* stmt);
+    virtual bool stmt_bind_named_param(MYSQL_STMT *stmt, MYSQL_BIND *binds,
+                                       unsigned n_params, const char **names);
     virtual bool stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd);
     virtual bool stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd);
     virtual bool stmt_close(MYSQL_STMT* stmt);
@@ -126,8 +125,11 @@ public:
     virtual uint64_t stmt_affected_rows(MYSQL_STMT* stmt);
     virtual unsigned int stmt_field_count(MYSQL_STMT* stmt);
 
+    virtual bool commit();
+    virtual bool rollback();
     virtual bool autocommit(bool auto_mode);
     virtual int next_result();
+    virtual bool more_results();
     virtual int stmt_next_result(MYSQL_STMT* stmt);
     virtual void close();
 

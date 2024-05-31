@@ -66,23 +66,20 @@ CONNECTION_PROXY* CONNECTION_HANDLER::connect(std::shared_ptr<HOST_INFO> host_in
         return nullptr;
     }
 
-    DataSource* ds_to_use = ds_new();
-    ds_copy(ds_to_use, ds ? ds : dbc->ds);
-
+    DataSource* ds_to_use = new DataSource();
+    ds_to_use->copy(ds ? ds : &dbc->ds);
     const auto new_host = to_sqlwchar_string(host_info->get_host());
 
     DBC* dbc_clone = clone_dbc(dbc, ds_to_use);
-    ds_set_wstrnattr(&ds_to_use->server, (SQLWCHAR*)new_host.c_str(), new_host.size());
+    ds_to_use->opt_SERVER.set_remove_brackets((SQLWCHAR*) new_host.c_str(), new_host.size());
 
     CONNECTION_PROXY* new_connection = nullptr;
     CLEAR_DBC_ERROR(dbc_clone);
-    const SQLRETURN rc = do_connect(dbc_clone, ds_to_use, ds_to_use->enable_cluster_failover, is_monitor_connection);
+    const SQLRETURN rc = do_connect(dbc_clone, ds_to_use, ds_to_use->opt_ENABLE_CLUSTER_FAILOVER, is_monitor_connection);
 
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO) {
         new_connection = dbc_clone->connection_proxy;
         dbc_clone->connection_proxy = nullptr;
-        // postpone the deletion of ds_to_use/dbc_clone->ds until we are done with new_connection
-        dbc_clone->ds = nullptr;
     }
 
     my_SQLFreeConnect(dbc_clone);
@@ -102,8 +99,8 @@ void CONNECTION_HANDLER::update_connection(
         const sqlwchar_string new_host_name_wstr = to_sqlwchar_string(new_host_name);
 
         // Update original ds to reflect change in host/server.
-        ds_set_wstrnattr(&dbc->ds->server, (SQLWCHAR*)new_host_name_wstr.c_str(), new_host_name_wstr.size());
-        ds_set_strnattr(&dbc->ds->server8, (SQLCHAR*)new_host_name.c_str(), new_host_name.size());
+
+        dbc->ds.opt_SERVER.set_remove_brackets((SQLWCHAR*) new_host_name_wstr.c_str(), new_host_name_wstr.size());
     }
 }
 
