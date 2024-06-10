@@ -34,10 +34,10 @@ namespace {
 }
 
 EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds) : EFM_PROXY(
-    dbc, ds, nullptr, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
+    dbc, ds, nullptr, std::make_shared<MONITOR_SERVICE>(ds && ds->opt_LOG_QUERY)) {}
 
 EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : EFM_PROXY(
-    dbc, ds, next_proxy, std::make_shared<MONITOR_SERVICE>(ds && ds->save_queries)) {}
+    dbc, ds, next_proxy, std::make_shared<MONITOR_SERVICE>(ds && ds->opt_LOG_QUERY)) {}
 
 EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy,
                      std::shared_ptr<MONITOR_SERVICE> monitor_service)
@@ -48,14 +48,14 @@ EFM_PROXY::EFM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy,
 }
 
 std::shared_ptr<MONITOR_CONNECTION_CONTEXT> EFM_PROXY::start_monitoring() {
-    if (!ds || !ds->enable_failure_detection) {
+    if (!ds || !ds->opt_ENABLE_FAILURE_DETECTION) {
         return nullptr;
     }
 
-    auto failure_detection_timeout = ds->failure_detection_timeout;
+    auto failure_detection_timeout = ds->opt_FAILURE_DETECTION_TIMEOUT;
     // Use network timeout defined if failure detection timeout is not set
     if (failure_detection_timeout == 0) {
-        failure_detection_timeout = ds->network_timeout == 0 ? failure_detection_timeout_default : ds->network_timeout;
+        failure_detection_timeout = ds->opt_NETWORK_TIMEOUT == 0 ? failure_detection_timeout_default : ds->opt_NETWORK_TIMEOUT;
     }
 
     return monitor_service->start_monitoring(
@@ -63,15 +63,15 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> EFM_PROXY::start_monitoring() {
         ds,
         node_keys,
         std::make_shared<HOST_INFO>(get_host(), get_port()),
-        std::chrono::milliseconds{ds->failure_detection_time},
+        std::chrono::milliseconds{ds->opt_FAILURE_DETECTION_TIME},
         std::chrono::seconds{failure_detection_timeout},
-        std::chrono::milliseconds{ds->failure_detection_interval},
-        ds->failure_detection_count,
-        std::chrono::milliseconds{ds->monitor_disposal_time});
+        std::chrono::milliseconds{ds->opt_FAILURE_DETECTION_INTERVAL},
+        ds->opt_FAILURE_DETECTION_COUNT,
+        std::chrono::milliseconds{ds->opt_MONITOR_DISPOSAL_TIME});
 }
 
 void EFM_PROXY::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> context) {
-    if (!ds || !ds->enable_failure_detection || context == nullptr) {
+    if (!ds || !ds->opt_ENABLE_FAILURE_DETECTION || context == nullptr) {
         return;
     }
     monitor_service->stop_monitoring(context);
@@ -86,8 +86,8 @@ void EFM_PROXY::generate_node_keys() {
 
     if (is_connected()) {
         // Temporarily turn off failure detection if on
-        const auto failure_detection_old_state = ds->enable_failure_detection;
-        ds->enable_failure_detection = false;
+        const auto failure_detection_old_state = ds->opt_ENABLE_FAILURE_DETECTION;
+        ds->opt_ENABLE_FAILURE_DETECTION = false;
 
         const auto error = query(RETRIEVE_HOST_PORT_SQL);
         if (error == 0) {
@@ -99,7 +99,7 @@ void EFM_PROXY::generate_node_keys() {
             free_result(result);
         }
 
-        ds->enable_failure_detection = failure_detection_old_state;
+        ds->opt_ENABLE_FAILURE_DETECTION = failure_detection_old_state;
     }
 }
 
@@ -182,6 +182,13 @@ MYSQL_RES* EFM_PROXY::use_result() {
 int EFM_PROXY::next_result() {
     const auto context = start_monitoring();
     const int ret = next_proxy->next_result();
+    stop_monitoring(context);
+    return ret;
+}
+
+bool EFM_PROXY::more_results() {
+    const auto context = start_monitoring();
+    const bool ret = next_proxy->more_results();
     stop_monitoring(context);
     return ret;
 }

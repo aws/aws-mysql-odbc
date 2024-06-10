@@ -1,24 +1,24 @@
 /////////////////////////////////////////////////////////////////////////////
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -53,6 +53,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #endif //_WIN32
 
 #include "..\..\VersionInfo.h"
+#include <mysql_version.h>
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION MYODBC_FILEVER
 PRODUCTVERSION MYODBC_PRODUCTVER
@@ -79,7 +80,7 @@ BEGIN
             VALUE "LegalTrademarks", "MySQL, MyODBC, Connector/ODBC are trademarks of Oracle Corporation\0"
             VALUE "OriginalFilename", "awsmysqlodbcS.dll\0"
             VALUE "PrivateBuild", "Production\0"
-            VALUE "ProductName", "Connector/ODBC 8.0\0"
+            VALUE "ProductName", "Connector/ODBC 8.1\0"
             VALUE "ProductVersion", MYODBC_STRPRODUCTVER
             VALUE "SpecialBuild", "GA release\0"
         END
@@ -137,13 +138,20 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,79,10
     CONTROL         "&Use compression",IDC_CHECK_COMPRESSED_PROTO,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,27,69,10
+#if MYSQL_VERSION_ID < 80300
     CONTROL         "&Enable automatic reconnect",IDC_CHECK_AUTO_RECONNECT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,42,105,10
     CONTROL         "&Don't prompt when connecting",IDC_CHECK_NO_PROMPT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,57,113,10
     CONTROL         "All&ow multiple statements",IDC_CHECK_MULTI_STATEMENTS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,72,97,10
-    CONTROL         "&Interactive Client",IDC_CHECK_client_interactive,
+#else
+    CONTROL         "&Don't prompt when connecting",IDC_CHECK_NO_PROMPT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,42,113,10
+    CONTROL         "All&ow multiple statements",IDC_CHECK_MULTI_STATEMENTS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,57,113,10
+#endif
+    CONTROL         "&Interactive Client",IDC_CHECK_CLIENT_INTERACTIVE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,87,79,10
     RTEXT           "&Character Set:",IDC_STATIC,12,102,67,8
     COMBOBOX        IDC_EDIT_CHARSET,90,102,197,8,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
@@ -195,69 +203,69 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     RTEXT           "Authentication Mode:", IDC_STATIC, -8, 10, 80, 10
-    COMBOBOX        IDC_EDIT_auth_mode, 78, 10, 289, 10,
+    COMBOBOX        IDC_EDIT_AUTH_MODE, 78, 10, 289, 10,
                     CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     RTEXT           "AWS Region:", IDC_STATIC, -8, 30, 80, 10
-    EDITTEXT        IDC_EDIT_auth_region, 78, 30, 289, 10, ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_AUTH_REGION, 78, 30, 289, 10, ES_AUTOHSCROLL
     RTEXT           "IAM Host:", IDC_STATIC, -8, 50, 80, 10
-    EDITTEXT        IDC_EDIT_auth_host, 78, 50, 289, 10, ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_AUTH_HOST, 78, 50, 289, 10, ES_AUTOHSCROLL
     RTEXT           "IAM Port:", IDC_STATIC, -8, 70, 80, 10
-    EDITTEXT        IDC_EDIT_auth_port, 78, 70, 289, 10, ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_AUTH_PORT, 78, 70, 289, 10, ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "IAM Expire Time:", IDC_STATIC, -8, 90, 80, 10
-    EDITTEXT        IDC_EDIT_auth_expiration, 78, 90, 289, 10, ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_AUTH_EXPIRATION, 78, 90, 289, 10, ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Secret ID:", IDC_STATIC, -8, 110, 80, 10
-    EDITTEXT        IDC_EDIT_auth_secret_id, 78, 110, 289, 10, ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_AUTH_SECRET_ID, 78, 110, 289, 10, ES_AUTOHSCROLL
 END
 
 IDD_TAB4 DIALOGEX 0, 0, 209, 281
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "&Enable Cluster Failover",IDC_CHECK_enable_cluster_failover,
+    CONTROL         "&Enable Cluster Failover",IDC_CHECK_ENABLE_CLUSTER_FAILOVER,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 12, 89, 10
-    CONTROL         "&Gather performance metrics", IDC_CHECK_gather_perf_metrics,
+    CONTROL         "&Gather performance metrics", IDC_CHECK_GATHER_PERF_METRICS,
                     "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 12, 27, 100, 10
-    CONTROL         "&Gather instance-specific metrics", IDC_CHECK_gather_metrics_per_instance,
+    CONTROL         "&Gather instance-specific metrics", IDC_CHECK_GATHER_PERF_METRICS_PER_INSTANCE,
                     "Button", BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED, 132, 27, 100, 10
     RTEXT           "Failover Mode:", IDC_STATIC, 12, 43, 116, 8
-    COMBOBOX        IDC_EDIT_failover_mode, 132, 41, 196, 12,
+    COMBOBOX        IDC_EDIT_FAILOVER_MODE, 132, 41, 196, 12,
                     CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     RTEXT           "&Host pattern:",IDC_STATIC,12,60,117,8
-    EDITTEXT        IDC_EDIT_host_pattern,132,58,196,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_HOST_PATTERN,132,58,196,12,ES_AUTOHSCROLL
     RTEXT           "&Cluster ID:",IDC_STATIC,12,77,116,8
-    EDITTEXT        IDC_EDIT_cluster_id,132,75,196,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_CLUSTER_ID,132,75,196,12,ES_AUTOHSCROLL
     RTEXT           "Topology refresh rate (ms):",IDC_STATIC,12,94,116,8
-    EDITTEXT        IDC_EDIT_topology_refresh_rate,132,92,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_TOPOLOGY_REFRESH_RATE,132,92,64,12,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Failover timeout (ms):",IDC_STATIC,12,111,116,8
-    EDITTEXT        IDC_EDIT_failover_timeout,132,109,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_FAILOVER_TIMEOUT,132,109,64,12,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Failover topology refresh rate (ms):",IDC_STATIC,11,128,117,8
-    EDITTEXT        IDC_EDIT_failover_topology_refresh_rate,132,126,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_FAILOVER_TOPOLOGY_REFRESH_RATE,132,126,64,12,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Writer reconnect interval (ms):",IDC_STATIC,11,145,117,8
-    EDITTEXT        IDC_EDIT_failover_writer_reconnect_interval,132,143,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_FAILOVER_WRITER_RECONNECT_INTERVAL,132,143,64,12,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Reader connect timeout (ms):",IDC_STATIC,11,162,117,8
-    EDITTEXT        IDC_EDIT_failover_reader_connect_timeout,132,160,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_FAILOVER_READER_CONNECT_TIMEOUT,132,160,64,12,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Host Connect timeout (s):",IDC_STATIC,11,179,117,8
-    EDITTEXT        IDC_EDIT_connect_timeout,132,177,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_CONNECT_TIMEOUT,132,177,64,12,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Host Read/Write timeout (s):",IDC_STATIC,11,196,117,8
-    EDITTEXT        IDC_EDIT_network_timeout,132,194,64,12,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT_NETWORK_TIMEOUT,132,194,64,12,ES_AUTOHSCROLL | ES_NUMBER
 END
 
 IDD_TAB5 DIALOGEX 0, 0, 209, 181
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "&Enable failure detection",IDC_CHECK_enable_failure_detection,
+    CONTROL         "&Enable failure detection",IDC_CHECK_ENABLE_FAILURE_DETECTION,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 12, 12, 100, 10
     RTEXT           "Failure detection time (ms):",IDC_STATIC,12,27,116,8
-    EDITTEXT        IDC_EDIT_failure_detection_time,132,25,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
+    EDITTEXT        IDC_EDIT_FAILURE_DETECTION_TIME,132,25,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
     RTEXT           "Failure detection interval (ms):",IDC_STATIC,12,42,116,8
-    EDITTEXT        IDC_EDIT_failure_detection_interval,132,40,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
+    EDITTEXT        IDC_EDIT_FAILURE_DETECTION_INTERVAL,132,40,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
     RTEXT           "Failure detection count:",IDC_STATIC,12,57,116,8
-    EDITTEXT        IDC_EDIT_failure_detection_count,132,55,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
+    EDITTEXT        IDC_EDIT_FAILURE_DETECTION_COUNT,132,55,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
     RTEXT           "Failure detection timeout (s):",IDC_STATIC,12,72,116,8
-    EDITTEXT        IDC_EDIT_failure_detection_timeout,132,70,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
+    EDITTEXT        IDC_EDIT_FAILURE_DETECTION_TIMEOUT,132,70,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
     RTEXT           "Monitor disposal time (ms):",IDC_STATIC,12,87,116,8
-    EDITTEXT        IDC_EDIT_monitor_disposal_time,132,85,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
+    EDITTEXT        IDC_EDIT_MONITOR_DISPOSAL_TIME,132,85,64,12,ES_AUTOHSCROLL | ES_NUMBER| WS_DISABLED
 END
 
 IDD_TAB6 DIALOGEX 0, 0, 209, 181
@@ -291,7 +299,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,32,154,10
     CONTROL         "&Force use of forward-only cursors",IDC_CHECK_FORWARD_CURSOR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,47,125,10
-    CONTROL         "&Prefetch from server by",IDC_CHECK_cursor_prefetch_active,
+    CONTROL         "&Prefetch from server by",IDC_CHECK_CURSOR_PREFETCH_ACTIVE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,62,89,10
     LTEXT           "ro&ws at a time",IDC_STATIC,130,62,48,10
     EDITTEXT        IDC_EDIT_PREFETCH,102,62,27,10,ES_AUTOHSCROLL | ES_NUMBER | WS_DISABLED

@@ -789,8 +789,8 @@ BOOL process_rule(MY_PARSER *parser, const QUERY_TYPE_RESOLVING *rule_param)
   const char *token;
 
   for (i= rule_param->pos_from;
-       i <= myodbc_min(rule_param->pos_thru > 0 ? rule_param->pos_thru : rule_param->pos_from,
-                      TOKEN_COUNT(parser->query) - 1);
+       i <= myodbc_min(rule->pos_thru > 0 ? rule->pos_thru : rule->pos_from,
+                      parser->query->token_count() - 1);
        ++i)
   {
     token = parser->query->get_token(i);

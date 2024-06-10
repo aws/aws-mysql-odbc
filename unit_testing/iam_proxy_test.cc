@@ -70,7 +70,6 @@ protected:
         SQLHDBC hdbc = nullptr;
         SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
         dbc = static_cast<DBC *>(hdbc);
-        ds = ds_new();
 
         ds_setattr_from_utf8(&ds->auth_host, (SQLCHAR*)TEST_HOST.c_str());
         ds_setattr_from_utf8(&ds->auth_region, (SQLCHAR*)TEST_REGION.c_str());

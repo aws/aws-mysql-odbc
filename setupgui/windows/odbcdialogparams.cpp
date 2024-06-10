@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2007, 2020, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -405,17 +405,17 @@ void btnDetails_Click (HWND hwnd)
 
     // Auth mode dropdown
     HWND auth_tab = TabCtrl_1.hTabPages[AWS_AUTH_TAB - 1];
-    HWND auth_mode_dlg = GetDlgItem(auth_tab, IDC_EDIT_auth_mode);
+    HWND AUTH_MODE_dlg = GetDlgItem(auth_tab, IDC_EDIT_AUTH_MODE);
 
-    ComboBox_ResetContent(auth_mode_dlg);
+    ComboBox_ResetContent(AUTH_MODE_dlg);
 
-    ComboBox_AddString(auth_mode_dlg, L"");
-    ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_IAM));
-    ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
+    ComboBox_AddString(AUTH_MODE_dlg, L"");
+    ComboBox_AddString(AUTH_MODE_dlg, LSTR(AUTH_MODE_IAM));
+    ComboBox_AddString(AUTH_MODE_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
 
     // Failover mode dropdown
     HWND failover_tab = TabCtrl_1.hTabPages[FAILOVER_TAB - 1];
-    HWND failover_mode_dlg = GetDlgItem(failover_tab, IDC_EDIT_failover_mode);
+    HWND failover_mode_dlg = GetDlgItem(failover_tab, IDC_EDIT_FAILOVER_MODE);
 
     ComboBox_ResetContent(failover_mode_dlg);
 
@@ -424,17 +424,18 @@ void btnDetails_Click (HWND hwnd)
     ComboBox_AddString(failover_mode_dlg, LSTR(FAILOVER_MODE_STRICT_READER));
     ComboBox_AddString(failover_mode_dlg, LSTR(FAILOVER_MODE_READER_OR_WRITER));
 
-    HWND ssl_tab = TabCtrl_1.hTabPages[4];
-    HWND combo = GetDlgItem(ssl_tab, IDC_EDIT_SSL_MODE);
+    // SSL mode dropdown
+    HWND ssl_tab = TabCtrl_1.hTabPages[SSL_TAB-1];
+    HWND sslmode_dlg = GetDlgItem(ssl_tab, IDC_EDIT_SSL_MODE);
 
-    ComboBox_ResetContent(combo);
+    ComboBox_ResetContent(sslmode_dlg);
 
-    ComboBox_AddString(combo, L"");
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_DISABLED));
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_PREFERRED));
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_REQUIRED));
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_VERIFY_CA));
-    ComboBox_AddString(combo, LSTR(ODBC_SSL_MODE_VERIFY_IDENTITY));
+    ComboBox_AddString(sslmode_dlg, L"");
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_DISABLED));
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_PREFERRED));
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_REQUIRED));
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_VERIFY_CA));
+    ComboBox_AddString(sslmode_dlg, LSTR(ODBC_SSL_MODE_VERIFY_IDENTITY));
 
     syncTabs(hwnd, pParams);
 	}
@@ -591,16 +592,11 @@ void processDbCombobox(HWND hwnd, HWND hwndCtl, UINT codeNotify)
       FillParameters(hwnd, pParams);
       std::vector<SQLWSTRING> dbs;
 
-      try
-      {
-        dbs = mygetdatabases(hwnd, pParams);
-      }
-      catch (MYERROR &e) {
-      }
+      dbs = mygetdatabases(hwnd, pParams);
 
       ComboBox_ResetContent(hwndCtl);
 
-      adjustDropdownHeight(hwndCtl, dbs.size());
+      adjustDropdownHeight(hwndCtl, (unsigned int)dbs.size());
 
       for (SQLWSTRING dbname : dbs)
         ComboBox_AddString(hwndCtl, (SQLWCHAR *)dbname.c_str());
@@ -628,7 +624,7 @@ void processCharsetCombobox(HWND hwnd, HWND hwndCtl, UINT codeNotify)
 
       ComboBox_ResetContent(hwndCtl);
 
-      adjustDropdownHeight(hwndCtl, csl.size());
+      adjustDropdownHeight(hwndCtl, (unsigned int)csl.size());
 
       for (SQLWSTRING csname : csl)
         ComboBox_AddString(hwndCtl, (SQLWCHAR *)csname.c_str());
@@ -682,6 +678,7 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
     case IDC_RADIO_tcp:
     case IDC_RADIO_NAMED_PIPE:
       SwitchTcpOrPipe(hwnd, !!Button_GetCheck(GetDlgItem(hwnd, IDC_RADIO_NAMED_PIPE)));
+      break;
     case IDC_EDIT_AUTH_MODE:
       {
         HWND authTab = TabCtrl_1.hTabPages[AWS_AUTH_TAB - 1];
@@ -697,7 +694,7 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         assert(secret_id);
 
         wchar_t authMode[20];
-        ComboBox_GetText(GetDlgItem(authTab, IDC_EDIT_auth_mode), authMode, sizeof(authMode));
+        ComboBox_GetText(GetDlgItem(authTab, IDC_EDIT_AUTH_MODE), authMode, sizeof(authMode));
 
         BOOL usingIAM = wcscmp(authMode, L"IAM") == 0;
         EnableWindow(port, usingIAM);
@@ -708,19 +705,19 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         EnableWindow(secret_id, usingSecretsManager);
       }
       break;
-    case IDC_CHECK_gather_perf_metrics:
+    case IDC_CHECK_GATHER_PERF_METRICS:
       {
         HWND failoverTab = TabCtrl_1.hTabPages[FAILOVER_TAB-1];
         assert(failoverTab);
-        HWND prefetch = GetDlgItem(failoverTab, IDC_CHECK_GATHER_METRICS_PER_INSTANCE);
+        HWND prefetch = GetDlgItem(failoverTab, IDC_CHECK_GATHER_PERF_METRICS_PER_INSTANCE);
         assert(prefetch);
 
         EnableWindow(prefetch, !!Button_GetCheck(GetDlgItem(failoverTab,
             IDC_CHECK_GATHER_PERF_METRICS)));
-        setBoolFieldData(failoverTab, IDC_CHECK_GATHER_METRICS_PER_INSTANCE, Button_GetCheck(prefetch));
+        setBoolFieldData(failoverTab, IDC_CHECK_GATHER_PERF_METRICS_PER_INSTANCE, Button_GetCheck(prefetch));
       }
       break;
-    case IDC_CHECK_enable_failure_detection:
+    case IDC_CHECK_ENABLE_FAILURE_DETECTION:
       {
         HWND monitoringTab = TabCtrl_1.hTabPages[MONITORING_TAB - 1];
         assert(monitoringTab);
@@ -741,7 +738,7 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         EnableWindow(detectionTimeout, !!Button_GetCheck(GetDlgItem(monitoringTab, IDC_CHECK_ENABLE_FAILURE_DETECTION)));
       }
       break;
-    case IDC_CHECK_cursor_prefetch_active:
+    case IDC_CHECK_CURSOR_PREFETCH_ACTIVE:
       {
         HWND cursorTab= TabCtrl_1.hTabPages[CURSORS_TAB-1];
         assert(cursorTab);

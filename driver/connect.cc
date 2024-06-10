@@ -276,19 +276,18 @@ std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource* ds) {
   std::vector<Srv_host_detail> hosts;
   std::stringstream err;
   try {
-    hosts =
-        parse_host_list(ds_get_utf8attr(ds->server, &ds->server8), ds->port);
+    hosts = parse_host_list(ds->opt_SERVER, ds->opt_PORT);
   } catch (std::string &) {
-    err << "Invalid server '" << ds->server8 << "'.";
-    if (ds->save_queries) {
+    err << "Invalid server '" << (const char*)ds->opt_SERVER << "'.";
+    if (ds->opt_LOG_QUERY) {
       MYLOG_TRACE(init_log_file(), 0, err.str().c_str());
     }
     throw std::runtime_error(err.str());
   }
 
-  if (hosts.size() == 0) {
+  if (hosts.empty()) {
     err << "No host was retrieved from the data source.";
-    if (ds->save_queries) {
+    if (ds->opt_LOG_QUERY) {
       MYLOG_TRACE(init_log_file(), 0, err.str().c_str());
     }
     throw std::runtime_error(err.str());
@@ -377,20 +376,20 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   unsigned int connect_timeout, read_timeout, write_timeout;
   if (failover_enabled)
   {
-      connect_timeout = get_connect_timeout(dsrc->connect_timeout);
-      read_timeout = get_network_timeout(dsrc->network_timeout);
+      connect_timeout = get_connect_timeout(dsrc->opt_CONNECT_TIMEOUT);
+      read_timeout = get_network_timeout(dsrc->opt_NETWORK_TIMEOUT);
       write_timeout = read_timeout;
   }
   else if (is_monitor_connection)
   {
-      connect_timeout = get_network_timeout(dsrc->read_timeout);
-      read_timeout = get_network_timeout(dsrc->read_timeout);
-      write_timeout = get_network_timeout(dsrc->write_timeout);
+      connect_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      read_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      write_timeout = get_network_timeout(dsrc->opt_WRITETIMEOUT);
   } else
   {
       connect_timeout = get_connect_timeout(login_timeout);
-      read_timeout = get_network_timeout(dsrc->read_timeout);
-      write_timeout = get_network_timeout(dsrc->write_timeout);
+      read_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      write_timeout = get_network_timeout(dsrc->opt_WRITETIMEOUT);
   }
 
   if (dsrc->opt_READTIMEOUT) {
@@ -546,14 +545,6 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
 #endif
 
-  /* set SSL parameters */
-  connection_proxy->ssl_set(
-                dsrc->opt_SSL_KEY,
-                dsrc->opt_SSL_CERT,
-                dsrc->opt_SSL_CA,
-                dsrc->opt_SSL_CAPATH,
-                dsrc->opt_SSL_CIPHER);
-
 #if MYSQL_VERSION_ID < 80003
   if (dsrc->SSLVERIFY)
     connection_proxy->options(MYSQL_OPT_SSL_VERIFY_SERVER_CERT,
@@ -672,7 +663,9 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 #endif
 
 #if (MYSQL_VERSION_ID >= 50527 && MYSQL_VERSION_ID < 50600) || MYSQL_VERSION_ID >= 50607
-  if (dsrc->opt_ENABLE_CLEARTEXT_PLUGIN || !myodbc_strcasecmp(AUTH_MODE_IAM, (const char*)dsrc->opt_AUTH_MODE))
+  // IAM authentication requires the plugin to be set.
+  if (dsrc->opt_ENABLE_CLEARTEXT_PLUGIN ||
+      (dsrc->opt_AUTH_MODE && !myodbc_strcasecmp(AUTH_MODE_IAM, (const char*)dsrc->opt_AUTH_MODE)))
   {
     connection_proxy->options(MYSQL_ENABLE_CLEARTEXT_PLUGIN, (char *)&on);
   }
@@ -777,7 +770,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     return set_error("HY000", "Specifying multiple hostnames with DNS SRV look up is not allowed.", 0);
   }
 
-  if(dsrc->opt_ENABLE_DNS_SRV && dsrc->opt_PORT)
+  if(dsrc->opt_ENABLE_DNS_SRV.is_set() && dsrc->opt_PORT.is_set())
   {
     return set_error("HY000", "Specifying a port number with DNS SRV lookup is not allowed.", 0);
   }
@@ -827,22 +820,10 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     dsrc->opt_SERVER = host;
     dsrc->opt_PORT = port;
 
-    MYSQL *connect_result = dsrc->opt_ENABLE_DNS_SRV ?
-                            connection_proxy->connect_dns_srv(
-                              host,
-                              dsrc->opt_UID,
-                              dsrc->opt_PWD,
-                              dsrc->opt_DATABASE,
-                              flags)
-                            :
-                            connection_proxy->connect(
-                              host,
-                              dsrc->opt_UID,
-                              dsrc->opt_PWD,
-                              dsrc->opt_DATABASE,
-                              port,
-                              dsrc->opt_SOCKET,
-                              flags);
+    const bool connect_result = connection_proxy->connect(
+        host, dsrc->opt_UID, dsrc->opt_PWD, dsrc->opt_DATABASE, port,
+        dsrc->opt_SOCKET, flags);
+
     if (!connect_result)
     {
       unsigned int native_error= connection_proxy->error_code();
@@ -990,6 +971,9 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   const char *opt_db = ds.opt_DATABASE;
   database = opt_db ? opt_db : "";
 
+  if (ds.opt_LOG_QUERY && !log_file)
+      log_file = init_log_file();
+
   /* Set the statement error prefix based on the server version. */
   strxmov(st_error_prefix, MYODBC_ERROR_PREFIX, "[mysqld-",
           connection_proxy->get_server_version(), "]", NullS);
@@ -1115,14 +1099,12 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
 
   ds.lookup();
 
-  rc= dbc->connect(&ds);
+  if (ds.opt_LOG_QUERY && !dbc->log_file)
+      dbc->log_file = init_log_file();
 
-  if (ds->opt_LOG_QUERY && !dbc->log_file)
-    dbc->log_file = init_log_file();
-
-  dbc->init_proxy_chain(ds);
+  dbc->init_proxy_chain(&ds);
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
-  dbc->fh = new FAILOVER_HANDLER(dbc, ds);
+  dbc->fh = new FAILOVER_HANDLER(dbc, &ds);
   rc = dbc->fh->init_connection();
   return rc;
 #endif
@@ -1233,11 +1215,12 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   case SQL_DRIVER_COMPLETE:
   case SQL_DRIVER_COMPLETE_REQUIRED:
-    if (ds.opt_LOG_QUERY && !dbc->log_file)
-      dbc->log_file = init_log_file();
+      if (ds.opt_LOG_QUERY && !log_file)
+          log_file = init_log_file();
+
     dbc->init_proxy_chain(&ds);
     dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
-    dbc->fh = new FAILOVER_HANDLER(dbc, ds);
+    dbc->fh = new FAILOVER_HANDLER(dbc, &ds);
     rc = dbc->fh->init_connection();
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
       goto connected;
@@ -1382,7 +1365,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     }
 
     /* refresh our DataSource */
-    ds.clear();
+    ds.reset();
     if (ds.from_kvpair(prompt_outstr, ';'))
     {
       rc= dbc->set_error( "HY000",
@@ -1404,12 +1387,13 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   }
 
-  if (ds.opt_LOG_FILE && !dbc->log_file)
-      dbc->log_file = init_log_file();
+  if (ds.opt_LOG_QUERY && !log_file)
+      log_file = init_log_file();
 
   dbc->init_proxy_chain(&ds);
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
-  dbc->fh = new FAILOVER_HANDLER(dbc, ds);
+  dbc->fh = new FAILOVER_HANDLER(dbc, &ds);
+
   rc = dbc->fh->init_connection();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
   {
@@ -1505,20 +1489,20 @@ void DBC::free_connection_stmts()
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 {
   DBC *dbc= (DBC *) hdbc;
-  DataSource* ds = dbc->ds;
+  DataSource ds = dbc->ds;
 
-  if (ds && ds->gather_perf_metrics) {
+  if (ds.opt_GATHER_PERF_METRICS.is_set()) {
     std::string cluster_id_str = "";
     if (dbc->fh) {
       cluster_id_str = dbc->fh->cluster_id;
     }
 
-    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds->gather_metrics_per_instance) && dbc->connection_proxy) {
+    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds.opt_GATHER_PERF_METRICS_PER_INSTANCE) && dbc->connection_proxy) {
       cluster_id_str = dbc->connection_proxy->get_host();
       cluster_id_str.append(":").append(std::to_string(dbc->connection_proxy->get_port()));
     }
 
-    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds->gather_metrics_per_instance, dbc->log_file, dbc->id);
+    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds.opt_GATHER_PERF_METRICS_PER_INSTANCE, dbc->log_file, dbc->id);
   }
 
   CHECK_HANDLE(hdbc);
@@ -1527,10 +1511,8 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 
   dbc->close();
 
-  if (dbc->ds && dbc->ds.opt_LOG_QUERY) {
-    dbc->log_file.reset();
-    end_log_file();
-  }
+  if (ds.opt_LOG_QUERY)
+      end_log_file();
 
   /* free allocated packet buffer */
 

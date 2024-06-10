@@ -33,7 +33,7 @@
 #include "MYODBC_MYSQL.h"
 
 struct DBC;
-struct DataSource;
+class DataSource;
 
 class CONNECTION_PROXY {
 public:
@@ -50,7 +50,6 @@ public:
         const char* socket,
         unsigned long flags);
 
-    virtual void delete_ds();
     virtual uint64_t num_rows(MYSQL_RES* res);
     virtual unsigned int num_fields(MYSQL_RES* res);
     virtual MYSQL_FIELD* fetch_field_direct(MYSQL_RES* res, unsigned int fieldnr);
@@ -65,8 +64,6 @@ public:
     virtual int set_character_set(const char* csname);
 
     virtual void init();
-    virtual bool ssl_set(const char* key, const char* cert, const char* ca,
-                         const char* capath, const char* cipher);
     virtual bool change_user(const char* user, const char* passwd,
                              const char* db);
     virtual bool real_connect(const char* host, const char* user,
@@ -126,8 +123,11 @@ public:
     virtual uint64_t stmt_affected_rows(MYSQL_STMT* stmt);
     virtual unsigned int stmt_field_count(MYSQL_STMT* stmt);
 
+    virtual bool commit();
+    virtual bool rollback();
     virtual bool autocommit(bool auto_mode);
     virtual int next_result();
+    virtual bool more_results();
     virtual int stmt_next_result(MYSQL_STMT* stmt);
     virtual void close();
 

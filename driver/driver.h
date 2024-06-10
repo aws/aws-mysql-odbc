@@ -579,8 +579,7 @@ struct	ENV
   {}
 };
 
-
-static std::atomic_ulong last_dbc_id{1};
+static std::atomic_ulong last_dbc_id{ 1 };
 
 /* Connection handler */
 

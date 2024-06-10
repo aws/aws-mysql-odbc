@@ -45,7 +45,7 @@ jobs:
           ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/
           ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/
 
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
           
       - name: Build and install AWS SDK C++
@@ -109,7 +109,7 @@ jobs:
 
       - name: Install MySQL client libs and include files
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64.tar.xz -o mysql.tar.gz
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64.tar.xz -o mysql.tar.gz
           tar xf mysql.tar.gz
 
       - name: Build and install AWS SDK C++
@@ -153,7 +153,7 @@ jobs:
 
   build-windows:
     name: Windows
-    runs-on: windows-2019
+    runs-on: windows-latest
     env:
       CMAKE_GENERATOR: Visual Studio 16 2019
     steps:
@@ -163,7 +163,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Add msbuild to PATH

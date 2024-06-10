@@ -45,10 +45,10 @@ If the developer powershell processor architecture is `x86` for `x64` build, it 
     ```
 4. Build the driver in the `build` directory with the following commands:
     ```
-    cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DODBC_INCLUDES=/usr/local/Cellar/libiodbc/3.52.15/include
+    cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DODBC_INCLUDES=/usr/local/Cellar/libiodbc/3.52.16/include
     cmake --build build --config Release
     ```
-    Note: you may have a different `libiodbc` version. Change `3.52.15` to your respective version.
+    Note: you may have a different `libiodbc` version. Change `3.52.16` to your respective version.
 
 ### Troubleshoot
 If you encounter an `ld: library not found for -lzstd` error, run the following command, and then rebuild the driver:

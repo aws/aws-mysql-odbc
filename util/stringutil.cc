@@ -730,14 +730,14 @@ size_t sqlwcharlen(const SQLWCHAR *wstr)
  *
  * @return A pointer to a new string.
  */
-SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, const size_t len)
+SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, SQLINTEGER charlen)
 {
-  const size_t length = len == SQL_NTS ? sqlwcharlen(wstr) : len;
-  SQLWCHAR *res = (SQLWCHAR *)myodbc_malloc((length + 1) * sizeof(SQLWCHAR), MYF(0));
+  size_t chars = (charlen == SQL_NTS ? sqlwcharlen(wstr) : charlen);
+  SQLWCHAR *res= (SQLWCHAR *)myodbc_malloc((chars + 1) * sizeof(SQLWCHAR), MYF(0));
   if (!res)
-    return nullptr;
-  memcpy(res, wstr, length * sizeof(SQLWCHAR));
-  res[length]= 0;
+    return NULL;
+  memcpy(res, wstr, chars * sizeof(SQLWCHAR));
+  res[chars]= 0;
   return res;
 }
 

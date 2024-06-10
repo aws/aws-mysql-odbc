@@ -2562,17 +2562,6 @@ int myodbc_casecmp(const char *s, const char *t, uint len)
   return (int)len + 1;
 }
 
-
-/*
-  @type    : myodbc internal
-  @purpose : frees the result and additional allocated buffers for STMT
-*/
-
-void free_internal_result_buffers(STMT *stmt)
-{
-  stmt->alloc_root.Clear();
-}
-
 my_bool is_minimum_version(const char *server_version,const char *version)
 {
   /*

@@ -48,15 +48,11 @@ CONNECTION_PROXY::~CONNECTION_PROXY() {
 bool CONNECTION_PROXY::connect(const char* host, const char* user, const char* password,
     const char* database, unsigned int port, const char* socket, unsigned long flags) {
 
-    if (ds->enable_dns_srv) {
+    if (ds->opt_ENABLE_DNS_SRV) {
         return this->real_connect_dns_srv(host, user, password, database, flags);
     }
 
     return this->real_connect(host, user, password, database, port, socket, flags);
-}
-
-void CONNECTION_PROXY::delete_ds() {
-    next_proxy->delete_ds();
 }
 
 uint64_t CONNECTION_PROXY::num_rows(MYSQL_RES* res) {
@@ -115,10 +111,6 @@ void CONNECTION_PROXY::init() {
     next_proxy->init();
 }
 
-bool CONNECTION_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    return next_proxy->ssl_set(key, cert, ca, capath, cipher);
-}
-
 bool CONNECTION_PROXY::change_user(const char* user, const char* passwd, const char* db) {
     return next_proxy->change_user(user, passwd, db);
 }
@@ -161,6 +153,18 @@ void CONNECTION_PROXY::get_character_set_info(MY_CHARSET_INFO* charset) {
 
 bool CONNECTION_PROXY::autocommit(bool auto_mode) {
     return next_proxy->autocommit(auto_mode);
+}
+
+bool CONNECTION_PROXY::commit() {
+    return next_proxy->commit();
+}
+
+bool CONNECTION_PROXY::rollback() {
+    return next_proxy->rollback();
+}
+
+bool CONNECTION_PROXY::more_results() {
+    return next_proxy->more_results();
 }
 
 int CONNECTION_PROXY::next_result() {

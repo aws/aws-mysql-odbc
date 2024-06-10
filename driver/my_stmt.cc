@@ -432,8 +432,7 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
   /* Trusting our parsing we are not using prepared statments unsless there are
      actually parameter markers in it */
   if (!stmt->dbc->ds.opt_NO_SSPS && (PARAM_COUNT(stmt->query) || force_prepare)
-    && !IS_BATCH(&stmt->query) &&
-      && preparable_on_server(&stmt->query, stmt->dbc->connection_proxy->get_server_version()))
+    && !IS_BATCH(&stmt->query) && stmt->query.preparable_on_server(stmt->dbc->connection_proxy->get_server_version()))
   {
     MYLOG_STMT_TRACE(stmt, "Using prepared statement");
     ssps_init(stmt);

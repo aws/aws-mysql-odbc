@@ -1301,7 +1301,7 @@ SQLRETURN get_connection(SQLHDBC *hdbc, const SQLCHAR *dsn, const SQLCHAR *uid,
   SQLCHAR     connOut[4096];
   SQLSMALLINT len;
   SQLRETURN   ret;
-  SQLCHAR     driver_name[16]; /* Should be enough for myodbc library file name */
+  SQLCHAR     driver_name[32]; /* Should be enough for myodbc library file name */
   SQLCHAR     *connIn;
 
   connIn = make_conn_str(dsn, uid, pwd, db, options, 0);

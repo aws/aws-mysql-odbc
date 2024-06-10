@@ -51,8 +51,8 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : C
     Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
 
     Aws::RDS::RDSClientConfiguration client_config;
-    if (ds->auth_region) {
-        client_config.region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
+    if (ds->opt_AUTH_REGION.is_set()) {
+        client_config.region = ds->opt_AUTH_REGION;
     }
 
     this->token_generator = std::make_shared<TOKEN_GENERATOR>(credentials, client_config);
@@ -151,28 +151,28 @@ void IAM_PROXY::clear_token_cache() {
 bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)> func) {
 
     // Use user provided auth host if present, otherwise, use server host
-    const char* auth_host = ds->auth_host ? ds_get_utf8attr(ds->auth_host, &ds->auth_host8) : 
-                                            (const char*)ds->server8;
+  const char *AUTH_HOST = ds->opt_AUTH_HOST ? (const char *)ds->opt_AUTH_HOST
+                                            : (const char *)ds->opt_SERVER;
 
-    // Go with default region if region is not provided.
-    const char* region = ds->auth_region8 ? (const char*)ds->auth_region8 : 
-                                            Aws::Region::US_EAST_1;
+  // Go with default region if region is not provided.
+  const char *region = ds->opt_AUTH_REGION ? (const char *)ds->opt_AUTH_REGION
+                                           : Aws::Region::US_EAST_1;
 
-    int iam_port = ds->auth_port;
+    int iam_port = ds->opt_AUTH_PORT;
     if (iam_port == UNDEFINED_PORT) {
         // Use regular port if user does not provide IAM port
-        iam_port = ds->port;
+        iam_port = ds->opt_PORT;
     }
 
-    std::string auth_token = this->get_auth_token(auth_host, region, iam_port, 
-                                                  (const char*)ds->uid8, ds->auth_expiration);
+    std::string auth_token = this->get_auth_token(AUTH_HOST, region, iam_port, 
+                                                  (const char*)ds->opt_UID, ds->opt_AUTH_EXPIRATION);
 
     bool connect_result = func(auth_token.c_str());
     if (!connect_result) {
         if (using_cached_token) {
             // Retry func with a fresh token
-            auth_token = this->get_auth_token(auth_host, region, iam_port, (const char*)ds->uid8,
-                                              ds->auth_expiration, true);
+            auth_token = this->get_auth_token(AUTH_HOST, region, iam_port, (const char*)ds->opt_UID,
+                                              ds->opt_AUTH_EXPIRATION, true);
             if (func(auth_token.c_str())) {
                 return true;
             }

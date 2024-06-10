@@ -118,14 +118,14 @@ void CLUSTER_AWARE_METRICS_CONTAINER::reset_metrics() {
 
 bool CLUSTER_AWARE_METRICS_CONTAINER::is_enabled() {
     if (ds) {
-        return ds->gather_perf_metrics;
+        return ds->opt_GATHER_PERF_METRICS;
     }
     return can_gather;
 }
 
 bool CLUSTER_AWARE_METRICS_CONTAINER::is_instance_metrics_enabled() {
     if (ds) {
-        return ds->gather_metrics_per_instance;
+        return ds->opt_GATHER_PERF_METRICS_PER_INSTANCE;
     }
     return can_gather;
 }

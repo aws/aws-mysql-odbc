@@ -49,20 +49,14 @@
 #endif
 #endif
 
-DataSource* ds_new();
-void ds_delete(DataSource* ds);
-void ds_copy(DataSource* ds, DataSource* ds_source);
-
 class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
  public:
     MOCK_CONNECTION_PROXY(DBC* dbc, DataSource* ds) : CONNECTION_PROXY(dbc, ds) {
-        this->ds = ds_new();
-        ds_copy(this->ds, ds);
+        this->ds = ds;
     };
     ~MOCK_CONNECTION_PROXY() override {
         mock_connection_proxy_destructor();
         if (this->ds) {
-            ds_delete(this->ds);
             this->ds = nullptr;
         }
     }
@@ -83,7 +77,6 @@ class MOCK_CONNECTION_PROXY : public CONNECTION_PROXY {
     MOCK_METHOD(void, close, ());
     MOCK_METHOD(void, init, ());
     MOCK_METHOD(int, ping, ());
-    MOCK_METHOD(void, delete_ds, ());
     MOCK_METHOD(bool, connect, (const char*, const char*, const char*, const char*, unsigned int, const char*, unsigned long));
     MOCK_METHOD(unsigned int, error_code, ());
 };

@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -65,8 +65,8 @@ MySQLGetPrivateProfileStringW(const MyODBC_LPCWSTR lpszSection, const MyODBC_LPC
    functions. These macros reduce the clutter a little bit.
 */
 #if USE_IODBC
-# define SAVE_MODE() UWORD config_mode= config_get()
-# define RESTORE_MODE() config_set(config_mode)
+# define SAVE_MODE() UWORD config_mode= config_get();
+# define RESTORE_MODE() config_set(config_mode);
 #else
 # define SAVE_MODE()
 # define RESTORE_MODE()
@@ -86,7 +86,8 @@ static SQLWCHAR W_CANNOT_FIND_DRIVER[]= {'C', 'a', 'n', 'n', 'o', 't', ' ',
 
 static SQLWCHAR W_DSN[]= {'D', 'S', 'N', 0};
 static SQLWCHAR W_DRIVER[] = {'D', 'R', 'I', 'V', 'E', 'R', 0};
-static SQLWCHAR W_DESCRIPTION[]=
+static SQLWCHAR W_Driver[] = {'D', 'r', 'i', 'v', 'e', 'r', 0};
+static SQLWCHAR W_DESCRIPTION[] =
   {'D', 'E', 'S', 'C', 'R', 'I', 'P', 'T', 'I', 'O', 'N', 0};
 static SQLWCHAR W_SERVER[]= {'S', 'E', 'R', 'V', 'E', 'R', 0};
 static SQLWCHAR W_UID[]= {'U', 'I', 'D', 0};
@@ -232,6 +233,8 @@ static SQLWCHAR W_SSL_CRL[] =
 { 'S', 'S', 'L', '-', 'C', 'R', 'L', 0 };
 static SQLWCHAR W_SSL_CRLPATH[] =
 { 'S', 'S', 'L', '-', 'C', 'R', 'L', 'P', 'A', 'T', 'H', 0};
+static SQLWCHAR W_OPENTELEMETRY[] =
+{ 'O', 'P', 'E', 'N', 'T', 'E', 'L', 'E', 'M', 'E', 'T', 'R', 'Y', 0};
 
 /* AWS Authentication */
 static SQLWCHAR W_AUTH_MODE[] = { 'A', 'U', 'T', 'H', 'E', 'N', 'T', 'I', 'C', 'A', 'T', 'I', 'O', 'N', '_', 'M', 'O', 'D', 'E', 0};
@@ -385,10 +388,26 @@ UWORD config_set(UWORD mode)
   return current;
 }
 
+unsigned int get_connect_timeout(unsigned int seconds) {
+  if (seconds && seconds > 0) {
+    return seconds;
+  }
+
+  return DEFAULT_CONNECT_TIMEOUT_SECS;
+}
+
+unsigned int get_network_timeout(unsigned int seconds) {
+  if (seconds && seconds > 0) {
+    return seconds;
+  }
+
+  return DEFAULT_NETWORK_TIMEOUT_SECS;
+}
+
 void optionStr::set(const SQLWSTRING& val, bool is_default = false) {
   SQLCHAR out[1024];
   m_wstr = val;
-  SQLINTEGER len = val.length();
+  SQLINTEGER len = (SQLINTEGER)val.length();
   char *converted = (char *)sqlwchar_as_utf8_ext(val.c_str(), &len, out, sizeof(out), nullptr);
   m_str = std::string(converted, len);
   m_is_set = true;
@@ -398,9 +417,10 @@ void optionStr::set(const SQLWSTRING& val, bool is_default = false) {
 
 void optionStr::set(const std::string &val, bool is_default = false) {
   m_str = val;
-  SQLINTEGER len = val.length();
+  SQLINTEGER len = (SQLINTEGER)val.length();
   SQLWCHAR *converted = sqlchar_as_sqlwchar(default_charset_info, (SQLCHAR*)val.c_str(), &len, nullptr);
   m_wstr = SQLWSTRING(converted, len);
+  x_free(converted);
   m_is_set = true;
   m_is_null = false;
   m_is_default = is_default;
@@ -425,21 +445,6 @@ const optionStr &optionStr::operator=(const std::string &val) {
   return *this;
 }
 
-unsigned int get_connect_timeout(unsigned int seconds) {
-  if (seconds && seconds > 0) {
-    return seconds;
-  }
-
-  return DEFAULT_CONNECT_TIMEOUT_SECS;
-}
-
-unsigned int get_network_timeout(unsigned int seconds) {
-  if (seconds && seconds > 0) {
-    return seconds;
-  }
-
-  return DEFAULT_NETWORK_TIMEOUT_SECS;
-}
 
 /* ODBC Installer Driver Wrapper */
 
@@ -523,19 +528,19 @@ int Driver::lookup_name()
   SQLWCHAR *pdrv= drivers;
   SQLWCHAR driverinfo[1024];
   int len;
-  WORD slen; /* WORD needed for windows */
-  SAVE_MODE();
+  SAVE_MODE()
 
   /* get list of drivers */
 #ifdef _WIN32
-  if (!SQLGetInstalledDriversW(pdrv, 16383, &slen) || !(len= slen))
+  WORD slen; /* WORD needed for windows */
+  if (!SQLGetInstalledDriversW(pdrv, 16383, &slen) || !(len = slen))
 #else
   if (!(len = SQLGetPrivateProfileStringW(NULL, NULL, W_EMPTY, pdrv, 16383,
                                           W_ODBCINST_INI)))
 #endif
     return -1;
 
-  RESTORE_MODE();
+  RESTORE_MODE()
 
   /* check the lib of each driver for one that matches the given lib name */
   while (len > 0)
@@ -543,7 +548,7 @@ int Driver::lookup_name()
     if (SQLGetPrivateProfileStringW(pdrv, W_DRIVER, W_EMPTY, driverinfo,
                                     1023, W_ODBCINST_INI))
     {
-      RESTORE_MODE();
+      RESTORE_MODE()
 
 #ifdef _WIN32
       if (!Win64CompareLibs(driverinfo, (const SQLWCHAR*)lib))
@@ -558,9 +563,9 @@ int Driver::lookup_name()
       }
     }
 
-    RESTORE_MODE();
+    RESTORE_MODE()
 
-    len -= sqlwcharlen(pdrv) + 1;
+    len -= (int)sqlwcharlen(pdrv) + 1;
     pdrv += sqlwcharlen(pdrv) + 1;
   }
 
@@ -573,7 +578,7 @@ int Driver::lookup()
   SQLWCHAR buf[4096];
   SQLWCHAR *entries= buf;
   SQLWCHAR dest[ODBCDRIVER_STRLEN];
-  SAVE_MODE();
+  SAVE_MODE()
 
   /* if only the filename is given, we must get the driver's name */
   if (!name.is_set() && lib.is_set())
@@ -591,7 +596,7 @@ int Driver::lookup()
     return -1;
   }
 
-  RESTORE_MODE();
+  RESTORE_MODE()
 
   /* read the needed driver attributes */
   while (*entries)
@@ -602,7 +607,7 @@ int Driver::lookup()
                                     dest, ODBCDRIVER_STRLEN,
                                     W_ODBCINST_INI) < 0)
     {
-      RESTORE_MODE();
+      RESTORE_MODE()
       return 1;
     }
     if (!sqlwcharcasecmp(W_DRIVER, entries))
@@ -689,7 +694,12 @@ int Driver::to_kvpair_null(SQLWCHAR *attrs, size_t attrslen)
   /* append NULL-separator */
   APPEND_SQLWCHAR(attrs, attrslen, 0);
 
-  attrs+= sqlwcharncat2(attrs, W_DRIVER, &attrslen);
+#if USE_IODBC
+  // iODBC wants "Driver", not "DRIVER"
+  attrs+= sqlwcharncat2(attrs, W_Driver, &attrslen);
+#else
+  attrs += sqlwcharncat2(attrs, W_DRIVER, &attrslen);
+#endif
   APPEND_SQLWCHAR(attrs, attrslen, '=');
   attrs+= sqlwcharncat2(attrs, lib, &attrslen);
 
@@ -753,7 +763,7 @@ void optionStr::set_remove_brackets(const SQLWCHAR *val_char,
   m_wstr = out;
   // Re-use existing buffer, just as another type
   SQLCHAR *c_out = reinterpret_cast<SQLCHAR *>(out);
-  len = val_str.length();
+  len = (SQLINTEGER)val_str.length();
   char *result = (char *)sqlwchar_as_utf8_ext(m_wstr.c_str(), &len,
     c_out, sizeof(out), nullptr);
   m_str = std::string(result, len);
@@ -776,13 +786,10 @@ int DataSource::lookup()
 #define DS_BUF_LEN 8192
   SQLWCHAR buf[DS_BUF_LEN];
   SQLWCHAR *entries= buf;
-  SQLWCHAR **dest;
   SQLWCHAR val[256];
-  int size, used;
+  int size;
   int rc= 0;
   UWORD config_mode= config_get();
-  unsigned int *intdest;
-  BOOL *booldest;
   /* No need for SAVE_MODE() because we always call config_get() above. */
 
   memset(buf, 0xff, sizeof(buf));
@@ -795,7 +802,7 @@ int DataSource::lookup()
     goto end;
   }
 
-  RESTORE_MODE();
+  RESTORE_MODE()
 
 #ifdef _WIN32
   /*
@@ -824,7 +831,7 @@ int DataSource::lookup()
   }
 #endif
 
-  for (used= 0;
+  for (size_t used = 0;
        used < DS_BUF_LEN && entries[0];
        used += sqlwcharlen(entries) + 1,
        entries += sqlwcharlen(entries) + 1)
@@ -853,6 +860,17 @@ end:
 }
 
 
+#define COPY_STR_OPTS(X)                               \
+  this->opt_##X.set_remove_brackets(ds_source.opt_##X, \
+                                    sqlwcharlen(ds_source.opt_##X));
+#define COPY_INT_BOOL_OPTS(X) this->opt_##X = ds_source.opt_##X;
+
+void DataSource::copy(DataSource ds_source) {
+  STR_OPTIONS_LIST(COPY_STR_OPTS)
+  INT_OPTIONS_LIST(COPY_INT_BOOL_OPTS)
+  BOOL_OPTIONS_LIST(COPY_INT_BOOL_OPTS)
+}
+
 void DataSource::set_val(SQLWCHAR* name, SQLWCHAR* val) {
   if (auto *opt = get_opt(name)) {
     *opt = val;
@@ -877,7 +895,7 @@ int DataSource::from_kvpair(const SQLWCHAR *str, SQLWCHAR delim)
   const SQLWCHAR *split;
   const SQLWCHAR *end;
   SQLWCHAR attribute[1000];
-  int len;
+  size_t len;
 
   while (*str)
   {
@@ -953,10 +971,10 @@ int DataSource::from_kvpair(const SQLWCHAR *str, SQLWCHAR delim)
         if (opt->get_type() == optionBase::opt_type::STRING) {
           optionStr *str_opt = dynamic_cast<optionStr*>(opt);
           if (*split == '{' && *end == '}') {
-            str_opt->set_remove_brackets(split + 1, end - split - 1);
+            str_opt->set_remove_brackets(split + 1, (SQLINTEGER)(end - split - 1));
             ++end;
           } else {
-            str_opt->set_remove_brackets(split, end - split);
+            str_opt->set_remove_brackets(split, (SQLINTEGER)(end - split));
           }
         } else {
           *opt = split;
@@ -984,37 +1002,34 @@ DataSource::DataSource() {
     m_alias_list.push_back(W_##Y);
 
   ALIAS_OPTIONS_LIST(ADD_ALIAS_TO_MAP);
+  reset();
+}
 
-  #define SET_DEFAULT_STR_OPTION(X) opt_##X.set_default(nullptr);
+void DataSource::reset() {
+#define SET_DEFAULT_STR_OPTION(X) opt_##X.set_default(nullptr);
   STR_OPTIONS_LIST(SET_DEFAULT_STR_OPTION);
 
-  #define SET_DEFAULT_INT_OPTION(X) opt_##X.set_default(0);
+#define SET_DEFAULT_INT_OPTION(X) opt_##X.set_default(0);
   INT_OPTIONS_LIST(SET_DEFAULT_INT_OPTION);
 
-  #define SET_DEFAULT_BOOL_OPTION(X) opt_##X.set_default(false);
+#define SET_DEFAULT_BOOL_OPTION(X) opt_##X.set_default(false);
   BOOL_OPTIONS_LIST(SET_DEFAULT_BOOL_OPTION);
 
   opt_PORT.set_default(3306);
   opt_NO_SCHEMA = 1;
 }
 
-void DataSource::clear() {
-#define CLEAR_OPTION(X) opt_##X.clear();
-  FULL_OPTIONS_LIST(CLEAR_OPTION);
-
-  opt_NO_SCHEMA = 1;
-}
-
 SQLWSTRING DataSource::to_kvpair(SQLWCHAR delim) {
-  SQLWCHAR numbuf[21];
   SQLWSTRING attrs;
 
-  bool name_is_set = m_opt_map.find(W_DSN)->second.is_set();
-  for (const auto &[k, v] : m_opt_map)
+  bool name_is_set = !m_opt_map.find(W_DSN)->second.is_default();
+  for (const auto &el : m_opt_map)
   {
+    auto &k = el.first;
+    auto &v = el.second;
     // Skip the option, which wasn't set.
     // Skip DRIVER if DSN (NAME) was set.
-    if (!v.is_set() ||
+    if (!v.is_set() || v.is_default() ||
         (name_is_set && !sqlwcharcasecmp(W_DRIVER, k.c_str()))
     )
       continue;
@@ -1043,11 +1058,11 @@ bool DataSource::write_opt(const SQLWCHAR *name, const SQLWCHAR *val) {
   if (name && *name)
   {
     int rc;
-    SAVE_MODE();
+    SAVE_MODE()
     rc = SQLWritePrivateProfileStringW(opt_DSN,
       name, val, W_ODBC_INI);
     if (rc)
-      RESTORE_MODE();
+      RESTORE_MODE()
     return !rc;
   }
 
@@ -1064,12 +1079,12 @@ int DataSource::add() {
   Driver driver;
 
   int rc = 1;
-  SAVE_MODE();
+  SAVE_MODE()
 
   /* Validate data source name */
   if (!SQLValidDSNW(opt_DSN)) return rc;
 
-  RESTORE_MODE();
+  RESTORE_MODE()
 
   /* remove if exists, FYI SQLRemoveDSNFromIni returns true
    * even if the dsn isnt found, false only if there is a failure */
@@ -1087,7 +1102,7 @@ int DataSource::add() {
       return rc;
   }
 
-  RESTORE_MODE();
+  RESTORE_MODE()
 
   driver.name = this->opt_DRIVER;
 
@@ -1102,7 +1117,7 @@ int DataSource::add() {
     return rc;
   }
 
-  RESTORE_MODE();
+  RESTORE_MODE()
 
 #ifdef _WIN32
   /* Windows driver manager allows writing lib into the DRIVER parameter */
@@ -1122,7 +1137,9 @@ int DataSource::add() {
 #define SKIP_COND(X) || k == W_##X
 
 
-  for (const auto &[k, v] : m_opt_map) {
+  for (const auto &el : m_opt_map) {
+    auto &k = el.first;
+    auto &v = el.second;
     // Skip non-set options, default values and aliases
     if (!v.is_set() SKIP_OPTIONS_LIST(SKIP_COND) ||
         v.is_default() ||
@@ -1178,215 +1195,4 @@ unsigned long DataSource::get_numeric_options()
   BIT_OPTIONS_LIST(SET_BIT_OPT);
 
   return options;
-}
-
-/*
- *  copy values from ds_source to ds
- */
-void ds_copy(DataSource *ds, DataSource *ds_source) {
-    if (ds == NULL || ds_source == NULL) {
-        return;
-    }
-
-    if (ds_source->name != nullptr) {
-        ds_set_wstrnattr(&ds->name, ds_source->name,
-                         sqlwcharlen(ds_source->name));
-
-        // probably don't need to set the '8' variables, they seem to be set as
-        // needed based on the non - '8', but it would look like this
-        if (ds_source->name8 != nullptr) {
-            ds_get_utf8attr(ds->name, &ds->name8);
-        }
-    }
-    if (ds_source->driver != nullptr) {
-        ds_set_wstrnattr(&ds->driver, ds_source->driver,
-                         sqlwcharlen(ds_source->driver));
-    }
-    if (ds_source->description != nullptr) {
-        ds_set_wstrnattr(&ds->description, ds_source->description,
-                         sqlwcharlen(ds_source->description));
-    }
-    if (ds_source->server != nullptr) {
-        ds_set_wstrnattr(&ds->server, ds_source->server,
-                         sqlwcharlen(ds_source->server));
-    }
-    if (ds_source->uid != nullptr) {
-        ds_set_wstrnattr(&ds->uid, ds_source->uid, sqlwcharlen(ds_source->uid));
-    }
-    if (ds_source->pwd != nullptr) {
-        ds_set_wstrnattr(&ds->pwd, ds_source->pwd, sqlwcharlen(ds_source->pwd));
-    }
-    if (ds_source->database != nullptr) {
-        ds_set_wstrnattr(&ds->database, ds_source->database,
-                         sqlwcharlen(ds_source->database));
-    }
-    if (ds_source->socket != nullptr) {
-        ds_set_wstrnattr(&ds->socket, ds_source->socket,
-                         sqlwcharlen(ds_source->socket));
-    }
-    if (ds_source->initstmt != nullptr) {
-        ds_set_wstrnattr(&ds->initstmt, ds_source->initstmt,
-                         sqlwcharlen(ds_source->initstmt));
-    }
-    if (ds_source->charset != nullptr) {
-        ds_set_wstrnattr(&ds->charset, ds_source->charset,
-                         sqlwcharlen(ds_source->charset));
-    }
-    if (ds_source->sslkey != nullptr) {
-        ds_set_wstrnattr(&ds->sslkey, ds_source->sslkey,
-                         sqlwcharlen(ds_source->sslkey));
-    }
-    if (ds_source->sslcert != nullptr) {
-        ds_set_wstrnattr(&ds->sslcert, ds_source->sslcert,
-                         sqlwcharlen(ds_source->sslcert));
-    }
-    if (ds_source->sslca != nullptr) {
-        ds_set_wstrnattr(&ds->sslca, ds_source->sslca,
-                         sqlwcharlen(ds_source->sslca));
-    }
-    if (ds_source->sslcapath != nullptr) {
-        ds_set_wstrnattr(&ds->sslcapath, ds_source->sslcapath,
-                         sqlwcharlen(ds_source->sslcapath));
-    }
-    if (ds_source->sslcipher != nullptr) {
-        ds_set_wstrnattr(&ds->sslcipher, ds_source->sslcipher,
-                         sqlwcharlen(ds_source->sslcipher));
-    }
-    if (ds_source->sslmode != nullptr) {
-        ds_set_wstrnattr(&ds->sslmode, ds_source->sslmode,
-                         sqlwcharlen(ds_source->sslmode));
-    }
-    if (ds_source->rsakey != nullptr) {
-        ds_set_wstrnattr(&ds->rsakey, ds_source->rsakey,
-                         sqlwcharlen(ds_source->rsakey));
-    }
-    if (ds_source->savefile != nullptr) {
-        ds_set_wstrnattr(&ds->savefile, ds_source->savefile,
-                         sqlwcharlen(ds_source->savefile));
-    }
-    if (ds_source->plugin_dir != nullptr) {
-        ds_set_wstrnattr(&ds->plugin_dir, ds_source->plugin_dir,
-                         sqlwcharlen(ds_source->plugin_dir));
-    }
-    if (ds_source->default_auth != nullptr) {
-        ds_set_wstrnattr(&ds->default_auth, ds_source->default_auth,
-                         sqlwcharlen(ds_source->default_auth));
-    }
-    if (ds_source->load_data_local_dir != nullptr) {
-        ds_set_wstrnattr(&ds->load_data_local_dir,
-                         ds_source->load_data_local_dir,
-                         sqlwcharlen(ds_source->load_data_local_dir));
-    }
-
-    ds->has_port = ds_source->has_port;
-    ds->port = ds_source->port;
-    ds->read_timeout = ds_source->read_timeout;
-    ds->write_timeout = ds_source->write_timeout;
-    ds->client_interactive = ds_source->client_interactive;
-
-    /*  */
-    ds->return_matching_rows = ds_source->return_matching_rows;
-    ds->allow_big_results = ds_source->allow_big_results;
-    ds->use_compressed_protocol = ds_source->use_compressed_protocol;
-    ds->change_bigint_columns_to_int = ds_source->change_bigint_columns_to_int;
-    ds->safe = ds_source->safe;
-    ds->auto_reconnect = ds_source->auto_reconnect;
-    ds->auto_increment_null_search = ds_source->auto_increment_null_search;
-    ds->handle_binary_as_char = ds_source->handle_binary_as_char;
-    ds->can_handle_exp_pwd = ds_source->can_handle_exp_pwd;
-    ds->enable_cleartext_plugin = ds_source->enable_cleartext_plugin;
-    ds->get_server_public_key = ds_source->get_server_public_key;
-    /*  */
-    ds->dont_prompt_upon_connect = ds_source->dont_prompt_upon_connect;
-    ds->dynamic_cursor = ds_source->dynamic_cursor;
-    ds->user_manager_cursor = ds_source->user_manager_cursor;
-    ds->dont_use_set_locale = ds_source->dont_use_set_locale;
-    ds->pad_char_to_full_length = ds_source->pad_char_to_full_length;
-    ds->dont_cache_result = ds_source->dont_cache_result;
-    /*  */
-    ds->return_table_names_for_SqlDescribeCol =
-        ds_source->return_table_names_for_SqlDescribeCol;
-    ds->ignore_space_after_function_names =
-        ds_source->ignore_space_after_function_names;
-    ds->force_use_of_named_pipes = ds_source->force_use_of_named_pipes;
-    ds->no_catalog = ds_source->no_catalog;
-    ds->read_options_from_mycnf = ds_source->read_options_from_mycnf;
-    ds->disable_transactions = ds_source->disable_transactions;
-    ds->force_use_of_forward_only_cursors =
-        ds_source->force_use_of_forward_only_cursors;
-    ds->allow_multiple_statements = ds_source->allow_multiple_statements;
-    ds->limit_column_size = ds_source->limit_column_size;
-
-    ds->min_date_to_zero = ds_source->min_date_to_zero;
-    ds->zero_date_to_min = ds_source->zero_date_to_min;
-    ds->default_bigint_bind_str = ds_source->default_bigint_bind_str;
-    /* debug */
-    ds->save_queries = ds_source->save_queries;
-    /* SSL */
-    ds->sslverify = ds_source->sslverify;
-    ds->cursor_prefetch_number = ds_source->cursor_prefetch_number;
-    ds->no_ssps = ds_source->no_ssps;
-
-    ds->no_tls_1_2 = ds_source->no_tls_1_2;
-    ds->no_tls_1_3 = ds_source->no_tls_1_3;
-
-    ds->no_date_overflow = ds_source->no_date_overflow;
-    ds->enable_local_infile = ds_source->enable_local_infile;
-
-    ds->enable_dns_srv = ds_source->enable_dns_srv;
-    ds->multi_host = ds_source->multi_host;
-
-    /* Failover */
-    if (ds_source->host_pattern != nullptr) {
-        ds_set_wstrnattr(&ds->host_pattern, ds_source->host_pattern,
-                         sqlwcharlen(ds_source->host_pattern));
-    }
-    if (ds_source->cluster_id != nullptr) {
-        ds_set_wstrnattr(&ds->cluster_id, ds_source->cluster_id,
-                         sqlwcharlen(ds_source->cluster_id));
-    }
-    if (ds_source->failover_mode != nullptr) {
-        ds_set_wstrnattr(&ds->failover_mode, ds_source->failover_mode,
-                         sqlwcharlen(ds_source->failover_mode));
-    }
-
-    ds->enable_cluster_failover = ds_source->enable_cluster_failover;
-    ds->gather_perf_metrics = ds_source->gather_perf_metrics;
-    ds->gather_metrics_per_instance = ds_source->gather_metrics_per_instance;
-    ds->topology_refresh_rate = ds_source->topology_refresh_rate;
-    ds->failover_timeout = ds_source->failover_timeout;
-    ds->failover_topology_refresh_rate =
-        ds_source->failover_topology_refresh_rate;
-    ds->failover_writer_reconnect_interval =
-        ds_source->failover_writer_reconnect_interval;
-    ds->failover_reader_connect_timeout =
-        ds_source->failover_reader_connect_timeout;
-    ds->connect_timeout = ds_source->connect_timeout;
-    ds->network_timeout = ds_source->network_timeout;
-    ds->enable_failure_detection = ds_source->enable_failure_detection;
-    ds->failure_detection_time = ds_source->failure_detection_time;
-    ds->failure_detection_interval = ds_source->failure_detection_interval;
-    ds->failure_detection_count = ds_source->failure_detection_count;
-    ds->monitor_disposal_time = ds_source->monitor_disposal_time;
-    ds->failure_detection_timeout = ds_source->failure_detection_timeout;
-
-    /* AWS Authentication */
-    if (ds_source->auth_mode != nullptr) {
-        ds_set_wstrnattr(&ds->auth_mode, ds_source->auth_mode,
-            sqlwcharlen(ds_source->auth_mode));
-    }
-    if (ds_source->auth_region != nullptr) {
-        ds_set_wstrnattr(&ds->auth_region, ds_source->auth_region,
-            sqlwcharlen(ds_source->auth_region));
-    }
-    if (ds_source->auth_host != nullptr) {
-        ds_set_wstrnattr(&ds->auth_host, ds_source->auth_host,
-            sqlwcharlen(ds_source->auth_host));
-    }
-    ds->auth_port = ds_source->auth_port;
-    ds->auth_expiration = ds_source->auth_expiration;
-    if (ds_source->auth_secret_id != nullptr) {
-        ds_set_wstrnattr(&ds->auth_secret_id, ds_source->auth_secret_id,
-            sqlwcharlen(ds_source->auth_secret_id));
-    }
 }

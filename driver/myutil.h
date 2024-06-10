@@ -315,8 +315,6 @@ void *ptr_offset_adjust   (void *ptr, SQLULEN *bind_offset,
                           SQLINTEGER bind_type, SQLINTEGER default_size,
                           SQLULEN row);
 
-void free_internal_result_buffers(STMT *stmt);
-
 enum enum_field_types map_sql2mysql_type(SQLSMALLINT sql_type);
 
 /* proc_* functions - used to parse prcedures headers in SQLProcedureColumns */

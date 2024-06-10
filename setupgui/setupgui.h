@@ -1,7 +1,5 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
-//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
@@ -80,12 +78,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  /**
-    This is the function implemented by the platform-specific code.
+    /**
+      This is the function implemented by the platform-specific code.
 
-    @return TRUE if user pressed OK, FALSE if cancelled or closed
-  */
-  int ShowOdbcParamsDialog(DataSource* params, HWND ParentWnd, BOOL isPrompt);
+      @return TRUE if user pressed OK, FALSE if cancelled or closed
+    */
+    int ShowOdbcParamsDialog(DataSource* params, HWND ParentWnd, BOOL isPrompt);
 
 #ifdef __cplusplus
 }
@@ -95,24 +93,24 @@ extern "C" {
 /* Utility functions. */
 void ShowDiagnostics(SQLRETURN nReturn, SQLSMALLINT nHandleType, SQLHANDLE h);
 void FreeEnvHandle(SQLHENV hEnv);
-SQLRETURN Connect(SQLHDBC *hDbc, SQLHENV *hEnv, DataSource *params);
+SQLRETURN Connect(SQLHDBC* hDbc, SQLHENV* hEnv, DataSource* params);
 void Disconnect(SQLHDBC hDbc, SQLHENV hEnv);
 
 /* Max DB name len, used when retrieving database list */
 #define MYODBC_DB_NAME_MAX 255
 
 /* Callbacks */
-SQLWSTRING mytest(HWND hwnd, DataSource *params);
-BOOL mytestaccept(HWND hwnd, DataSource *params);
-std::vector<SQLWSTRING> mygetdatabases(HWND hwnd, DataSource *params);
-std::vector<SQLWSTRING> mygetcharsets(HWND hwnd, DataSource *params);
+SQLWSTRING mytest(HWND hwnd, DataSource* params);
+BOOL mytestaccept(HWND hwnd, DataSource* params);
+std::vector<SQLWSTRING> mygetdatabases(HWND hwnd, DataSource* params);
+std::vector<SQLWSTRING> mygetcharsets(HWND hwnd, DataSource* params);
 
 /* Sync data functions */
-void syncData(HWND hwnd, DataSource *params);
-void syncForm(HWND hwnd, DataSource *params);
-void syncTabsData(HWND hwnd, DataSource *params);
-void syncTabs(HWND hwnd, DataSource *params);
-void FillParameters(HWND hwnd, DataSource *params);
+void syncData(HWND hwnd, DataSource* params);
+void syncForm(HWND hwnd, DataSource* params);
+void syncTabsData(HWND hwnd, DataSource* params);
+void syncTabs(HWND hwnd, DataSource* params);
+void FillParameters(HWND hwnd, DataSource* params);
 
 #define _W(string) wchar_t_as_sqlwchar((wchar_t*)string, (SQLWCHAR*)tmpbuf, \
                                         wcslen(string))
@@ -121,21 +119,21 @@ void FillParameters(HWND hwnd, DataSource *params);
 
 #ifdef _WIN32
 
-SQLWCHAR * getStrFieldData(HWND hwnd, int idc);
-SQLWCHAR * getStrFieldDataTab(unsigned int framenum, int idc );
-void setStrFieldData(HWND hwnd, const SQLWCHAR *param, int idc);
-void setStrFieldDataTab(const SQLWCHAR *param, unsigned int framenum, int idc );
+SQLWCHAR* getStrFieldData(HWND hwnd, int idc);
+SQLWCHAR* getStrFieldDataTab(unsigned int framenum, int idc);
+void setStrFieldData(HWND hwnd, const SQLWCHAR* param, int idc);
+void setStrFieldDataTab(const SQLWCHAR* param, unsigned int framenum, int idc);
 
-void setComboFieldDataTab(const SQLWCHAR *param, unsigned int framenum, int idc);
+void setComboFieldDataTab(const SQLWCHAR* param, unsigned int framenum, int idc);
 
 my_bool getBoolFieldData(HWND hwnd, int idc);
 my_bool getBoolFieldDataTab(unsigned int framenum, int idc);
 void setBoolFieldDataTab(unsigned int framenum, int idc, my_bool state);
 void setBoolFieldData(HWND hwnd, int idc, my_bool state);
 
-unsigned int getUnsignedFieldData(HWND hwnd, int idc );
-unsigned int getUnsignedFieldDataTab(unsigned int tab_num, int idc );
-void setUnsignedFieldData(HWND hwnd, unsigned int param, int idc );
+unsigned int getUnsignedFieldData(HWND hwnd, int idc);
+unsigned int getUnsignedFieldDataTab(unsigned int tab_num, int idc);
+void setUnsignedFieldData(HWND hwnd, unsigned int param, int idc);
 void setUnsignedFieldDataTab(unsigned int framenum, const unsigned int param, int idc);
 
 HWND getTabCtrlTab(void);
@@ -149,7 +147,7 @@ void setControlEnabled(unsigned int framenum, int idc, my_bool state);
     if (res && *res)                                               \
       params->opt_##name = res;                                    \
     else                                                           \
-      params->opt_##name.clear();                                  \
+      params->opt_##name.set_default(nullptr);                    \
   }
 
 #define GET_STRING_TAB(framenum, name) \
@@ -158,7 +156,7 @@ void setControlEnabled(unsigned int framenum, int idc, my_bool state);
     if (res && *res) \
       params->opt_##name = res; \
     else \
-      params->opt_##name.clear(); \
+      params->opt_##name.set_default(nullptr); \
   }
 
 #define SET_STRING(name) \
@@ -186,13 +184,13 @@ void setControlEnabled(unsigned int framenum, int idc, my_bool state);
   if (v)                                                \
       params->opt_##name = v;                           \
     else                                                \
-      params->opt_##name.clear();                       \
+      params->opt_##name.set_default(0);                       \
   }
 #define GET_UNSIGNED_TAB(framenum, name) { auto v = getUnsignedFieldDataTab(framenum, IDC_EDIT_##name); \
   if (v)                                                \
       params->opt_##name = v;                           \
     else                                                \
-      params->opt_##name.clear();                       \
+      params->opt_##name.set_default(0);         \
   }
 
 
@@ -222,18 +220,18 @@ void setControlEnabled(unsigned int framenum, int idc, my_bool state);
 
 #else
 
-void setSensitive(gchar *widget_name, gboolean state);
-gboolean getBoolFieldData(gchar *widget_name);
-void setBoolFieldData(gchar *widget_name, gboolean checked);
-SQLWCHAR* getStrFieldData(gchar *widget_name);
-SQLWCHAR* getComboFieldData(gchar *widget_name);
-void setComboFieldData(gchar *widget_name, SQLCHAR *param);
+void setSensitive(gchar* widget_name, gboolean state);
+gboolean getBoolFieldData(gchar* widget_name);
+void setBoolFieldData(gchar* widget_name, gboolean checked);
+SQLWCHAR* getStrFieldData(gchar* widget_name);
+SQLWCHAR* getComboFieldData(gchar* widget_name);
+void setComboFieldData(gchar* widget_name, SQLCHAR* param);
 
 /* param8 is the output buffer in UTF8 for GTK */
-void setStrFieldData(gchar *widget_name, SQLCHAR *param);
+void setStrFieldData(gchar* widget_name, SQLCHAR* param);
 
-unsigned int getUnsignedFieldData(gchar *widget_name);
-void setUnsignedFieldData(gchar *widget_name, unsigned int param);
+unsigned int getUnsignedFieldData(gchar* widget_name);
+void setUnsignedFieldData(gchar* widget_name, unsigned int param);
 
 #define READ_BOOL(UNUSED_PARAM, name) \
   getBoolFieldData(#name)
@@ -253,7 +251,7 @@ void setUnsignedFieldData(gchar *widget_name, unsigned int param);
     if (res && *res)                                               \
       params->opt_##name = res;                                    \
     else                                                           \
-      params->opt_##name.clear();                                  \
+      params->opt_##name.set_default(nullptr);                     \
   }
 
 #define GET_STRING_TAB(UNUSED_PARAM, name) \
@@ -277,7 +275,7 @@ void setUnsignedFieldData(gchar *widget_name, unsigned int param);
     if (res && *res)                                               \
       params->opt_##name = res;                                    \
     else                                                           \
-      params->opt_##name.clear();                                  \
+      params->opt_##name.set_default(nullptr);                     \
   }
 
 #define GET_COMBO_TAB(UNUSED_PARAM, name) \
@@ -289,7 +287,7 @@ void setUnsignedFieldData(gchar *widget_name, unsigned int param);
     if (v)                                                \
       params->opt_##name = v;                             \
     else                                                  \
-      params->opt_##name.clear();                         \
+      params->opt_##name.set_default(0);           \
   }
 
 #define GET_UNSIGNED_TAB(UNUSED_PARAM, name) \
@@ -310,13 +308,13 @@ void setUnsignedFieldData(gchar *widget_name, unsigned int param);
   if (READ_BOOL(framenum, name))     \
     params->opt_##name = true;       \
   else                               \
-    params->opt_##name.clear()
+    params->opt_##name.set_default(false)
 
 #define GET_BOOL_TAB(framenum, name) \
   if (READ_BOOL_TAB(framenum, name)) \
     params->opt_##name = true;       \
   else                               \
-    params->opt_##name.clear()
+    params->opt_##name.set_default(false)
 
 #define SET_BOOL(hwnd, name) \
   SET_CHECKED(hwnd, name, params->opt_##name)

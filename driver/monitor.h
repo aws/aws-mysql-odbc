@@ -42,7 +42,7 @@ struct CONNECTION_STATUS {
     std::chrono::milliseconds elapsed_time;
 };
 
-struct DataSource;
+class DataSource;
 class MONITOR_SERVICE;
 class CONNECTION_PROXY;
 
@@ -78,7 +78,7 @@ public:
     void stop();
 
 private:
-    std::atomic_bool stopped{true};
+    std::atomic_bool stopped{ true };
     std::shared_ptr<HOST_INFO> host;
     std::shared_ptr<CONNECTION_HANDLER> connection_handler;
     std::chrono::milliseconds connection_check_interval;

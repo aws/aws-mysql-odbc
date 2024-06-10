@@ -98,7 +98,6 @@ void FAILOVER::sleep(int miliseconds) {
 // Close new connection if not needed (other task finishes and returns first)
 void FAILOVER::release_new_connection() {
     if (new_connection) {
-        new_connection->delete_ds();
         delete new_connection;
         new_connection = nullptr;
     }
@@ -269,7 +268,6 @@ bool WAIT_NEW_WRITER_HANDLER::connect_to_writer(
 // Close reader connection if not needed (open and not the same as current connection)
 void WAIT_NEW_WRITER_HANDLER::clean_up_reader_connection() {
     if (reader_connection && new_connection != reader_connection) {
-        reader_connection->delete_ds();
         delete reader_connection;
         reader_connection = nullptr;
     }

@@ -94,10 +94,6 @@ void MYSQL_PROXY::init() {
     this->mysql = mysql_init(nullptr);
 }
 
-bool MYSQL_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    return mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
-}
-
 bool MYSQL_PROXY::change_user(const char* user, const char* passwd, const char* db) {
     return mysql_change_user(mysql, user, passwd, db);
 }
@@ -141,6 +137,18 @@ void MYSQL_PROXY::get_character_set_info(MY_CHARSET_INFO* charset) {
 
 bool MYSQL_PROXY::autocommit(bool auto_mode) {
     return mysql_autocommit(mysql, auto_mode);
+}
+
+bool MYSQL_PROXY::commit() {
+    return mysql_commit(mysql);
+}
+
+bool MYSQL_PROXY::rollback() {
+    return mysql_rollback(mysql);
+}
+
+bool MYSQL_PROXY::more_results() {
+    return mysql_more_results(mysql);
 }
 
 int MYSQL_PROXY::next_result() {
@@ -249,7 +257,7 @@ unsigned long MYSQL_PROXY::stmt_param_count(MYSQL_STMT* stmt) {
 }
 
 bool MYSQL_PROXY::stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
-    return mysql_stmt_bind_param(stmt, bnd);
+  return mysql_stmt_bind_param(stmt, bnd);
 }
 
 bool MYSQL_PROXY::stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
@@ -370,13 +378,6 @@ unsigned int MYSQL_PROXY::get_server_status() const {
     return this->mysql->server_status;
 }
 
-void MYSQL_PROXY::delete_ds() {
-    if (ds) {
-        ds_delete(ds);
-        ds = nullptr;
-    }
-}
-
 MYSQL* MYSQL_PROXY::move_mysql_connection() {
     MYSQL* ret = this->mysql;
     this->mysql = nullptr;
@@ -387,7 +388,6 @@ void MYSQL_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
     close();
     this->mysql = connection_proxy->move_mysql_connection();
     // delete the ds initialized in CONNECTION_HANDLER::clone_dbc()
-    connection_proxy->delete_ds();
     delete connection_proxy;
 }
 
