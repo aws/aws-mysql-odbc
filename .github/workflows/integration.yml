@@ -1,18 +1,27 @@
-name: Dockerized Performance Tests
+name: Integration Tests
 
-# This workflow should always be triggered manually 
-on: 
+on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
 
 env:
   BUILD_TYPE: Release
 
+concurrency:
+  group: environment-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-dockerized-performance-tests:
-    concurrency: # Cancel previous runs in the same branch
-      group: environment-${{ github.ref }}
-      cancel-in-progress: true
-    name: Dockerized Performance Tests 
+  integration-tests:
+    strategy:
+      matrix:
+        engine_version: ["latest", "lts"]
+    name: Integration Tests 
     runs-on: ubuntu-20.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
@@ -20,6 +29,9 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install libcurl4 && sudo apt-get install libcurl4-openssl-dev
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
@@ -51,7 +63,7 @@ jobs:
       - name: 'Set up Temp AWS Credentials'
         run: |
           creds=($(aws sts get-session-token \
-            --duration-seconds 14400 \
+            --duration-seconds 21600 \
             --query 'Credentials.[AccessKeyId, SecretAccessKey, SessionToken]' \
             --output text \
           | xargs));
@@ -62,10 +74,10 @@ jobs:
           echo "TEMP_AWS_SECRET_ACCESS_KEY=${creds[1]}" >> $GITHUB_ENV
           echo "TEMP_AWS_SESSION_TOKEN=${creds[2]}" >> $GITHUB_ENV
 
-      - name: 'Run Performance Tests'
+      - name: 'Run Integration Tests'
         working-directory: ${{ github.workspace }}/testframework
         run: |
-          ./gradlew --no-parallel --no-daemon test-performance --info
+          ./gradlew --no-parallel --no-daemon test-failover --info
         env:
           TEST_DSN: awsmysqlodbca
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
@@ -73,6 +85,8 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.TEMP_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.TEMP_AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.TEMP_AWS_SESSION_TOKEN }}
+          DB_ENGINE_VERSION: ${{ matrix.engine_version }}
+          RDS_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           DRIVER_PATH: ${{ github.workspace }}
 
       - name: 'Get Github Action IP'
@@ -99,20 +113,11 @@ jobs:
             cat myodbc.log
             cp myodbc.log ./reports/tests/myodbc.log
           fi
-          if [[ -f failover_performance.xlsx && -s failover_performance.xlsx ]]; then
-            cp failover_performance.xlsx ./reports/tests/failover_performance.xlsx
-          fi
-          if [[ -f efm_performance.xlsx && -s efm_performance.xlsx ]]; then
-            cp efm_performance.xlsx ./reports/tests/efm_performance.xlsx
-          fi
-          if [[ -f efm_detection_performance.xlsx && -s efm_detection_performance.xlsx ]]; then
-            cp efm_detection_performance.xlsx ./reports/tests/efm_detection_performance.xlsx
-          fi
 
       - name: 'Archive log results'
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: 'performance-test-logs'
+          name: 'integration-test-logs-${{ matrix.engine_version }}'
           path: reports/tests/
           retention-days: 3

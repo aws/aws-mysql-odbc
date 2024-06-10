@@ -10,13 +10,13 @@ repositories {
 }
 
 dependencies {
-    testImplementation("com.amazonaws:aws-java-sdk-rds:1.12.150")
-    testImplementation("com.amazonaws:aws-java-sdk-ec2:1.12.154")
+    testImplementation("software.amazon.awssdk:rds:2.25.36")
+    testImplementation("software.amazon.awssdk:ec2:2.25.31")
     testImplementation("software.amazon.awssdk:secretsmanager:2.20.34")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
-    testImplementation("org.testcontainers:toxiproxy:1.16.3")
-    testImplementation("org.testcontainers:mysql:1.16.3")
-    testImplementation("org.json:json:20230227")
+    testImplementation("org.testcontainers:toxiproxy:1.19.7")
+    testImplementation("org.testcontainers:mysql:1.19.7")
+    testImplementation("org.json:json:20231013")
 
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }

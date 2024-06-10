@@ -34,9 +34,8 @@ protected:
   std::string ACCESS_KEY = std::getenv("AWS_ACCESS_KEY_ID");
   std::string SECRET_ACCESS_KEY = std::getenv("AWS_SECRET_ACCESS_KEY");
   std::string SESSION_TOKEN = std::getenv("AWS_SESSION_TOKEN");
-  Aws::Auth::AWSCredentials credentials = Aws::Auth::AWSCredentials(Aws::String(ACCESS_KEY),
-                                                                    Aws::String(SECRET_ACCESS_KEY),
-                                                                    Aws::String(SESSION_TOKEN));
+  std::string RDS_ENDPOINT = std::getenv("RDS_ENDPOINT");
+  std::string RDS_REGION = std::getenv("RDS_REGION");
   Aws::RDS::RDSClientConfiguration client_config;
   Aws::RDS::RDSClient rds_client;
   SQLHENV env = nullptr;
@@ -54,7 +53,18 @@ protected:
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-    client_config.region = "us-east-2";
+
+    Aws::Auth::AWSCredentials credentials =
+        SESSION_TOKEN.empty()
+            ? Aws::Auth::AWSCredentials(Aws::String(ACCESS_KEY),
+                                        Aws::String(SECRET_ACCESS_KEY))
+            : Aws::Auth::AWSCredentials(Aws::String(ACCESS_KEY),
+                                        Aws::String(SECRET_ACCESS_KEY),
+                                        Aws::String(SESSION_TOKEN));
+    client_config.region = RDS_REGION.empty() ? "us-east-2" : RDS_REGION;
+    if (!RDS_ENDPOINT.empty()) {
+      client_config.endpointOverride = RDS_ENDPOINT;
+    }
     rds_client = Aws::RDS::RDSClient(credentials, client_config);
 
     cluster_instances = retrieve_topology_via_SDK(rds_client, cluster_id);

@@ -29,46 +29,48 @@
 
 package utility;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.AmazonEC2Exception;
-import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
-import com.amazonaws.services.ec2.model.RevokeSecurityGroupIngressRequest;
-import com.amazonaws.services.rds.AmazonRDS;
-import com.amazonaws.services.rds.AmazonRDSClientBuilder;
-import com.amazonaws.services.rds.model.CreateDBClusterRequest;
-import com.amazonaws.services.rds.model.CreateDBInstanceRequest;
-import com.amazonaws.services.rds.model.DeleteDBClusterRequest;
-import com.amazonaws.services.rds.model.DeleteDBInstanceRequest;
-import com.amazonaws.services.rds.model.DescribeDBInstancesRequest;
-import com.amazonaws.services.rds.model.DescribeDBInstancesResult;
-import com.amazonaws.services.rds.model.Filter;
-import com.amazonaws.services.rds.model.Tag;
-import com.amazonaws.services.rds.waiters.AmazonRDSWaiters;
-import com.amazonaws.util.StringUtils;
-import com.amazonaws.waiters.NoOpWaiterHandler;
-import com.amazonaws.waiters.Waiter;
-import com.amazonaws.waiters.WaiterParameters;
-import com.amazonaws.waiters.WaiterTimedOutException;
-import com.amazonaws.waiters.WaiterUnrecoverableException;
 import org.json.JSONObject;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.DescribeSecurityGroupsResponse;
+import software.amazon.awssdk.services.ec2.model.Ec2Exception;
+import software.amazon.awssdk.services.rds.RdsClient;
+import software.amazon.awssdk.services.rds.RdsClientBuilder;
+import software.amazon.awssdk.services.rds.model.CreateDbClusterRequest;
+import software.amazon.awssdk.services.rds.model.CreateDbInstanceRequest;
+import software.amazon.awssdk.services.rds.model.DBEngineVersion;
+import software.amazon.awssdk.services.rds.model.DeleteDbClusterResponse;
+import software.amazon.awssdk.services.rds.model.DeleteDbInstanceRequest;
+import software.amazon.awssdk.services.rds.model.DescribeDbEngineVersionsRequest;
+import software.amazon.awssdk.services.rds.model.DescribeDbEngineVersionsResponse;
+import software.amazon.awssdk.services.rds.model.DescribeDbInstancesResponse;
+import software.amazon.awssdk.services.rds.model.Filter;
+import software.amazon.awssdk.services.rds.model.Tag;
+import software.amazon.awssdk.services.rds.waiters.RdsWaiter;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
-import software.amazon.awssdk.services.secretsmanager.model.*;
+import software.amazon.awssdk.services.secretsmanager.model.CreateSecretRequest;
+import software.amazon.awssdk.services.secretsmanager.model.CreateSecretResponse;
+import software.amazon.awssdk.services.secretsmanager.model.DeleteSecretRequest;
+import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerException;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -88,58 +90,80 @@ public class AuroraTestUtility {
   private String dbName = "test";
   private String dbIdentifier = "test-identifier";
   private String dbEngine = "aurora-mysql";
+  private String dbEngineVersion = System.getenv("DB_ENGINE_VERSION");;
   private String dbInstanceClass = "db.r5.large";
-  private final String dbRegion;
+  private final Region dbRegion;
   private final String dbSecGroup = "default";
   private int numOfInstances = 5;
 
-  private AmazonRDS rdsClient = null;
-  private AmazonEC2 ec2Client = null;
+  private final RdsClient rdsClient;
+  private final Ec2Client ec2Client;
   private SecretsManagerClient smClient = null;
-  private String runnerIP = "";
 
   private static final String DUPLICATE_IP_ERROR_CODE = "InvalidPermission.Duplicate";
-
-  /**
-   * Initializes an AmazonRDS & AmazonEC2 client. RDS client used to create/destroy clusters &
-   * instances. EC2 client used to add/remove IP from security group.
-   */
-  public AuroraTestUtility() {
-    this("us-east-1");
-  }
 
   /**
    * Initializes an AmazonRDS & AmazonEC2 client.
    *
    * @param region define AWS Regions, refer to https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html
+   * @param endpoint overrides the endpoint for the RDS client, e.g. "https://rds-int.amazon.com"
    */
-  public AuroraTestUtility(String region) {
-    this(region, new DefaultAWSCredentialsProviderChain());
+  public AuroraTestUtility(String region, String endpoint) {
+    this(getRegionInternal(region), endpoint, DefaultCredentialsProvider.create());
+  }
+
+  public AuroraTestUtility(
+      String region, String rdsEndpoint, String awsAccessKeyId, String awsSecretAccessKey, String awsSessionToken) {
+
+    this(
+        getRegionInternal(region),
+        rdsEndpoint,
+        StaticCredentialsProvider.create(
+            StringUtils.isNullOrEmpty(awsSessionToken)
+                ? AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey)
+                : AwsSessionCredentials.create(awsAccessKeyId, awsSecretAccessKey, awsSessionToken)));
   }
 
   /**
    * Initializes an AmazonRDS & AmazonEC2 client.
    *
-   * @param region      define AWS Regions, refer to https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html
-   * @param credentials Specific AWS credential provider
+   * @param region              define AWS Regions, refer to https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html
+   * @param credentialsProvider Specific AWS credential provider
    */
-  public AuroraTestUtility(String region, AWSCredentialsProvider credentials) {
+  public AuroraTestUtility(Region region, String rdsEndpoint, AwsCredentialsProvider credentialsProvider) {
     dbRegion = region;
+    final RdsClientBuilder rdsClientBuilder = RdsClient.builder()
+        .region(dbRegion)
+        .credentialsProvider(credentialsProvider);
 
-    rdsClient = AmazonRDSClientBuilder
-        .standard()
-        .withRegion(dbRegion)
-        .withCredentials(credentials)
-        .build();
+    if (!StringUtils.isNullOrEmpty(rdsEndpoint)) {
+      try {
+        rdsClientBuilder.endpointOverride(new URI(rdsEndpoint));
+      } catch (URISyntaxException e) {
+        throw new RuntimeException(e);
+      }
+    }
 
-    ec2Client = AmazonEC2ClientBuilder
-        .standard()
-        .withRegion(dbRegion)
-        .withCredentials(credentials)
+    rdsClient = rdsClientBuilder.build();
+    ec2Client = Ec2Client.builder()
+        .region(dbRegion)
+        .credentialsProvider(credentialsProvider)
         .build();
     smClient = SecretsManagerClient.builder()
-            .region(Region.of(dbRegion))
-            .build();
+        .region(dbRegion)
+        .build();
+  }
+
+  protected static Region getRegionInternal(String rdsRegion) {
+    final String region = StringUtils.isNullOrEmpty(rdsRegion) ? "us-east-2" : rdsRegion;
+    
+    Optional<Region> regionOptional =
+        Region.regions().stream().filter(r -> r.id().equalsIgnoreCase(region)).findFirst();
+
+    if (regionOptional.isPresent()) {
+      return regionOptional.get();
+    }
+    throw new IllegalArgumentException(String.format("Unknown AWS region '%s'.", region));
   }
 
   /**
@@ -171,58 +195,62 @@ public class AuroraTestUtility {
    */
   public AuroraClusterInfo createCluster() throws InterruptedException {
     final List<String> instances = new ArrayList<>();
-    final Tag testRunnerTag = new Tag()
-    .withKey("env")
-    .withValue("test-runner");
-    
-    // Create Cluster
-    final CreateDBClusterRequest dbClusterRequest = new CreateDBClusterRequest()
-        .withDBClusterIdentifier(dbIdentifier)
-        .withDatabaseName(dbName)
-        .withMasterUsername(dbUsername)
-        .withMasterUserPassword(dbPassword)
-        .withSourceRegion(dbRegion)
-        .withEnableIAMDatabaseAuthentication(true)
-        .withEngine(dbEngine)
-        .withStorageEncrypted(true)
-        .withTags(testRunnerTag);
+    final Tag testRunnerTag = Tag.builder().key("env").value("test-runner").build();
+
+    final String engineVersion = getAuroraDbEngineVersion(dbEngineVersion);
+    final CreateDbClusterRequest dbClusterRequest =
+        CreateDbClusterRequest.builder()
+            .dbClusterIdentifier(dbIdentifier)
+            .databaseName(dbName)
+            .masterUsername(dbUsername)
+            .masterUserPassword(dbPassword)
+            .sourceRegion(dbRegion.id())
+            .enableIAMDatabaseAuthentication(true)
+            .engine(dbEngine)
+            .engineVersion(engineVersion)
+            .storageEncrypted(true)
+            .tags(testRunnerTag)
+            .build();
 
     rdsClient.createDBCluster(dbClusterRequest);
 
     // Create Instances
-    final CreateDBInstanceRequest dbInstanceRequest = new CreateDBInstanceRequest()
-        .withDBClusterIdentifier(dbIdentifier)
-        .withDBInstanceClass(dbInstanceClass)
-        .withEngine(dbEngine)
-        .withPubliclyAccessible(true)
-        .withTags(testRunnerTag);
-
     for (int i = 1; i <= numOfInstances; i++) {
-      final String instanceId = dbIdentifier + "-" + i;
+      final String instanceName = dbIdentifier + "-" + i;
       rdsClient.createDBInstance(
-          dbInstanceRequest.withDBInstanceIdentifier(dbIdentifier + "-" + i));
-      instances.add(instanceId);
+          CreateDbInstanceRequest.builder()
+              .dbClusterIdentifier(dbIdentifier)
+              .dbInstanceIdentifier(instanceName)
+              .dbInstanceClass(dbInstanceClass)
+              .engine(dbEngine)
+              .engineVersion(engineVersion)
+              .publiclyAccessible(true)
+              .tags(testRunnerTag)
+              .build());
+      instances.add(instanceName);
     }
 
     // Wait for all instances to be up
-    final AmazonRDSWaiters waiter = new AmazonRDSWaiters(rdsClient);
-    final DescribeDBInstancesRequest dbInstancesRequest = new DescribeDBInstancesRequest()
-        .withFilters(new Filter().withName("db-cluster-id").withValues(dbIdentifier));
-    final Waiter<DescribeDBInstancesRequest> instancesRequestWaiter = waiter
-        .dBInstanceAvailable();
-    final Future<Void> future = instancesRequestWaiter.runAsync(
-        new WaiterParameters<>(dbInstancesRequest), new NoOpWaiterHandler());
-    try {
-      future.get(30, TimeUnit.MINUTES);
-    } catch (WaiterUnrecoverableException | WaiterTimedOutException | TimeoutException | ExecutionException exception) {
+    final RdsWaiter waiter = rdsClient.waiter();
+    WaiterResponse<DescribeDbInstancesResponse> waiterResponse =
+        waiter.waitUntilDBInstanceAvailable(
+            (requestBuilder) ->
+                requestBuilder.filters(
+                    Filter.builder().name("db-cluster-id").values(dbIdentifier).build()),
+            (configurationBuilder) -> configurationBuilder.waitTimeout(Duration.ofMinutes(30)));
+
+    if (waiterResponse.matched().exception().isPresent()) {
       deleteCluster();
       throw new InterruptedException(
           "Unable to start AWS RDS Cluster & Instances after waiting for 30 minutes");
     }
 
-    final DescribeDBInstancesResult dbInstancesResult = rdsClient.describeDBInstances(
-        dbInstancesRequest);
-    final String endpoint = dbInstancesResult.getDBInstances().get(0).getEndpoint().getAddress();
+    final DescribeDbInstancesResponse dbInstancesResult =
+        rdsClient.describeDBInstances(
+            (builder) ->
+                builder.filters(
+                    Filter.builder().name("db-cluster-id").values(dbIdentifier).build()));
+    final String endpoint = dbInstancesResult.dbInstances().get(0).endpoint().address();
     final String suffix = endpoint.substring(endpoint.indexOf('.') + 1);
 
     return new AuroraClusterInfo(
@@ -234,17 +262,16 @@ public class AuroraTestUtility {
   }
 
   /**
-   * Gets public IP
+   * Gets public IP.
    *
    * @return public IP of user
-   * @throws UnknownHostException
+   * @throws UnknownHostException when checkip host isn't available
    */
   public String getPublicIPAddress() throws UnknownHostException {
     String ip;
     try {
       URL ipChecker = new URL("http://checkip.amazonaws.com");
-      BufferedReader reader = new BufferedReader(new InputStreamReader(
-          ipChecker.openStream()));
+      BufferedReader reader = new BufferedReader(new InputStreamReader(ipChecker.openStream()));
       ip = reader.readLine();
     } catch (Exception e) {
       throw new UnknownHostException("Unable to get IP");
@@ -259,41 +286,59 @@ public class AuroraTestUtility {
     if (StringUtils.isNullOrEmpty(ipAddress)) {
       return;
     }
-    final AuthorizeSecurityGroupIngressRequest authRequest = new AuthorizeSecurityGroupIngressRequest()
-        .withGroupName(dbSecGroup)
-        .withCidrIp(ipAddress + "/32")
-        .withIpProtocol("TCP") // All protocols
-        .withFromPort(3306) // For all ports
-        .withToPort(3306);
+
+    if (ipExists(ipAddress)) {
+      return;
+    }
 
     try {
-      ec2Client.authorizeSecurityGroupIngress(authRequest);
-    } catch (AmazonEC2Exception exception) {
-      if (!DUPLICATE_IP_ERROR_CODE.equalsIgnoreCase(exception.getErrorCode())) {
+      ec2Client.authorizeSecurityGroupIngress(
+          (builder) ->
+              builder
+                  .groupName(dbSecGroup)
+                  .cidrIp(ipAddress + "/32")
+                  .ipProtocol("-1") // All protocols
+                  .fromPort(0) // For all ports
+                  .toPort(65535));
+    } catch (Ec2Exception exception) {
+      if (!DUPLICATE_IP_ERROR_CODE.equalsIgnoreCase(exception.awsErrorDetails().errorCode())) {
         throw exception;
       }
     }
   }
 
+  private boolean ipExists(String ipAddress) {
+    final DescribeSecurityGroupsResponse response =
+        ec2Client.describeSecurityGroups(
+            (builder) ->
+                builder
+                    .groupNames(dbSecGroup)
+                    .filters(
+                        software.amazon.awssdk.services.ec2.model.Filter.builder()
+                            .name("ip-permission.cidr")
+                            .values(ipAddress + "/32")
+                            .build()));
+
+    return response != null && !response.securityGroups().isEmpty();
+  }
+
   /**
    * De-authorizes IP from EC2 Security groups.
-   *
-   * @throws UnknownHostException
    */
   public void ec2DeauthorizesIP(String ipAddress) {
     if (StringUtils.isNullOrEmpty(ipAddress)) {
       return;
     }
-    final RevokeSecurityGroupIngressRequest revokeRequest = new RevokeSecurityGroupIngressRequest()
-        .withGroupName(dbSecGroup)
-        .withCidrIp(ipAddress + "/32")
-        .withIpProtocol("TCP") // All protocols
-        .withFromPort(3306) // For all ports
-        .withToPort(3306);
-
     try {
-      ec2Client.revokeSecurityGroupIngress(revokeRequest);
-    } catch (AmazonEC2Exception exception) {
+      ec2Client.revokeSecurityGroupIngress(
+          (builder) ->
+              builder
+                  .groupName(dbSecGroup)
+                  .cidrIp(ipAddress + "/32")
+                  .ipProtocol("-1") // All protocols
+                  .fromPort(0) // For all ports
+                  .toPort(65535));
+    } catch (Ec2Exception exception) {
       // Ignore
     }
   }
@@ -313,29 +358,42 @@ public class AuroraTestUtility {
    */
   public void deleteCluster() {
     // Tear down instances
-    final DeleteDBInstanceRequest dbDeleteInstanceRequest = new DeleteDBInstanceRequest()
-        .withSkipFinalSnapshot(true);
-
     for (int i = 1; i <= numOfInstances; i++) {
-      rdsClient.deleteDBInstance(
-          dbDeleteInstanceRequest.withDBInstanceIdentifier(dbIdentifier + "-" + i));
+      try {
+        rdsClient.deleteDBInstance(
+            DeleteDbInstanceRequest.builder()
+                .dbInstanceIdentifier(dbIdentifier + "-" + i)
+                .skipFinalSnapshot(true)
+                .build());
+      } catch (Exception ex) {
+        // Ignore this error and continue with other instances
+      }
     }
 
     // Tear down cluster
-    final DeleteDBClusterRequest dbDeleteClusterRequest = new DeleteDBClusterRequest()
-        .withSkipFinalSnapshot(true)
-        .withDBClusterIdentifier(dbIdentifier);
+    int remainingAttempts = 5;
+    while (--remainingAttempts > 0) {
+      try {
+        DeleteDbClusterResponse response = rdsClient.deleteDBCluster(
+            (builder -> builder.skipFinalSnapshot(true).dbClusterIdentifier(dbIdentifier)));
+        if (response.sdkHttpResponse().isSuccessful()) {
+          break;
+        }
+        TimeUnit.SECONDS.sleep(30);
 
-    rdsClient.deleteDBCluster(dbDeleteClusterRequest);
+      } catch (Exception ex) {
+        // ignore
+      }
+    }
   }
 
   public String createSecrets(String secretName, String secretValue) {
     try {
       CreateSecretRequest secretRequest = CreateSecretRequest.builder()
-              .name(secretName)
-              .description("Integration tests credentials for AWS MySQL ODBC Driver")
-              .secretString(secretValue)
-              .build();
+          .name(secretName)
+          .description("Integration tests credentials for AWS MySQL ODBC Driver")
+          .secretString(secretValue)
+          .build();
 
       CreateSecretResponse secretResponse = smClient.createSecret(secretRequest);
       return secretResponse.arn();
@@ -349,19 +407,55 @@ public class AuroraTestUtility {
 
   public String createSecretValue(String host, String username, String password) {
     return new JSONObject()
-            .put("engine", "mysql")
-            .put("host", host)
-            .put("username", username)
-            .put("password", password)
-            .toString();
+        .put("engine", "mysql")
+        .put("host", host)
+        .put("username", username)
+        .put("password", password)
+        .toString();
   }
 
   public void deleteSecrets(String secretsArn) {
     DeleteSecretRequest request = DeleteSecretRequest.builder()
-            .secretId(secretsArn)
-            .forceDeleteWithoutRecovery(true)
-            .build();
+        .secretId(secretsArn)
+        .forceDeleteWithoutRecovery(true)
+        .build();
 
     smClient.deleteSecret(request);
+  }
+
+  private String getAuroraDbEngineVersion(String engineVersion) {
+    if (StringUtils.isNullOrEmpty(engineVersion)) {
+      return this.getLTSVersion();
+    }
+    switch (engineVersion.toLowerCase()) {
+      case "lts":
+        return this.getLTSVersion();
+      case "latest":
+        return this.getLatestVersion();
+      default:
+        return engineVersion;
+    }
+  }
+
+  private String getLatestVersion() {
+    final DescribeDbEngineVersionsResponse versions = this.rdsClient.describeDBEngineVersions(
+        DescribeDbEngineVersionsRequest.builder().engine(dbEngine).build()
+    );
+
+    return versions.dbEngineVersions()
+        .stream()
+        .map(DBEngineVersion::engineVersion)
+        .max(Comparator.naturalOrder())
+        .orElse(null);
+  }
+
+  private String getLTSVersion() {
+    final DescribeDbEngineVersionsResponse versions = this.rdsClient.describeDBEngineVersions(
+        DescribeDbEngineVersionsRequest.builder().defaultOnly(true).engine(dbEngine).build()
+    );
+    if (!versions.dbEngineVersions().isEmpty()) {
+      return versions.dbEngineVersions().get(0).engineVersion();
+    }
+    throw new RuntimeException("Failed to find LTS version");
   }
 }
