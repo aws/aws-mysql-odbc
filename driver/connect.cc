@@ -770,7 +770,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     return set_error("HY000", "Specifying multiple hostnames with DNS SRV look up is not allowed.", 0);
   }
 
-  if(dsrc->opt_ENABLE_DNS_SRV.is_set() && dsrc->opt_PORT.is_set())
+  if(dsrc->opt_ENABLE_DNS_SRV && dsrc->opt_PORT)
   {
     return set_error("HY000", "Specifying a port number with DNS SRV lookup is not allowed.", 0);
   }
