@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2000, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -35,6 +35,8 @@
 
 #include "driver.h"
 #include "installer.h"
+#include "stringutil.h"
+#include "telemetry.h"
 
 #include <map>
 #include <vector>
@@ -52,7 +54,6 @@
 #ifndef CLIENT_NO_SCHEMA
 # define CLIENT_NO_SCHEMA      16
 #endif
-
 
 typedef BOOL (*PromptFunc)(SQLHWND, SQLWCHAR *, SQLUSMALLINT,
                            SQLWCHAR *, SQLSMALLINT, SQLSMALLINT *);
@@ -76,17 +77,15 @@ unsigned long get_client_flags(DataSource *ds)
 {
   unsigned long flags= CLIENT_MULTI_RESULTS;
 
-  if (ds->safe || ds->return_matching_rows)
+  if (ds->opt_SAFE || ds->opt_FOUND_ROWS)
     flags|= CLIENT_FOUND_ROWS;
-  //if (ds->no_catalog)
-  //  flags|= CLIENT_NO_SCHEMA;
-  if (ds->use_compressed_protocol)
+  if (ds->opt_COMPRESSED_PROTO)
     flags|= CLIENT_COMPRESS;
-  if (ds->ignore_space_after_function_names)
+  if (ds->opt_IGNORE_SPACE)
     flags|= CLIENT_IGNORE_SPACE;
-  if (ds->allow_multiple_statements)
+  if (ds->opt_MULTI_STATEMENTS)
     flags|= CLIENT_MULTI_STATEMENTS;
-  if (ds->client_interactive)
+  if (ds->opt_CLIENT_INTERACTIVE)
     flags|= CLIENT_INTERACTIVE;
 
   return flags;
@@ -169,16 +168,15 @@ catch(const MYERROR &e)
 SQLRETURN run_initstmt(DBC* dbc, DataSource* dsrc)
 try
 {
-  if (dsrc->initstmt && dsrc->initstmt[0])
+  if (dsrc->opt_INITSTMT)
   {
     /* Check for SET NAMES */
-    if (is_set_names_statement(ds_get_utf8attr(dsrc->initstmt,
-      &dsrc->initstmt8)))
+    if (is_set_names_statement(dsrc->opt_INITSTMT))
     {
       throw MYERROR("HY000", "SET NAMES not allowed by driver");
     }
 
-    if (dbc->execute_query((char*)dsrc->initstmt8, SQL_NTS, true) != SQL_SUCCESS)
+    if (dbc->execute_query(dsrc->opt_INITSTMT, SQL_NTS, true) != SQL_SUCCESS)
     {
       return SQL_ERROR;
     }
@@ -280,19 +278,18 @@ std::shared_ptr<HOST_INFO> get_host_info_from_ds(DataSource* ds) {
   std::vector<Srv_host_detail> hosts;
   std::stringstream err;
   try {
-    hosts =
-        parse_host_list(ds_get_utf8attr(ds->server, &ds->server8), ds->port);
+    hosts = parse_host_list(ds->opt_SERVER, ds->opt_PORT);
   } catch (std::string &) {
-    err << "Invalid server '" << ds->server8 << "'.";
-    if (ds->save_queries) {
+    err << "Invalid server '" << (const char*)ds->opt_SERVER << "'.";
+    if (ds->opt_LOG_QUERY) {
       MYLOG_TRACE(init_log_file(), 0, err.str().c_str());
     }
     throw std::runtime_error(err.str());
   }
 
-  if (hosts.size() == 0) {
+  if (hosts.empty()) {
     err << "No host was retrieved from the data source.";
-    if (ds->save_queries) {
+    if (ds->opt_LOG_QUERY) {
       MYLOG_TRACE(init_log_file(), 0, err.str().c_str());
     }
     throw std::runtime_error(err.str());
@@ -346,15 +343,15 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
    FLAG_COLUMN_SIZE_S32 option if we are.
   */
   if (GetModuleHandle("msado15.dll") != NULL)
-    dsrc->limit_column_size = 1;
+    dsrc->opt_COLUMN_SIZE_S32 = true;
 
   /* Detect another problem specific to MS Access */
   if (GetModuleHandle("msaccess.exe") != NULL)
-    dsrc->default_bigint_bind_str = 1;
+    dsrc->opt_DFLT_BIGINT_BIND_STR = true;
 
   /* MS SQL Likes when the CHAR columns are padded */
   if (GetModuleHandle("sqlservr.exe") != NULL)
-    dsrc->pad_char_to_full_length = 1;
+    dsrc->opt_PAD_SPACE = true;
 
 #endif
 
@@ -364,7 +361,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
   /* Set other connection options */
 
-  if (dsrc->allow_big_results || dsrc->safe)
+  if (dsrc->opt_BIG_PACKETS || dsrc->opt_SAFE)
 #if MYSQL_VERSION_ID >= 50709
     connection_proxy->options(MYSQL_OPT_MAX_ALLOWED_PACKET, &max_long);
 #else
@@ -372,29 +369,29 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     max_allowed_packet = ~0L;
 #endif
 
-  if (dsrc->force_use_of_named_pipes)
+  if (dsrc->opt_NAMED_PIPE)
     connection_proxy->options(MYSQL_OPT_NAMED_PIPE, NullS);
 
-  if (dsrc->read_options_from_mycnf)
+  if (dsrc->opt_USE_MYCNF)
     connection_proxy->options(MYSQL_READ_DEFAULT_GROUP, "odbc");
 
   unsigned int connect_timeout, read_timeout, write_timeout;
   if (failover_enabled)
   {
-      connect_timeout = get_connect_timeout(dsrc->connect_timeout);
-      read_timeout = get_network_timeout(dsrc->network_timeout);
+      connect_timeout = get_connect_timeout(dsrc->opt_CONNECT_TIMEOUT);
+      read_timeout = get_network_timeout(dsrc->opt_NETWORK_TIMEOUT);
       write_timeout = read_timeout;
   }
   else if (is_monitor_connection)
   {
-      connect_timeout = get_network_timeout(dsrc->read_timeout);
-      read_timeout = get_network_timeout(dsrc->read_timeout);
-      write_timeout = get_network_timeout(dsrc->write_timeout);
+      connect_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      read_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      write_timeout = get_network_timeout(dsrc->opt_WRITETIMEOUT);
   } else
   {
       connect_timeout = get_connect_timeout(login_timeout);
-      read_timeout = get_network_timeout(dsrc->read_timeout);
-      write_timeout = get_network_timeout(dsrc->write_timeout);
+      read_timeout = get_network_timeout(dsrc->opt_READTIMEOUT);
+      write_timeout = get_network_timeout(dsrc->opt_WRITETIMEOUT);
   }
 
   connection_proxy->options(MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
@@ -405,10 +402,9 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   Pluggable authentication was introduced in mysql 5.5.7
 */
 #if MYSQL_VERSION_ID >= 50507
-  if (dsrc->plugin_dir)
+  if (dsrc->opt_PLUGIN_DIR)
   {
-    connection_proxy->options(MYSQL_PLUGIN_DIR,
-                   ds_get_utf8attr(dsrc->plugin_dir, &dsrc->plugin_dir8));
+    connection_proxy->options(MYSQL_PLUGIN_DIR, (const char*)dsrc->opt_PLUGIN_DIR);
   }
 
 #ifdef WIN32
@@ -422,10 +418,9 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   }
 #endif
 
-  if (dsrc->default_auth)
+  if (dsrc->opt_DEFAULT_AUTH)
   {
-    connection_proxy->options(MYSQL_DEFAULT_AUTH,
-                   ds_get_utf8attr(dsrc->default_auth, &dsrc->default_auth8));
+    connection_proxy->options(MYSQL_DEFAULT_AUTH, (const char*)dsrc->opt_DEFAULT_AUTH);
   }
 
   /*
@@ -442,21 +437,52 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   if(!fido_func && global_fido_callback)
     fido_func = global_fido_callback;
 
+  std::vector<std::string> plugin_types = {
+    "fido", "webauthn"
+  };
+
   if (fido_func || fido_callback_is_set)
   {
-    struct st_mysql_client_plugin* plugin =
-      connection_proxy->client_find_plugin(
-        "authentication_fido_client",
-        MYSQL_CLIENT_AUTHENTICATION_PLUGIN);
-
-    if (!plugin)
+    int plugin_load_failures = 0;
+    for (std::string plugin_type : plugin_types)
     {
-      return set_error("HY000", "Couldn't load plugin authentication_fido_client", 0);
+      std::string plugin_name = "authentication_" + plugin_type +
+        "_client";
+      struct st_mysql_client_plugin* plugin =
+        connection_proxy->client_find_plugin(
+            plugin_name.c_str(),
+            MYSQL_CLIENT_AUTHENTICATION_PLUGIN);
+
+      if (plugin)
+      {
+        std::string opt_name = (plugin_type == "webauthn" ?
+          "plugin_authentication_webauthn_client" :
+          plugin_type) + "_messages_callback";
+
+        if (mysql_plugin_options(plugin, opt_name.c_str(),
+             (const void*)fido_func))
+        {
+          // If plugin is loaded, but the callback option fails to set
+          // the error is reported.
+          return set_error("HY000",
+            "Failed to set a FIDO authentication callback function", 0);
+        }
+      }
+      else
+      {
+        // Do not report an error yet.
+        // Just increment the failure count.
+        ++plugin_load_failures;
+      }
     }
 
-    if (mysql_plugin_options(plugin, "fido_messages_callback", (const void*)fido_func))
+    if (plugin_load_failures == plugin_types.size())
     {
-      return set_error("HY000", "Failed to set a FIDO authentication callback function", 0);
+      // Report error only if all plugins failed to load
+      return set_error("HY000", "Failed to set a FIDO "
+        "authentication callback because none of FIDO "
+        "authentication plugins (fido, webauthn) could "
+        "be loaded", 0);
     }
     fido_callback_is_set = fido_func;
   }
@@ -466,8 +492,8 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     fido_lock.unlock();
   }
 
-  bool oci_config_file_set = dsrc->oci_config_file && dsrc->oci_config_file[0];
-  bool oci_config_profile_set = dsrc->oci_config_profile && dsrc->oci_config_profile[0];
+  bool oci_config_file_set = dsrc->opt_OCI_CONFIG_FILE;
+  bool oci_config_profile_set = dsrc->opt_OCI_CONFIG_PROFILE;
 
   if(oci_config_file_set || oci_config_profile_set || oci_plugin_is_loaded)
   {
@@ -487,7 +513,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     // re-using the value set by another connect (plugin does not
     // reset its options automatically).
     const void *val_to_set = oci_config_file_set ?
-      ds_get_utf8attr(dsrc->oci_config_file, &dsrc->oci_config_file8) :
+      (const char*)dsrc->opt_OCI_CONFIG_FILE :
       nullptr;
 
     if (mysql_plugin_options(plugin, "oci-config-file", val_to_set) &&
@@ -499,7 +525,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     }
 
     val_to_set = oci_config_profile_set ?
-      ds_get_utf8attr(dsrc->oci_config_profile, &dsrc->oci_config_profile8) :
+      (const char*)dsrc->opt_OCI_CONFIG_PROFILE :
       nullptr;
 
     if (mysql_plugin_options(plugin, "authentication-oci-client-config-profile",
@@ -510,8 +536,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     }
   }
 
-  if (dsrc->authentication_kerberos_mode &&
-      dsrc->authentication_kerberos_mode[0])
+  if (dsrc->opt_AUTHENTICATION_KERBEROS_MODE)
   {
 #ifdef WIN32
     /* load client authentication plugin if required */
@@ -525,16 +550,14 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     }
 
     if (mysql_plugin_options(plugin, "plugin_authentication_kerberos_client_mode",
-      ds_get_utf8attr(dsrc->authentication_kerberos_mode,
-        &dsrc->authentication_kerberos_mode8)))
+      (const char*)dsrc->opt_AUTHENTICATION_KERBEROS_MODE))
     {
       return set_error("HY000",
         "Failed to set mode for authentication_kerberos_client plugin", 0);
     }
 #else
     if (myodbc_strcasecmp("GSSAPI",
-      ds_get_utf8attr(dsrc->authentication_kerberos_mode,
-        &dsrc->authentication_kerberos_mode8)))
+      (const char *)dsrc->opt_AUTHENTICATION_KERBEROS_MODE))
     {
       return set_error("HY000",
         "Invalid value for authentication-kerberos-mode. "
@@ -545,41 +568,51 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
 #endif
 
-  /* set SSL parameters */
-  connection_proxy->ssl_set(ds_get_utf8attr(dsrc->sslkey,    &dsrc->sslkey8),
-                 ds_get_utf8attr(dsrc->sslcert,   &dsrc->sslcert8),
-                 ds_get_utf8attr(dsrc->sslca,     &dsrc->sslca8),
-                 ds_get_utf8attr(dsrc->sslcapath, &dsrc->sslcapath8),
-                 ds_get_utf8attr(dsrc->sslcipher, &dsrc->sslcipher8));
+
+
+#define SSL_SET(X, Y) \
+   if (dsrc->opt_##X && connection_proxy->options(MYSQL_OPT_##X,    \
+                                      (const char *)dsrc->opt_##X)) \
+     return set_error("HY000", "Failed to set " Y, 0);
+
+#define SSL_OPTIONS_LIST(X) \
+  X(SSL_KEY, "the path name of the client private key file") \
+  X(SSL_CERT, "the path name of the client public key certificate file") \
+  X(SSL_CA, "the path name of the Certificate Authority (CA) certificate file") \
+  X(SSL_CAPATH, "the path name of the directory that contains trusted SSL CA certificate files") \
+  X(SSL_CIPHER, "the list of permissible ciphers for SSL encryption") \
+  X(SSL_CRL, "Failed to set the certificate revocation list file") \
+  X(SSL_CRLPATH, "Failed to set the certificate revocation list path")
+
+  SSL_OPTIONS_LIST(SSL_SET);
 
 #if MYSQL_VERSION_ID < 80003
-  if (dsrc->sslverify)
+  if (dsrc->SSLVERIFY)
     connection_proxy->options(MYSQL_OPT_SSL_VERIFY_SERVER_CERT,
                    (const char *)&opt_ssl_verify_server_cert);
 #endif
 
 #if MYSQL_VERSION_ID >= 50660
-  if (dsrc->rsakey)
+  if (dsrc->opt_RSAKEY)
   {
     /* Read the public key on the client side */
-    connection_proxy->options(MYSQL_SERVER_PUBLIC_KEY,
-                   ds_get_utf8attr(dsrc->rsakey, &dsrc->rsakey8));
+    connection_proxy->options(MYSQL_SERVER_PUBLIC_KEY, (const char*)dsrc->opt_RSAKEY);
   }
 #endif
 #if MYSQL_VERSION_ID >= 50710
   {
     std::string tls_options;
 
-    if (dsrc->tls_versions)
+    if (dsrc->opt_TLS_VERSIONS)
     {
       // If tls-versions is used the NO_TLS_X options are deactivated
-      tls_options = ds_get_utf8attr(dsrc->tls_versions, &dsrc->tls_versions8);
+      tls_options = (const char*)dsrc->opt_TLS_VERSIONS;
     }
     else
     {
       std::map<std::string, bool> opts = {
-        { "TLSv1.2", !dsrc->no_tls_1_2 },
-        { "TLSv1.3", !dsrc->no_tls_1_3 },
+        { "TLSv1.2", !dsrc->opt_NO_TLS_1_2 },
+        { "TLSv1.3", !dsrc->opt_NO_TLS_1_3 },
       };
 
       for (auto &opt : opts)
@@ -602,26 +635,8 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   }
 #endif
 
-  if (dsrc->ssl_crl)
-  {
-    if (connection_proxy->options(MYSQL_OPT_SSL_CRL,
-      ds_get_utf8attr(dsrc->ssl_crl, &dsrc->ssl_crl8)))
-    {
-      return set_error("HY000", "Failed to set the certificate revocation list file", 0);
-    }
-  }
-
-  if (dsrc->ssl_crlpath)
-  {
-    if (connection_proxy->options(MYSQL_OPT_SSL_CRLPATH,
-      ds_get_utf8attr(dsrc->ssl_crlpath, &dsrc->ssl_crlpath8)))
-    {
-      return set_error("HY000", "Failed to set the certificate revocation list path", 0);
-    }
-  }
-
 #if MYSQL_VERSION_ID >= 80004
-  if (dsrc->get_server_public_key)
+  if (dsrc->opt_GET_SERVER_PUBLIC_KEY)
   {
     /* Get the server public key */
     connection_proxy->options(MYSQL_OPT_GET_SERVER_PUBLIC_KEY, (const void*)&on);
@@ -664,7 +679,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 }
 
 #if MYSQL_VERSION_ID >= 50610
-  if (dsrc->can_handle_exp_pwd)
+  if (dsrc->opt_CAN_HANDLE_EXP_PWD)
   {
     connection_proxy->options(MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, (char *)&on);
   }
@@ -672,14 +687,14 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
 #if (MYSQL_VERSION_ID >= 50527 && MYSQL_VERSION_ID < 50600) || MYSQL_VERSION_ID >= 50607
   // IAM authentication requires the plugin to be set.
-  if (dsrc->enable_cleartext_plugin || 
-      (dsrc->auth_mode8 && !myodbc_strcasecmp(AUTH_MODE_IAM, (const char*)dsrc->auth_mode8)))
+  if (dsrc->opt_ENABLE_CLEARTEXT_PLUGIN ||
+      (dsrc->opt_AUTH_MODE && !myodbc_strcasecmp(AUTH_MODE_IAM, (const char*)dsrc->opt_AUTH_MODE)))
   {
     connection_proxy->options(MYSQL_ENABLE_CLEARTEXT_PLUGIN, (char *)&on);
   }
 #endif
 
-  if (dsrc->enable_local_infile)
+  if (dsrc->opt_ENABLE_LOCAL_INFILE)
   {
     connection_proxy->options(MYSQL_OPT_LOCAL_INFILE, &on_int);
   }
@@ -688,11 +703,9 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     connection_proxy->options(MYSQL_OPT_LOCAL_INFILE, &off_int);
   }
 
-  if (dsrc->load_data_local_dir && dsrc->load_data_local_dir[0])
+  if (dsrc->opt_LOAD_DATA_LOCAL_DIR)
   {
-    ds_get_utf8attr(dsrc->load_data_local_dir, &dsrc->load_data_local_dir8);
-    connection_proxy->options(MYSQL_OPT_LOAD_DATA_LOCAL_DIR,
-                   dsrc->load_data_local_dir8);
+    connection_proxy->options(MYSQL_OPT_LOAD_DATA_LOCAL_DIR, (const char*)dsrc->opt_LOAD_DATA_LOCAL_DIR);
   }
 
   // Set the connector identification attributes.
@@ -738,19 +751,18 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   }
 #endif
 #if MYSQL_VERSION_ID >= 50711
-  if (dsrc->sslmode)
+  if (dsrc->opt_SSL_MODE)
   {
     unsigned int mode = 0;
-    ds_get_utf8attr(dsrc->sslmode, &dsrc->sslmode8);
-    if (!myodbc_strcasecmp(ODBC_SSL_MODE_DISABLED, (const char*)dsrc->sslmode8))
+    if (!myodbc_strcasecmp(ODBC_SSL_MODE_DISABLED, dsrc->opt_SSL_MODE))
       mode = SSL_MODE_DISABLED;
-    if (!myodbc_strcasecmp(ODBC_SSL_MODE_PREFERRED, (const char*)dsrc->sslmode8))
+    if (!myodbc_strcasecmp(ODBC_SSL_MODE_PREFERRED, dsrc->opt_SSL_MODE))
       mode = SSL_MODE_PREFERRED;
-    if (!myodbc_strcasecmp(ODBC_SSL_MODE_REQUIRED, (const char*)dsrc->sslmode8))
+    if (!myodbc_strcasecmp(ODBC_SSL_MODE_REQUIRED, dsrc->opt_SSL_MODE))
       mode = SSL_MODE_REQUIRED;
-    if (!myodbc_strcasecmp(ODBC_SSL_MODE_VERIFY_CA, (const char*)dsrc->sslmode8))
+    if (!myodbc_strcasecmp(ODBC_SSL_MODE_VERIFY_CA, dsrc->opt_SSL_MODE))
       mode = SSL_MODE_VERIFY_CA;
-    if (!myodbc_strcasecmp(ODBC_SSL_MODE_VERIFY_IDENTITY, (const char*)dsrc->sslmode8))
+    if (!myodbc_strcasecmp(ODBC_SSL_MODE_VERIFY_IDENTITY, dsrc->opt_SSL_MODE))
       mode = SSL_MODE_VERIFY_IDENTITY;
 
     // Don't do anything if there is no match with any of the available modes
@@ -763,31 +775,31 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
   std::vector<Srv_host_detail> hosts;
   try {
-    hosts = parse_host_list(ds_get_utf8attr(dsrc->server, &dsrc->server8), dsrc->port);
+    hosts = parse_host_list(dsrc->opt_SERVER, dsrc->opt_PORT);
 
   } catch (std::string &e)
   {
     return set_error("HY000", e.c_str(), 0);
   }
 
-  if(!dsrc->multi_host && hosts.size() > 1)
+  if(!dsrc->opt_MULTI_HOST && hosts.size() > 1)
   {
     return set_error("HY000", "Missing option MULTI_HOST=1", 0);
   }
 
-  if(dsrc->enable_dns_srv && hosts.size() > 1)
+  if(dsrc->opt_ENABLE_DNS_SRV && hosts.size() > 1)
   {
     return set_error("HY000", "Specifying multiple hostnames with DNS SRV look up is not allowed.", 0);
   }
 
-  if(dsrc->enable_dns_srv && dsrc->has_port)
+  if(dsrc->opt_ENABLE_DNS_SRV && dsrc->opt_PORT)
   {
     return set_error("HY000", "Specifying a port number with DNS SRV lookup is not allowed.", 0);
   }
 
-  if(dsrc->enable_dns_srv)
+  if(dsrc->opt_ENABLE_DNS_SRV)
   {
-    if(dsrc->socket)
+    if(dsrc->opt_SOCKET)
     {
       return set_error("HY000",
 #ifdef _WIN32
@@ -801,11 +813,41 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     if(hosts.empty())
     {
       std::stringstream err;
-      err << "Unable to locate any hosts for " << dsrc->server8;
+      err << "Unable to locate any hosts for " << (const char*)dsrc->opt_SERVER;
       return set_error("HY000", err.str().c_str(), 0);
     }
 
   }
+
+  // Handle OPENTELEMETRY option.
+
+  // Note: Using while() instead of if() to be able to get out of it with
+  // `break` statement.
+
+  while (dsrc->opt_OPENTELEMETRY)
+  {
+#ifndef TELEMETRY
+
+    return set_error("HY000",
+      "OPENTELEMETRY option is not supported on this platform."
+    ,0);
+
+#else
+
+#define SET_OTEL_MODE(X,N) \
+    if (!myodbc_strcasecmp(#X, dsrc->opt_OPENTELEMETRY)) \
+    { telemetry.set_mode(OTEL_ ## X); break; }
+
+    ODBC_OTEL_MODE(SET_OTEL_MODE)
+
+    return set_error("HY000",
+      "OPENTELEMETRY option can be set only to DISABLED or PREFERRED"
+    , 0);
+
+#endif
+  }
+
+  telemetry.span_start(this);
 
   auto do_connect = [this,&dsrc,&flags](
                     const char *host,
@@ -813,7 +855,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
                     ) -> short
   {
     int protocol;
-    if(dsrc->socket)
+    if(dsrc->opt_SOCKET)
     {
 #ifdef _WIN32
       protocol = MYSQL_PROTOCOL_PIPE;
@@ -826,16 +868,17 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     }
     connection_proxy->options(MYSQL_OPT_PROTOCOL, &protocol);
 
-    //Setting server and port to the dsrc->server8 and dsrc->port
-    ds_set_strnattr(&dsrc->server8, (SQLCHAR*)host, strlen(host));
-    dsrc->port = port;
+    //Setting server and port
+    dsrc->opt_SERVER = host;
+    dsrc->opt_PORT = port;
 
-    const char* user = ds_get_utf8attr(dsrc->uid, &dsrc->uid8);
-    const char* password = ds_get_utf8attr(dsrc->pwd, &dsrc->pwd8);
-    const char* database = ds_get_utf8attr(dsrc->database, &dsrc->database8);
-    const char* socket = ds_get_utf8attr(dsrc->socket, &dsrc->socket8);
+    const char* user = dsrc->opt_UID;
+    const char* password = dsrc->opt_PWD;
+    const char* database = dsrc->opt_DATABASE;
+    const char* socket = dsrc->opt_SOCKET;
 
     const bool connect_result = connection_proxy->connect(host, user, password, database, port, socket, flags);
+
     if (!connect_result)
     {
       unsigned int native_error= connection_proxy->error_code();
@@ -851,7 +894,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 #if MYSQL_VERSION_ID < 50610
       /* In that special case when the driver was linked against old version of libmysql*/
       if (native_error == ER_MUST_CHANGE_PASSWORD_LOGIN
-          && dsrc->can_handle_exp_pwd)
+          && dsrc->CAN_HANDLE_EXP_PWD)
       {
         /* The password has expired, application said it knows how to deal with
          that, but the driver was linked  that
@@ -882,7 +925,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     while(!hosts.empty() && !connected)
     {
       std::uniform_int_distribution<int> distribution(
-            0, hosts.size() - 1); // define the range of random numbers
+            0, (int)hosts.size() - 1); // define the range of random numbers
 
       int pos = distribution(generator);
       auto el = hosts.begin();
@@ -892,6 +935,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
       if(do_connect(el->name.c_str(), el->port) == SQL_SUCCESS)
       {
         connected = true;
+        telemetry.set_attribs(this, dsrc);
         break;
       }
       else
@@ -920,14 +964,14 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
 
     if(!connected)
     {
-      if(dsrc->enable_dns_srv)
+      if(dsrc->opt_ENABLE_DNS_SRV)
       {
         std::string err =
           std::string("Unable to connect to any of the hosts of ") +
-          (const char*)dsrc->server8 + " SRV";
+          (const char*)dsrc->opt_SERVER + " SRV";
         set_error("HY000", err.c_str(), 0);
       }
-      else if (dsrc->multi_host && hosts.size() > 1) {
+      else if (dsrc->opt_MULTI_HOST && hosts.size() > 1) {
         set_error("HY000", "Unable to connect to any of the hosts", 0);
       }
       //The others will retrieve the error from connect
@@ -943,12 +987,12 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     return set_error("08001", "Driver does not support server versions under 4.1.1", 0);
   }
 
-  rc = set_charset_options(ds_get_utf8attr(dsrc->charset, &dsrc->charset8));
+  rc = set_charset_options(dsrc->opt_CHARSET);
 
   // It could be an error with expired password in which case we
   // still try to execute init statements and retry below.
   if (rc == SQL_ERROR && error.native_error != ER_MUST_CHANGE_PASSWORD)
-    goto error;
+    return SQL_ERROR;
 
   // Try running INITSTMT.
   if (!SQL_SUCCEEDED(run_initstmt(this, dsrc)))
@@ -959,11 +1003,11 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   // NOTE: charset name is converted to a single-byte
   //       charset by previous call to ds_get_utf8attr().
   if (rc == SQL_ERROR)
-    rc = set_charset_options((const char*)dsrc->charset8);
+    rc = set_charset_options((const char*)dsrc->opt_CHARSET);
 
   if (!SQL_SUCCEEDED(rc))
   {
-    goto error;
+    return SQL_ERROR;
   }
 
   /*
@@ -972,38 +1016,45 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     unfortunately enabled by default. We have to turn it off, or it causes
     other problems.
   */
-  if (!dsrc->auto_increment_null_search &&
+  if (!dsrc->opt_AUTO_IS_NULL &&
       execute_query("SET SQL_AUTO_IS_NULL = 0", SQL_NTS, true) != SQL_SUCCESS)
   {
-    goto error;
+    return SQL_ERROR;
   }
 
-  ds = dsrc;
+  ds = *dsrc;
   /* init all needed UTF-8 strings */
-  ds_get_utf8attr(ds->name, &ds->name8);
-  ds_get_utf8attr(ds->server, &ds->server8);
-  ds_get_utf8attr(ds->uid, &ds->uid8);
-  ds_get_utf8attr(ds->pwd, &ds->pwd8);
-  ds_get_utf8attr(ds->socket, &ds->socket8);
-  if (ds->database)
-  {
-    database= ds_get_utf8attr(ds->database, &ds->database8);
-  }
+  const char *opt_db = ds.opt_DATABASE;
+  database = opt_db ? opt_db : "";
+
+  if (ds.opt_LOG_QUERY && !log_file)
+      log_file = init_log_file();
 
   /* Set the statement error prefix based on the server version. */
   strxmov(st_error_prefix, MYODBC_ERROR_PREFIX, "[mysqld-",
           connection_proxy->get_server_version(), "]", NullS);
 
+  /*
+    This variable will be needed later to process possible
+    errors when setting MYSQL_OPT_RECONNECT when client lib
+    used at runtime does not support it.
+  */
+  int set_reconnect_result = 0;
+#if MYSQL_VERSION_ID < 80300
   /* This needs to be set after connection, or it doesn't stick.  */
-  if (ds->auto_reconnect)
+  if (ds.opt_AUTO_RECONNECT)
   {
     connection_proxy->options(MYSQL_OPT_RECONNECT, (char *)&on);
   }
+#else
+  /* MYSQL_OPT_RECONNECT doesn't exist at build time, report warning later. */
+  set_reconnect_result = 1;
+#endif
 
   /* Make sure autocommit is set as configured. */
   if (commit_flag == CHECK_AUTOCOMMIT_OFF)
   {
-    if (!transactions_supported() || ds->disable_transactions)
+    if (!transactions_supported() || ds.opt_NO_TRANSACTIONS)
     {
       commit_flag = CHECK_AUTOCOMMIT_ON;
       rc = set_error(MYERR_01S02,
@@ -1014,7 +1065,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     else if (autocommit_is_on() && connection_proxy->autocommit(FALSE))
     {
       /** @todo set error */
-      goto error;
+      return SQL_ERROR;
     }
   }
   else if ((commit_flag == CHECK_AUTOCOMMIT_ON) &&
@@ -1023,7 +1074,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     if (connection_proxy->autocommit(TRUE))
     {
       /** @todo set error */
-      goto error;
+      return SQL_ERROR;
     }
   }
 
@@ -1047,7 +1098,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
       snprintf(buff, sizeof(buff), "SET SESSION TRANSACTION ISOLATION LEVEL %s", level);
       if (execute_query(buff, SQL_NTS, true) != SQL_SUCCESS)
       {
-        goto error;
+        return SQL_ERROR;
       }
     }
     else
@@ -1059,13 +1110,40 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     }
   }
 
+  /*
+    AUTO_RECONNECT option needs to be handled with the following
+    considerations:
+
+    A - version of ODBC driver code
+    B - version of client lib used for building ODBC driver (*)
+    C - version of client lib used at runtime
+
+    Note (*): As given by MYSQL_VERSION_ID  macro.
+
+    The behavior should be like this:
+
+     A     B     C
+    ==== ===== ===== =======================================
+    old    *    old   reconnect option works
+    old    *    new   reconnect option silently ignored
+    new   old   old   reconnect option works
+    new   old   new   reconnect option ignored with warning
+    new   new    *    reconnect option ignored with warning
+  */
+  if (ds.opt_AUTO_RECONNECT && set_reconnect_result)
+  {
+    set_error("HY000",
+      "The option AUTO_RECONNECT is not supported "
+      "by MySQL version 8.3.0 or later. "
+      "Please remove it from the connection string "
+      "or the Data Source", 0);
+    rc = SQL_SUCCESS_WITH_INFO;
+  }
+
   connection_proxy->get_option(MYSQL_OPT_NET_BUFFER_LENGTH, &net_buffer_len);
 
   guard.set_success(rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO);
   return rc;
-
-error:
-  return SQL_ERROR;
 }
 
 
@@ -1092,7 +1170,7 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
 {
   SQLRETURN rc;
   DBC *dbc= (DBC *)hdbc;
-  DataSource *ds;
+  DataSource* ds = new DataSource();
 
 #ifdef NO_DRIVERMANAGER
   return ((DBC*)dbc)->set_error("HY000",
@@ -1112,23 +1190,22 @@ SQLRETURN SQL_API MySQLConnect(SQLHDBC   hdbc,
       "Invalid connection parameters", 0);
   }
 
-  ds= ds_new();
+  ds->opt_DSN.set_remove_brackets(szDSN, cbDSN);
+  ds->opt_UID.set_remove_brackets(szUID, cbUID);
+  ds->opt_PWD.set_remove_brackets(szAuth, cbAuth);
 
-  ds_set_wstrnattr(&ds->name, szDSN, cbDSN);
-  ds_set_wstrnattr(&ds->uid, szUID, cbUID);
-  ds_set_wstrnattr(&ds->pwd, szAuth, cbAuth);
+  ds->lookup();
 
-  ds_lookup(ds);
-
-  if (ds->save_queries && !dbc->log_file) 
-    dbc->log_file = init_log_file();
+  if (ds->opt_LOG_QUERY && !dbc->log_file)
+      dbc->log_file = init_log_file();
 
   dbc->init_proxy_chain(ds);
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
   rc = dbc->fh->init_connection();
-  if (!dbc->ds)
-    ds_delete(ds);
+  if (!SQL_SUCCEEDED(rc))
+    dbc->telemetry.set_error(dbc, dbc->error.message);
+
   return rc;
 #endif
 }
@@ -1172,9 +1249,9 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 {
   SQLRETURN rc= SQL_SUCCESS;
   DBC *dbc= (DBC *)hdbc;
-  DataSource *ds= ds_new();
+  DataSource* ds = new DataSource();
   /* We may have to read driver info to find the setup library. */
-  Driver *pDriver= driver_new();
+  Driver driver;
   /* We never know how many new parameters might come out of the prompt */
   SQLWCHAR prompt_outstr[4096];
   BOOL bPrompt= FALSE;
@@ -1188,7 +1265,7 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     conn_str_in = szConnStrIn;
 
   /* Parse the incoming string */
-  if (ds_from_kvpair(ds, conn_str_in.c_str(), (SQLWCHAR)';'))
+  if (ds->from_kvpair(conn_str_in.c_str(), (SQLWCHAR)';'))
   {
     rc= dbc->set_error( "HY000",
                       "Failed to parse the incoming connect string.", 0);
@@ -1203,21 +1280,21 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
    This also allows us to get pszDRIVER (if not already given).
   */
-  if (ds->name)
+  if (ds->opt_DSN)
   {
-     ds_lookup(ds);
+     ds->lookup();
 
     /*
       If DSN is used:
       1 - we want the connection string options to override DSN options
       2 - no need to check for parsing erros as it was done before
     */
-    ds_from_kvpair(ds, conn_str_in.c_str(), (SQLWCHAR)';');
+     ds->from_kvpair(conn_str_in.c_str(), (SQLWCHAR)';');
   }
 #endif
 
   /* If FLAG_NO_PROMPT is not set, force prompting off. */
-  if (ds->dont_prompt_upon_connect)
+  if (ds->opt_NO_PROMPT)
     fDriverCompletion= SQL_DRIVER_NOPROMPT;
 
   /*
@@ -1238,13 +1315,17 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   case SQL_DRIVER_COMPLETE:
   case SQL_DRIVER_COMPLETE_REQUIRED:
-    if (ds->save_queries && !dbc->log_file) 
-      dbc->log_file = init_log_file();
+      if (ds->opt_LOG_QUERY && !log_file)
+          log_file = init_log_file();
 
     dbc->init_proxy_chain(ds);
     dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
     dbc->fh = new FAILOVER_HANDLER(dbc, ds);
     rc = dbc->fh->init_connection();
+
+    if (!SQL_SUCCEEDED(rc))
+      dbc->telemetry.set_error(dbc, dbc->error.message);
+
     if (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO)
       goto connected;
     bPrompt= TRUE;
@@ -1286,14 +1367,13 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
      connect with a DSN which does not exist. A possible solution would be to
      hard-code some fall-back value for ds->pszDRIVER.
     */
-    if (!ds->driver)
+    if (!ds->opt_DRIVER)
     {
       char szError[1024];
-      snprintf(szError,
-               sizeof(szError),
-               "Could not determine the driver name; "
-               "could not lookup setup library. DSN=(%s)\n",
-               ds_get_utf8attr(ds->name, &ds->name8));
+      sprintf(szError,
+              "Could not determine the driver name; "
+              "could not lookup setup library. DSN=(%s)\n",
+              (const char*)ds->opt_DSN);
       rc= dbc->set_error("HY000", szError, 0);
       goto error;
     }
@@ -1307,23 +1387,23 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     }
 
     /* if given a named DSN, we will have the path in the DRIVER field */
-    if (ds->name)
-        sqlwcharncpy(pDriver->lib, ds->driver, ODBCDRIVER_STRLEN);
+    if (ds->opt_DSN)
+      driver.lib = ds->opt_DRIVER;
     /* otherwise, it's the driver name */
     else
-        sqlwcharncpy(pDriver->name, ds->driver, ODBCDRIVER_STRLEN);
+      driver.name = ds->opt_DRIVER;
 
-    if (driver_lookup(pDriver))
+    if (driver.lookup())
     {
       char sz[1024];
-      snprintf(sz, sizeof(sz), "Could not find driver '%s' in system information.",
-               ds_get_utf8attr(ds->driver, &ds->driver8));
+      sprintf(sz, "Could not find driver '%s' in system information.",
+              (const char*)ds->opt_DRIVER);
 
       rc= dbc->set_error("IM003", sz, 0);
       goto error;
     }
 
-    if (!*pDriver->setup_lib)
+    if (!driver.setup_lib)
 #endif
     {
       rc= dbc->set_error("HY000",
@@ -1342,12 +1422,11 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 */
 #endif
 
-    if (!(hModule= LoadLibrary(ds_get_utf8attr(pDriver->setup_lib,
-                                               &pDriver->setup_lib8))))
+    if (!(hModule= LoadLibrary(driver.setup_lib)))
     {
       char sz[1024];
-      snprintf(sz, sizeof(sz), "Could not load the setup library '%s'.",
-               ds_get_utf8attr(pDriver->setup_lib, &pDriver->setup_lib8));
+      sprintf(sz, "Could not load the setup library '%s'.",
+              (const char *)driver.setup_lib);
       rc= dbc->set_error("HY000", sz, 0);
       goto error;
     }
@@ -1372,15 +1451,10 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     }
 
     /* create a string for prompting, and add driver manually */
-    if (ds_to_kvpair(ds, prompt_instr, ';') == -1)
-    {
-      rc= dbc->set_error( "HY000",
-                        "Failed to prepare prompt input.", 0);
-      goto error;
-    }
-
+    prompt_instr = ds->to_kvpair(';');
     prompt_instr.append(W_DRIVER_PARAM);
-    prompt_instr.append(ds->driver);
+    SQLWSTRING drv = (const SQLWSTRING&)ds->opt_DRIVER;
+    prompt_instr.append(drv);
 
     /*
       In case the client app did not provide the out string we use our
@@ -1395,9 +1469,8 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
     }
 
     /* refresh our DataSource */
-    ds_delete(ds);
-    ds= ds_new();
-    if (ds_from_kvpair(ds, prompt_outstr, ';'))
+    ds->reset();
+    if (ds->from_kvpair(prompt_outstr, ';'))
     {
       rc= dbc->set_error( "HY000",
                         "Failed to parse the prompt output string.", 0);
@@ -1418,19 +1491,20 @@ SQLRETURN SQL_API MySQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd,
 
   }
 
-  if (ds->save_queries && !dbc->log_file) 
-      dbc->log_file = init_log_file();
+  if (ds->opt_LOG_QUERY && !log_file)
+      log_file = init_log_file();
 
   dbc->init_proxy_chain(ds);
   dbc->connection_handler = std::make_shared<CONNECTION_HANDLER>(dbc);
   dbc->fh = new FAILOVER_HANDLER(dbc, ds);
+
   rc = dbc->fh->init_connection();
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
   {
     goto error;
   }
 
-  if (ds->savefile)
+  if (ds->opt_SAVEFILE)
   {
     /* We must disconnect if File DSN is created */
     dbc->close();
@@ -1443,20 +1517,17 @@ connected:
   {
     size_t copylen;
     conn_str_out = conn_str_in;
-    if (ds->savefile)
+    if (ds->opt_SAVEFILE)
     {
-      SQLWCHAR *pwd_temp= ds->pwd;
-      SQLCHAR  *pwd8_temp= ds->pwd8;
+      SQLWSTRING pwd_temp = (const SQLWSTRING &)ds->opt_PWD;
 
       /* make sure the password does not go into the output buffer */
-      ds->pwd= NULL;
-      ds->pwd8= NULL;
+      ds->opt_PWD = nullptr;
 
-      ds_to_kvpair(ds, conn_str_out, ';');
+      conn_str_out = ds->to_kvpair(';');
 
       /* restore old values */
-      ds->pwd= pwd_temp;
-      ds->pwd8= pwd8_temp;
+      ds->opt_PWD = pwd_temp;
     }
 
     size_t inlen = conn_str_out.length();
@@ -1478,7 +1549,7 @@ connected:
       https://learn.microsoft.com/en-us/sql/odbc/reference/syntax/sqldriverconnect-function?view=sql-server-ver16
     */
     if (pcbConnStrOut)
-      *pcbConnStrOut = inlen;
+      *pcbConnStrOut = (SQLSMALLINT)inlen;
   }
 
   /* return SQL_SUCCESS_WITH_INFO if truncated output string */
@@ -1490,13 +1561,11 @@ connected:
   }
 
 error:
+
+  if (!SQL_SUCCEEDED(rc))
+    dbc->telemetry.set_error(dbc, dbc->error.message);
   if (hModule)
     FreeLibrary(hModule);
-
-  driver_delete(pDriver);
-  /* delete data source unless connected */
-  if (!dbc->ds)
-    ds_delete(ds);
 
   return rc;
 }
@@ -1527,20 +1596,20 @@ void DBC::free_connection_stmts()
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 {
   DBC *dbc= (DBC *) hdbc;
-  DataSource* ds = dbc->ds;
+  DataSource ds = dbc->ds;
 
-  if (ds && ds->gather_perf_metrics) {
+  if (ds.opt_GATHER_PERF_METRICS) {
     std::string cluster_id_str = "";
     if (dbc->fh) {
       cluster_id_str = dbc->fh->cluster_id;
     }
 
-    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds->gather_metrics_per_instance) && dbc->connection_proxy) {
+    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds.opt_GATHER_PERF_METRICS_PER_INSTANCE) && dbc->connection_proxy) {
       cluster_id_str = dbc->connection_proxy->get_host();
       cluster_id_str.append(":").append(std::to_string(dbc->connection_proxy->get_port()));
     }
 
-    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds->gather_metrics_per_instance, dbc->log_file, dbc->id);
+    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds.opt_GATHER_PERF_METRICS_PER_INSTANCE, dbc->log_file, dbc->id);
   }
 
   CHECK_HANDLE(hdbc);
@@ -1549,48 +1618,84 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 
   dbc->close();
 
-  if (dbc->ds && dbc->ds->save_queries) {
-    dbc->log_file.reset();
-    end_log_file();
-  }
+  if (ds.opt_LOG_QUERY)
+      end_log_file();
 
   /* free allocated packet buffer */
 
-  if(dbc->ds)
-  {
-    ds_delete(dbc->ds);
-  }
-  dbc->ds= NULL;
   dbc->database.clear();
-
   return SQL_SUCCESS;
 }
 
 
 void DBC::execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
-  MYSQL_BIND *param_bind, MYSQL_BIND *result_bind)
+  std::vector<MYSQL_BIND> &param_bind, MYSQL_BIND *result_bind)
 {
-  if (
-    connection_proxy->stmt_prepare(pstmt, query.c_str(), query.length()) ||
-    (param_bind && connection_proxy->stmt_bind_param(pstmt, param_bind)) ||
-    connection_proxy->stmt_execute(pstmt) ||
-    (result_bind && connection_proxy->stmt_bind_result(pstmt, result_bind))
-  )
+  STMT stmt{this, param_bind.size()};
+  telemetry::Telemetry<STMT> stmt_telemetry;
+
+  try
+  {
+    // Prepare the query
+
+    stmt_telemetry.span_start(&stmt, "SQL prepare");
+
+    if (connection_proxy->stmt_prepare(pstmt, query.c_str(), (unsigned long)query.length()))
+    {
+      throw nullptr;
+    }
+
+    stmt_telemetry.span_end(&stmt);
+
+    // Execute it.
+
+    stmt_telemetry.span_start(&stmt, "SQL execute");
+
+#if MYSQL_VERSION_ID >= 80300
+
+    // Move attributes to `param_bind` if any. They are bound as named parameters on top of the regular anonymous ones.
+
+    for (size_t pos = param_bind.size(); pos < stmt.param_bind.size(); ++pos)
+      param_bind.emplace_back(std::move(stmt.param_bind[pos]));
+
+    if (!param_bind.empty() &&
+        connection_proxy->stmt_bind_named_param(pstmt, param_bind.data(),
+        (unsigned int)stmt.query_attr_names.size(),
+        stmt.query_attr_names.data())
+      )
+#else
+    if (!param_bind.empty() && mysql_stmt_bind_param(pstmt, param_bind.data()))
+#endif
+    {
+      throw nullptr;
+    }
+
+    if (connection_proxy->stmt_execute(pstmt) ||
+      (result_bind && mysql_stmt_bind_result(pstmt, result_bind))
+    )
+    {
+      throw nullptr;
+    }
+
+    // Fetch results
+
+    if (result_bind && connection_proxy->stmt_store_result(pstmt))
+    {
+      throw nullptr;
+    }
+
+    stmt_telemetry.span_end(&stmt);
+
+  }
+  catch(nullptr_t)
   {
     set_error("HY000");
+    stmt_telemetry.set_error(&stmt, error.message);
+    stmt_telemetry.span_end(&stmt);
     throw error;
   }
-
-  if (
-
-    (result_bind && connection_proxy->stmt_store_result(pstmt))
-  )
-  {
-    set_error("HY000");
-    throw error;
-  }
-
 }
+
 
 SQLRETURN DBC::execute_query(const char* query,
   SQLULEN query_length, my_bool req_lock)
@@ -1609,7 +1714,7 @@ SQLRETURN DBC::execute_query(const char* query,
   }
 
   // return immediately if not connected
-  if (!this->connection_proxy->is_connected()) 
+  if (!this->connection_proxy->is_connected())
   {
     return set_error(MYERR_08S01, "The active SQL connection was lost. Please discard this connection.", 0);
   }
@@ -1637,7 +1742,7 @@ SQLRETURN DBC::execute_query(const char* query,
         } else {
           result = set_error(MYERR_08S01, "The active SQL connection was lost.", 0);
         }
-      } 
+      }
 
       this->transaction_open = false;
     }

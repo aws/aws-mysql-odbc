@@ -95,7 +95,7 @@ const char* MYSQL_READONLY_QUERY = "SELECT @@innodb_read_only AS is_reader";
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
     : FAILOVER_HANDLER(
         dbc, ds, dbc ? dbc->connection_handler : nullptr,
-        std::make_shared<TOPOLOGY_SERVICE>(dbc ? dbc->id : 0, ds ? ds->save_queries : false),
+        std::make_shared<TOPOLOGY_SERVICE>(dbc ? dbc->id : 0, ds ? ds->opt_LOG_QUERY : false),
         std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds)) {}
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
@@ -113,19 +113,21 @@ FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
     this->dbc = dbc;
     this->ds = ds;
     this->topology_service = topology_service;
-    this->topology_service->set_refresh_rate(ds->topology_refresh_rate);
-    this->topology_service->set_gather_metric(ds->gather_perf_metrics);
+    this->topology_service->set_refresh_rate(ds->opt_TOPOLOGY_REFRESH_RATE);
+    this->topology_service->set_gather_metric(ds->opt_GATHER_PERF_METRICS);
     this->connection_handler = connection_handler;
 
     this->failover_reader_handler = std::make_shared<FAILOVER_READER_HANDLER>(
-        this->topology_service, this->connection_handler, dbc->env->failover_thread_pool, ds->failover_timeout,
-        ds->failover_reader_connect_timeout, is_failover_mode(FAILOVER_MODE_STRICT_READER, ds),
-        dbc->id, ds->save_queries);
+        this->topology_service, this->connection_handler,
+        dbc->env->failover_thread_pool, ds->opt_FAILOVER_TIMEOUT,
+        ds->opt_FAILOVER_READER_CONNECT_TIMEOUT,
+        is_failover_mode(FAILOVER_MODE_STRICT_READER, ds), dbc->id,
+        ds->opt_LOG_QUERY);
     this->failover_writer_handler = std::make_shared<FAILOVER_WRITER_HANDLER>(
         this->topology_service, this->failover_reader_handler,
-        this->connection_handler, dbc->env->failover_thread_pool, ds->failover_timeout,
-        ds->failover_topology_refresh_rate,
-        ds->failover_writer_reconnect_interval, dbc->id, ds->save_queries);
+        this->connection_handler, dbc->env->failover_thread_pool,
+        ds->opt_FAILOVER_TIMEOUT, ds->opt_FAILOVER_TOPOLOGY_REFRESH_RATE,
+        ds->opt_FAILOVER_WRITER_RECONNECT_INTERVAL, dbc->id, ds->opt_LOG_QUERY);
     this->metrics_container = metrics_container;
 }
 
@@ -142,26 +144,26 @@ SQLRETURN FAILOVER_HANDLER::init_connection() {
     }
 
     bool reconnect_with_updated_timeouts = false;
-    if (ds->enable_cluster_failover) {
+    if (ds->opt_ENABLE_CLUSTER_FAILOVER) {
         this->init_cluster_info();
 
         if (is_failover_enabled()) {
             // Since we can't determine whether failover should be enabled
             // before we connect, there is a possibility we need to reconnect
             // again with the correct connection settings for failover.
-            const unsigned int connect_timeout = get_connect_timeout(ds->connect_timeout);
-            const unsigned int network_timeout = get_network_timeout(ds->network_timeout);
+            const unsigned int connect_timeout = get_connect_timeout(ds->opt_CONNECT_TIMEOUT);
+            const unsigned int network_timeout = get_network_timeout(ds->opt_NETWORK_TIMEOUT);
 
             reconnect_with_updated_timeouts = (connect_timeout != dbc->login_timeout ||
-                                               network_timeout != ds->read_timeout ||
-                                               network_timeout != ds->write_timeout);
+                                               network_timeout != ds->opt_READTIMEOUT ||
+                                               network_timeout != ds->opt_WRITETIMEOUT);
         }
 
-        if (!ds->failover_mode) {
+        if (!ds->opt_FAILOVER_MODE) {
             if (is_rds_reader_cluster_dns(this->current_host->get_host())) {
-                ds_set_wstrnattr(&ds->failover_mode, (SQLWCHAR*)to_sqlwchar_string(FAILOVER_MODE_READER_OR_WRITER).c_str(), SQL_NTS);
+                ds->opt_FAILOVER_MODE.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(FAILOVER_MODE_READER_OR_WRITER).c_str(), SQL_NTS);
             } else {
-                ds_set_wstrnattr(&ds->failover_mode, (SQLWCHAR*)to_sqlwchar_string(FAILOVER_MODE_STRICT_WRITER).c_str(), SQL_NTS);
+                ds->opt_FAILOVER_MODE.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(FAILOVER_MODE_STRICT_WRITER).c_str(), SQL_NTS);
             }
         }
     }
@@ -185,16 +187,14 @@ void FAILOVER_HANDLER::init_cluster_info() {
     std::string main_host = this->current_host->get_host();
     unsigned int main_port = this->current_host->get_port();
 
-    const char* hp =
-        ds_get_utf8attr(ds->host_pattern, &ds->host_pattern8);
+    const char* hp = (const char*)ds->opt_HOST_PATTERN;
     std::string hp_str(hp ? hp : "");
 
-    const char* clid =
-        ds_get_utf8attr(ds->cluster_id, &ds->cluster_id8);
+    const char* clid = (const char*)ds->opt_CLUSTER_ID;
     std::string clid_str(clid ? clid : "");
 
     if (!hp_str.empty()) {
-        unsigned int port = ds->port ? ds->port : MYSQL_PORT;
+        unsigned int port = !ds->opt_PORT.is_default() ? ds->opt_PORT : MYSQL_PORT;
         std::vector<Srv_host_detail> host_patterns;
 
         try {
@@ -354,7 +354,7 @@ void FAILOVER_HANDLER::init_cluster_info() {
 }
 
 bool FAILOVER_HANDLER::should_connect_to_new_writer() {
-    auto host = (const char*)ds->server8;
+    auto host = (const char*)ds->opt_SERVER;
     if (host == nullptr || host == "") {
         return false;
     }
@@ -394,8 +394,7 @@ bool FAILOVER_HANDLER::should_connect_to_new_writer() {
     // DNS must have resolved the cluster endpoint to a wrong writer
     // so we should reconnect to a proper writer node.
     const sqlwchar_string writer_host_wstr = to_sqlwchar_string(writer_host);
-    ds_set_wstrnattr(&ds->server, (SQLWCHAR*)writer_host_wstr.c_str(), writer_host_wstr.size());
-    ds_set_strnattr(&ds->server8, (SQLCHAR*)writer_host.c_str(), writer_host.size());
+    ds->opt_SERVER.set_remove_brackets((SQLWCHAR*)writer_host_wstr.c_str(), writer_host_wstr.size());
 
     return true;
 }
@@ -537,7 +536,7 @@ std::string FAILOVER_HANDLER::get_rds_instance_host_pattern(std::string host) {
 
 bool FAILOVER_HANDLER::is_failover_enabled() {
     return (dbc != nullptr && ds != nullptr &&
-            ds->enable_cluster_failover &&
+            ds->opt_ENABLE_CLUSTER_FAILOVER &&
             m_is_cluster_topology_available &&
             !m_is_rds_proxy);
 }
@@ -597,8 +596,8 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
     if (ec.rfind("08", 0) == 0) {  // start with "08"
 
         // disable failure detection during failover
-        auto failure_detection_old_state = ds->enable_failure_detection;
-        ds->enable_failure_detection = false;
+        auto failure_detection_old_state = ds->opt_ENABLE_FAILURE_DETECTION;
+        ds->opt_ENABLE_FAILURE_DETECTION = false;
 
         // invalidate current connection
         current_host = nullptr;
@@ -632,7 +631,7 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
             error_msg = "Connection failure during transaction.";
         }
 
-        ds->enable_failure_detection = failure_detection_old_state;
+        ds->opt_ENABLE_FAILURE_DETECTION = failure_detection_old_state;
 
         return true;
     }
@@ -696,5 +695,5 @@ void FAILOVER_HANDLER::invoke_start_time() {
 }
 
 bool FAILOVER_HANDLER::is_failover_mode(const char* expected_mode, DataSource* ds) {
-    return myodbc_strcasecmp(expected_mode, ds_get_utf8attr(ds->failover_mode, &ds->failover_mode8)) == 0;
+    return myodbc_strcasecmp(expected_mode, (const char*) ds->opt_FAILOVER_MODE) == 0;
 }

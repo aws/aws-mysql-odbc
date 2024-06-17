@@ -37,10 +37,9 @@
 
 #define MYLOG_STMT_TRACE(A, B)                                              \
   {                                                                         \
-    if ((A)->dbc->ds->save_queries)                                         \
+    if ((A)->dbc->ds.opt_LOG_QUERY)                                         \
       trace_print((A)->dbc->log_file, (A)->dbc->id, (const char *)B);       \
   }
-
 #define MYLOG_DBC_TRACE(A, ...) \
   { trace_print_va_args((A)->log_file, (A)->id, __VA_ARGS__); }
 

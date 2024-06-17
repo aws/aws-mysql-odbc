@@ -1,28 +1,23 @@
 # Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
-# Copyright (c) 2007, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 #
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License, version 2.0, as
-# published by the Free Software Foundation.
+# it under the terms of the GNU General Public License, version 2.0,
+# as published by the Free Software Foundation.
 #
-# This program is also distributed with certain software (including
-# but not limited to OpenSSL) that is licensed under separate terms,
-# as designated in a particular file or component or in included license
-# documentation. The authors of MySQL hereby grant you an
-# additional permission to link the program and your derivative works
-# with the separately licensed software that they have included with
-# MySQL.
-#
-# Without limiting anything contained in the foregoing, this file,
-# which is part of MySQL Connector/ODBC, is also subject to the
-# Universal FOSS Exception, version 1.0, a copy of which can be found at
-# http://oss.oracle.com/licenses/universal-foss-exception.
+# This program is designed to work with certain software (including
+# but not limited to OpenSSL) that is licensed under separate terms, as
+# designated in a particular file or component or in included license
+# documentation. The authors of MySQL hereby grant you an additional
+# permission to link the program and your derivative works with the
+# separately licensed software that they have either included with
+# the program or referenced in the documentation.
 #
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License, version 2.0, for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+# the GNU General Public License, version 2.0, for more details.
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation, Inc.,
@@ -206,7 +201,7 @@ endmacro()
 
 macro(enable_cxx17)
 
-if((CMAKE_VERSION VERSION_LESS 3.1) OR (CMAKE_CXX_COMPILER_ID MATCHES "SunPro"))
+if((CMAKE_VERSION VERSION_LESS 3.8) OR (CMAKE_CXX_COMPILER_ID MATCHES "SunPro"))
 
   # Note: cmake does not know how to enable C++17 for SunPro compiler
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
@@ -224,12 +219,8 @@ endif()
 
 endmacro()
 
-# With new mysys headers, windows needs c++17, and other platforms c++14.
-if(WIN32)
-  enable_cxx17()
-else()
-  enable_cxx14()
-endif()
+enable_cxx17()
+
 
 if(APPLE)
   set(CMAKE_MACOSX_RPATH ON)
@@ -356,10 +347,10 @@ ELSE(WIN32)
                 ENDIF(COMPILE_RESULT)
 
   ELSE(WITH_UNIXODBC)
-    ADD_DEFINITIONS(-DHAVE_SQLGETPRIVATEPROFILESTRINGW)
-                #---- if it is not UnixODBC we assume iODBC -------
-                ADD_DEFINITIONS(-DUSE_IODBC)
-        ENDIF(WITH_UNIXODBC)
+     # ADD_DEFINITIONS(-DHAVE_SQLGETPRIVATEPROFILESTRINGW)
+     #---- if it is not UnixODBC we assume iODBC -------
+     ADD_DEFINITIONS(-DUSE_IODBC)
+  ENDIF(WITH_UNIXODBC)
 
 ENDIF(WIN32)
 
@@ -535,6 +526,17 @@ setup_ssl_libs()
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 
 INCLUDE_DIRECTORIES(${ctpl_SOURCE_DIR})
+
+ADD_LIBRARY(otel_api INTERFACE)
+# Note: For now make it phony target on platforms other than Linux
+if(NOT (WIN32 OR APPLE OR CMAKE_SYSTEM_NAME MATCHES "SunOS"))
+  message(STATUS "Adding OTel support")
+  set(TELEMETRY ON)
+  target_include_directories(otel_api INTERFACE
+    "${CMAKE_SOURCE_DIR}/extra/otel/opentelemetry-cpp-1.8.3/api/include"
+  )
+  target_compile_definitions(otel_api INTERFACE TELEMETRY)
+endif()
 
 ADD_SUBDIRECTORY(util)
 ADD_SUBDIRECTORY(driver)
@@ -758,7 +760,7 @@ set(AUTH_PLUGINS
 )
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "SunOS")
-  list(APPEND AUTH_PLUGINS fido)
+  list(APPEND AUTH_PLUGINS webauthn fido)
   # Note: Kerberos authentication plugin is not supported on macOS
   if(NOT APPLE)
     list(APPEND AUTH_PLUGINS kerberos)
@@ -771,6 +773,7 @@ endif()
 # should be listed first, otherwise the logic detecting missing dependencies
 # will break... For example: `krb5support` must go before `krb5`
 
+set(AUTH_DEPS_webauthn fido2)
 set(AUTH_DEPS_fido fido2)
 
 if(WIN32)
@@ -781,6 +784,8 @@ else()
   set(AUTH_DEPS_kerberos gssapi_krb5 k5crypto krb5support krb5 com_err)
 endif()
 
+# Note: The SASL/GSSAPI module further depends on Kerberos libraries.
+#
 # Note: On Solaris and macOS all dependencies of ldap_sasl plugin are assumed
 # to be part of the OS.
 
@@ -788,7 +793,9 @@ if(NOT APPLE AND NOT CMAKE_SYSTEM_NAME MATCHES "SunOS")
   set(AUTH_DEPS_ldap_sasl libsasl ${AUTH_DEPS_kerberos})
 endif()
 if(WIN32)
-  list(APPEND AUTH_DEPS_ldap_sasl saslSCRAM)
+  list(APPEND AUTH_DEPS_ldap_sasl 
+    saslSCRAM saslGSSAPI.dll ${AUTH_DEPS_kerberos}
+  )
 endif()
 
 # additional client-side plugins (if any)
@@ -812,9 +819,10 @@ endif(APPLE)
 # List plugins and other libraries that can be found bundled with the server
 # but which are not relevant on client-side and can be safely ignored.
 
-set(IGNORED_PLUGINS qa_auth_client)
+set(IGNORED_PLUGINS qa_auth_client telemetry_client)
 
 set(IGNORED_LIBS
+  abseil_dll  # Added in 8.0.37
   libmysql lber libprotobuf
   ldap  # note: this is needed only by server-side plugin
   libcurl libmecab zlib
@@ -1007,7 +1015,7 @@ macro(bundle_plugins ignored)
       DESTINATION "${LIB_SUBDIR}/plugin"
       COMPONENT ODBCPlugin
     )
-     
+
     configure_file(${lib} ${CMAKE_SOURCE_DIR}/wix/x64/plugin/${lib_name}.dll COPYONLY)
 
     # See if libsasl is bundled to also bundle sasl plugins

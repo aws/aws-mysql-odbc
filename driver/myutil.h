@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2001, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -46,12 +46,18 @@
 */
 
 #define if_forward_cache(st) ((st)->stmt_options.cursor_type == SQL_CURSOR_FORWARD_ONLY && \
-           (st)->dbc->ds->dont_cache_result)
+           (st)->dbc->ds.opt_NO_CACHE)
 #define trans_supported(db) ((db)->connection_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS)
 #define autocommit_on(db) ((db)->connection_proxy->get_server_status() & SERVER_STATUS_AUTOCOMMIT)
 #define is_no_backslashes_escape_mode(db) ((db)->connection_proxy->get_server_status() & SERVER_STATUS_NO_BACKSLASH_ESCAPES)
 #define reset_ptr(x) {if (x) x= 0;}
 #define digit(A) ((int) (A - '0'))
+
+#define MYLOG_QUERY(A,B) {if ((A)->dbc->ds.opt_LOG_QUERY) \
+               query_print((A)->dbc->query_log,(char*) B);}
+
+#define MYLOG_DBC_QUERY(A,B) {if((A)->ds.opt_LOG_QUERY) \
+               query_print((A)->query_log,(char*) B);}
 
 /* A few character sets we care about. */
 #define ASCII_CHARSET_NUMBER  11
@@ -79,48 +85,48 @@ typedef unsigned char * DYNAMIC_ELEMENT;
 typedef char * DYNAMIC_ELEMENT;
 #endif
 
-#if MYSQL_VERSION_ID >= 50100
+// Handle the removal of `def` and `def_length`
+// from MYSQL_FIELD struct in MySQL 8.3.0
+#if MYSQL_VERSION_ID >= 80300
+#define MYSQL_FIELD_DEF
+#define MYSQL_FIELD_DEF_LENGTH
+#else
+#define MYSQL_FIELD_DEF NullS,
+#define MYSQL_FIELD_DEF_LENGTH 0,
+#endif
+
 /* Same us MYODBC_FIELD_STRING(name, NAME_LEN, flags) */
 # define MYODBC_FIELD_NAME(name, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, NAME_LEN, 0, 0, 0, 0, 0, 0, \
-    0, 0, (flags), 0, UTF8_CHARSET_NUMBER, MYSQL_TYPE_VAR_STRING, NULL}
+  {(char*)(name), (char*)(name), NullS, NullS, NullS, NullS, MYSQL_FIELD_DEF \
+    NAME_LEN, 0, 0, 0, 0, 0, 0, 0, MYSQL_FIELD_DEF_LENGTH \
+    (flags), 0, UTF8_CHARSET_NUMBER, MYSQL_TYPE_VAR_STRING, NULL}
+
 # define MYODBC_FIELD_STRING(name, len, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, (len*SYSTEM_CHARSET_MBMAXLEN), 0, 0, 0, 0, 0, 0, \
-    0, 0, (flags), 0, UTF8_CHARSET_NUMBER, MYSQL_TYPE_VAR_STRING, NULL}
+  {(char*)(name), (char*)(name), NullS, NullS, NullS, NullS, MYSQL_FIELD_DEF \
+    (len*SYSTEM_CHARSET_MBMAXLEN), 0, 0, 0, 0, 0, 0, 0, MYSQL_FIELD_DEF_LENGTH \
+    (flags), 0, UTF8_CHARSET_NUMBER, MYSQL_TYPE_VAR_STRING, NULL}
+
 # define MYODBC_FIELD_SHORT(name, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, 5, 5, 0, 0, 0, 0, 0, 0, \
-    0, (flags), 0, 0, MYSQL_TYPE_SHORT, NULL}
+  {(char*)(name), (char*)(name), NullS, NullS, NullS, NullS, MYSQL_FIELD_DEF \
+    5, 5, 0, 0, 0, 0, 0, 0, MYSQL_FIELD_DEF_LENGTH \
+    (flags), 0, 0, MYSQL_TYPE_SHORT, NULL}
+
 # define MYODBC_FIELD_LONG(name, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, 11, 11, 0, 0, 0, 0, 0, \
-    0, 0, (flags), 0, 0, MYSQL_TYPE_LONG, NULL}
+  {(char*)(name), (char*)(name), NullS, NullS, NullS, NullS, MYSQL_FIELD_DEF \
+    11, 11, 0, 0, 0, 0, 0, 0, MYSQL_FIELD_DEF_LENGTH \
+    (flags), 0, 0, MYSQL_TYPE_LONG, NULL}
+
 # define MYODBC_FIELD_LONGLONG(name, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, 20, 20, 0, 0, 0, 0, 0, \
-    0, 0, (flags), 0, 0, MYSQL_TYPE_LONGLONG, NULL}
-#elif MYSQL_VERSION_ID >= 40100
-# define MYODBC_FIELD_NAME(name, flags) \
-{(name), (name), NullS, NullS, NullS, NullS, NullS, NAME_LEN*3, 0, 0, 0, 0, 0, 0, \
-  0, 0, (flags), 0, UTF8_CHARSET_NUMBER, MYSQL_TYPE_VAR_STRING, NULL}
-/* we use 3 here as SYSTEM_CHARSET_MBMAXLEN is not defined in v5.0 mysql_com.h */
-# define MYODBC_FIELD_STRING(name, len, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, (len) * 3, 0, 0, 0, 0, \
-    0, 0, 0, 0, (flags), 0, UTF8_CHARSET_NUMBER, MYSQL_TYPE_VAR_STRING}
-# define MYODBC_FIELD_SHORT(name, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, 5, 5, 0, 0, 0, 0, 0, 0, \
-    0, (flags), 0, 0, MYSQL_TYPE_SHORT}
-# define MYODBC_FIELD_LONG(name, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, 11, 11, 0, 0, 0, 0, 0, \
-    0, 0, (flags), 0, 0, MYSQL_TYPE_LONG}
-# define MYODBC_FIELD_LONGLONG(name, flags) \
-  {(name), (name), NullS, NullS, NullS, NullS, NullS, 20, 20, 0, 0, 0, 0, 0, \
-    0, 0, (flags), 0, 0, MYSQL_TYPE_LONGLONG }
-#endif
+  {(char*)(name), (char*)(name), NullS, NullS, NullS, NullS, MYSQL_FIELD_DEF \
+    20, 20, 0, 0, 0, 0, 0, 0, MYSQL_FIELD_DEF_LENGTH \
+    (flags), 0, 0, MYSQL_TYPE_LONGLONG, NULL}
 
 /*
   Utility function prototypes that share among files
 */
 
 SQLRETURN         my_SQLPrepare (SQLHSTMT hstmt, SQLCHAR *szSqlStr,
-                                 SQLINTEGER cbSqlStr, bool dupe,
+                                 SQLINTEGER cbSqlStr,
                                  bool reset_select_limit,
                                  bool force_prepare);
 SQLRETURN         my_SQLExecute         (STMT * stmt);
@@ -128,9 +134,8 @@ SQLRETURN SQL_API my_SQLFreeStmt        (SQLHSTMT hstmt,SQLUSMALLINT fOption);
 SQLRETURN SQL_API my_SQLFreeStmtExtended(SQLHSTMT hstmt, SQLUSMALLINT fOption,
                                          SQLUSMALLINT fExtra);
 SQLRETURN SQL_API my_SQLAllocStmt       (SQLHDBC hdbc,SQLHSTMT *phstmt);
-SQLRETURN         do_query              (STMT *stmt,char *query, SQLULEN query_length);
-SQLRETURN         insert_params         (STMT *stmt, SQLULEN row, char **finalquery,
-                                        SQLULEN *length);
+SQLRETURN         do_query              (STMT *stmt, std::string query);
+SQLRETURN         insert_params         (STMT *stmt, SQLULEN row, std::string &finalquery);
 void      myodbc_link_fields (STMT *stmt,MYSQL_FIELD *fields,uint field_count);
 void      fix_row_lengths   (STMT *stmt, const long* fix_rules, uint row, uint field_count);
 void      fix_result_types  (STMT *stmt);
@@ -144,8 +149,6 @@ SQLRETURN my_pos_update_std (STMT *stmt,STMT *stmtParam,
 char *    check_if_positioned_cursor_exists (STMT *stmt, STMT **stmtNew);
 SQLRETURN insert_param  (STMT *stmt, MYSQL_BIND *bind, DESC *apd,
                         DESCREC *aprec, DESCREC *iprec, SQLULEN row);
-
-void reset_getdata_position   (STMT *stmt);
 
 SQLRETURN set_sql_select_limit(DBC *dbc, SQLULEN new_value, my_bool reqLock);
 SQLRETURN exec_stmt_query(STMT *stmt, const char *query, SQLULEN query_length,
@@ -312,7 +315,8 @@ void *ptr_offset_adjust   (void *ptr, SQLULEN *bind_offset,
                           SQLINTEGER bind_type, SQLINTEGER default_size,
                           SQLULEN row);
 
-void free_internal_result_buffers(STMT *stmt);
+/* Functions used when debugging */
+void query_print          (FILE *log_file,char *query);
 
 enum enum_field_types map_sql2mysql_type(SQLSMALLINT sql_type);
 
@@ -424,16 +428,16 @@ void stmt_result_free(STMT * stmt)
 
 
 /* scroller-related functions */
-void          scroller_reset      (STMT *stmt);
 unsigned int  calc_prefetch_number(unsigned int selected, SQLULEN app_fetchs,
                                    SQLULEN max_rows);
 BOOL          scroller_exists     (STMT * stmt);
-void          scroller_create     (STMT * stmt, char *query, SQLULEN len);
+void          scroller_create     (STMT * stmt, const char *query, SQLULEN len);
 
 unsigned long long  scroller_move (STMT * stmt);
 
 SQLRETURN     scroller_prefetch   (STMT * stmt);
-BOOL          scrollable          (STMT * stmt, char * query, char * query_end);
+bool          scrollable          (STMT * stmt, const char * query,
+                                  const char * query_end);
 
 /* my_prepared_stmt.c */
 void        ssps_init             (STMT *stmt);

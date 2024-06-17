@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -117,7 +117,7 @@ SQLWCHAR *sqlchar_as_sqlwchar(CHARSET_INFO *charset_info, SQLCHAR *str,
 
   if (str && *len == SQL_NTS)
   {
-    *len= strlen((char *)str);
+    *len = (SQLINTEGER)strlen((char *)str);
   }
   if (!str || *len == 0)
   {
@@ -138,7 +138,7 @@ SQLWCHAR *sqlchar_as_sqlwchar(CHARSET_INFO *charset_info, SQLCHAR *str,
       return NULL;
     }
 
-    *len= copy_and_convert((char *)u8, u8_max, utf8_charset_info,
+    *len= copy_and_convert((char *)u8, (uint32)u8_max, utf8_charset_info,
                            (char *)str, *len, charset_info,
                            &used_bytes, &used_chars, errors);
     str= u8;
@@ -220,7 +220,7 @@ SQLCHAR *sqlwchar_as_sqlchar(CHARSET_INFO *charset_info, SQLWCHAR *str,
     return sqlwchar_as_utf8(str, len);
 
   if (*len == SQL_NTS)
-    *len= sqlwcharlen(str);
+    *len = (SQLINTEGER)sqlwcharlen(str);
   if (!str || *len == 0)
   {
     *len= 0;
@@ -287,6 +287,12 @@ SQLCHAR *sqlwchar_as_utf8_ext(const SQLWCHAR *str, SQLINTEGER *len,
   UTF8 *u8;
   int utf8len, dummy;
   SQLINTEGER i;
+  SQLINTEGER len_val = 0;
+
+  if (!len) {
+    len = &len_val;
+    *len = (SQLINTEGER)sqlwcharlen(str);
+  }
 
   if (!str || *len <= 0)
   {
@@ -380,7 +386,7 @@ SQLCHAR *sqlwchar_as_utf8(const SQLWCHAR *str, SQLINTEGER *len)
 
   if (*len == SQL_NTS)
   {
-    *len= sqlwcharlen(str);
+    *len = (SQLINTEGER)sqlwcharlen(str);
   }
 
   if (!str || *len <= 0)
@@ -446,7 +452,7 @@ SQLSMALLINT utf8_as_sqlwchar(SQLWCHAR *out, SQLINTEGER out_max, SQLCHAR *in,
 
   if (pos)
     *pos= 0;
-  return pos - out;
+  return (SQLSMALLINT)(pos - out);
 }
 
 
@@ -470,7 +476,7 @@ SQLCHAR *sqlchar_as_sqlchar(CHARSET_INFO *from_charset,
   SQLCHAR *conv;
 
   if (*len == SQL_NTS)
-    *len= strlen((char *)str);
+    *len = (SQLINTEGER)strlen((char *)str);
 
   bytes= (*len / from_charset->mbminlen * to_charset->mbmaxlen);
   conv= (SQLCHAR *)myodbc_malloc(bytes + 1, MYF(0));
@@ -516,7 +522,7 @@ SQLINTEGER sqlwchar_as_sqlchar_buf(CHARSET_INFO *charset_info,
   *errors= 0;
 
   if (len == SQL_NTS)
-    len= sqlwcharlen(str);
+    len = (SQLINTEGER)sqlwcharlen(str);
   if (!str || len == 0)
     return 0;
 
@@ -724,14 +730,14 @@ size_t sqlwcharlen(const SQLWCHAR *wstr)
  *
  * @return A pointer to a new string.
  */
-SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, const size_t len)
+SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, SQLINTEGER charlen)
 {
-  const size_t length = len == SQL_NTS ? sqlwcharlen(wstr) : len;
-  SQLWCHAR *res = (SQLWCHAR *)myodbc_malloc((length + 1) * sizeof(SQLWCHAR), MYF(0));
+  size_t chars = (charlen == SQL_NTS ? sqlwcharlen(wstr) : charlen);
+  SQLWCHAR *res= (SQLWCHAR *)myodbc_malloc((chars + 1) * sizeof(SQLWCHAR), MYF(0));
   if (!res)
     return nullptr;
-  memcpy(res, wstr, length * sizeof(SQLWCHAR));
-  res[length]= 0;
+  memcpy(res, wstr, charlen * sizeof(SQLWCHAR));
+  res[charlen]= 0;
   return res;
 }
 
@@ -742,14 +748,14 @@ SQLWCHAR *sqlwchardup(const SQLWCHAR *wstr, const size_t len)
  * @return The integer result of the conversion or 0 if the
  *         string could not be parsed.
  */
-unsigned long sqlwchartoul(const SQLWCHAR *wstr, const SQLWCHAR **endptr){
+unsigned long sqlwchartoul(const SQLWCHAR *wstr){
   unsigned long res= 0;
   SQLWCHAR c;
 
   if (!wstr)
     return 0;
 
-  while (c= *wstr)
+  while ((c = *wstr))
   {
     if (c < '0' || c > '9')
       break;
@@ -757,9 +763,6 @@ unsigned long sqlwchartoul(const SQLWCHAR *wstr, const SQLWCHAR **endptr){
     res+= c - '0';
     ++wstr;
   }
-
-  if (endptr)
-    *endptr= wstr;
 
   return res;
 }
@@ -823,7 +826,7 @@ SQLWCHAR *sqlwcharncpy(SQLWCHAR *dest, const SQLWCHAR *src, size_t n)
 char * myodbc_strlwr(char *target, size_t len)
 {
   unsigned char *c= (unsigned char *)target;
-  if (-1 == len)
+  if ((size_t)-1 == len)
     len= (int)strlen(target);
 
   while (len-- > 0)
@@ -1406,6 +1409,11 @@ char *myodbc_stpmov(char *dst, const char *src)
   return dst - 1;
 }
 
+char *myodbc_d2str(double val, char *buf, size_t buf_size, bool max_precision) {
+  myodbc_snprintf(buf, buf_size, max_precision ? "%.17e" : "%.15e", val);
+  delocalize_radix(buf);
+  return buf;
+}
 
 char *myodbc_ll2str(longlong val, char *dst, int radix)
 {
@@ -1723,7 +1731,7 @@ bool myodbc_append_os_quoted_std(std::string &str, const char *append, ...) {
 /*
  * Escape curly brackets.
  */
-SQLWSTRING escape_brackets(const SQLWCHAR* val, bool add_start_end)
+SQLWSTRING escape_brackets(const SQLWSTRING &val, bool add_start_end)
 {
   SQLWSTRING src = val;
   if (!add_start_end &&

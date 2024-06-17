@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2000, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -45,22 +45,24 @@
   options.
 */
 std::string get_database_name(STMT *stmt,
-                              SQLCHAR *catalog, SQLSMALLINT catalog_len,
-                              SQLCHAR *schema, SQLSMALLINT schema_len,
+                              SQLCHAR *catalog, SQLINTEGER catalog_len,
+                              SQLCHAR *schema, SQLINTEGER schema_len,
                               bool try_reget)
 {
   std::string db;
-  if (!stmt->dbc->ds->no_catalog && catalog && catalog_len)
+  if (!stmt->dbc->ds.opt_NO_CATALOG && catalog && catalog_len)
   {
     // Catalog parameter can be used
-    db = std::string((char*)catalog, catalog_len);
+    db = (catalog_len != SQL_NTS ? std::string((char *)catalog, catalog_len) :
+      std::string((char *)catalog));
   }
-  else if(!stmt->dbc->ds->no_schema && schema && schema_len)
+  else if(!stmt->dbc->ds.opt_NO_SCHEMA && schema && schema_len)
   {
     // Schema parameter can be used
-    db = std::string((char*)schema, schema_len);
+    db = (schema_len != SQL_NTS ? std::string((char*)schema, schema_len) :
+      std::string((char *)schema));
   }
-  else if (!stmt->dbc->ds->no_catalog || !stmt->dbc->ds->no_schema)
+  else if (!stmt->dbc->ds.opt_NO_CATALOG || !stmt->dbc->ds.opt_NO_SCHEMA)
   {
     if (!try_reget)
       return db;
@@ -125,15 +127,6 @@ static my_bool check_table_type(const SQLCHAR *TableType,
 }
 
 
-static MYSQL_ROW fix_fields_copy(STMT *stmt,MYSQL_ROW row)
-{
-    uint i;
-    for ( i=0 ; i < stmt->order_count; ++i )
-        stmt->array[stmt->order[i]]= row[i];
-    return stmt->array;
-}
-
-
 /*
   @type    : internal
   @purpose : returns columns from a particular table, NULL on error
@@ -171,104 +164,6 @@ static MYSQL_RES *server_list_dbkeys(STMT *stmt,
         return NULL;
     return connection_proxy->store_result();
 }
-
-
-/**
-  Get the list of columns in a table matching a wildcard.
-
-  @param[in] stmt             Statement
-  @param[in] szCatalog        Name of catalog (database)
-  @param[in] catalog_len        Length of catalog
-  @param[in] szTable          Name of table
-  @param[in] table_len          Length of table
-  @param[in] column         Pattern of column names to match
-  @param[in] column_len         Length of column pattern
-
-  @return Result of mysql_list_fields, or NULL if there is an error
-*/
-static MYSQL_RES *
-server_list_dbcolumns(STMT *stmt,
-                      SQLCHAR *szCatalog, SQLSMALLINT cbCatalog,
-                      SQLCHAR *szTable, SQLSMALLINT cbTable,
-                      SQLCHAR *szColumn, SQLSMALLINT cbColumn)
-{
-  assert(stmt);
-  DBC *dbc= stmt->dbc;
-  CONNECTION_PROXY *connection_proxy= dbc->connection_proxy;
-  MYSQL_RES *result;
-  char buff[NAME_LEN * 2 + 64], column_buff[NAME_LEN * 2 + 64];
-
-  LOCK_DBC(stmt->dbc);
-
-  /* If a catalog was specified, we have to change working catalog
-     to be able to use mysql_list_fields. */
-  if (cbCatalog)
-  {
-    if (reget_current_catalog(dbc))
-      return NULL;
-
-
-    strncpy(buff, (const char*)szCatalog, cbCatalog);
-    buff[cbCatalog]= '\0';
-
-    if (connection_proxy->select_db(buff))
-    {
-      return NULL;
-    }
-  }
-
-  strncpy(buff, (const char*)szTable, cbTable);
-  buff[cbTable]= '\0';
-  strncpy(column_buff, (const char*)szColumn, cbColumn);
-  column_buff[cbColumn]= '\0';
-
-  result = connection_proxy->list_fields(buff, column_buff);
-
-  /* If before this call no database were selected - we cannot revert that */
-  if (cbCatalog && !dbc->database.empty())
-  {
-    if (connection_proxy->select_db(dbc->database.c_str()))
-    {
-      /* Well, probably have to return error here */
-      connection_proxy->free_result(result);
-      return NULL;
-    }
-  }
-
-  return result;
-}
-
-
-/****************************************************************************
-SQLTablePrivileges
-****************************************************************************
-*/
-/*
-  @type    : internal
-  @purpose : checks for the grantability
-*/
-static my_bool is_grantable(char *grant_list)
-{
-    char *grant=dupp_str(grant_list,SQL_NTS);;
-    if ( grant_list && grant_list[0] )
-    {
-        char seps[]   = ",";
-        char *token;
-        token = strtok( grant, seps );
-        while ( token != NULL )
-        {
-            if ( !strcmp(token,"Grant") )
-            {
-                x_free(grant);
-                return(1);
-            }
-            token = strtok( NULL, seps );
-        }
-    }
-    x_free(grant);
-    return(0);
-}
-
 
 /*
 @type    : internal
@@ -318,7 +213,7 @@ static MYSQL_RES *table_privs_raw_data( STMT *      stmt,
 #define MY_MAX_TABPRIV_COUNT 21
 #define MY_MAX_COLPRIV_COUNT 3
 
-char *SQLTABLES_priv_values[]=
+const char *SQLTABLES_priv_values[]=
 {
     NULL,"",NULL,NULL,NULL,NULL,NULL
 };
@@ -334,7 +229,7 @@ MYSQL_FIELD SQLTABLES_priv_fields[]=
   MYODBC_FIELD_NAME("IS_GRANTABLE", 0),
 };
 
-const uint SQLTABLES_PRIV_FIELDS= array_elements(SQLTABLES_priv_values);
+const uint SQLTABLES_PRIV_FIELDS = (uint)array_elements(SQLTABLES_priv_values);
 
 
 /*
@@ -414,7 +309,7 @@ MYSQL_FIELD SQLCOLUMNS_priv_fields[]=
 };
 
 
-const uint SQLCOLUMNS_PRIV_FIELDS= array_elements(SQLCOLUMNS_priv_values);
+const uint SQLCOLUMNS_PRIV_FIELDS = (uint)array_elements(SQLCOLUMNS_priv_values);
 
 
 /**
@@ -436,7 +331,6 @@ MYSQL_RES *server_show_create_table(STMT        *stmt,
                                     SQLCHAR     *table,
                                     SQLSMALLINT  table_length)
 {
-	char tmpbuff[1024];
   std::string query;
   size_t cnt = 0;
 
@@ -491,7 +385,7 @@ MYSQL_FIELD SQLFORE_KEYS_fields[]=
   MYODBC_FIELD_SHORT("DEFERRABILITY", 0),
 };
 
-const uint SQLFORE_KEYS_FIELDS= array_elements(SQLFORE_KEYS_fields);
+const uint SQLFORE_KEYS_FIELDS = (uint)array_elements(SQLFORE_KEYS_fields);
 
 /* Multiple array of Struct to store and sort SQLForeignKeys field */
 typedef struct SQL_FOREIGN_KEY_FIELD
@@ -554,7 +448,7 @@ MYSQL_FIELD SQLPRIM_KEYS_fields[]=
   MYODBC_FIELD_STRING("PK_NAME", 128, 0),
 };
 
-const uint SQLPRIM_KEYS_FIELDS= array_elements(SQLPRIM_KEYS_fields);
+const uint SQLPRIM_KEYS_FIELDS = (uint)array_elements(SQLPRIM_KEYS_fields);
 
 const long SQLPRIM_LENGTHS[]= {0, 0, 1, 5, 4, -7};
 
@@ -584,15 +478,16 @@ primary_keys_no_i_s(SQLHSTMT hstmt,
 
     auto db = get_database_name(stmt, catalog, catalog_len,
                                 schema, schema_len);
-    if (!(stmt->result= server_list_dbkeys(stmt, (SQLCHAR*)db.c_str(), db.length(),
+    if (!(stmt->result= server_list_dbkeys(stmt, (SQLCHAR*)db.c_str(),
+                                           (SQLSMALLINT)db.length(),
                                            table, table_len)))
     {
       SQLRETURN rc= handle_connection_error(stmt);
       return rc;
     }
 
-    if (!stmt->m_row_storage.is_valid())
-      x_free(stmt->result_array);
+    // Free if result data was not in row storage.
+    stmt->reset_result_array();
 
     // We will use the ROW_STORAGE here
     stmt->m_row_storage.set_size(stmt->result->row_count,
@@ -681,8 +576,8 @@ MYSQL_FIELD SQLPROCEDURECOLUMNS_fields[]=
   MYODBC_FIELD_STRING("IS_NULLABLE",       3,        0),
 };
 
-const uint SQLPROCEDURECOLUMNS_FIELDS=
-             array_elements(SQLPROCEDURECOLUMNS_fields);
+const uint SQLPROCEDURECOLUMNS_FIELDS =
+    (uint)array_elements(SQLPROCEDURECOLUMNS_fields);
 
 
 /*
@@ -790,7 +685,7 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
   MYSQL_ROW row;
   MYSQL_RES *proc_list_res;
   int params_num= 0, return_params_num= 0;
-  unsigned int i, j, total_params_num= 0;
+  unsigned int total_params_num = 0;
   std::string db;
 
   assert(stmt);
@@ -802,15 +697,15 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
                             schema, schema_len, false);
 
   if (!(proc_list_res= server_list_proc_params(stmt,
-      (SQLCHAR*)db.c_str(), db.length(), proc, proc_len,
+      (SQLCHAR*)db.c_str(), (SQLSMALLINT)db.length(), proc, proc_len,
       column, column_len)))
   {
     nReturn= stmt->set_error(MYERR_S1000);
     throw ODBCEXCEPTION();
   }
 
-  if (!stmt->m_row_storage.is_valid())
-    x_free(stmt->result_array);
+  // Free if result data was not in row storage.
+  stmt->reset_result_array();
 
   // We will use the ROW_STORAGE here
   stmt->m_row_storage.set_size(proc_list_res->row_count,
@@ -843,13 +738,8 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
       unsigned int flags= 0;
       SQLCHAR param_name[NAME_LEN]= "\0";
       SQLCHAR param_dbtype[1024]= "\0";
-      SQLCHAR param_type[4]= "\0";
-      SQLCHAR param_sql_type[6]= "\0";
       SQLCHAR param_size_buf[21]= "\0";
       SQLCHAR param_buffer_len[21]= "\0";
-      SQLCHAR param_decimal[6]= "\0";
-      SQLCHAR param_desc_type[6]= "\0";
-      SQLCHAR param_pos[6]= "\0";
 
       SQLTypeMap *type_map;
       SQLSMALLINT dec;
@@ -969,7 +859,6 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
             sizeof(SQLPROCEDURECOLUMNS_values),
             SQLPROCEDURECOLUMNS_fields,
             SQLPROCEDURECOLUMNS_FIELDS);
-        free_internal_result_buffers(stmt);
         stmt->dbc->connection_proxy->free_result(proc_list_res);
       case EXCEPTION_TYPE::GENERAL:
         break;
@@ -980,178 +869,6 @@ procedure_columns_no_i_s(SQLHSTMT hstmt,
 }
 
 
-/*
-****************************************************************************
-SQLSpecialColumns
-****************************************************************************
-*/
-
-MYSQL_FIELD SQLSPECIALCOLUMNS_fields[]=
-{
-  MYODBC_FIELD_SHORT("SCOPE", 0),
-  MYODBC_FIELD_NAME("COLUMN_NAME", NOT_NULL_FLAG),
-  MYODBC_FIELD_SHORT("DATA_TYPE", NOT_NULL_FLAG),
-  MYODBC_FIELD_STRING("TYPE_NAME", 20, NOT_NULL_FLAG),
-  MYODBC_FIELD_LONG("COLUMN_SIZE", 0),
-  MYODBC_FIELD_LONG("BUFFER_LENGTH", 0),
-  MYODBC_FIELD_LONG("DECIMAL_DIGITS", 0),
-  MYODBC_FIELD_SHORT("PSEUDO_COLUMN", 0),
-};
-
-char *SQLSPECIALCOLUMNS_values[]= {
-    0,NULL,0,NULL,0,0,0,0
-};
-
-const uint SQLSPECIALCOLUMNS_FIELDS= array_elements(SQLSPECIALCOLUMNS_fields);
-
-
-/*
-  @type    : ODBC 1.0 API
-  @purpose : retrieves the following information about columns within a
-       specified table:
-       - The optimal set of columns that uniquely identifies a row
-         in the table.
-       - Columns that are automatically updated when any value in the
-         row is updated by a transaction
-*/
-
-SQLRETURN
-special_columns_no_i_s(SQLHSTMT hstmt, SQLUSMALLINT fColType,
-                       SQLCHAR *catalog, SQLSMALLINT catalog_len,
-                       SQLCHAR *schema, SQLSMALLINT schema_len,
-                       SQLCHAR *szTableName, SQLSMALLINT cbTableName,
-                       SQLUSMALLINT fScope __attribute__((unused)),
-                       SQLUSMALLINT fNullable __attribute__((unused)))
-{
-    STMT        *stmt=(STMT *) hstmt;
-    char        buff[80];
-    MYSQL_FIELD *field;
-    MYSQL_RES   *result;
-    my_bool     primary_key;
-    std::string db;
-
-    /* Reset the statement in order to avoid memory leaks when working with ADODB */
-    my_SQLFreeStmt(hstmt, FREE_STMT_RESET);
-
-    db = get_database_name(stmt, catalog, catalog_len, schema, schema_len,
-                           false);
-
-    stmt->result= server_list_dbcolumns(stmt, (SQLCHAR*)db.c_str(), db.length(),
-                                        szTableName, cbTableName, NULL, 0);
-    if (!(result= stmt->result))
-    {
-      return handle_connection_error(stmt);
-    }
-
-    if (!stmt->m_row_storage.is_valid())
-      x_free(stmt->result_array);
-
-    // We will use the ROW_STORAGE here
-    stmt->m_row_storage.set_size(result->field_count,
-                                  SQLSPECIALCOLUMNS_FIELDS);
-    auto &data = stmt->m_row_storage;
-
-    ////////////////////////////////////////////////////////////////////////
-    auto lambda_fill_data = [&result, &field, &data, &stmt, &buff, &primary_key]
-                            (SQLSMALLINT colType)
-    {
-      uint f_count = 0;
-      stmt->dbc->connection_proxy->field_seek(result, 0);
-      while (field = stmt->dbc->connection_proxy->fetch_field(result))
-      {
-        if(colType == SQL_ROWVER)
-        {
-          if ((field->type != MYSQL_TYPE_TIMESTAMP))
-            continue;
-          if (!(field->flags & ON_UPDATE_NOW_FLAG))
-            continue;
-          /* SCOPE */
-          data[0] = nullptr;
-        }
-        else
-        {
-          if ( primary_key && !(field->flags & PRI_KEY_FLAG) )
-              continue;
-  #ifndef SQLSPECIALCOLUMNS_RETURN_ALL_COLUMNS
-          /* The ODBC 'standard' doesn't want us to return all columns if there is
-             no primary or unique key */
-          if ( !primary_key )
-              continue;
-  #endif
-          /* SCOPE */
-          data[0] = SQL_SCOPE_SESSION;
-        }
-
-        /* COLUMN_NAME */
-        data[1] = field->name;
-
-        /* DATA_TYPE */
-        data[2] = get_sql_data_type(stmt, field, buff);;
-
-        /* TYPE_NAME */
-        data[3] = buff;
-
-        /* COLUMN_SIZE */
-        fill_column_size_buff(buff, sizeof(buff), stmt, field);
-        data[4] = buff;
-
-        /* BUFFER_LENGTH */
-        data[5] = get_transfer_octet_length(stmt, field);
-        {
-          SQLSMALLINT digits= get_decimal_digits(stmt, field);
-          /* DECIMAL_DIGITS */
-          if (digits != SQL_NO_TOTAL)
-            data[6] = digits;
-          else
-            data[6] = nullptr;
-        }
-        data[7] = SQL_PC_NOT_PSEUDO;
-        ++f_count;
-
-        data.next_row();
-      }
-
-      stmt->result_array = (MYSQL_ROW)data.data();
-      result->row_count= f_count;
-      myodbc_link_fields(stmt,SQLSPECIALCOLUMNS_fields,SQLSPECIALCOLUMNS_FIELDS);
-
-      return f_count;
-    };
-    ////////////////////////////////////////////////////////////////////////
-
-    if ( fColType == SQL_ROWVER )
-    {
-        /* Convert mysql fields to data that odbc wants */
-        lambda_fill_data(fColType);
-        return SQL_SUCCESS;
-    }
-
-    if ( fColType != SQL_BEST_ROWID )
-    {
-        return stmt->set_error( MYERR_S1000,
-                         "Unsupported argument to SQLSpecialColumns", 4000);
-    }
-
-    /*
-     * The optimal set of columns for identifing a row is either
-     * the primary key, or if there is no primary key, then
-     * all the fields.
-     */
-
-    /* Check if there is a primary (unique) key */
-    primary_key= 0;
-    while ((field = stmt->dbc->connection_proxy->fetch_field(result)))
-    {
-        if ( field->flags & PRI_KEY_FLAG )
-        {
-            primary_key=1;
-            break;
-        }
-    }
-    lambda_fill_data(!SQL_ROWVER);
-    return SQL_SUCCESS;
-}
-
 
 /*
 ****************************************************************************
@@ -1160,7 +877,6 @@ SQLStatistics
 */
 
 char SS_type[10];
-uint SQLSTAT_order[]={2,3,5,7,8,9,10};
 char *SQLSTAT_values[]={NullS,NullS,"","",NullS,"",SS_type,"","","","",NullS,NullS};
 
 MYSQL_FIELD SQLSTAT_fields[]=
@@ -1175,12 +891,12 @@ MYSQL_FIELD SQLSTAT_fields[]=
   MYODBC_FIELD_SHORT("ORDINAL_POSITION", 0),
   MYODBC_FIELD_NAME("COLUMN_NAME", 0),
   MYODBC_FIELD_STRING("ASC_OR_DESC", 1, 0),
-  MYODBC_FIELD_SHORT("CARDINALITY", 0),
-  MYODBC_FIELD_SHORT("PAGES", 0),
+  MYODBC_FIELD_LONG("CARDINALITY", 0),
+  MYODBC_FIELD_LONG("PAGES", 0),
   MYODBC_FIELD_STRING("FILTER_CONDITION", 10, 0),
 };
 
-const uint SQLSTAT_FIELDS= array_elements(SQLSTAT_fields);
+const uint SQLSTAT_FIELDS = (uint)array_elements(SQLSTAT_fields);
 
 /*
   @purpose : retrieves a list of statistics about a single table and the
@@ -1196,68 +912,95 @@ statistics_no_i_s(SQLHSTMT hstmt,
                   SQLUSMALLINT fUnique,
                   SQLUSMALLINT fAccuracy)
 {
-    STMT *stmt= (STMT *)hstmt;
-    assert(stmt);
+  STMT *stmt= (STMT *)hstmt;
+  assert(stmt);
 
-    DBC *dbc= stmt->dbc;
-    char *db_val = nullptr;
-    std::string db;
+  DBC *dbc= stmt->dbc;
+  char *db_val = nullptr;
+  std::string db;
+  MYSQL_ROW mysql_row;
 
-    LOCK_DBC(stmt->dbc);
+  LOCK_DBC(stmt->dbc);
 
-    if (!table_len)
-        goto empty_set;
-
+  if (table_len)
+  {
     db = get_database_name(stmt, catalog, catalog_len, schema, schema_len, false);
 
-    stmt->result= server_list_dbkeys(stmt, (SQLCHAR*)db.c_str(), db.length(),
+    auto mysql_res = server_list_dbkeys(stmt, (SQLCHAR*)db.c_str(),
+                                     (SQLSMALLINT)db.length(),
                                      table, table_len);
-    if (!stmt->result)
+    if (!mysql_res)
     {
       SQLRETURN rc= handle_connection_error(stmt);
       return rc;
     }
-    my_int2str(SQL_INDEX_OTHER,SS_type,10,0);
-    stmt->order=       SQLSTAT_order;
-    stmt->order_count= array_elements(SQLSTAT_order);
-    stmt->fix_fields=  fix_fields_copy;
-    stmt->array= (MYSQL_ROW) myodbc_memdup((char *)SQLSTAT_values,
-                                       sizeof(SQLSTAT_values),MYF(0));
-    if (!stmt->array)
-    {
-      set_mem_error(stmt->dbc->connection_proxy);
-      return handle_connection_error(stmt);
+
+    // Free if result data was not in row storage.
+    stmt->reset_result_array();
+
+    size_t rows = stmt->dbc->connection_proxy->num_rows(mysql_res);
+    stmt->m_row_storage.set_size(rows, SQLSTAT_FIELDS);
+
+    auto &data = stmt->m_row_storage;
+    data.first_row();
+    size_t rnum = 0;
+
+    while ((mysql_row = stmt->dbc->connection_proxy->fetch_row(mysql_res))) {
+      SQLSMALLINT non_unique = (mysql_row[1][0] == '1' ? 1 : 0);
+
+      // Skip non-unique indexes if only unique are requested
+      if (fUnique == SQL_INDEX_UNIQUE && non_unique)
+        continue;
+
+      CAT_SCHEMA_SET(data[0], data[1], db);
+      /* TABLE_NAME */
+      data[2] = mysql_row[0];
+      /* NON_UNIQUE */
+      data[3] = non_unique;
+      /* INDEX_QUALIFIER - not supported */
+      data[4] = nullptr;
+      /* INDEX_NAME */
+      data[5] = mysql_row[2];
+      /* TYPE */
+      SQLSMALLINT idx_type = SQL_INDEX_OTHER;
+      data[6] = idx_type;
+      /* ORDINAL_POSITION */
+      SQLSMALLINT ordinal_pos =
+          (SQLSMALLINT)std::strtol(mysql_row[3], nullptr, 10);
+      data[7] = ordinal_pos;
+      /* COLUMN_NAME */
+      data[8] = mysql_row[4];
+      /* ASC_OR_DESC */
+      if (mysql_row[5])
+        data[9] = mysql_row[5];
+      else
+        data[9] = nullptr;
+      /* CARDINALITY */
+      SQLINTEGER cardinality =
+          (SQLINTEGER)std::strtol(mysql_row[6], nullptr, 10);
+      data[10] = cardinality;
+      /* PAGES - not supported */
+      data[11] = nullptr;
+      /* FILTER_CONDITION - not supported */
+      data[12] = nullptr;
+
+      if (rnum < rows)
+        data.next_row();
+
+      ++rnum;
     }
 
-    db_val = strmake_root(&stmt->alloc_root, db.c_str(), db.length());
-    CAT_SCHEMA_SET(stmt->array[0], stmt->array[1], db_val);
+    if (mysql_res)
+      mysql_free_result(mysql_res);
 
-    if ( fUnique == SQL_INDEX_UNIQUE )
-    {
-        /* This is too low level... */
-        MYSQL_ROWS **prev,*pos;
-        prev= &stmt->result->data->data;
-        for ( pos= *prev; pos; pos= pos->next )
-        {
-            if ( pos->data[1][0] == '0' ) /* Unlink nonunique index */
-            {
-                (*prev)=pos;
-                prev= &pos->next;
-            }
-            else
-            {
-                --stmt->result->row_count;
-            }
-        }
-        (*prev)= 0;
-        stmt->dbc->connection_proxy->data_seek(stmt->result,0);  /* Restore pointer */
+    if (rnum) {
+      stmt->result_array = (MYSQL_ROW)data.data();
+      create_fake_resultset(stmt, stmt->result_array, SQLSTAT_FIELDS, rnum,
+                            SQLSTAT_fields, SQLSTAT_FIELDS, false);
+      myodbc_link_fields(stmt, SQLSTAT_fields, SQLSTAT_FIELDS);
+      return SQL_SUCCESS;
     }
-
-    set_row_count(stmt, stmt->result->row_count);
-    myodbc_link_fields(stmt,SQLSTAT_fields,SQLSTAT_FIELDS);
-    return SQL_SUCCESS;
-
-empty_set:
+  }
   return create_empty_fake_resultset(stmt, SQLSTAT_values,
                                      sizeof(SQLSTAT_values),
                                      SQLSTAT_fields, SQLSTAT_FIELDS);
@@ -1271,11 +1014,10 @@ SQLTables
 */
 
 uint SQLTABLES_qualifier_order[]= {0};
-char *SQLTABLES_values[]= {"","",NULL,"TABLE","MySQL table"};
-char *SQLTABLES_qualifier_values[]= {"",NULL,NULL,NULL,NULL};
-char *SQLTABLES_owner_values[]= {NULL,"",NULL,NULL,NULL};
-char *SQLTABLES_type_values[3][5]=
-{
+const char *SQLTABLES_values[] = {"","",NULL,"TABLE","MySQL table"};
+const char *SQLTABLES_qualifier_values[] = {"",NULL,NULL,NULL,NULL};
+const char *SQLTABLES_owner_values[] = {NULL,"",NULL,NULL,NULL};
+const char *SQLTABLES_type_values[3][5] = {
     {NULL,NULL,NULL,"TABLE",NULL},
     {NULL,NULL,NULL,"SYSTEM TABLE",NULL},
     {NULL,NULL,NULL,"VIEW",NULL},
@@ -1294,7 +1036,7 @@ MYSQL_FIELD SQLTABLES_fields[]=
 };
 
 
-const uint SQLTABLES_FIELDS= array_elements(SQLTABLES_values);
+const uint SQLTABLES_FIELDS = (uint)array_elements(SQLTABLES_values);
 
 SQLRETURN
 tables_no_i_s(SQLHSTMT hstmt,
@@ -1329,11 +1071,10 @@ tables_no_i_s(SQLHSTMT hstmt,
       {
         /* Return set of TableType qualifiers */
         rc = create_fake_resultset(stmt, (MYSQL_ROW)SQLTABLES_type_values,
-                                    sizeof(SQLTABLES_type_values),
-                                    sizeof(SQLTABLES_type_values) /
-                                    sizeof(SQLTABLES_type_values[0]),
-                                    SQLTABLES_fields, SQLTABLES_FIELDS,
-                                    true);
+                                   sizeof(SQLTABLES_type_values[0]),
+                                   array_elements(SQLTABLES_type_values),
+                                   SQLTABLES_fields, SQLTABLES_FIELDS,
+                                   true);
         return rc;
       }
 
@@ -1358,7 +1099,7 @@ tables_no_i_s(SQLHSTMT hstmt,
                !table_len && table &&
                !type_len && type)
       {
-        rc = create_fake_resultset(stmt, SQLTABLES_owner_values,
+        rc = create_fake_resultset(stmt, (MYSQL_ROW)SQLTABLES_owner_values,
                                    sizeof(SQLTABLES_owner_values),
                                    1, SQLTABLES_fields, SQLTABLES_FIELDS,
                                    true);
@@ -1387,9 +1128,8 @@ tables_no_i_s(SQLHSTMT hstmt,
         throw ODBCEXCEPTION(EXCEPTION_TYPE::EMPTY_SET);
       }
 
-      /* Free if result data was not in row storage */
-      if (!stmt->m_row_storage.is_valid())
-        x_free(stmt->result_array);
+      // Free if result data was not in row storage.
+      stmt->reset_result_array();
 
       auto &data = stmt->m_row_storage;
 
@@ -1407,7 +1147,8 @@ tables_no_i_s(SQLHSTMT hstmt,
           std::string db = db_row ? db_row[3] :
                                     get_database_name(stmt, catalog, catalog_len,
                                                       schema, schema_len, false);
-          stmt->result = table_status(stmt, (SQLCHAR*)db.c_str(), db.length(),
+          stmt->result = table_status(stmt, (SQLCHAR*)db.c_str(),
+                                      (SQLSMALLINT)db.length(),
                                       table, table_len, TRUE,
                                       user_tables, views);
         }
@@ -1435,7 +1176,6 @@ tables_no_i_s(SQLHSTMT hstmt,
 
           if (!stmt->result->row_count)
           {
-            free_internal_result_buffers(stmt);
             if (stmt->result)
             {
               stmt->dbc->connection_proxy->free_result(stmt->result);
@@ -1504,7 +1244,7 @@ tables_no_i_s(SQLHSTMT hstmt,
       switch(ex.m_type)
       {
         case EXCEPTION_TYPE::EMPTY_SET:
-          return create_empty_fake_resultset(stmt, SQLTABLES_values,
+          return create_empty_fake_resultset(stmt, (MYSQL_ROW)SQLTABLES_values,
                                              sizeof(SQLTABLES_values),
                                              SQLTABLES_fields,
                                              SQLTABLES_FIELDS);

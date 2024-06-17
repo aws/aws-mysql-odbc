@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2003, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -223,7 +223,7 @@ DECLARE_TEST(t_bug5853)
 
   ok_stmt(hstmt, SQLSetCursorName(hstmt, (SQLCHAR *)"bug5853", SQL_NTS));
 
-  ok_sql(hstmt, "SELECT * FROM t_bug5853");
+  ok_sql(hstmt, "SELECT * FROM t_bug5853 ORDER BY id");
 
   char data[2][4] = { "uvw", "xyz" };
 
@@ -248,7 +248,7 @@ DECLARE_TEST(t_bug5853)
 
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
 
-  ok_sql(hstmt,"SELECT * FROM t_bug5853");
+  ok_sql(hstmt,"SELECT * FROM t_bug5853 ORDER BY id");
 
   ok_stmt(hstmt, SQLBindCol(hstmt, 2, SQL_C_CHAR, nData, sizeof(nData), &nLen));
 
@@ -3311,8 +3311,9 @@ DECLARE_TEST(t_bug41946)
 */
 DECLARE_TEST(t_sqlputdata)
 {
+  SQLRETURN rc;
   SQLINTEGER  id, i;
-  SQLLEN resId, resData;
+  SQLLEN resId = 0, resData;
   SQLWCHAR wbuff[MAX_ROW_DATA_LEN+1];
   SQLWCHAR *wcdata= W(L"S\x00e3o Paolo");
 
@@ -3321,7 +3322,6 @@ DECLARE_TEST(t_sqlputdata)
 
   ok_stmt(hstmt, SQLPrepare(hstmt, (SQLCHAR*)"INSERT INTO t_sqlputdata VALUES ( ?, ?)", SQL_NTS));
   id= 1;
-  resId = 0;
   resData = SQL_LEN_DATA_AT_EXEC(0);
 
   ok_stmt(hstmt, SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG,
@@ -3397,6 +3397,7 @@ DECLARE_TEST(t_18805455)
 
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_UNBIND));
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
+  ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_RESET_PARAMS));
 
   /* Now fetch and verify the data */
   ok_sql(hstmt, "SELECT * FROM t_18805455");

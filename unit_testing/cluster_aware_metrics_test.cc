@@ -76,30 +76,30 @@ TEST_F(ClusterAwareMetricsContainerTest, isEnabled) {
     EXPECT_TRUE(metrics->is_enabled());
     EXPECT_TRUE(metrics->is_instance_metrics_enabled());
 
-    ds->gather_perf_metrics = true;
-    ds->gather_metrics_per_instance = true;
+    ds->opt_GATHER_PERF_METRICS = true;
+    ds->opt_GATHER_PERF_METRICS_PER_INSTANCE = true;
     EXPECT_TRUE(metrics_container->is_enabled());
     EXPECT_TRUE(metrics_container->is_instance_metrics_enabled());
 
-    ds->gather_perf_metrics = false;
-    ds->gather_metrics_per_instance = false;
+    ds->opt_GATHER_PERF_METRICS = false;
+    ds->opt_GATHER_PERF_METRICS_PER_INSTANCE = false;
     EXPECT_FALSE(metrics_container->is_enabled());
     EXPECT_FALSE(metrics_container->is_instance_metrics_enabled());
 
-    ds->gather_perf_metrics = true;
-    ds->gather_metrics_per_instance = false;
+    ds->opt_GATHER_PERF_METRICS = true;
+    ds->opt_GATHER_PERF_METRICS_PER_INSTANCE = false;
     EXPECT_TRUE(metrics_container->is_enabled());
     EXPECT_FALSE(metrics_container->is_instance_metrics_enabled());
 
-    ds->gather_perf_metrics = false;
-    ds->gather_metrics_per_instance = true;
+    ds->opt_GATHER_PERF_METRICS = false;
+    ds->opt_GATHER_PERF_METRICS_PER_INSTANCE = true;
     EXPECT_FALSE(metrics_container->is_enabled());
     EXPECT_TRUE(metrics_container->is_instance_metrics_enabled());
 }
 
 TEST_F(ClusterAwareMetricsContainerTest, collectClusterOnly) {
-    ds->gather_perf_metrics = true;
-    ds->gather_metrics_per_instance = false;
+    ds->opt_GATHER_PERF_METRICS = true;
+    ds->opt_GATHER_PERF_METRICS_PER_INSTANCE = false;
 
     EXPECT_CALL(*metrics_container, get_curr_conn_url())
         .Times(0);
@@ -124,8 +124,8 @@ TEST_F(ClusterAwareMetricsContainerTest, collectClusterOnly) {
 }
 
 TEST_F(ClusterAwareMetricsContainerTest, collectInstance) {
-    ds->gather_perf_metrics = true;
-    ds->gather_metrics_per_instance = true;
+    ds->opt_GATHER_PERF_METRICS = true;
+    ds->opt_GATHER_PERF_METRICS_PER_INSTANCE = true;
 
     EXPECT_CALL(*metrics_container, get_curr_conn_url())
         .Times(7)

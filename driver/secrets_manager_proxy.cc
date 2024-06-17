@@ -56,11 +56,11 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds) : CONNECT
 
     const char* secret_ID = nullptr;
     std::string region;
-    if (ds->auth_secret_id) {
-        secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
+    if (ds->opt_AUTH_SECRET_ID) {
+        secret_ID = (const char*)ds->opt_AUTH_SECRET_ID;
     }
-    if (ds->auth_region) {
-        region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
+    if (ds->opt_AUTH_REGION) {
+        region = (const char*) ds->opt_AUTH_REGION;
     }
 
     if (secret_ID && region.empty()) {
@@ -80,8 +80,8 @@ SECRETS_MANAGER_PROXY::SECRETS_MANAGER_PROXY(DBC* dbc, DataSource* ds, CONNECTIO
                                              std::shared_ptr<SecretsManagerClient> sm_client) :
     CONNECTION_PROXY(dbc, ds), sm_client{std::move(sm_client)} {
 
-    const Aws::String region = ds_get_utf8attr(ds->auth_region, &ds->auth_region8);
-    const Aws::String secret_ID = ds_get_utf8attr(ds->auth_secret_id, &ds->auth_secret_id8);
+    const Aws::String region = (const char*) ds->opt_AUTH_REGION;
+    const Aws::String secret_ID = (const char*) ds->opt_AUTH_SECRET_ID;
     this->secret_key = std::make_pair(secret_ID, region);
     this->next_proxy = next_proxy;
 }

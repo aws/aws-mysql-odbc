@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2012, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -78,7 +78,6 @@ my_bool free_current_result(STMT *stmt)
       free_result_bind(stmt);
       res= stmt->dbc->connection_proxy->stmt_free_result(stmt->ssps);
     }
-    free_internal_result_buffers(stmt);
     /* We need to always free stmt->result because SSPS keep metadata there */
     stmt_result_free(stmt);
     stmt->result= NULL;
@@ -108,7 +107,6 @@ static MYSQL_RES* stmt_get_result(STMT *stmt, BOOL force_use)
    we need to use/store each resultset of multiple resultsets */
 MYSQL_RES * get_result_metadata(STMT *stmt, BOOL force_use)
 {
-  free_internal_result_buffers(stmt);
   /* just a precaution, mysql_free_result checks for NULL anywat */
   stmt->dbc->connection_proxy->free_result(stmt->result);
 
@@ -416,11 +414,11 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
   /* TODO: I guess we always have to have query length here */
   if (query_length <= 0)
   {
-    query_length= strlen(query);
+    query_length = query ? (SQLINTEGER)strlen(query) : 0;
   }
 
-  reset_parsed_query(&stmt->query, query, query + query_length,
-                     stmt->dbc->cxn_charset_info);
+  stmt->query.reset(query, query + query_length,
+                    stmt->dbc->cxn_charset_info);
   /* Tokenising string, detecting and storing parameters placeholders, removing {}
      So far the only possible error is memory allocation. Thus setting it here.
      If that changes we will need to make "parse" to set error and return rc */
@@ -430,19 +428,19 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
   }
 
   ssps_close(stmt);
-  stmt->param_count= PARAM_COUNT(stmt->query);
+  stmt->param_count = (uint)PARAM_COUNT(stmt->query);
   /* Trusting our parsing we are not using prepared statments unsless there are
      actually parameter markers in it */
-  if (!stmt->dbc->ds->no_ssps && (PARAM_COUNT(stmt->query) || force_prepare)
-    && !IS_BATCH(&stmt->query)
-    && preparable_on_server(&stmt->query, stmt->dbc->connection_proxy->get_server_version()))
+  if (!stmt->dbc->ds.opt_NO_SSPS && (PARAM_COUNT(stmt->query) || force_prepare)
+    && !IS_BATCH(&stmt->query) &&
+      stmt->query.preparable_on_server(stmt->dbc->connection_proxy->get_server_version()))
   {
     MYLOG_STMT_TRACE(stmt, "Using prepared statement");
     ssps_init(stmt);
 
     /* If the query is in the form of "WHERE CURRENT OF" - we do not need to prepare
        it at the moment */
-    if (!get_cursor_name(&stmt->query))
+    if (!stmt->query.get_cursor_name())
     {
      LOCK_DBC(stmt->dbc);
 
@@ -464,7 +462,6 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
 
       stmt->param_count= stmt->dbc->connection_proxy->stmt_param_count(stmt->ssps);
 
-      free_internal_result_buffers(stmt);
       /* make sure we free the result from the previous time */
       if (stmt->result)
       {
@@ -534,12 +531,6 @@ SQLRETURN send_long_data (STMT *stmt, unsigned int param_num, DESCREC * aprec, c
 
 
 /*------------------- Scrolled cursor related stuff -------------------*/
-void scroller_reset(STMT *stmt)
-{
-  x_free(stmt->scroller.query);
-  stmt->scroller.next_offset= 0;
-  stmt->scroller.query= stmt->scroller.offset_pos= NULL;
-}
 
 /* @param[in]     selected  - prefetch value in datatsource selected by user
    @param[in]     app_fetchs- how many rows app fetchs at a time,
@@ -560,18 +551,18 @@ unsigned int calc_prefetch_number(unsigned int selected, SQLULEN app_fetchs,
   {
     if (app_fetchs > selected)
     {
-      result= app_fetchs;
+      result = (unsigned int)app_fetchs;
     }
 
     if (selected % app_fetchs > 0)
     {
-      result= app_fetchs * (selected/app_fetchs + 1);
+      result = (unsigned int)(app_fetchs * (selected/app_fetchs + 1));
     }
   }
 
   if (max_rows > 0 && max_rows < result)
   {
-    return max_rows;
+    return (unsigned int)max_rows;
   }
 
   return result;
@@ -579,16 +570,16 @@ unsigned int calc_prefetch_number(unsigned int selected, SQLULEN app_fetchs,
 
 BOOL scroller_exists(STMT * stmt)
 {
-  return stmt->scroller.offset_pos != NULL;
+  return stmt->scroller.offset_pos > stmt->scroller.query;
 }
 
 /* Initialization of a scroller */
-void scroller_create(STMT * stmt, char *query, SQLULEN query_len)
+void scroller_create(STMT * stmt, const char *query, SQLULEN query_len)
 {
   /* MAX32_BUFF_SIZE includes place for terminating null, which we do not need
      and will use for comma */
-  const size_t len2add= 7/*" LIMIT "*/ + MAX64_BUFF_SIZE/*offset*/ /*- 1*/ + MAX32_BUFF_SIZE;
-  MY_LIMIT_CLAUSE limit= find_position4limit(stmt->dbc->ansi_charset_info,
+  const size_t len2add = 7/*" LIMIT "*/ + MAX64_BUFF_SIZE/*offset*/ /*- 1*/ + MAX32_BUFF_SIZE;
+  MY_LIMIT_CLAUSE limit = find_position4limit(stmt->dbc->ansi_charset_info,
                                             query, query + query_len);
 
   stmt->scroller.start_offset= limit.offset;
@@ -610,18 +601,18 @@ void scroller_create(STMT * stmt, char *query, SQLULEN query_len)
   stmt->scroller.next_offset= myodbc_max(limit.offset, 0);
 
   stmt->scroller.query_len= query_len + len2add;
-  stmt->scroller.query= (char*)myodbc_malloc((size_t)stmt->scroller.query_len + 1,
-                                          MYF(MY_ZEROFILL));
+  stmt->scroller.extend_buf((size_t)stmt->scroller.query_len + 1);
   memset(stmt->scroller.query, ' ', (size_t)stmt->scroller.query_len);
   memcpy(stmt->scroller.query, query, limit.begin - query);
 
   /* Forgive me - now limit.begin points to beginning of limit in scroller's
      copy of the query */
-  limit.begin= stmt->scroller.query + (limit.begin - query);
-  strncpy(limit.begin, " LIMIT ", 7);
+  char *limptr = stmt->scroller.query + (limit.begin - query);
+  limit.begin = limptr;
+  strncpy(limptr, " LIMIT ", 7);
 
-  /* That is  where we will update offset */
-  stmt->scroller.offset_pos= limit.begin + 7;
+  /* That is where we will update offset */
+  stmt->scroller.offset_pos = limptr + 7;
 
   /* putting row count in place. normally should not change or only once */
   myodbc_snprintf(stmt->scroller.offset_pos + MAX64_BUFF_SIZE - 1, MAX32_BUFF_SIZE + 1,
@@ -686,9 +677,9 @@ SQLRETURN scroller_prefetch(STMT * stmt)
 
 
 
-BOOL scrollable(STMT * stmt, char * query, char * query_end)
+bool scrollable(STMT * stmt, const char * query, const char * query_end)
 {
-  if (!is_select_statement(&stmt->query))
+  if (!stmt->query.is_select_statement())
   {
     return FALSE;
   }

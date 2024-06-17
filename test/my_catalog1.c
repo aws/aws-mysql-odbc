@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2003, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -378,7 +378,6 @@ DECLARE_TEST(t_catalog)
 {
   SQLRETURN rc;
   SQLCHAR      name[MYSQL_NAME_LEN+1];
-  SQLUSMALLINT i;
   SQLSMALLINT  ncols, len;
 
   SQLCHAR colnames[19][20]= {
@@ -397,12 +396,12 @@ DECLARE_TEST(t_catalog)
 
   ok_sql(hstmt,"create table t_catalog(abc tinyint, bcdefghijklmno char(4), uifield int unsigned not null)");
 
-  for (int i = 0; i < 2; ++i)
+  for (int j = 0; j < 2; ++j)
   {
     int idx = 0;
     DECLARE_BASIC_HANDLES(henv1, hdbc1, hstmt1);
     alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1,
-      NULL, NULL, NULL, NULL, conn_opt[i]);
+      NULL, NULL, NULL, NULL, conn_opt[j]);
 
     ok_stmt(hstmt1, SQLColumns(hstmt1, NULL, 0, NULL, 0,
                               (SQLCHAR *)"t_catalog", 9, NULL, 0));
@@ -424,7 +423,7 @@ DECLARE_TEST(t_catalog)
     rc = SQLNumResultCols(hstmt1,&ncols);
     mystmt(hstmt1,rc);
 
-    for (i= 1; i <= (SQLUINTEGER) ncols; i++)
+    for (int i = 1; i <= (int)ncols; i++)
     {
         rc = SQLDescribeCol(hstmt1, i, name, MYSQL_NAME_LEN+1, &len, NULL, NULL, NULL, NULL);
         mystmt(hstmt1,rc);
@@ -444,7 +443,7 @@ DECLARE_TEST(t_catalog)
 DECLARE_TEST(tmysql_specialcols)
 {
     tmysql_exec(hstmt,"drop table tmysql_specialcols");
-    rc = tmysql_exec(hstmt,"create table tmysql_specialcols(col1 int primary key, col2 varchar(30), col3 int)");
+    rc = tmysql_exec(hstmt,"create table tmysql_specialcols(col1 decimal(10, 4) primary key, col2 varchar(30), col3 int)");
     mystmt(hstmt,rc);
 
     rc = tmysql_exec(hstmt,"create index tmysql_ind1 on tmysql_specialcols(col1)");
@@ -474,7 +473,29 @@ DECLARE_TEST(tmysql_specialcols)
                                      (SQLCHAR *)"tmysql_specialcols",SQL_NTS,
                                      SQL_SCOPE_SESSION, SQL_NULLABLE));
 
-    myresult(hstmt);
+    ok_stmt(hstmt, SQLFetch(hstmt));
+
+    {
+      SQLCHAR buf[128] = {'\0'};
+      // SCOPE
+      is_num(SQL_SCOPE_SESSION, my_fetch_int(hstmt, 1));
+      // COLUMN_NAME
+      is_str("col1", my_fetch_str(hstmt, buf, 2), 4);
+      // DATA_TYPE
+      is_num(SQL_DECIMAL, my_fetch_int(hstmt, 3));
+      // TYPE_NAME
+      is_str("decimal(10,4)", my_fetch_str(hstmt, buf, 4), 13);
+      // COLUMN_SIZE (for DECIMAL(10,4) it is 10)
+      is_num(10, my_fetch_int(hstmt, 5));
+      // BUFFER_LENGTH (10 + 4 + 1(sign) + 1(dot))
+      is_num(16, my_fetch_int(hstmt, 6));
+      // DECIMAL DIGITS (for DECIMAL(10,4) it is 4)
+      is_num(4, my_fetch_int(hstmt, 7));
+      // PSEUDO_COLUMN
+      is_num(SQL_PC_NOT_PSEUDO, my_fetch_int(hstmt, 8));
+    }
+
+    expect_stmt(hstmt, SQLFetch(hstmt), SQL_NO_DATA);
 
     rc = SQLFreeStmt(hstmt,SQL_CLOSE);
     mystmt(hstmt,rc);
@@ -1632,6 +1653,7 @@ DECLARE_TEST(t_bug39957)
 
 BEGIN_TESTS
   ADD_TEST(t_columns)
+  ADD_TEST(t_catalog)
   ADD_TEST(t_sqlprocedures)
   ADD_TEST(my_columns_null)
   ADD_TEST(my_drop_table)

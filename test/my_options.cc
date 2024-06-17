@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -388,7 +388,7 @@ do { \
 
   auto get_rand_name = []()
   {
-    srand(time(NULL)); // use current time as seed for random generator
+    srand((unsigned int)time(NULL)); // use current time as seed for random generator
     int random_variable = rand();
     static const char hexdigit[17] = "0123456789abcdef";
     char buf[17];
@@ -535,7 +535,6 @@ DECLARE_TEST(t_wl14362)
   std::string opts("ENABLE_DNS_SRV=1;SERVER=");
   opts.append((char*)mydns_srv);
   std::map<int, int> con_map;
-  char buf[1024];
 
   for (int i = 0; i < con_num; ++i)
   {
@@ -809,11 +808,11 @@ DECLARE_TEST(t_wl14490)
 
   std::string query = "GRANT ALL ON ";
   query.append((char *)mydb).append(".").append("t_wl14490a to ").append(user);
-  ok_stmt(hstmt, SQLExecDirect(hstmt, (SQLCHAR*)query.c_str(), query.length()));
+  ok_stmt(hstmt, SQLExecDirect(hstmt, (SQLCHAR*)query.c_str(), (SQLINTEGER)query.length()));
 
   query = "GRANT INSERT (a), SELECT (a), REFERENCES (a), UPDATE (a) ON ";
   query.append((char *)mydb).append(".").append("t_wl14490a to ").append(user);
-  ok_stmt(hstmt, SQLExecDirect(hstmt, (SQLCHAR*)query.c_str(), query.length()));
+  ok_stmt(hstmt, SQLExecDirect(hstmt, (SQLCHAR*)query.c_str(), (SQLINTEGER)query.length()));
 
   ok_sql(hstmt, "DROP PROCEDURE IF EXISTS procwl14490");
   ok_sql(hstmt, "CREATE PROCEDURE procwl14490(IN p1 INT, IN p2 INT) begin end;");
@@ -843,10 +842,8 @@ DECLARE_TEST(t_wl14490)
   return OK;
 }
 
-DECLARE_TEST(t_wl15114)
-{
-  DECLARE_BASIC_HANDLES(henv1, hdbc1, hstmt1);
-
+DECLARE_TEST(t_wl15114) {
+try{
   // The list of ciphers even with TLSv1.2 still contains the TLSv1.3
   // ciphersuites and currently we do not have a connection option that
   // selects ciphersuites. So this test is limited to at most TLSv1.2
@@ -860,30 +857,10 @@ DECLARE_TEST(t_wl15114)
     "TLS_AES_128_CCM_8_SHA256"
   };
 
-  std::vector<std::string> approved_ciphers = {
-    "ECDHE-RSA-AES256-GCM-SHA384",
-    "DHE-RSA-AES128-GCM-SHA256",
-    "DHE-RSA-AES256-GCM-SHA384",
-    "ECDHE-RSA-AES128-SHA256",
-    "ECDHE-RSA-AES256-SHA384",
-    "DHE-RSA-AES256-SHA256",
-    "DHE-RSA-AES128-SHA256",
-    "ECDHE-RSA-AES128-SHA",
-    "ECDHE-RSA-AES256-SHA",
-    "DHE-RSA-AES128-SHA",
-    "DHE-RSA-AES256-SHA",
-    "AES128-GCM-SHA256",
-    "AES256-GCM-SHA384",
-    "AES128-SHA256",
-    "CAMELLIA256-SHA",
-    "CAMELLIA128-SHA"
-  };
-
   std::vector<std::string> ciphers;
-
   // Connect first time to get the list of available ciphers
-  is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
-    NULL, NULL, NULL, (SQLCHAR*)"ssl-mode=REQUIRED;tls-versions=TLSv1.2;"));
+  odbc::connection main_con(nullptr, nullptr, nullptr, nullptr,
+                            "ssl-mode=REQUIRED;tls-versions=TLSv1.2;");
 
   auto get_status_var = [](SQLHSTMT stmt, std::string var, std::string &result) {
     std::string buf;
@@ -902,91 +879,99 @@ DECLARE_TEST(t_wl15114)
   };
 
   std::string str_cipher_list;
-  is(SQL_SUCCESS == get_status_var(hstmt1, "Ssl_cipher_list", str_cipher_list));
-
+  is(SQL_SUCCESS == get_status_var(main_con.hstmt, "Ssl_cipher_list", str_cipher_list));
+  std::cout << "The list of ciphers from the server: " << str_cipher_list << std::endl;
   // Break the result string into individual cipher names
   size_t pos = 0, prev = 0;
+  std::cout << "Ciphers matched against the list of approved ciphers:\n";
   while ((pos = str_cipher_list.find(':', prev)) != std::string::npos)
   {
     const std::string item = str_cipher_list.substr(prev, pos - prev);
-    if (std::find(suites.begin(), suites.end(), item) == suites.end() &&
-      std::find(approved_ciphers.begin(),
-                approved_ciphers.end(), item) != approved_ciphers.end())
+    if (std::find(suites.begin(), suites.end(), item) == suites.end())
     {
       // Only add cipher names, but not suites
+      std::cout << "[" << item << "]";
       ciphers.push_back(item);
     }
     prev = pos + 1;
   }
+  std::cout << std::endl;
 
   if (ciphers.size() < 3)
   {
-    free_basic_handles(&henv1, &hdbc1, &hstmt1);
-    std::cout << "Server does not have enough ciphers to test the functionality\n";
-    return FAIL;
+    throw odbc::Exception("Server does not have enough ciphers to test the functionality");
   }
 
   // Get the default cipher name used when the cipher is not specified
   std::string str_cipher;
-  is(SQL_SUCCESS == get_status_var(hstmt1, "Ssl_cipher", str_cipher));
+  is(SQL_SUCCESS == get_status_var(main_con.hstmt, "Ssl_cipher", str_cipher));
 
-  srand(time(0));
-  std::string new_str_ciphers[2];
-  int idx = 0;
-
-  // Get 1st cipher, which is not the same as used in the connection
-  do
+  for (std::string mode : {"REQUIRED", "DISABLED"})
   {
-    idx = rand() % ciphers.size();
-  } while (str_cipher.compare(ciphers[idx]) == 0);
-  new_str_ciphers[0] = ciphers[idx];
+    std::string cipher_prev;
 
-  // Get 2st cipher, which is not the same as used in the connection
-  do
-  {
-    idx = rand() % ciphers.size();
-  } while (str_cipher.compare(ciphers[idx]) == 0 ||
-    new_str_ciphers[0].compare(ciphers[idx]) == 0);
-
-  new_str_ciphers[1] = ciphers[idx];
-  std::cout << "Selected ciphers: " << new_str_ciphers[0] <<
-    ", " << new_str_ciphers[1] << std::endl;
-  free_basic_handles(&henv1, &hdbc1, &hstmt1);
-
-  // Check that when ssl-mode=DISABLED the encryption is not implicitly used
-  for (std::string mode :{ "REQUIRED", "DISABLED" })
-  {
     // Check that the option names aliases work
-    for (std::string name : { "ssl-cipher", "SSLCIPHER" })
+    for (std::string name : {"ssl-cipher", "SSLCIPHER"})
     {
-      std::string new_opts = std::string("ssl-mode=" + mode +
-        ";tls-versions=TLSv1.2;") + name + "=" +  new_str_ciphers[0] +
-        ":" + new_str_ciphers[1];
+      int cipher_count = 0;
 
-      is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
-                                            NULL, NULL, NULL,
-                                            (SQLCHAR*)new_opts.c_str()));
+      for (auto cipher : ciphers)
+      {
+        // Skip the default cipher
+        if (str_cipher == cipher)
+          continue;
 
-      str_cipher = "";
-      is(SQL_SUCCESS == get_status_var(hstmt1, "Ssl_cipher", str_cipher));
-      std::cout << "Current cipher is: " << str_cipher << std::endl;
+        std::string new_opts =
+            "ssl-mode=" + mode
+            + ";tls-versions=TLSv1.2;"
+            + name + "=" + cipher;
+
+        // Note: ??
+        if (!cipher_prev.empty())
+          new_opts.append(":" + cipher_prev);
+
+        std::string cur_cipher;
+
+        try
+        {
+          odbc::connection conn(nullptr, nullptr, nullptr, nullptr, new_opts);
+          get_status_var(conn.hstmt, "Ssl_cipher", cur_cipher);
+        }
+        catch (odbc::Exception &)
+        {
+          // If cipher is unusable do not use it again ?
+          cipher_prev = "";
+          // Ignore cases when cipher is unusable and connection isn't made
+          continue;
+        }
+
+        std::cout << "Current cipher is: " << cur_cipher << std::endl;
+
+        if (mode.compare("REQUIRED") == 0)
+        {
+          is(cur_cipher == cipher || cur_cipher == cipher_prev);
+          ++cipher_count;
+        }
+        else
+        {
+          is(cur_cipher.empty());
+        }
+
+        cipher_prev = cipher;
+      }
+
+      // Check that at least one non-default cipher worked
+
       if (mode.compare("REQUIRED") == 0)
       {
-        // Must be one of previously selected ciphers
-        is(str_cipher.compare(new_str_ciphers[0]) == 0 ||
-           str_cipher.compare(new_str_ciphers[1]) == 0);
+        is(cipher_count > 0);
       }
-      else
-      {
-        is(str_cipher.empty());
-      }
-
-      free_basic_handles(&henv1, &hdbc1, &hstmt1);
     }
   }
-
   return OK;
+} ENDCATCH;
 }
+
 
 /*
   Bug #33986051 MySQL ODBC Connector hangs in SQLDriverConnect
@@ -1104,7 +1089,22 @@ DECLARE_TEST(t_collation_set)
   ENDCATCH;
 }
 
+
+DECLARE_TEST(t_wl15978_auto_reconnect_deprecation)
+{
+  try
+  {
+    odbc::HDBC hdbc1(henv, false);
+    is_num(SQL_SUCCESS_WITH_INFO, hdbc1.connect(";AUTO_RECONNECT=1"));
+  }
+  ENDCATCH;
+}
+
+
 BEGIN_TESTS
+#if MYSQL_VERSION_ID >= 80300
+  ADD_TEST(t_wl15978_auto_reconnect_deprecation)
+#endif
   ADD_TEST(t_collation_set)
   ADD_TEST(t_password_hang)
   ADD_TEST(t_wl15114)
@@ -1114,4 +1114,3 @@ BEGIN_TESTS
 END_TESTS
 
 RUN_TESTS
-

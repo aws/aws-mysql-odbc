@@ -2,12 +2,20 @@ name: Integration Tests
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - '*'
+#  push:
+#    branches:
+#      - main
+#  pull_request:
+#    branches:
+#      - '*'
+#    paths-ignore:
+#      - '**/*.md'
+#      - '**/*.jpg'
+#      - '**/README.txt'
+#      - '**/LICENSE.txt'
+#      - 'docs/**'
+#      - 'ISSUE_TEMPLATE/**'
+#      - '**/remove-old-artifacts.yml'
 
 env:
   BUILD_TYPE: Release
@@ -22,7 +30,7 @@ jobs:
       matrix:
         engine_version: ["latest", "lts"]
     name: Integration Tests 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     env:
       CMAKE_GENERATOR: Unix Makefiles
 

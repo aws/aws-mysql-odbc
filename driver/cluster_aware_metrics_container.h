@@ -40,7 +40,7 @@
 #define DEFAULT_CLUSTER_ID "no_id"
 
 struct DBC;
-struct DataSource;
+class DataSource;
 
 class CLUSTER_AWARE_METRICS_CONTAINER {
 public:

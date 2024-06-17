@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2012, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -35,7 +35,7 @@
 
 #include "driver.h"
 #include "errmsg.h"
-
+#include <algorithm>
 
 /* {{{ my_l_to_a() -I- */
 static char * my_l_to_a(char * buf, size_t buf_size, long long a)
@@ -50,15 +50,6 @@ static char * my_l_to_a(char * buf, size_t buf_size, long long a)
 static char * my_ul_to_a(char * buf, size_t buf_size, unsigned long long a)
 {
   myodbc_snprintf(buf, buf_size, "%llu", (unsigned long long) a);
-  return buf;
-}
-/* }}} */
-
-
-/* {{{ my_f_to_a() -I- */
-static char * my_f_to_a(char * buf, size_t buf_size, double a)
-{
-  myodbc_snprintf(buf, buf_size, "%.17e", a);
   return buf;
 }
 /* }}} */
@@ -100,7 +91,7 @@ BOOL ssps_get_out_params(STMT *stmt)
   if (is_call_procedure(&stmt->query))
   {
     MYSQL_ROW values= NULL;
-    DESCREC   *iprec, *aprec, *irrec;
+    DESCREC   *iprec, *aprec;
     uint      counter= 0;
     int       i, out_params = 0;
 
@@ -115,7 +106,7 @@ BOOL ssps_get_out_params(STMT *stmt)
       {
         values = stmt->fetch_row();
       }
-      catch(MYERROR &e)
+      catch(MYERROR&)
       {
         return FALSE;
       }
@@ -203,8 +194,8 @@ BOOL ssps_get_out_params(STMT *stmt)
                                            stmt->apd->bind_type,
                                            sizeof(SQLLEN), 0);
 
-              default_size= bind_length(aprec->concise_type,
-                                        aprec->octet_length);
+              default_size = bind_length(aprec->concise_type,
+                                        (ulong)aprec->octet_length);
               target= (char*)ptr_offset_adjust(aprec->data_ptr, stmt->apd->bind_offset_ptr,
                                     stmt->apd->bind_type, default_size, 0);
 
@@ -314,10 +305,10 @@ void free_result_bind(STMT *stmt)
 {
   if (stmt->result_bind != NULL)
   {
-    int i, field_cnt = stmt->field_count();
+    auto field_cnt = stmt->field_count();
 
     /* buffer was allocated for each column */
-    for (i= 0; i < field_cnt; i++)
+    for (size_t i = 0; i < field_cnt; i++)
     {
       x_free(stmt->result_bind[i].buffer);
 
@@ -329,9 +320,7 @@ void free_result_bind(STMT *stmt)
 
     x_free(stmt->result_bind);
     stmt->result_bind= 0;
-
-    x_free(stmt->array);
-    stmt->array= 0;
+    stmt->array.reset();
   }
 }
 
@@ -349,6 +338,7 @@ void ssps_close(STMT *stmt)
     */
     stmt->dbc->connection_proxy->stmt_close(stmt->ssps);
     stmt->ssps= NULL;
+    stmt->telemetry.span_end(stmt);
   }
   stmt->buf_set_pos(0);
 }
@@ -553,7 +543,7 @@ allocate_buffer_for_field(const MYSQL_FIELD * const field, BOOL outparams)
 
 static MYSQL_ROW fetch_varlength_columns(STMT *stmt, MYSQL_ROW values)
 {
-  const unsigned int  num_fields = stmt->field_count();
+  const size_t num_fields = stmt->field_count();
   unsigned int i;
   uint desc_index= ~0L, stream_column= ~0L;
 
@@ -582,8 +572,8 @@ static MYSQL_ROW fetch_varlength_columns(STMT *stmt, MYSQL_ROW values)
           stmt->result_bind[i].buffer_length < *stmt->result_bind[i].length)
       {
         /* TODO Realloc error proc */
-        stmt->array[i]= (char*)myodbc_realloc(stmt->array[i], *stmt->result_bind[i].length,
-          MYF(MY_ALLOW_ZERO_PTR));
+        stmt->array[i]= (char*)myodbc_realloc(stmt->array[i],
+          *stmt->result_bind[i].length);
 
         stmt->lengths[i]= *stmt->result_bind[i].length;
         stmt->result_bind[i].buffer_length = *stmt->result_bind[i].length;
@@ -667,7 +657,7 @@ void STMT::reset()
 
   // If data existed before invalidating the result array does not need freeing
   if (m_row_storage.invalidate())
-    result_array = nullptr;
+    result_array.reset();
 }
 
 void STMT::free_reset_out_params()
@@ -681,7 +671,7 @@ void STMT::free_reset_out_params()
   apd->free_paramdata();
   /* reset data-at-exec state */
   dae_type = 0;
-  scroller_reset(this);
+  scroller.reset();
 }
 
 void STMT::free_reset_params()
@@ -704,7 +694,6 @@ void STMT::free_fake_result(bool clear_all_results)
     {
       /* We seiously CLOSEing statement for preparing handle object for
          new query */
-      alloc_root.Clear();
       while (!next_result(this))
       {
         get_result_metadata(this, TRUE);
@@ -727,6 +716,26 @@ void STMT::free_fake_result(bool clear_all_results)
 
 }
 
+// Clear and free buffers bound in param_bind
+void STMT::clear_param_bind()
+{
+    for (auto bind : param_bind) {
+        x_free(bind.buffer);
+        bind.buffer = nullptr;
+    }
+    // No need to clear param_bind. It will be reused.
+    // param_bind.clear();
+}
+
+// Reset result array in case when the row storage is not valid.
+// The result data, which was not in the row storage must be cleared
+// before filling it with the row storage data.
+void STMT::reset_result_array()
+{
+  if (!m_row_storage.is_valid())
+    result_array.reset();
+}
+
 STMT::~STMT()
 {
   // Create a local mutex in the destructor.
@@ -741,11 +750,10 @@ STMT::~STMT()
   }
 
   reset_setpos_apd();
-  delete_parsed_query(&query);
-  delete_parsed_query(&orig_query);
 
   LOCK_DBC(dbc);
   dbc->stmt_list.remove(this);
+  clear_param_bind();
 }
 
 void STMT::reset_getdata_position()
@@ -767,6 +775,9 @@ SQLRETURN STMT::set_error(myodbc_errid errid, const char *errtext,
 
 SQLRETURN STMT::set_error(myodbc_errid errid)
 {
+  if (ssps)
+    return set_error(errid, dbc->connection_proxy->stmt_error(ssps), dbc->connection_proxy->stmt_errno(ssps));
+
   return set_error(errid, dbc->connection_proxy->error(), dbc->connection_proxy->error_code());
 }
 
@@ -779,6 +790,8 @@ SQLRETURN STMT::set_error(const char *sqlstate, const char *msg,
 
 SQLRETURN STMT::set_error(const char *state)
 {
+  if (ssps)
+    return set_error(state, dbc->connection_proxy->stmt_error(ssps), dbc->connection_proxy->stmt_errno(ssps));
   return set_error(state, dbc->connection_proxy->error(), dbc->connection_proxy->error_code());
 }
 
@@ -801,7 +814,7 @@ long STMT::compute_cur_row(unsigned fFetchType, SQLLEN irow)
     cur_row = 0L;
     break;
   case SQL_FETCH_LAST:
-    cur_row = max_row - ard->array_size;
+    cur_row = max_row - (long)ard->array_size;
     break;
   case SQL_FETCH_ABSOLUTE:
     if (irow < 0)
@@ -816,14 +829,14 @@ long STMT::compute_cur_row(unsigned fFetchType, SQLLEN irow)
         cur_row = 0;     /* Return from beginning */
       }
       else
-        cur_row = max_row + irow;     /* Ok if max_row <= -irow */
+        cur_row = max_row + (long)irow;     /* Ok if max_row <= -irow */
     }
     else
       cur_row = (long)irow - 1;
     break;
 
   case SQL_FETCH_RELATIVE:
-    cur_row = current_row + irow;
+    cur_row = current_row + (long)irow;
     if (current_row > 0 && cur_row < 0 &&
       (long)-irow <= (long)ard->array_size)
     {
@@ -833,8 +846,8 @@ long STMT::compute_cur_row(unsigned fFetchType, SQLLEN irow)
 
   case SQL_FETCH_BOOKMARK:
   {
-    cur_row = irow;
-    if (cur_row < 0 && (long)-irow <= (long)ard->array_size)
+    cur_row = (long)irow;
+    if (cur_row < 0 && (-(long)irow) <= (long)ard->array_size)
     {
       cur_row = 0;
     }
@@ -887,14 +900,14 @@ long STMT::compute_cur_row(unsigned fFetchType, SQLLEN irow)
     else
       data_seek(this, cur_row);
   }
-  current_row = cur_row;
+  current_row = (long)cur_row;
   return current_row;
 
 }
 
 int STMT::ssps_bind_result()
 {
-  const unsigned int num_fields = field_count();
+  const size_t num_fields = field_count();
   unsigned int        i;
 
   if (num_fields == 0)
@@ -914,8 +927,7 @@ int STMT::ssps_bind_result()
     /*TODO care about memory allocation errors */
     result_bind=  (MYSQL_BIND*)myodbc_malloc(sizeof(MYSQL_BIND)*num_fields,
                                              MYF(MY_ZEROFILL));
-    array=        (MYSQL_ROW)myodbc_malloc(sizeof(char*)*num_fields,
-                                             MYF(MY_ZEROFILL));
+    array.set_size(sizeof(char*)*num_fields);
 
     for (i= 0; i < num_fields; ++i)
     {
@@ -957,6 +969,40 @@ int STMT::ssps_bind_result()
   return 0;
 }
 
+bool bind_param(MYSQL_BIND *bind, const char *value, unsigned long length,
+                enum enum_field_types buffer_type);
+
+
+void STMT::add_query_attr(const char *name, std::string val)
+{
+  query_attr_names.emplace_back(name);
+  size_t num = query_attr_names.size();
+  // Consolidate the size of attribute names and param binds vectors.
+  allocate_param_bind(num);
+
+  MYSQL_BIND *bind = &param_bind[num - 1];
+  bind_param(bind, val.c_str(), val.length(), MYSQL_TYPE_STRING);
+}
+
+
+bool STMT::query_attr_exists(const char *name)
+{
+  if (m_ipd.rcount() == 0 || name == nullptr)
+    return false;
+
+  size_t len = strlen(name);
+  for (auto &c : m_ipd.records2)
+  {
+    const char *v = c.par.val();
+    if (v == nullptr || c.par.val_length() < len)
+      continue;
+
+    if (strncmp(name, v, len) == 0)
+      return true;
+  }
+  return false;
+}
+
 SQLRETURN STMT::bind_query_attrs(bool use_ssps)
 {
   if (use_ssps)
@@ -968,31 +1014,25 @@ SQLRETURN STMT::bind_query_attrs(bool use_ssps)
   }
 
   uint rcount = (uint)apd->rcount();
-  if (rcount == param_count)
+  if (rcount < param_count)
   {
-    // Nothing to do
-    return SQL_SUCCESS;
-  }
-  else if (rcount < param_count)
-  {
-    set_error( MYERR_07001,
-              "The number of parameter markers is larger "
-              "than he number of parameters provided",0);
-    return SQL_ERROR;
+    return set_error(MYERR_07001,
+                     "The number of parameter markers is larger "
+                     "than he number of parameters provided", 0);
   }
   else if (!dbc->has_query_attrs)
   {
-    set_error(MYERR_01000,
-              "The server does not support query attributes",
-              0);
-    return SQL_SUCCESS_WITH_INFO;
+    return set_error(MYERR_01000,
+                     "The server does not support query attributes", 0);
   }
 
   uint num = param_count;
-  query_attr_bind.clear();
-  query_attr_bind.reserve(rcount - param_count);
-  query_attr_names.clear();
-  query_attr_names.reserve(rcount - param_count);
+
+  // If anything is added to query_attr_names it means the parameter was added as well.
+  // All other attributes go after it.
+  uint param_idx = query_attr_names.size();
+
+  allocate_param_bind(rcount + 1);
 
   while(num < rcount)
   {
@@ -1006,31 +1046,29 @@ SQLRETURN STMT::bind_query_attrs(bool use_ssps)
     if (!aprec || !iprec)
       return SQL_SUCCESS; // Nothing to do
 
-    query_attr_bind.emplace_back(MYSQL_BIND{});
-    MYSQL_BIND *bind = &query_attr_bind.back();
+    MYSQL_BIND *bind = &param_bind[param_idx];
 
     query_attr_names.emplace_back(iprec->par.val());
 
     // This will just fill the bind structure and do the param data conversion
     if(insert_param(this, bind, apd, aprec, iprec, 0) == SQL_ERROR)
     {
-      set_error(MYERR_01000,
-                "The number of attributes is larger than the "
-                "number of attribute values provided",
-                0);
-      return SQL_ERROR;
+      return set_error("HY000",
+                       "The number of attributes is larger than the "
+                       "number of attribute values provided", 0);
     }
     ++num;
+    ++param_idx;
   }
 
-  MYSQL_BIND *bind = query_attr_bind.data();
+  MYSQL_BIND *bind = param_bind.data();
   const char** names = (const char**)query_attr_names.data();
 
-  if (dbc->connection_proxy->bind_param(rcount - param_count,
-                             query_attr_bind.data(),
-                             (const char**)query_attr_names.data()))
+  if (dbc->connection_proxy->bind_param((unsigned int)query_attr_names.size(), bind, names))
   {
     set_error("HY000");
+    // Clear only attr names. Params will be reused.
+    clear_attr_names();
     return SQL_SUCCESS_WITH_INFO;
   }
 
@@ -1042,7 +1080,7 @@ SQLRETURN STMT::bind_query_attrs(bool use_ssps)
 */
 BOOL ssps_buffers_need_extending(STMT *stmt)
 {
-  const unsigned int  num_fields = stmt->field_count();
+  const size_t num_fields = stmt->field_count();
   unsigned int i;
 
   for (i= 0; i < num_fields; ++i)
@@ -1144,17 +1182,17 @@ char * ssps_get_string(STMT *stmt, ulong column_number, char *value, ulong *leng
           ssps_get_int64<long long>(stmt, column_number, value, *length));
       }
 
-      *length= strlen(buffer);
+      *length = (ulong)strlen(buffer);
       return buffer;
     }
     case MYSQL_TYPE_FLOAT:
     case MYSQL_TYPE_DOUBLE:
     {
       buffer= ALLOC_IFNULL(buffer, 50);
-      my_f_to_a(buffer, 49, ssps_get_double(stmt, column_number, value,
-                                            *length));
+      myodbc_d2str(ssps_get_double(stmt, column_number, value, *length),
+        buffer, 49);
 
-      *length= strlen(buffer);
+      *length = (ulong)strlen(buffer);
       return buffer;
     }
 

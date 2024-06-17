@@ -35,7 +35,7 @@ void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds) {
     SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
     dbc = static_cast<DBC*>(hdbc);
-    ds = ds_new();
+    ds = new DataSource();
 }
 
 void cleanup_odbc_handles(SQLHENV env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end) {
@@ -55,7 +55,7 @@ void cleanup_odbc_handles(SQLHENV env, DBC*& dbc, DataSource*& ds, bool call_myo
         dbc = nullptr;
     }
     if (nullptr != ds) {
-        ds_delete(ds);
+        delete ds;
         ds = nullptr;
     }
 }

@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2010, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2010, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -56,42 +56,62 @@ enum myodbcProcColumns {mypcPROCEDURE_CAT= 0, mypcPROCEDURE_SCHEM,  mypcPROCEDUR
                   /*15*/mypcSQL_DATETIME_SUB, mypcCHAR_OCTET_LENGTH,mypcORDINAL_POSITION,
                   /*18*/mypcIS_NULLABLE };
 
-/* SQLColumns */
+typedef std::vector<MYSQL_BIND> vec_bind;
 
-static char SC_type[10],SC_typename[20],SC_precision[10],SC_length[10],SC_scale[10],
-SC_nullable[10], SC_coldef[10], SC_sqltype[10],SC_octlen[10],
-SC_pos[10],SC_isnull[10];
+/*
+ * Helper class to be used with Catalog functions in order to obtain
+ * data from Information_Schema.
+*/
+struct ODBC_CATALOG {
+  STMT *stmt;
+  tempBuf temp;
+  std::string query;
+  std::string from;
+  std::string join;
+  std::string where;
+  std::string order_by;
+  size_t col_count;
+  std::vector<std::string> columns;
+  MYSQL_ROW current_row = nullptr;
+  unsigned long *current_lengths = nullptr;
+  MYSQL_RES *mysql_res = nullptr;
 
-static char *SQLCOLUMNS_values[]= {
-    "","",NullS,NullS,SC_type,SC_typename,
-    SC_precision,
-    SC_length,SC_scale,"10",SC_nullable,"MySQL column",
-    SC_coldef,SC_sqltype,NullS,SC_octlen,NullS,SC_isnull
+  SQLCHAR *m_catalog;
+  unsigned long m_catalog_len;
+  SQLCHAR *m_schema;
+  unsigned long m_schema_len;
+  SQLCHAR *m_table;
+  unsigned long m_table_len;
+  SQLCHAR *m_column;
+  unsigned long m_column_len;
+
+  ODBC_CATALOG(STMT *s, size_t ccnt, std::string from_i_s,
+    SQLCHAR *catalog, unsigned long catalog_len,
+    SQLCHAR *schema, unsigned long schema_len,
+    SQLCHAR *table, unsigned long table_len,
+    SQLCHAR *column, unsigned long column_len);
+
+  ODBC_CATALOG(STMT *s, size_t ccnt, std::string from_i_s,
+    SQLCHAR *catalog, unsigned long catalog_len,
+    SQLCHAR *schema, unsigned long schema_len,
+    SQLCHAR *table, unsigned long table_len);
+
+  ~ODBC_CATALOG();
+
+  void add_param(const char *qstr, SQLCHAR *data, unsigned long &len);
+  void add_column(std::string);
+
+  // The string need to specify the join type such as LEFT JOIN ...
+  void set_join(std::string s) { join = s; }
+  void set_where(std::string s) { where = s; }
+  void set_order_by(std::string s) { order_by = s; }
+  void execute();
+  size_t num_rows();
+  MYSQL_ROW fetch_row();
+  bool is_null_value(int column);
+  unsigned long *get_lengths();
+  void data_seek(unsigned int rownum);
 };
-
-static MYSQL_FIELD SQLCOLUMNS_fields[]=
-{
-  MYODBC_FIELD_NAME("TABLE_CAT", 0),
-  MYODBC_FIELD_NAME("TABLE_SCHEM", 0),
-  MYODBC_FIELD_NAME("TABLE_NAME", NOT_NULL_FLAG),
-  MYODBC_FIELD_NAME("COLUMN_NAME", NOT_NULL_FLAG),
-  MYODBC_FIELD_SHORT("DATA_TYPE", NOT_NULL_FLAG),
-  MYODBC_FIELD_STRING("TYPE_NAME", 20, NOT_NULL_FLAG),
-  MYODBC_FIELD_LONG("COLUMN_SIZE", 0),
-  MYODBC_FIELD_LONG("BUFFER_LENGTH", 0),
-  MYODBC_FIELD_SHORT("DECIMAL_DIGITS", 0),
-  MYODBC_FIELD_SHORT("NUM_PREC_RADIX", 0),
-  MYODBC_FIELD_SHORT("NULLABLE", NOT_NULL_FLAG),
-  MYODBC_FIELD_NAME("REMARKS", 0),
-  MYODBC_FIELD_NAME("COLUMN_DEF", 0),
-  MYODBC_FIELD_SHORT("SQL_DATA_TYPE", NOT_NULL_FLAG),
-  MYODBC_FIELD_SHORT("SQL_DATETIME_SUB", 0),
-  MYODBC_FIELD_LONG("CHAR_OCTET_LENGTH", 0),
-  MYODBC_FIELD_LONG("ORDINAL_POSITION", NOT_NULL_FLAG),
-  MYODBC_FIELD_STRING("IS_NULLABLE", 3, 0),
-};
-
-const uint SQLCOLUMNS_FIELDS= array_elements(SQLCOLUMNS_values);
 
 /* Some common(for i_s/no_i_s) helper functions */
 const char *my_next_token(const char *prev_token,
@@ -114,8 +134,8 @@ create_fake_resultset(STMT *stmt, MYSQL_ROW rowval, size_t rowsize,
 MYSQL_RES *db_status(STMT *stmt, std::string &db);
 
 std::string get_database_name(STMT *stmt,
-                              SQLCHAR *catalog, SQLSMALLINT catalog_len,
-                              SQLCHAR *schema, SQLSMALLINT schema_len,
+                              SQLCHAR *catalog, SQLINTEGER catalog_len,
+                              SQLCHAR *schema, SQLINTEGER schema_len,
                               bool try_reget = true);
 
 

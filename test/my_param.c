@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2003, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -94,6 +94,7 @@ DECLARE_TEST(my_param_data)
 
   }
 
+  ok_stmt(hstmt1, SQLFreeStmt(hstmt1, SQL_RESET_PARAMS));
   ok_sql(hstmt1, "SELECT * FROM test_param_data ORDER BY c1");
 
   ok_stmt(hstmt1, SQLBindCol(hstmt1, 1, SQL_C_ULONG, &c1, sizeof(c1), &c1_len_or_ind));
@@ -1197,6 +1198,7 @@ DECLARE_TEST(t_bug56804)
   }
 
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
+  ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_RESET_PARAMS));
   ok_sql(hstmt, "DROP TABLE IF EXISTS bug56804");
 
   return OK;
@@ -1355,6 +1357,7 @@ DECLARE_TEST(t_odbcoutparams)
   ok_stmt(hstmt, SQLMoreResults(hstmt));
 
   expect_stmt(hstmt, SQLMoreResults(hstmt), SQL_NO_DATA);
+  ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_RESET_PARAMS));
 
   ok_sql(hstmt, "DROP PROCEDURE t_odbcoutparams");
   ok_sql(hstmt, "CREATE PROCEDURE t_odbcoutparams("
@@ -1392,6 +1395,7 @@ DECLARE_TEST(t_odbcoutparams)
   is_num(my_fetch_int(hstmt, 2), 200);
 
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
+  ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_RESET_PARAMS));
 
   ok_sql(hstmt, "DROP PROCEDURE t_odbcoutparams");
 

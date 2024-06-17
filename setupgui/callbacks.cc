@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -60,8 +60,8 @@ SQLWSTRING mytest(HWND hwnd, DataSource *params)
     when clicking the Test button
   */
   myodbc::HENV henv;
-  SQLWCHAR *preservedSavefile= params->savefile;
-  params->savefile= 0;
+  auto preservedSavefile = params->opt_SAVEFILE;
+  params->opt_SAVEFILE.set_default(nullptr);
 
   try
   {
@@ -70,16 +70,21 @@ SQLWSTRING mytest(HWND hwnd, DataSource *params)
   }
   catch(MYERROR &e)
   {
-    auto s = L"Connection failed with the following error:\n" +
-      std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(e.message) +
-      L"[" + std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(e.sqlstate) +
-      L"]";
-    auto *w = s.c_str();
-    msg = _W(w);
+    // Use the ability of optionStr to convert MBchar -> Wchar
+    optionStr e_msg;
+    e_msg = e.message;
+    optionStr e_sqlstate;
+    e_sqlstate = e.sqlstate;
+
+    msg = _W(L"Connection failed with the following error:\n");
+    msg.append((const SQLWSTRING &)e_msg);
+    msg.append(_W(L"["));
+    msg.append((const SQLWSTRING &)e_sqlstate);
+    msg.append(_W(L"]"));
   }
 
   /* Restore savefile parameter */
-  params->savefile= preservedSavefile;
+  params->opt_SAVEFILE = preservedSavefile;
   return msg;
 }
 
@@ -96,8 +101,8 @@ std::vector<SQLWSTRING> mygetdatabases(HWND hwnd, DataSource* params)
   SQLRETURN   ret;
   SQLWCHAR    catalog[MYODBC_DB_NAME_MAX];
   SQLLEN      n_catalog;
-  SQLWCHAR    *preserved_database = params->database;
-  BOOL        preserved_no_catalog = params->no_catalog;
+  auto   preserved_database = params->opt_DATABASE;
+  auto   preserved_no_catalog = params->opt_NO_CATALOG;
   std::vector<SQLWSTRING> result;
   result.reserve(20);
 
@@ -105,41 +110,46 @@ std::vector<SQLWSTRING> mygetdatabases(HWND hwnd, DataSource* params)
     In case of file data source we do not want it to be created
     when clicking the Test button
   */
-  SQLWCHAR *preserved_savefile= params->savefile;
-  params->savefile = NULL;
+  auto preserved_savefile = params->opt_SAVEFILE;
 
-  params->database = NULL;
-  params->no_catalog = FALSE;
+  params->opt_SAVEFILE.set_default(nullptr);
+  params->opt_DATABASE.set_default(nullptr);
+  params->opt_NO_CATALOG.set_default(false);
 
-  myodbc::HENV henv;
-  myodbc::HDBC hdbc(henv, params);
+try {
+    myodbc::HENV henv;
+    myodbc::HDBC hdbc(henv, params);
 
-  params->savefile = preserved_savefile;
-  params->database = preserved_database;
-  params->no_catalog = preserved_no_catalog;
+    params->opt_SAVEFILE = preserved_savefile;
+    params->opt_DATABASE = preserved_database;
+    params->opt_NO_CATALOG = preserved_no_catalog;
 
-  myodbc::HSTMT hstmt(hdbc);
+    myodbc::HSTMT hstmt(hdbc);
 
-  ret = SQLTablesW(hstmt, (SQLWCHAR*)SQL_ALL_CATALOGS, SQL_NTS,
-                      (SQLWCHAR*)L"", SQL_NTS, (SQLWCHAR*)L"", 0,
-                      (SQLWCHAR*)L"", 0);
-  if (!SQL_SUCCEEDED(ret))
-    return result;
+    SQLWCHAR tmpbuf[1024];
+    SQLWCHAR empty = 0;
+    SQLWCHAR *w_all = _W(L"%");
 
-  ret = SQLBindCol(hstmt, 1, SQL_C_WCHAR, catalog, MYODBC_DB_NAME_MAX,
-                      &n_catalog);
-  if (!SQL_SUCCEEDED(ret))
-    return result;
+    ret = SQLTablesW(hstmt, w_all, SQL_NTS,
+                     &empty, 0, &empty, 0,
+                     &empty, 0);
 
-  while (true)
-  {
-    if (result.size() % 20)
-      result.reserve(result.size() + 20);
+    if (!SQL_SUCCEEDED(ret)) return result;
 
-    if (SQL_SUCCEEDED(SQLFetch(hstmt)))
-      result.emplace_back(catalog);
-    else
-      break;
+    ret = SQLBindCol(hstmt, 1, SQL_C_WCHAR, catalog, MYODBC_DB_NAME_MAX,
+                     &n_catalog);
+    if (!SQL_SUCCEEDED(ret)) return result;
+
+    while (true) {
+      if (result.size() % 20) result.reserve(result.size() + 20);
+
+      if (SQL_SUCCEEDED(SQLFetch(hstmt)))
+        result.emplace_back(catalog);
+      else
+        break;
+    }
+
+  } catch (...) {
   }
 
   return result;
@@ -149,10 +159,10 @@ std::vector<SQLWSTRING> mygetdatabases(HWND hwnd, DataSource* params)
 std::vector<SQLWSTRING> mygetcharsets(HWND hwnd, DataSource* params)
 {
   SQLRETURN   ret;
-  SQLWCHAR    charset[MYODBC_DB_NAME_MAX];
-  SQLLEN      n_charset;
-  SQLWCHAR    *preserved_database= params->database;
-  BOOL        preserved_no_catalog= params->no_catalog;
+  SQLWCHAR    charset[MYODBC_DB_NAME_MAX] = { 0 };
+  SQLLEN      n_charset = 0;
+  auto        preserved_database = params->opt_DATABASE;
+  auto        preserved_no_catalog= params->opt_NO_CATALOG;
   SQLWCHAR tmpbuf[1024];
   std::vector<SQLWSTRING> csl;
   csl.reserve(20);
@@ -161,51 +171,51 @@ std::vector<SQLWSTRING> mygetcharsets(HWND hwnd, DataSource* params)
     In case of file data source we do not want it to be created
     when clicking the Test button
   */
-  SQLWCHAR *preserved_savefile= params->savefile;
-  params->savefile= NULL;
+  auto preserved_savefile = params->opt_SAVEFILE;
+  params->opt_SAVEFILE.set_default(nullptr);
+  params->opt_DATABASE.set_default(nullptr);
+  params->opt_NO_CATALOG.set_default(false);
 
-  params->database= NULL;
-  params->no_catalog= FALSE;
+try {
+    myodbc::HENV henv;
+    myodbc::HDBC hdbc(henv, params);
 
-  myodbc::HENV henv;
-  myodbc::HDBC hdbc(henv, params);
+    params->opt_SAVEFILE = preserved_savefile;
+    params->opt_DATABASE = preserved_database;
+    params->opt_NO_CATALOG = preserved_no_catalog;
 
-  params->savefile = preserved_savefile;
-  params->database = preserved_database;
-  params->no_catalog = preserved_no_catalog;
-
-  myodbc::HSTMT hstmt(hdbc);
-
+    myodbc::HSTMT hstmt(hdbc);
 
 #ifdef DRIVER_ANSI
-  /* Skip undesired charsets */
-  nReturn = SQLExecDirectW( hStmt, _W(L"SHOW CHARACTER SET WHERE " \
-                                       "charset <> 'utf16' AND " \
-                                       "charset <> 'utf32' AND " \
-                                       "charset <> 'ucs2'" ), SQL_NTS);
+    /* Skip undesired charsets */
+    nReturn = SQLExecDirectW(hStmt,
+                             _W(L"SHOW CHARACTER SET WHERE "
+                                "charset <> 'utf16' AND "
+                                "charset <> 'utf32' AND "
+                                "charset <> 'ucs2'"),
+                             SQL_NTS);
 #else
-  ret = SQLExecDirectW(hstmt, _W(L"SHOW CHARACTER SET"), SQL_NTS);
+    ret = SQLExecDirectW(hstmt, _W(L"SHOW CHARACTER SET"), SQL_NTS);
 #endif
 
-  if (!SQL_SUCCEEDED(ret))
-    return csl;
+    if (!SQL_SUCCEEDED(ret)) return csl;
 
-  ret = SQLBindCol(hstmt, 1, SQL_C_WCHAR, charset, MYODBC_DB_NAME_MAX,
-                      &n_charset);
-  if (!SQL_SUCCEEDED(ret))
-    return csl;
+    ret = SQLBindCol(hstmt, 1, SQL_C_WCHAR, charset, MYODBC_DB_NAME_MAX,
+                     &n_charset);
+    if (!SQL_SUCCEEDED(ret)) return csl;
 
-  while (true)
-  {
-    if (csl.size() % 20)
-      csl.reserve(csl.size() + 20);
+    while (true) {
+      if (csl.size() % 20) csl.reserve(csl.size() + 20);
 
-    if (SQL_SUCCEEDED(SQLFetch(hstmt)))
-      csl.emplace_back(charset);
-    else
-      break;
-}
+      if (SQL_SUCCEEDED(SQLFetch(hstmt)))
+        csl.emplace_back(charset);
+      else
+        break;
+    }
 
+  } catch (...) {
+
+  }
   return csl;
 }
 
@@ -213,18 +223,21 @@ std::vector<SQLWSTRING> mygetcharsets(HWND hwnd, DataSource* params)
 /* Init DataSource from the main dialog controls */
 void syncData(HWND hwnd, DataSource *params)
 {
-  GET_STRING(name);
-  GET_STRING(description);
-  GET_STRING(server);
-  GET_STRING(socket);
-  GET_UNSIGNED(port);
-  GET_STRING(uid);
-  GET_STRING(pwd);
-  GET_COMBO(database);
+  GET_STRING(DSN);
+  GET_STRING(DESCRIPTION);
+  GET_STRING(SERVER);
+  GET_STRING(SOCKET);
+  GET_UNSIGNED(PORT);
+  GET_STRING(UID);
+  GET_STRING(PWD);
+  GET_COMBO(DATABASE);
 
 #ifdef _WIN32
   /* use this flag exclusively for Windows */
-  params->force_use_of_named_pipes = READ_BOOL(hwnd, IDC_RADIO_pipe);
+  if (READ_BOOL(hwnd, IDC_RADIO_NAMED_PIPE))
+    params->opt_NAMED_PIPE = true;
+  else
+    params->opt_NAMED_PIPE.set_default(false);
 #endif
 }
 
@@ -232,174 +245,176 @@ void syncData(HWND hwnd, DataSource *params)
 /* Set the main dialog controls using DataSource */
 void syncForm(HWND hwnd, DataSource *params)
 {
-  SET_STRING(name);
-  SET_STRING(description);
-  SET_STRING(server);
-  SET_UNSIGNED(port);
-  SET_STRING(uid);
-  SET_STRING(pwd);
-  SET_STRING(socket);
-  SET_COMBO(database);
+  SET_STRING(DSN);
+  SET_STRING(DESCRIPTION);
+  SET_STRING(SERVER);
+  SET_UNSIGNED(PORT);
+  SET_STRING(UID);
+  SET_STRING(PWD);
+  SET_STRING(SOCKET);
+  SET_COMBO(DATABASE);
 
 #ifdef _WIN32
-  if (params->force_use_of_named_pipes)
+  if (params->opt_NAMED_PIPE)
   {
-    SET_RADIO(hwnd, IDC_RADIO_pipe, TRUE);
+    SET_RADIO(hwnd, IDC_RADIO_NAMED_PIPE, TRUE);
   }
   else
   {
     SET_RADIO(hwnd, IDC_RADIO_tcp, TRUE);
   }
-  SwitchTcpOrPipe(hwnd, params->force_use_of_named_pipes);
+  SwitchTcpOrPipe(hwnd, params->opt_NAMED_PIPE);
 #else
-  if (params->socket)
+  if (params->opt_SOCKET)
   {
     /* this flag means the socket file in Linux */
     SET_CHECKED(__UNUSED, use_socket_file, TRUE);
-    SET_SENSITIVE(server, FALSE);
-    SET_SENSITIVE(socket, TRUE);
+    SET_SENSITIVE(SERVER, FALSE);
+    SET_SENSITIVE(SOCKET, TRUE);
   }
   else
   {
     SET_CHECKED(__UNUSED, use_tcp_ip_server, TRUE);
-    SET_SENSITIVE(server, TRUE);
-    SET_SENSITIVE(socket, FALSE);
+    SET_SENSITIVE(SERVER, TRUE);
+    SET_SENSITIVE(SOCKET, FALSE);
   }
 #endif
 }
 
+#undef CLIENT_INTERACTIVE
 /*
  Sets the DataSource fields from the dialog inputs
 */
 void syncTabsData(HWND hwnd, DataSource *params)
 {  /* 1 - Connection */
-  GET_BOOL_TAB(CONNECTION_TAB, allow_big_results);
-  GET_BOOL_TAB(CONNECTION_TAB, use_compressed_protocol);
-  GET_BOOL_TAB(CONNECTION_TAB, dont_prompt_upon_connect);
-  GET_BOOL_TAB(CONNECTION_TAB, auto_reconnect);
-  GET_BOOL_TAB(CONNECTION_TAB, allow_multiple_statements);
-  GET_BOOL_TAB(CONNECTION_TAB, client_interactive);
-  GET_BOOL_TAB(CONNECTION_TAB, can_handle_exp_pwd);
-  GET_BOOL_TAB(CONNECTION_TAB, get_server_public_key);
-  GET_BOOL_TAB(CONNECTION_TAB, enable_dns_srv);
+  GET_BOOL_TAB(CONNECTION_TAB, BIG_PACKETS);
+  GET_BOOL_TAB(CONNECTION_TAB, COMPRESSED_PROTO);
+  GET_BOOL_TAB(CONNECTION_TAB, NO_PROMPT);
+#if MYSQL_VERSION_ID < 80300
+  GET_BOOL_TAB(CONNECTION_TAB, AUTO_RECONNECT);
+#endif
+  GET_BOOL_TAB(CONNECTION_TAB, MULTI_STATEMENTS);
+  GET_BOOL_TAB(CONNECTION_TAB, CLIENT_INTERACTIVE);
+  GET_BOOL_TAB(CONNECTION_TAB, CAN_HANDLE_EXP_PWD);
+  GET_BOOL_TAB(CONNECTION_TAB, GET_SERVER_PUBLIC_KEY);
+  GET_BOOL_TAB(CONNECTION_TAB, ENABLE_DNS_SRV);
 
-  params->has_port = !params->enable_dns_srv;
+  if (params->opt_ENABLE_DNS_SRV.is_set() && params->opt_ENABLE_DNS_SRV)
+    params->opt_PORT.set_default(3306);
 
-  GET_BOOL_TAB(CONNECTION_TAB, multi_host);
+  GET_BOOL_TAB(CONNECTION_TAB, MULTI_HOST);
 
-  GET_COMBO_TAB(CONNECTION_TAB, charset);
-  GET_STRING_TAB(CONNECTION_TAB, initstmt);
-  GET_STRING_TAB(CONNECTION_TAB, plugin_dir);
+  GET_COMBO_TAB(CONNECTION_TAB, CHARSET);
+  GET_STRING_TAB(CONNECTION_TAB, INITSTMT);
+  GET_STRING_TAB(CONNECTION_TAB, PLUGIN_DIR);
 
   /* 2 - Authentication */
-  GET_BOOL_TAB(AUTH_TAB, enable_cleartext_plugin);
+  GET_BOOL_TAB(AUTH_TAB, ENABLE_CLEARTEXT_PLUGIN);
 #ifdef _WIN32
-  GET_STRING_TAB(AUTH_TAB, authentication_kerberos_mode);
+  GET_STRING_TAB(AUTH_TAB, AUTHENTICATION_KERBEROS_MODE);
 #endif
-  GET_STRING_TAB(AUTH_TAB, default_auth);
+  GET_STRING_TAB(AUTH_TAB, DEFAULT_AUTH);
 #if MFA_ENABLED
   GET_STRING_TAB(AUTH_TAB, pwd2);
   GET_STRING_TAB(AUTH_TAB, pwd3);
 #endif
-  GET_STRING_TAB(AUTH_TAB, oci_config_file);
-  GET_STRING_TAB(AUTH_TAB, oci_config_profile);
+  GET_STRING_TAB(AUTH_TAB, OCI_CONFIG_FILE);
+  GET_STRING_TAB(AUTH_TAB, OCI_CONFIG_PROFILE);
 
   /* 3 - AWS Authentication */
-  GET_COMBO_TAB(AWS_AUTH_TAB, auth_mode);
-  GET_STRING_TAB(AWS_AUTH_TAB, auth_region);
-  GET_STRING_TAB(AWS_AUTH_TAB, auth_host);
-  GET_UNSIGNED_TAB(AWS_AUTH_TAB, auth_port);
-  GET_UNSIGNED_TAB(AWS_AUTH_TAB, auth_expiration);
-  GET_STRING_TAB(AWS_AUTH_TAB, auth_secret_id);
-  
+  GET_COMBO_TAB(AWS_AUTH_TAB, AUTH_MODE);
+  GET_STRING_TAB(AWS_AUTH_TAB, AUTH_REGION);
+  GET_STRING_TAB(AWS_AUTH_TAB, AUTH_HOST);
+  GET_UNSIGNED_TAB(AWS_AUTH_TAB, AUTH_PORT);
+  GET_UNSIGNED_TAB(AWS_AUTH_TAB, AUTH_EXPIRATION);
+  GET_STRING_TAB(AWS_AUTH_TAB, AUTH_SECRET_ID);
+
   /* 4 - Failover */
-  GET_BOOL_TAB(FAILOVER_TAB, enable_cluster_failover);
-  GET_COMBO_TAB(FAILOVER_TAB, failover_mode);
-  GET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
-  if (READ_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics))
+  GET_BOOL_TAB(FAILOVER_TAB, ENABLE_CLUSTER_FAILOVER);
+  GET_COMBO_TAB(FAILOVER_TAB, FAILOVER_MODE);
+  GET_BOOL_TAB(FAILOVER_TAB, GATHER_PERF_METRICS);
+  if (READ_BOOL_TAB(FAILOVER_TAB, GATHER_PERF_METRICS))
   {
-    GET_BOOL_TAB(FAILOVER_TAB, gather_metrics_per_instance);
+    GET_BOOL_TAB(FAILOVER_TAB, GATHER_PERF_METRICS_PER_INSTANCE);
   }
 
-  GET_STRING_TAB(FAILOVER_TAB, host_pattern);
-  GET_STRING_TAB(FAILOVER_TAB, cluster_id);
-  GET_UNSIGNED_TAB(FAILOVER_TAB, topology_refresh_rate);
-  GET_UNSIGNED_TAB(FAILOVER_TAB, failover_timeout);
-  GET_UNSIGNED_TAB(FAILOVER_TAB, failover_topology_refresh_rate);
-  GET_UNSIGNED_TAB(FAILOVER_TAB, failover_writer_reconnect_interval);
-  GET_UNSIGNED_TAB(FAILOVER_TAB, failover_reader_connect_timeout);
-  GET_UNSIGNED_TAB(FAILOVER_TAB, connect_timeout);
-  GET_UNSIGNED_TAB(FAILOVER_TAB, network_timeout);
+  GET_STRING_TAB(FAILOVER_TAB, HOST_PATTERN);
+  GET_STRING_TAB(FAILOVER_TAB, CLUSTER_ID);
+  GET_UNSIGNED_TAB(FAILOVER_TAB, TOPOLOGY_REFRESH_RATE);
+  GET_UNSIGNED_TAB(FAILOVER_TAB, FAILOVER_TIMEOUT);
+  GET_UNSIGNED_TAB(FAILOVER_TAB, FAILOVER_TOPOLOGY_REFRESH_RATE);
+  GET_UNSIGNED_TAB(FAILOVER_TAB, FAILOVER_WRITER_RECONNECT_INTERVAL);
+  GET_UNSIGNED_TAB(FAILOVER_TAB, FAILOVER_READER_CONNECT_TIMEOUT);
+  GET_UNSIGNED_TAB(FAILOVER_TAB, CONNECT_TIMEOUT);
+  GET_UNSIGNED_TAB(FAILOVER_TAB, NETWORK_TIMEOUT);
 
   /* 5 - Monitoring */
-  GET_BOOL_TAB(MONITORING_TAB, enable_failure_detection);
-  if (READ_BOOL_TAB(MONITORING_TAB, enable_failure_detection))
+  GET_BOOL_TAB(MONITORING_TAB, ENABLE_FAILURE_DETECTION);
+  if (READ_BOOL_TAB(MONITORING_TAB, ENABLE_FAILURE_DETECTION))
   {
-    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_time);
-    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_timeout);
-    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_interval);
-    GET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_count);
-    GET_UNSIGNED_TAB(MONITORING_TAB, monitor_disposal_time);
+    GET_UNSIGNED_TAB(MONITORING_TAB, FAILURE_DETECTION_TIME);
+    GET_UNSIGNED_TAB(MONITORING_TAB, FAILURE_DETECTION_TIMEOUT);
+    GET_UNSIGNED_TAB(MONITORING_TAB, FAILURE_DETECTION_INTERVAL);
+    GET_UNSIGNED_TAB(MONITORING_TAB, FAILURE_DETECTION_COUNT);
+    GET_UNSIGNED_TAB(MONITORING_TAB, MONITOR_DISPOSAL_TIME);
   }
 
-
-  /* 6 - Metadata */
-  GET_BOOL_TAB(METADATA_TAB, change_bigint_columns_to_int);
-  GET_BOOL_TAB(METADATA_TAB, handle_binary_as_char);
-  GET_BOOL_TAB(METADATA_TAB, return_table_names_for_SqlDescribeCol);
-  GET_BOOL_TAB(METADATA_TAB, no_catalog);
-  GET_BOOL_TAB(METADATA_TAB, no_schema);
-  GET_BOOL_TAB(METADATA_TAB, limit_column_size);
+  /* 6 - Metadata*/
+  GET_BOOL_TAB(METADATA_TAB, NO_BIGINT);
+  GET_BOOL_TAB(METADATA_TAB, NO_BINARY_RESULT);
+  GET_BOOL_TAB(METADATA_TAB, FULL_COLUMN_NAMES);
+  GET_BOOL_TAB(METADATA_TAB, NO_CATALOG);
+  GET_BOOL_TAB(METADATA_TAB, NO_SCHEMA);
+  GET_BOOL_TAB(METADATA_TAB, COLUMN_SIZE_S32);
 
   /* 7 - Cursors/Results */
-  GET_BOOL_TAB(CURSORS_TAB, return_matching_rows);
-  GET_BOOL_TAB(CURSORS_TAB, auto_increment_null_search);
-  GET_BOOL_TAB(CURSORS_TAB, dynamic_cursor);
-  GET_BOOL_TAB(CURSORS_TAB, user_manager_cursor);
-  GET_BOOL_TAB(CURSORS_TAB, pad_char_to_full_length);
-  GET_BOOL_TAB(CURSORS_TAB, dont_cache_result);
-  GET_BOOL_TAB(CURSORS_TAB, force_use_of_forward_only_cursors);
-  GET_BOOL_TAB(CURSORS_TAB, zero_date_to_min);
+  GET_BOOL_TAB(CURSORS_TAB, FOUND_ROWS);
+  GET_BOOL_TAB(CURSORS_TAB, AUTO_IS_NULL);
+  GET_BOOL_TAB(CURSORS_TAB, DYNAMIC_CURSOR);
+  GET_BOOL_TAB(CURSORS_TAB, NO_DEFAULT_CURSOR);
+  GET_BOOL_TAB(CURSORS_TAB, PAD_SPACE);
+  GET_BOOL_TAB(CURSORS_TAB, NO_CACHE);
+  GET_BOOL_TAB(CURSORS_TAB, FORWARD_CURSOR);
+  GET_BOOL_TAB(CURSORS_TAB, ZERO_DATE_TO_MIN);
 
-  if (READ_BOOL_TAB(CURSORS_TAB, cursor_prefetch_active))
+  if (READ_BOOL_TAB(CURSORS_TAB, CURSOR_PREFETCH_ACTIVE))
   {
-    GET_UNSIGNED_TAB(CURSORS_TAB, cursor_prefetch_number);
+    GET_UNSIGNED_TAB(CURSORS_TAB, PREFETCH);
   }
   else
   {
-    params->cursor_prefetch_number= 0;
+    params->opt_PREFETCH = 0;
   }
-  /* 8 - debug*/
-  GET_BOOL_TAB(DEBUG_TAB,save_queries);
+  /* 8- debug*/
+  GET_BOOL_TAB(DEBUG_TAB,LOG_QUERY);
 
   /* 9 - ssl related */
-  GET_STRING_TAB(SSL_TAB, sslkey);
-  GET_STRING_TAB(SSL_TAB, sslcert);
-  GET_STRING_TAB(SSL_TAB, sslca);
-  GET_STRING_TAB(SSL_TAB, sslcapath);
-  GET_STRING_TAB(SSL_TAB, sslcipher);
-  GET_COMBO_TAB(SSL_TAB, sslmode);
+  GET_STRING_TAB(SSL_TAB, SSL_KEY);
+  GET_STRING_TAB(SSL_TAB, SSL_CERT);
+  GET_STRING_TAB(SSL_TAB, SSL_CA);
+  GET_STRING_TAB(SSL_TAB, SSL_CAPATH);
+  GET_STRING_TAB(SSL_TAB, SSL_CIPHER);
+  GET_COMBO_TAB(SSL_TAB, SSL_MODE);
 
-  GET_STRING_TAB(SSL_TAB, rsakey);
-  GET_BOOL_TAB(SSL_TAB, no_tls_1_2);
-  GET_BOOL_TAB(SSL_TAB, no_tls_1_3);
-  GET_STRING_TAB(SSL_TAB, tls_versions);
-  GET_STRING_TAB(SSL_TAB, ssl_crl);
-  GET_STRING_TAB(SSL_TAB, ssl_crlpath);
+  GET_STRING_TAB(SSL_TAB, RSAKEY);
+  GET_BOOL_TAB(SSL_TAB, NO_TLS_1_2);
+  GET_BOOL_TAB(SSL_TAB, NO_TLS_1_3);
+  GET_STRING_TAB(SSL_TAB, TLS_VERSIONS);
+  GET_STRING_TAB(SSL_TAB, SSL_CRL);
+  GET_STRING_TAB(SSL_TAB, SSL_CRLPATH);
 
   /* 10 - Misc*/
-  GET_BOOL_TAB(MISC_TAB, safe);
-  GET_BOOL_TAB(MISC_TAB, dont_use_set_locale);
-  GET_BOOL_TAB(MISC_TAB, ignore_space_after_function_names);
-  GET_BOOL_TAB(MISC_TAB, read_options_from_mycnf);
-  GET_BOOL_TAB(MISC_TAB, disable_transactions);
-  GET_BOOL_TAB(MISC_TAB, min_date_to_zero);
-  GET_BOOL_TAB(MISC_TAB, no_ssps);
-  GET_BOOL_TAB(MISC_TAB, default_bigint_bind_str);
-  GET_BOOL_TAB(MISC_TAB, no_date_overflow);
-  GET_BOOL_TAB(MISC_TAB, enable_local_infile);
-  GET_STRING_TAB(MISC_TAB, load_data_local_dir);
-
+  GET_BOOL_TAB(MISC_TAB, SAFE);
+  GET_BOOL_TAB(MISC_TAB, NO_LOCALE);
+  GET_BOOL_TAB(MISC_TAB, IGNORE_SPACE);
+  GET_BOOL_TAB(MISC_TAB, USE_MYCNF);
+  GET_BOOL_TAB(MISC_TAB, NO_TRANSACTIONS);
+  GET_BOOL_TAB(MISC_TAB, MIN_DATE_TO_ZERO);
+  GET_BOOL_TAB(MISC_TAB, NO_SSPS);
+  GET_BOOL_TAB(MISC_TAB, DFLT_BIGINT_BIND_STR);
+  GET_BOOL_TAB(MISC_TAB, NO_DATE_OVERFLOW);
+  GET_BOOL_TAB(MISC_TAB, ENABLE_LOCAL_INFILE);
+  GET_STRING_TAB(MISC_TAB, LOAD_DATA_LOCAL_DIR);
 }
 
 /*
@@ -408,203 +423,211 @@ void syncTabsData(HWND hwnd, DataSource *params)
 void syncTabs(HWND hwnd, DataSource *params)
 {
   /* 1 - Connection */
-  SET_BOOL_TAB(CONNECTION_TAB, allow_big_results);
-  SET_BOOL_TAB(CONNECTION_TAB, use_compressed_protocol);
-  SET_BOOL_TAB(CONNECTION_TAB, dont_prompt_upon_connect);
-  SET_BOOL_TAB(CONNECTION_TAB, auto_reconnect);
-  SET_BOOL_TAB(CONNECTION_TAB, enable_dns_srv);
-  SET_BOOL_TAB(CONNECTION_TAB, allow_multiple_statements);
-  SET_BOOL_TAB(CONNECTION_TAB, client_interactive);
-  SET_BOOL_TAB(CONNECTION_TAB, can_handle_exp_pwd);
-  SET_BOOL_TAB(CONNECTION_TAB, get_server_public_key);
-  SET_BOOL_TAB(CONNECTION_TAB, enable_dns_srv);
-  SET_BOOL_TAB(CONNECTION_TAB, multi_host);
+  SET_BOOL_TAB(CONNECTION_TAB, BIG_PACKETS);
+  SET_BOOL_TAB(CONNECTION_TAB, COMPRESSED_PROTO);
+  SET_BOOL_TAB(CONNECTION_TAB, NO_PROMPT);
+#if MYSQL_VERSION_ID < 80300
+  SET_BOOL_TAB(CONNECTION_TAB, AUTO_RECONNECT);
+#endif
+  SET_BOOL_TAB(CONNECTION_TAB, ENABLE_DNS_SRV);
+  SET_BOOL_TAB(CONNECTION_TAB, MULTI_STATEMENTS);
+  SET_BOOL_TAB(CONNECTION_TAB, CLIENT_INTERACTIVE);
+  SET_BOOL_TAB(CONNECTION_TAB, CAN_HANDLE_EXP_PWD);
+  SET_BOOL_TAB(CONNECTION_TAB, GET_SERVER_PUBLIC_KEY);
+  SET_BOOL_TAB(CONNECTION_TAB, ENABLE_DNS_SRV);
+  SET_BOOL_TAB(CONNECTION_TAB, MULTI_HOST);
 
 #ifdef _WIN32
   if ( getTabCtrlTabPages(CONNECTION_TAB-1))
 #endif
   {
-    SET_COMBO_TAB(CONNECTION_TAB, charset);
-    SET_STRING_TAB(CONNECTION_TAB, initstmt);
-    SET_STRING_TAB(CONNECTION_TAB, plugin_dir);
+    SET_COMBO_TAB(CONNECTION_TAB, CHARSET);
+    SET_STRING_TAB(CONNECTION_TAB, INITSTMT);
+    SET_STRING_TAB(CONNECTION_TAB, PLUGIN_DIR);
   }
 
   /* 2 - Authentication */
-  SET_BOOL_TAB(AUTH_TAB, enable_cleartext_plugin);
+  SET_BOOL_TAB(AUTH_TAB, ENABLE_CLEARTEXT_PLUGIN);
 #ifdef _WIN32
-  SET_STRING_TAB(AUTH_TAB, authentication_kerberos_mode);
+  SET_STRING_TAB(AUTH_TAB, AUTHENTICATION_KERBEROS_MODE);
 #endif
-  SET_STRING_TAB(AUTH_TAB, default_auth);
+  SET_STRING_TAB(AUTH_TAB, DEFAULT_AUTH);
 #if MFA_ENABLED
-  SET_STRING_TAB(AUTH_TAB, pwd2);
-  SET_STRING_TAB(AUTH_TAB, pwd3);
+  SET_STRING_TAB(AUTH_TAB, PWD2);
+  SET_STRING_TAB(AUTH_TAB, PWD3);
 #endif
-  SET_STRING_TAB(AUTH_TAB, oci_config_file);
-  SET_STRING_TAB(AUTH_TAB, oci_config_profile);
+  SET_STRING_TAB(AUTH_TAB, OCI_CONFIG_FILE);
+  SET_STRING_TAB(AUTH_TAB, OCI_CONFIG_PROFILE);
 
   /* 3 - AWS Authentication */
-  SET_COMBO_TAB(AWS_AUTH_TAB, auth_mode);
-  SET_STRING_TAB(AWS_AUTH_TAB, auth_region);
-  SET_STRING_TAB(AWS_AUTH_TAB, auth_host);
-  SET_UNSIGNED_TAB(AWS_AUTH_TAB, auth_port);
-  SET_UNSIGNED_TAB(AWS_AUTH_TAB, auth_expiration);
-  SET_STRING_TAB(AWS_AUTH_TAB, auth_secret_id);
+  SET_COMBO_TAB(AWS_AUTH_TAB, AUTH_MODE);
+  SET_STRING_TAB(AWS_AUTH_TAB, AUTH_REGION);
+  SET_STRING_TAB(AWS_AUTH_TAB, AUTH_HOST);
+  SET_UNSIGNED_TAB(AWS_AUTH_TAB, AUTH_PORT);
+  SET_UNSIGNED_TAB(AWS_AUTH_TAB, AUTH_EXPIRATION);
+  SET_STRING_TAB(AWS_AUTH_TAB, AUTH_SECRET_ID);
 
   /* 4 - Failover */
-  SET_BOOL_TAB(FAILOVER_TAB, enable_cluster_failover);
-  SET_COMBO_TAB(FAILOVER_TAB, failover_mode);
-  SET_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics);
-  if(READ_BOOL_TAB(FAILOVER_TAB, gather_perf_metrics))
+  SET_BOOL_TAB(FAILOVER_TAB, ENABLE_CLUSTER_FAILOVER);
+  SET_COMBO_TAB(FAILOVER_TAB, FAILOVER_MODE);
+  SET_BOOL_TAB(FAILOVER_TAB, GATHER_PERF_METRICS);
+  if(READ_BOOL_TAB(FAILOVER_TAB, GATHER_PERF_METRICS))
   {
 #ifdef _WIN32
-    SET_ENABLED(FAILOVER_TAB, IDC_CHECK_gather_metrics_per_instance, TRUE);
+    SET_ENABLED(FAILOVER_TAB, IDC_CHECK_GATHER_PERF_METRICS_PER_INSTANCE, TRUE);
 #endif
-    SET_CHECKED_TAB(FAILOVER_TAB, gather_perf_metrics, TRUE);
-    SET_BOOL_TAB(FAILOVER_TAB, gather_metrics_per_instance);
+    SET_CHECKED_TAB(FAILOVER_TAB, GATHER_PERF_METRICS, TRUE);
+    SET_BOOL_TAB(FAILOVER_TAB, GATHER_PERF_METRICS_PER_INSTANCE);
   }
 
-  SET_STRING_TAB(FAILOVER_TAB, host_pattern);
-  SET_STRING_TAB(FAILOVER_TAB, cluster_id);
+  SET_STRING_TAB(FAILOVER_TAB, HOST_PATTERN);
+  SET_STRING_TAB(FAILOVER_TAB, CLUSTER_ID);
 
-  if (params->topology_refresh_rate > 0)
+  if (params->opt_TOPOLOGY_REFRESH_RATE > 0)
   {
-     SET_UNSIGNED_TAB(FAILOVER_TAB, topology_refresh_rate);
+     SET_UNSIGNED_TAB(FAILOVER_TAB, TOPOLOGY_REFRESH_RATE);
   }
 
-  if (params->failover_timeout > 0)
+  if (params->opt_FAILOVER_TIMEOUT > 0)
   {
-     SET_UNSIGNED_TAB(FAILOVER_TAB, failover_timeout);
+     SET_UNSIGNED_TAB(FAILOVER_TAB, FAILOVER_TIMEOUT);
   }
 
-  if (params->failover_topology_refresh_rate > 0)
+  if (params->opt_FAILOVER_TOPOLOGY_REFRESH_RATE > 0)
   {
-     SET_UNSIGNED_TAB(FAILOVER_TAB, failover_topology_refresh_rate);
+     SET_UNSIGNED_TAB(FAILOVER_TAB, FAILOVER_TOPOLOGY_REFRESH_RATE);
   }
 
-  if (params->failover_writer_reconnect_interval > 0)
+  if (params->opt_FAILOVER_WRITER_RECONNECT_INTERVAL > 0)
   {
-     SET_UNSIGNED_TAB(FAILOVER_TAB, failover_writer_reconnect_interval);
+     SET_UNSIGNED_TAB(FAILOVER_TAB, FAILOVER_WRITER_RECONNECT_INTERVAL);
   }
 
-  if (params->failover_reader_connect_timeout > 0)
+  if (params->opt_FAILOVER_READER_CONNECT_TIMEOUT > 0)
   {
-     SET_UNSIGNED_TAB(FAILOVER_TAB, failover_reader_connect_timeout);
+     SET_UNSIGNED_TAB(FAILOVER_TAB, FAILOVER_READER_CONNECT_TIMEOUT);
   }
 
-  if (params->connect_timeout > 0)
+  if (params->opt_CONNECT_TIMEOUT > 0)
   {
-     SET_UNSIGNED_TAB(FAILOVER_TAB, connect_timeout);
+     SET_UNSIGNED_TAB(FAILOVER_TAB, CONNECT_TIMEOUT);
   }
 
-  if (params->network_timeout > 0)
+  if (params->opt_NETWORK_TIMEOUT > 0)
   {
-     SET_UNSIGNED_TAB(FAILOVER_TAB, network_timeout);
+     SET_UNSIGNED_TAB(FAILOVER_TAB, NETWORK_TIMEOUT);
   }
 
   /* 5 - Monitoring */
-  SET_BOOL_TAB(MONITORING_TAB, enable_failure_detection);
-  if (READ_BOOL_TAB(MONITORING_TAB, enable_failure_detection)) {
+  SET_BOOL_TAB(MONITORING_TAB, ENABLE_FAILURE_DETECTION);
+  if (READ_BOOL_TAB(MONITORING_TAB, ENABLE_FAILURE_DETECTION)) {
 #ifdef _WIN32
-    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_time, TRUE);
-    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_interval, TRUE);
-    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_count, TRUE);
-    SET_ENABLED(MONITORING_TAB, IDC_EDIT_monitor_disposal_time, TRUE);
-    SET_ENABLED(MONITORING_TAB, IDC_EDIT_failure_detection_timeout, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_FAILURE_DETECTION_TIME, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_FAILURE_DETECTION_INTERVAL, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_FAILURE_DETECTION_COUNT, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_MONITOR_DISPOSAL_TIME, TRUE);
+    SET_ENABLED(MONITORING_TAB, IDC_EDIT_FAILURE_DETECTION_TIMEOUT, TRUE);
 #endif
-    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_time);
-    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_interval);
-    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_count);
-    SET_UNSIGNED_TAB(MONITORING_TAB, monitor_disposal_time);
-    SET_UNSIGNED_TAB(MONITORING_TAB, failure_detection_timeout);
+    SET_UNSIGNED_TAB(MONITORING_TAB, FAILURE_DETECTION_TIME);
+    SET_UNSIGNED_TAB(MONITORING_TAB, FAILURE_DETECTION_INTERVAL);
+    SET_UNSIGNED_TAB(MONITORING_TAB, FAILURE_DETECTION_COUNT);
+    SET_UNSIGNED_TAB(MONITORING_TAB, MONITOR_DISPOSAL_TIME);
+    SET_UNSIGNED_TAB(MONITORING_TAB, FAILURE_DETECTION_TIMEOUT);
   }
 
   /* 6 - Metadata */
-  SET_BOOL_TAB(METADATA_TAB, change_bigint_columns_to_int);
-  SET_BOOL_TAB(METADATA_TAB, handle_binary_as_char);
-  SET_BOOL_TAB(METADATA_TAB, return_table_names_for_SqlDescribeCol);
-  SET_BOOL_TAB(METADATA_TAB, no_catalog);
-  SET_BOOL_TAB(METADATA_TAB, no_schema);
-  SET_BOOL_TAB(METADATA_TAB, limit_column_size);
+  SET_BOOL_TAB(METADATA_TAB, NO_BIGINT);
+  SET_BOOL_TAB(METADATA_TAB, NO_BINARY_RESULT);
+  SET_BOOL_TAB(METADATA_TAB, FULL_COLUMN_NAMES);
+  SET_BOOL_TAB(METADATA_TAB, NO_CATALOG);
+  SET_BOOL_TAB(METADATA_TAB, NO_SCHEMA);
+  SET_BOOL_TAB(METADATA_TAB, COLUMN_SIZE_S32);
 
   /* 7 - Cursors/Results */
-  SET_BOOL_TAB(CURSORS_TAB, return_matching_rows);
-  SET_BOOL_TAB(CURSORS_TAB, auto_increment_null_search);
-  SET_BOOL_TAB(CURSORS_TAB, dynamic_cursor);
-  SET_BOOL_TAB(CURSORS_TAB, user_manager_cursor);
-  SET_BOOL_TAB(CURSORS_TAB, pad_char_to_full_length);
-  SET_BOOL_TAB(CURSORS_TAB, dont_cache_result);
-  SET_BOOL_TAB(CURSORS_TAB, force_use_of_forward_only_cursors);
-  SET_BOOL_TAB(CURSORS_TAB, zero_date_to_min);
+  SET_BOOL_TAB(CURSORS_TAB, FOUND_ROWS);
+  SET_BOOL_TAB(CURSORS_TAB, AUTO_IS_NULL);
+  SET_BOOL_TAB(CURSORS_TAB, DYNAMIC_CURSOR);
+  SET_BOOL_TAB(CURSORS_TAB, NO_DEFAULT_CURSOR);
+  SET_BOOL_TAB(CURSORS_TAB, PAD_SPACE);
+  SET_BOOL_TAB(CURSORS_TAB, NO_CACHE);
+  SET_BOOL_TAB(CURSORS_TAB, FORWARD_CURSOR);
+  SET_BOOL_TAB(CURSORS_TAB, ZERO_DATE_TO_MIN);
 
-  if(params->cursor_prefetch_number > 0)
+  if(params->opt_PREFETCH > 0)
   {
 #ifdef _WIN32
-    SET_ENABLED(CURSORS_TAB, IDC_EDIT_cursor_prefetch_number, TRUE);
+    SET_ENABLED(CURSORS_TAB, IDC_EDIT_PREFETCH, TRUE);
 #endif
-    SET_CHECKED_TAB(CURSORS_TAB, cursor_prefetch_active, TRUE);
-    SET_UNSIGNED_TAB(CURSORS_TAB, cursor_prefetch_number);
+    SET_CHECKED_TAB(CURSORS_TAB, CURSOR_PREFETCH_ACTIVE, TRUE);
+    SET_UNSIGNED_TAB(CURSORS_TAB, PREFETCH);
   }
 
   /* 8 - debug*/
-  SET_BOOL_TAB(DEBUG_TAB,save_queries);
+  SET_BOOL_TAB(DEBUG_TAB,LOG_QUERY);
 
   /* 9 - ssl related */
 #ifdef _WIN32
   if ( getTabCtrlTabPages(SSL_TAB-1) )
 #endif
   {
-    if(params->sslkey)
-      SET_STRING_TAB(SSL_TAB, sslkey);
+    if(params->opt_SSL_KEY)
+      SET_STRING_TAB(SSL_TAB, SSL_KEY);
 
-    if(params->sslcert)
-      SET_STRING_TAB(SSL_TAB, sslcert);
+    if (params->opt_SSL_CERT)
+      SET_STRING_TAB(SSL_TAB, SSL_CERT);
 
-    if(params->sslca)
-      SET_STRING_TAB(SSL_TAB, sslca);
+    if (params->opt_SSL_CA)
+      SET_STRING_TAB(SSL_TAB, SSL_CA);
 
-    if(params->sslcapath)
-      SET_STRING_TAB(SSL_TAB, sslcapath);
+    if (params->opt_SSL_CAPATH)
+      SET_STRING_TAB(SSL_TAB, SSL_CAPATH);
 
-    if(params->sslcipher)
-      SET_STRING_TAB(SSL_TAB, sslcipher);
+    if (params->opt_SSL_CIPHER)
+      SET_STRING_TAB(SSL_TAB, SSL_CIPHER);
 
-    if (params->sslmode)
-      SET_COMBO_TAB(SSL_TAB, sslmode);
+    if (params->opt_SSL_MODE)
+      SET_COMBO_TAB(SSL_TAB, SSL_MODE);
 
-    if(params->rsakey)
-      SET_STRING_TAB(SSL_TAB, rsakey);
+    if (params->opt_RSAKEY)
+      SET_STRING_TAB(SSL_TAB, RSAKEY);
 
-    if (params->ssl_crl)
-      SET_STRING_TAB(SSL_TAB, ssl_crl);
+    if (params->opt_SSL_CRL)
+      SET_STRING_TAB(SSL_TAB, SSL_CRL);
 
-    if (params->ssl_crlpath)
-      SET_STRING_TAB(SSL_TAB, ssl_crlpath);
+    if (params->opt_SSL_CRLPATH)
+      SET_STRING_TAB(SSL_TAB, SSL_CRLPATH);
 
-    SET_BOOL_TAB(SSL_TAB, no_tls_1_2);
-    SET_BOOL_TAB(SSL_TAB, no_tls_1_3);
+    SET_BOOL_TAB(SSL_TAB, NO_TLS_1_2);
+    SET_BOOL_TAB(SSL_TAB, NO_TLS_1_3);
 
-    SET_STRING_TAB(SSL_TAB, tls_versions);
+    SET_STRING_TAB(SSL_TAB, TLS_VERSIONS);
   }
 
   /* 10 - Misc*/
-  SET_BOOL_TAB(MISC_TAB, safe);
-  SET_BOOL_TAB(MISC_TAB, dont_use_set_locale);
-  SET_BOOL_TAB(MISC_TAB, ignore_space_after_function_names);
-  SET_BOOL_TAB(MISC_TAB, read_options_from_mycnf);
-  SET_BOOL_TAB(MISC_TAB, disable_transactions);
-  SET_BOOL_TAB(MISC_TAB, min_date_to_zero);
-  SET_BOOL_TAB(MISC_TAB, no_ssps);
-  SET_BOOL_TAB(MISC_TAB, default_bigint_bind_str);
-  SET_BOOL_TAB(MISC_TAB, no_date_overflow);
-  SET_BOOL_TAB(MISC_TAB, enable_local_infile);
-  SET_STRING_TAB(MISC_TAB, load_data_local_dir);
-
+  SET_BOOL_TAB(MISC_TAB, SAFE);
+  SET_BOOL_TAB(MISC_TAB, NO_LOCALE);
+  SET_BOOL_TAB(MISC_TAB, IGNORE_SPACE);
+  SET_BOOL_TAB(MISC_TAB, USE_MYCNF);
+  SET_BOOL_TAB(MISC_TAB, NO_TRANSACTIONS);
+  SET_BOOL_TAB(MISC_TAB, MIN_DATE_TO_ZERO);
+  SET_BOOL_TAB(MISC_TAB, NO_SSPS);
+  SET_BOOL_TAB(MISC_TAB, DFLT_BIGINT_BIND_STR);
+  SET_BOOL_TAB(MISC_TAB, NO_DATE_OVERFLOW);
+  SET_BOOL_TAB(MISC_TAB, ENABLE_LOCAL_INFILE);
+  SET_STRING_TAB(MISC_TAB, LOAD_DATA_LOCAL_DIR);
 }
 
 void FillParameters(HWND hwnd, DataSource *params)
 {
   syncData(hwnd, params );
+
+#if MYSQL_VERSION_ID >= 80300
+  // Turn off AUTO_RECONNECT unconditionally.
+  params->opt_AUTO_RECONNECT.set_default(false);
+#endif
+
 #ifdef _WIN32
+  // Controls in Details cannot be read unless it is expanded.
   if(getTabCtrlTab())
 #endif
     syncTabsData(hwnd, params);

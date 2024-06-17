@@ -53,8 +53,6 @@ public:
     int set_character_set(const char* csname) override;
 
     void init() override;
-    bool ssl_set(const char* key, const char* cert, const char* ca,
-        const char* capath, const char* cipher) override;
     bool change_user(const char* user, const char* passwd,
         const char* db) override;
     bool real_connect(const char* host, const char* user,
@@ -81,7 +79,6 @@ public:
 
     unsigned long* fetch_lengths(MYSQL_RES* result) override;
     MYSQL_FIELD* fetch_field(MYSQL_RES* result) override;
-    MYSQL_RES* list_fields(const char* table, const char* wild) override;
     unsigned long real_escape_string(char* to, const char* from,
         unsigned long length) override;
 
@@ -98,6 +95,8 @@ public:
     unsigned long stmt_param_count(MYSQL_STMT* stmt) override;
     bool stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) override;
     bool stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd) override;
+    bool stmt_bind_named_param(MYSQL_STMT* stmt, MYSQL_BIND* binds,
+                               unsigned n_params, const char** names) override;
     bool stmt_close(MYSQL_STMT* stmt) override;
     bool stmt_reset(MYSQL_STMT* stmt) override;
     bool stmt_free_result(MYSQL_STMT* stmt) override;
@@ -113,7 +112,10 @@ public:
     uint64_t stmt_affected_rows(MYSQL_STMT* stmt) override;
     unsigned int stmt_field_count(MYSQL_STMT* stmt) override;
 
+    bool commit() override;
+    bool rollback() override;
     bool autocommit(bool auto_mode) override;
+    bool more_results() override;
     int next_result() override;
     int stmt_next_result(MYSQL_STMT* stmt) override;
     void close() override;

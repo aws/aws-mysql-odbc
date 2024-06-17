@@ -70,13 +70,13 @@ protected:
         SQLHDBC hdbc = nullptr;
         SQLAllocHandle(SQL_HANDLE_DBC, env, &hdbc);
         dbc = static_cast<DBC *>(hdbc);
-        ds = ds_new();
+        ds = new DataSource();
 
-        ds_setattr_from_utf8(&ds->auth_host, (SQLCHAR*)TEST_HOST.c_str());
-        ds_setattr_from_utf8(&ds->auth_region, (SQLCHAR*)TEST_REGION.c_str());
-        ds_setattr_from_utf8(&ds->uid, (SQLCHAR*)TEST_USER.c_str());
-        ds->auth_port = TEST_PORT;
-        ds->auth_expiration = TEST_EXPIRATION;
+        ds->opt_AUTH_HOST.set_remove_brackets((SQLWCHAR*)TEST_HOST.c_str(), TEST_HOST.size());
+        ds->opt_AUTH_REGION.set_remove_brackets((SQLWCHAR*)TEST_REGION.c_str(), TEST_REGION.size());
+        ds->opt_UID.set_remove_brackets((SQLWCHAR*)TEST_USER.c_str(), TEST_USER.size());
+        ds->opt_AUTH_PORT = TEST_PORT;
+        ds->opt_AUTH_EXPIRATION = TEST_EXPIRATION;
 
         mock_connection_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
         mock_token_generator = std::make_shared<MOCK_TOKEN_GENERATOR>();
@@ -228,7 +228,7 @@ TEST_F(IamProxyTest, RetryConnectionWithFreshTokenAfterFailingWithCachedToken) {
 }
 
 TEST_F(IamProxyTest, UseRegularPortWhenAuthPortIsNotProvided) {
-    ds->auth_port = UNDEFINED_PORT;
+    ds->opt_AUTH_PORT = UNDEFINED_PORT;
     
     // Verify that we generate the token with the regular port when we do not have auth port.
     EXPECT_CALL(*mock_token_generator, generate_auth_token(_, _, TEST_PORT, _))

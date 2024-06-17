@@ -11,11 +11,11 @@ repositories {
 
 dependencies {
     testImplementation("software.amazon.awssdk:rds:2.25.36")
-    testImplementation("software.amazon.awssdk:ec2:2.25.31")
-    testImplementation("software.amazon.awssdk:secretsmanager:2.20.34")
+    testImplementation("software.amazon.awssdk:ec2:2.25.36")
+    testImplementation("software.amazon.awssdk:secretsmanager:2.25.36")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
-    testImplementation("org.testcontainers:toxiproxy:1.19.7")
-    testImplementation("org.testcontainers:mysql:1.19.7")
+    testImplementation("org.testcontainers:toxiproxy:1.19.8")
+    testImplementation("org.testcontainers:mysql:1.19.8")
     testImplementation("org.json:json:20231013")
 
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")

@@ -1,21 +1,21 @@
-// Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -197,7 +197,6 @@ void DESCREC::par_struct::add_param_data(const char *chunk,
 DESCREC *desc_get_rec(DESC *desc, int recnum, my_bool expand)
 {
   DESCREC *rec= NULL;
-  int i;
 
   if (recnum == -1 && desc->stmt->stmt_options.bookmarks == SQL_UB_VARIABLE)
   {
@@ -225,7 +224,7 @@ DESCREC *desc_get_rec(DESC *desc, int recnum, my_bool expand)
     /* expand if needed */
     if (expand)
     {
-      for (i= desc->rcount(); expand && i <= recnum; ++i)
+      for (size_t i = desc->rcount(); expand && i <= recnum; ++i)
       {
         desc->records2.emplace_back(desc->desc_type, desc->ref_type);
         rec = &desc->records2.back();
@@ -613,13 +612,13 @@ MySQLGetDescField(SQLHDESC hdesc, SQLSMALLINT recnum, SQLSMALLINT fldid,
     else if (fld->data_type == SQL_IS_USMALLINT)
       *(SQLSMALLINT *)valptr= *(SQLUSMALLINT *)src;
     else if (fld->data_type == SQL_IS_INTEGER)
-      *(SQLSMALLINT *)valptr= *(SQLINTEGER *)src;
+      *(SQLSMALLINT *)valptr= (SQLSMALLINT)(*(SQLINTEGER *)src);
     else if (fld->data_type == SQL_IS_UINTEGER)
-      *(SQLSMALLINT *)valptr= *(SQLUINTEGER *)src;
+      *(SQLSMALLINT *)valptr = (SQLSMALLINT)(*(SQLUINTEGER *)src);
     else if (fld->data_type == SQL_IS_LEN)
-      *(SQLSMALLINT *)valptr= *(SQLLEN *)src;
+      *(SQLSMALLINT *)valptr = (SQLSMALLINT)(*(SQLLEN *)src);
     else if (fld->data_type == SQL_IS_ULEN)
-      *(SQLSMALLINT *)valptr= *(SQLULEN *)src;
+      *(SQLSMALLINT *)valptr = (SQLSMALLINT)(*(SQLULEN *)src);
     break;
 
   case SQL_IS_USMALLINT:
@@ -628,13 +627,13 @@ MySQLGetDescField(SQLHDESC hdesc, SQLSMALLINT recnum, SQLSMALLINT fldid,
     else if (fld->data_type == SQL_IS_USMALLINT)
       *(SQLUSMALLINT *)valptr= *(SQLUSMALLINT *)src;
     else if (fld->data_type == SQL_IS_INTEGER)
-      *(SQLUSMALLINT *)valptr= *(SQLINTEGER *)src;
+      *(SQLUSMALLINT *)valptr = (SQLUSMALLINT)(*(SQLINTEGER *)src);
     else if (fld->data_type == SQL_IS_UINTEGER)
-      *(SQLUSMALLINT *)valptr= *(SQLUINTEGER *)src;
+      *(SQLUSMALLINT *)valptr = (SQLUSMALLINT)(*(SQLUINTEGER *)src);
     else if (fld->data_type == SQL_IS_LEN)
-      *(SQLUSMALLINT *)valptr= *(SQLLEN *)src;
+      *(SQLUSMALLINT *)valptr = (SQLUSMALLINT)(*(SQLLEN *)src);
     else if (fld->data_type == SQL_IS_ULEN)
-      *(SQLUSMALLINT *)valptr= *(SQLULEN *)src;
+      *(SQLUSMALLINT *)valptr = (SQLUSMALLINT)(*(SQLULEN *)src);
     break;
 
   case SQL_IS_INTEGER:
@@ -647,9 +646,9 @@ MySQLGetDescField(SQLHDESC hdesc, SQLSMALLINT recnum, SQLSMALLINT fldid,
     else if (fld->data_type == SQL_IS_UINTEGER)
       *(SQLINTEGER *)valptr= *(SQLUINTEGER *)src;
     else if (fld->data_type == SQL_IS_LEN)
-      *(SQLINTEGER *)valptr= *(SQLLEN *)src;
+      *(SQLINTEGER *)valptr = (SQLINTEGER)(*(SQLLEN *)src);
     else if (fld->data_type == SQL_IS_ULEN)
-      *(SQLINTEGER *)valptr= *(SQLULEN *)src;
+      *(SQLINTEGER *)valptr = (SQLINTEGER)(*(SQLULEN *)src);
     break;
 
   case SQL_IS_UINTEGER:
@@ -662,9 +661,9 @@ MySQLGetDescField(SQLHDESC hdesc, SQLSMALLINT recnum, SQLSMALLINT fldid,
     else if (fld->data_type == SQL_IS_UINTEGER)
       *(SQLUINTEGER *)valptr= *(SQLUINTEGER *)src;
     else if (fld->data_type == SQL_IS_LEN)
-      *(SQLUINTEGER *)valptr= *(SQLLEN *)src;
+      *(SQLUINTEGER *)valptr = (SQLUINTEGER)(*(SQLLEN *)src);
     else if (fld->data_type == SQL_IS_ULEN)
-      *(SQLUINTEGER *)valptr= *(SQLULEN *)src;
+      *(SQLUINTEGER *)valptr = (SQLUINTEGER)(*(SQLULEN *)src);
     break;
 
   case SQL_IS_LEN:
@@ -822,14 +821,14 @@ SQLRETURN DESC::set_field(SQLSMALLINT recnum, SQLSMALLINT fldid,
   {
   case SQL_DESC_COUNT:
     /* we just force the descriptor record count to expand */
-    (void)desc_get_rec(this, (size_t)val - 1, TRUE);
+    (void)desc_get_rec(this, (int)((size_t)val - 1), TRUE);
     break;
   case SQL_DESC_NAME:
     {
       // dest_struct already points to the correct DESCREC*
       DESCREC *name_rec = (DESCREC*)dest_struct;
       // Add name as parameter data and zero terminating character
-      name_rec->par.add_param_data((char*)val, strlen((char*)val) + 1);
+      name_rec->par.add_param_data((char*)val, (unsigned long)strlen((char*)val) + 1);
       // Get a pointer to allocated copy of the name
       val = name_rec->par.val();
     }

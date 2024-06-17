@@ -282,8 +282,8 @@ TEST_F(MonitorTest, ZeroEFMTimeout) {
     EXPECT_CALL(*mock_connection_handler,
                 connect_impl(host,
                     AllOf(
-                        Field("connect_timeout",&DataSource::connect_timeout, Eq(failure_detection_timeout_default)),
-                        Field("network_timeout", &DataSource::network_timeout, Eq(failure_detection_timeout_default))),
+                        Field("connect_timeout",&DataSource::opt_CONNECT_TIMEOUT, Eq(failure_detection_timeout_default)),
+                        Field("network_timeout", &DataSource::opt_NETWORK_TIMEOUT, Eq(failure_detection_timeout_default))),
                     true))
         .WillOnce(Return(proxy));
 
@@ -308,8 +308,8 @@ TEST_F(MonitorTest, NonZeroEFMTimeout) {
     EXPECT_CALL(*mock_connection_handler,
                 connect_impl(host,
                     AllOf(
-                        Field("connect_timeout", &DataSource::connect_timeout, Eq(timeout.count())),
-                        Field("network_timeout", &DataSource::network_timeout, Eq(timeout.count()))),
+                        Field("connect_timeout", &DataSource::opt_CONNECT_TIMEOUT, Eq(timeout.count())),
+                        Field("network_timeout", &DataSource::opt_NETWORK_TIMEOUT, Eq(timeout.count()))),
                     true))
         .WillOnce(Return(proxy));
 

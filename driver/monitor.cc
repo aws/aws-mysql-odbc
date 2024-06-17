@@ -64,8 +64,8 @@ MONITOR::MONITOR(
     this->connection_handler = std::move(connection_handler);
     this->failure_detection_timeout = failure_detection_timeout;
     this->disposal_time = monitor_disposal_time;
-    this->ds = ds_new();
-    ds_copy(this->ds, ds);
+    this->ds = new DataSource();
+    this->ds->copy(ds);
     this->connection_proxy = proxy;
     this->connection_check_interval = (std::chrono::milliseconds::max)();
     if (enable_logging)
@@ -74,7 +74,7 @@ MONITOR::MONITOR(
 
 MONITOR::~MONITOR() {
     if (this->ds) {
-        ds_delete(this->ds);
+        delete ds;
         this->ds = nullptr;
     }
 
@@ -94,7 +94,7 @@ void MONITOR::start_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> conte
     auto current_time = get_current_time();
     context->set_start_monitor_time(current_time);
     this->last_context_timestamp = current_time;
-    
+
     {
         std::unique_lock<std::mutex> lock(mutex_);
         this->contexts.push_back(context);
@@ -120,7 +120,7 @@ void MONITOR::stop_monitoring(std::shared_ptr<MONITOR_CONNECTION_CONTEXT> contex
 }
 
 bool MONITOR::is_stopped() {
-    return this->stopped.load(); 
+    return this->stopped.load();
 }
 
 void MONITOR::stop() {
@@ -204,7 +204,7 @@ CONNECTION_STATUS MONITOR::check_connection_status() {
     auto start = this->get_current_time();
     bool is_connection_active = this->connection_proxy->ping() == 0;
     auto duration = this->get_current_time() - start;
-    
+
     return CONNECTION_STATUS{
         is_connection_active,
         std::chrono::duration_cast<std::chrono::milliseconds>(duration)
@@ -220,16 +220,16 @@ bool MONITOR::connect() {
     unsigned int timeout_sec = this->failure_detection_timeout.count() == 0 ? failure_detection_timeout_default : this->failure_detection_timeout.count();
 
     // timeout should be set in DBC::connect()
-    if (this->ds->enable_cluster_failover) {
-        this->ds->connect_timeout = timeout_sec;
-        this->ds->network_timeout = timeout_sec;
+    if (this->ds->opt_ENABLE_CLUSTER_FAILOVER) {
+        this->ds->opt_CONNECT_TIMEOUT = timeout_sec;
+        this->ds->opt_NETWORK_TIMEOUT = timeout_sec;
     } else {
         // cannot change login_timeout here because no access to dbc
-        this->ds->read_timeout = timeout_sec;
-        this->ds->write_timeout = timeout_sec;
+        this->ds->opt_READTIMEOUT = timeout_sec;
+        this->ds->opt_WRITETIMEOUT = timeout_sec;
     }
 
-    this->ds->enable_failure_detection= false;
+    this->ds->opt_ENABLE_FAILURE_DETECTION= false;
 
     this->connection_proxy = this->connection_handler->connect(this->host, this->ds, true);
     if (!this->connection_proxy) {

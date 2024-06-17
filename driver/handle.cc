@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2001, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -121,14 +121,14 @@ void DBC::init_proxy_chain(DataSource* dsrc)
 {
     CONNECTION_PROXY *head = new MYSQL_PROXY(this, dsrc);
 
-    if (dsrc->enable_failure_detection) {
+    if (dsrc->opt_ENABLE_FAILURE_DETECTION) {
         CONNECTION_PROXY* efm_proxy = new EFM_PROXY(this, dsrc);
         efm_proxy->set_next_proxy(head);
         head = efm_proxy;
     }
 
-    if (dsrc->auth_mode) {
-        const char* auth_mode = ds_get_utf8attr(dsrc->auth_mode, &dsrc->auth_mode8);
+    if (dsrc->opt_AUTH_MODE) {
+        const char* auth_mode = (const char*) dsrc->opt_AUTH_MODE;
         if (!myodbc_strcasecmp(AUTH_MODE_IAM, auth_mode)) {
             CONNECTION_PROXY* iam_proxy = new IAM_PROXY(this, dsrc);
             iam_proxy->set_next_proxy(head);
@@ -149,10 +149,7 @@ DBC::~DBC()
   if (env)
     env->remove_dbc(this);
 
-  if (ds)
-    ds_delete(ds);
-
-  if (connection_proxy) 
+  if (connection_proxy)
     delete connection_proxy;
 
   if (fh)
@@ -232,7 +229,7 @@ SQLRETURN SQL_API SQLAllocEnv(SQLHENV *phenv)
 SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
 {
     MONITOR_THREAD_CONTAINER::release_instance();
-    
+
     ENV *env= (ENV *) henv;
     delete env;
 #ifdef _UNIX_
@@ -293,9 +290,11 @@ SQLRETURN SQL_API my_SQLAllocConnect(SQLHENV henv, SQLHDBC *phdbc)
     if (CONNECTION_PROXY::get_client_version() < MIN_MYSQL_VERSION)
     {
         char buff[255];
-        snprintf(buff, sizeof(buff), 
-                 "Wrong libmysqlclient library version: %ld.  MyODBC needs at least version: %ld",
-                 CONNECTION_PROXY::get_client_version(), MIN_MYSQL_VERSION);
+        myodbc_snprintf(buff, sizeof(buff),
+          "Wrong libmysqlclient library version: %ld. "
+          "MyODBC needs at least version: %ld",
+          CONNECTION_PROXY::get_client_version(), MIN_MYSQL_VERSION);
+
         return(set_env_error((ENV*)henv, MYERR_S1000, buff, 0));
     }
 
@@ -351,40 +350,37 @@ int reset_connection(DBC *dbc)
 
 int wakeup_connection(DBC *dbc)
 {
-  DataSource *ds= dbc->ds;
+  DataSource &ds = dbc->ds;
 
 #if MFA_ENABLED
-  if(ds->pwd1 && ds->pwd1[0])
+  if(ds.opt_PWD1)
   {
-    ds_get_utf8attr(ds->pwd1, &ds->pwd18);
     int fator = 2;
     dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
-                         ds->pwd18);
+                         (const char*)ds.opt_PWD1);
   }
 
-  if(ds->pwd2 && ds->pwd2[0])
+  if (ds.opt_PWD2)
   {
     ds_get_utf8attr(ds->pwd2, &ds->pwd28);
     int fator = 2;
     dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
-                         ds->pwd28);
+                         (const char *)ds.opt_PWD2);
   }
 
-  if(ds->pwd3 && ds->pwd3[0])
+  if (ds.opt_PWD3)
   {
     ds_get_utf8attr(ds->pwd3, &ds->pwd38);
     int fator = 3;
     dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
-                         ds->pwd38);
+                         (const char *)ds.opt_PWD3);
   }
 #endif
 
-  if (dbc->connection_proxy->change_user(ds_get_utf8attr(ds->uid, &ds->uid8),
-                              ds_get_utf8attr(ds->pwd, &ds->pwd8),
-                              ds_get_utf8attr(ds->database, &ds->database8)))
+  if (dbc->connection_proxy->change_user(ds.opt_UID, ds.opt_PWD, ds.opt_DATABASE))
   {
     return 1;
   }
@@ -433,14 +429,12 @@ SQLRETURN SQL_API SQLFreeConnect(SQLHDBC hdbc)
  */
 void STMT::allocate_param_bind(uint elements)
 {
-  if (dbc->ds->no_ssps)
-    return;
-
-  if (param_bind.capacity() < elements)
+  if (param_bind.size() < elements)
   {
+    query_attr_names.resize(elements);
     param_bind.reserve(elements);
     while(elements > param_bind.size())
-      param_bind.push_back(MYSQL_BIND{});
+      param_bind.emplace_back(MYSQL_BIND{});
   }
 }
 
@@ -460,7 +454,7 @@ int adjust_param_bind_array(STMT *stmt)
   @type    : myodbc3 internal
   @purpose : allocates the statement handle
 */
-SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc,SQLHSTMT *phstmt)
+SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc, SQLHSTMT *phstmt)
 {
   std::unique_ptr<STMT> stmt;
   DBC   *dbc= (DBC*) hdbc;
@@ -471,7 +465,7 @@ SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc,SQLHSTMT *phstmt)
 
   try
   {
-    stmt.reset (new STMT(dbc));
+    stmt.reset(new STMT(dbc));
   }
   catch (...)
   {
@@ -564,11 +558,9 @@ SQLRETURN SQL_API my_SQLFreeStmtExtended(SQLHSTMT hstmt, SQLUSMALLINT f_option,
     stmt->free_fake_result((bool)(f_extra & FREE_STMT_CLEAR_RESULT));
 
     x_free(stmt->fields);   // TODO: Looks like STMT::fields is not used anywhere
-    x_free(stmt->result_array);
     stmt->result= 0;
     stmt->fake_result= 0;
     stmt->fields= 0;
-    stmt->result_array= 0;
     stmt->free_lengths();
     stmt->current_values= 0;   /* For SQLGetData */
     stmt->fix_fields= 0;
@@ -581,8 +573,7 @@ SQLRETURN SQL_API my_SQLFreeStmtExtended(SQLHSTMT hstmt, SQLUSMALLINT f_option,
     if (f_option == FREE_STMT_RESET_BUFFERS)
     {
       free_result_bind(stmt);
-      x_free(stmt->array);
-      stmt->array= 0;
+      stmt->array.reset();
 
       return SQL_SUCCESS;
     }
@@ -605,8 +596,8 @@ SQLRETURN SQL_API my_SQLFreeStmtExtended(SQLHSTMT hstmt, SQLUSMALLINT f_option,
 
     if (f_extra & FREE_STMT_CLEAR_RESULT)
     {
-      x_free(stmt->array);
-      stmt->array= 0;
+      stmt->array.reset();
+
       ssps_close(stmt);
       if (stmt->ssps != NULL)
       {
@@ -615,9 +606,11 @@ SQLRETURN SQL_API my_SQLFreeStmtExtended(SQLHSTMT hstmt, SQLUSMALLINT f_option,
     }
 
     /* At this point, only FREE_STMT_RESET and SQL_DROP left out */
-    reset_parsed_query(&stmt->orig_query, NULL, NULL, NULL);
-    reset_parsed_query(&stmt->query, NULL, NULL, NULL);
+    stmt->orig_query.reset(NULL, NULL, NULL);
+    stmt->query.reset(NULL, NULL, NULL);
 
+    // After query reset the span can also be ended.
+    stmt->telemetry.span_end(stmt);
     stmt->param_count= 0;
 
     reset_ptr(stmt->apd->rows_processed_ptr);

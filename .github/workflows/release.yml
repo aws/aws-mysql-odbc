@@ -39,13 +39,13 @@ jobs:
           brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
 
-          brew install openssl@1.1
-          rm -f /usr/local/lib/libssl.1.1.dylib
-          rm -f /usr/local/lib/libcrypto.1.1.dylib
-          ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/
-          ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/
+          brew install openssl@3
+          rm -f /usr/local/lib/libssl.3.dylib
+          rm -f /usr/local/lib/libcrypto.3.dylib
+          ln -s /usr/local/opt/openssl@3/lib/libssl.3.dylib /usr/local/lib/
+          ln -s /usr/local/opt/openssl@3/lib/libcrypto.3.dylib /usr/local/lib/
 
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
           
       - name: Build and install AWS SDK C++
@@ -85,71 +85,69 @@ jobs:
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
           if-no-files-found: error
 
-  build-linux:
-    name: Linux
-    runs-on: ubuntu-20.04
-    env:
-      CMAKE_GENERATOR: Unix Makefiles
-      CXX: g++-7
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Install gcc7
-        run: sudo apt install g++-7
-
-      # Configure build environment/dependencies
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install 
-                build-essential 
-                libgtk-3-dev
-                unixodbc
-                unixodbc-dev
-                libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
-
-      - name: Install MySQL client libs and include files
-        run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64.tar.xz -o mysql.tar.gz
-          tar xf mysql.tar.gz
-
-      - name: Build and install AWS SDK C++
-        working-directory: ./scripts
-        run: |
-          ./build_aws_sdk_unix.sh $BUILD_TYPE
-
-      - name: Create build environment
-        shell: bash
-        run: cmake -E make_directory ${{ github.workspace }}/build
-
-      - name: Configure CMake
-        shell: bash
-        run: cmake -S . -B build
-                -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-                -DMYSQLCLIENT_STATIC_LINKING=true
-                -DWITH_UNIXODBC=1
-                -DCONNECTOR_PLATFORM=linux
-                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64/
-                -DBUNDLE_DEPENDENCIES=true
-
-      # Build driver
-      - name: Build driver
-        working-directory: ${{ github.workspace }}/build
-        shell: bash
-        run: cmake --build . --config $BUILD_TYPE
-
-      - name: Build installer
-        working-directory: ${{ github.workspace }}/build
-        if: success()
-        run: cpack .
-      
-      - name: Upload Linux installer as artifact
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: installers
-          path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
-          if-no-files-found: error
+#  build-linux:
+#    name: Linux
+#    runs-on: ubuntu-latest
+#    env:
+#      CMAKE_GENERATOR: Unix Makefiles
+#      CXX: g++-11
+#    steps:
+#      - name: Checkout source code
+#        uses: actions/checkout@v4
+#
+#      # Configure build environment/dependencies
+#      - name: Install build dependencies
+#        run: sudo apt-get update && sudo apt-get install
+#          g++-11
+#          build-essential
+#          libgtk-3-dev
+#          unixodbc
+#          unixodbc-dev
+#          libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
+#
+#      - name: Install MySQL client libs and include files
+#        run: |
+#          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz
+#          tar xf mysql.tar.gz
+#
+#      - name: Build and install AWS SDK C++
+#        working-directory: ./scripts
+#        run: |
+#          ./build_aws_sdk_unix.sh $BUILD_TYPE
+#
+#      - name: Create build environment
+#        shell: bash
+#        run: cmake -E make_directory ${{ github.workspace }}/build
+#
+#      - name: Configure CMake
+#        shell: bash
+#        run: cmake -S . -B build
+#                -G "$CMAKE_GENERATOR"
+#                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+#                -DMYSQLCLIENT_STATIC_LINKING=true
+#                -DWITH_UNIXODBC=1
+#                -DCONNECTOR_PLATFORM=linux
+#                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64/
+#                -DBUNDLE_DEPENDENCIES=true
+#
+#      # Build driver
+#      - name: Build driver
+#        working-directory: ${{ github.workspace }}/build
+#        shell: bash
+#        run: cmake --build . --config $BUILD_TYPE
+#
+#      - name: Build installer
+#        working-directory: ${{ github.workspace }}/build
+#        if: success()
+#        run: cpack .
+#
+#      - name: Upload Linux installer as artifact
+#        if: success()
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: installers
+#          path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
+#          if-no-files-found: error
 
   build-windows:
     name: Windows
@@ -163,7 +161,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Add msbuild to PATH
@@ -210,7 +208,7 @@ jobs:
 
   draft-release:
     name: Create Draft Release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [build-mac, build-linux, build-windows]
     steps:
       - name: Download all installers

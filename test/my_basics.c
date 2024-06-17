@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2003, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -1054,7 +1054,7 @@ DECLARE_TEST(t_bug63844)
   ok_env(henv, SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc1));
 
   ok_con(hdbc1, SQLSetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
-                                  DatabaseName, strlen((char*)DatabaseName)));
+                                  DatabaseName, (SQLINTEGER)strlen(DatabaseName)));
 
   /* The driver crashes here on getting connected */
   ok_con(hdbc1, get_connection(&hdbc1, NULL, NULL, NULL, NULL, NULL));
@@ -1076,8 +1076,8 @@ DECLARE_TEST(t_bug52996)
 
   /* TODO: remove #ifdef _WIN32 when Linux and MacOS setup is released */
 #ifdef _WIN32
-  int i, len;
-  char attrs[8192];
+  size_t i, len;
+  SQLCHAR attrs[8192];
   SQLCHAR drv[128];
   SQLLEN row_count= 0;
   DECLARE_BASIC_HANDLES(henv1, hdbc1, hstmt1);
@@ -1522,7 +1522,6 @@ DECLARE_TEST(t_tls_versions)
 
 DECLARE_TEST(t_bug107307)
 {
-  SQLCHAR buff[128];
   SQLRETURN rc;
   double value = 0;
   SQLLEN ind = 0;

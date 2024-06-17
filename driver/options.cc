@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2000, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -64,14 +64,14 @@ static SQLRETURN set_constmt_attr(SQLSMALLINT  HandleType,
             break;
 
         case SQL_ATTR_CURSOR_TYPE:
-            if (((STMT *)Handle)->dbc->ds->force_use_of_forward_only_cursors)
+            if (((STMT *)Handle)->dbc->ds.opt_FORWARD_CURSOR)
             {
                 options->cursor_type= SQL_CURSOR_FORWARD_ONLY;
                 if (ValuePtr != (SQLPOINTER)SQL_CURSOR_FORWARD_ONLY)
                     return set_handle_error(HandleType,Handle,MYERR_01S02,
                                             "Forcing the use of forward-only cursor)",0);
             }
-            else if (((STMT *)Handle)->dbc->ds->dynamic_cursor)
+            else if (((STMT *)Handle)->dbc->ds.opt_DYNAMIC_CURSOR)
             {
                 if (ValuePtr != (SQLPOINTER)SQL_CURSOR_KEYSET_DRIVEN)
                     options->cursor_type= (SQLUINTEGER)(SQLULEN)ValuePtr;
@@ -277,7 +277,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
           dbc->commit_flag= CHECK_AUTOCOMMIT_OFF;
           return SQL_SUCCESS;
         }
-        if (!(trans_supported(dbc)) || dbc->ds->disable_transactions)
+        if (!(trans_supported(dbc)) || dbc->ds.opt_NO_TRANSACTIONS)
           return ((DBC*)hdbc)->set_error(MYERR_S1C00,
             "Transactions are not enabled", 4000);
 
@@ -327,7 +327,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_ATTR_CURRENT_CATALOG:
       {
         char ldb[NAME_LEN+1], *db;
-        int cat_len= StringLengthPtr == SQL_NTS ?
+        size_t cat_len= StringLengthPtr == SQL_NTS ?
                      strlen((char *)ValuePtr) : StringLengthPtr;
 
         LOCK_DBC(dbc);
@@ -355,7 +355,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
 
 
     case SQL_ATTR_ODBC_CURSORS:
-      if (dbc->ds->force_use_of_forward_only_cursors &&
+      if (dbc->ds.opt_FORWARD_CURSOR &&
         ValuePtr != (SQLPOINTER) SQL_CUR_USE_ODBC)
         return ((DBC*)hdbc)->set_error(MYERR_01S02,
           "Forcing the Driver Manager to use ODBC cursor library",0);
@@ -368,7 +368,10 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
     case SQL_TRANSLATE_OPTION:
       {
         char buff[100];
-        snprintf(buff, sizeof(buff), "Suppose to set this attribute '%d' through driver manager, not by the driver", (int)Attribute);
+        myodbc_snprintf(buff, sizeof(buff),
+                        "Suppose to set this attribute '%d' through driver "
+                        "manager, not by the driver",
+                        (int)Attribute);
         return ((DBC*)hdbc)->set_error(MYERR_01S02, buff, 0);
       }
 
@@ -401,7 +404,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
           snprintf(buff, sizeof(buff), "SET SESSION TRANSACTION ISOLATION LEVEL %s", level);
           if (SQL_SUCCEEDED(rc = dbc->execute_query(buff, SQL_NTS, TRUE)))
           {
-            dbc->txn_isolation= (size_t)ValuePtr;
+            dbc->txn_isolation = (int)((size_t)ValuePtr);
           }
 
           return rc;
@@ -533,7 +536,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
     break;
 
   case SQL_ATTR_ODBC_CURSORS:
-    if (dbc->ds->force_use_of_forward_only_cursors)
+    if (dbc->ds.opt_FORWARD_CURSOR)
       *((SQLUINTEGER *)num_attr)= SQL_CUR_USE_ODBC;
     else
       *((SQLUINTEGER *)num_attr)= SQL_CUR_USE_IF_NEEDED;
@@ -842,12 +845,12 @@ MySQLGetStmtAttr(SQLHSTMT hstmt, SQLINTEGER Attribute, SQLPOINTER ValuePtr,
             break;
 
         case SQL_ATTR_PARAMSET_SIZE:
-            *(SQLUINTEGER *)ValuePtr= stmt->apd->array_size;
+            *(SQLUINTEGER *)ValuePtr = (SQLUINTEGER)stmt->apd->array_size;
             break;
 
         case SQL_ATTR_ROW_ARRAY_SIZE:
         case SQL_ROWSET_SIZE:
-            *(SQLUINTEGER *)ValuePtr= stmt->ard->array_size;
+            *(SQLUINTEGER *)ValuePtr = (SQLUINTEGER)stmt->ard->array_size;
             break;
 
         case SQL_ATTR_ROW_BIND_OFFSET_PTR:

@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2011, 2021, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2011, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -30,6 +30,7 @@
 
 #include <thread>
 #include <vector>
+#include <ctime>
 
 #include "odbc_util.h"
 #include "mysql_version.h"
@@ -679,7 +680,7 @@ DECLARE_TEST(t_fido_test)
   }
 
   is(OK == alloc_basic_handles_with_opt(&henv1, &hdbc1, &hstmt1, NULL,
-                                        (SQLCHAR*)"u2", (SQLCHAR*)"sha2_password",
+                                        (SQLCHAR*)"u3", (SQLCHAR*)"sha2_password",
                                         NULL, (SQLCHAR*)"DATABASE=;"));
 
   free_basic_handles(&henv1, &hdbc1, &hstmt1);
@@ -715,9 +716,17 @@ DECLARE_TEST(t_fido_callback_test)
   }
 
   SQLHDBC hdbc1 = NULL, hdbc2 = NULL;
-  SQLCHAR *connstr = make_conn_str(NULL, (SQLCHAR*)"u2", (SQLCHAR*)"sha2_password",
-    NULL, (SQLCHAR*)"DATABASE=;", 0);
+  std::vector<std::string> connstrs = {
+    (char*)make_conn_str(NULL, (SQLCHAR*)"uwebauthn", (SQLCHAR*)"sha2_password",
+      NULL, (SQLCHAR*)"DATABASE=;", 0),
+    (char*)make_conn_str(NULL, (SQLCHAR*)"ufido", (SQLCHAR*)"sha2_password",
+      NULL, (SQLCHAR*)"DATABASE=;", 0),
+  };
   fido_var = FIDO_VAL_DEFAULT;
+
+  // We cannot use the C++ random distribution because
+  // some compilers do not like it inside lambdas.
+  std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
   /*
    * Connect using the current value of `connstr`, setting
@@ -726,17 +735,22 @@ DECLARE_TEST(t_fido_callback_test)
    * for connection and CB_FIDO_NOFUNC for not setting any callback) and
    * check if after connection `fido_var` equals `result`.
    */
-  auto fido_test_check = [henv, connstr](int attr_type, void (*callback_func)(const char*), int result)
+  auto fido_test_check = [henv, connstrs](int attr_type, void (*callback_func)(const char*), int result)
   {
-    SQLHDBC hdbc = NULL;
-    ok_env(henv, SQLAllocConnect(henv, &hdbc));
-    if (attr_type != CB_FIDO_NOFUNC)
-      ok_con(hdbc, SQLSetConnectAttr(hdbc, attr_type, (void*)callback_func, SQL_IS_POINTER));
-    fido_var = FIDO_VAL_DEFAULT;
-    SQLDriverConnect(hdbc, NULL, connstr, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
-    SQLDisconnect(hdbc);
-    SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
-    is_num(result, fido_var);
+    // Get a random string.
+    std::string s = connstrs[std::rand() % 2];
+    {
+      SQLHDBC hdbc = NULL;
+      SQLCHAR *connstr = (SQLCHAR*)s.c_str();
+      ok_env(henv, SQLAllocConnect(henv, &hdbc));
+      if (attr_type != CB_FIDO_NOFUNC)
+        ok_con(hdbc, SQLSetConnectAttr(hdbc, attr_type, (void*)callback_func, SQL_IS_POINTER));
+      fido_var = FIDO_VAL_DEFAULT;
+      SQLDriverConnect(hdbc, NULL, connstr, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+      SQLDisconnect(hdbc);
+      SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+      is_num(result, fido_var);
+    }
     return SQL_SUCCESS;
   };
 
@@ -819,43 +833,53 @@ DECLARE_TEST(t_fido_callback_test)
   * callback was called.
   * For global callbacks there should be a check that a callback was set at all.
   */
-  auto fido_thr_global_check = [henv, connstr, fido_func_global]()
+  auto fido_thr_global_check = [henv, connstrs, fido_func_global]()
   {
     auto ptr = (void (*)(const char*))fido_func_global;
-    fido_var = FIDO_VAL_DEFAULT;
-    for (int i = 0; i < 10; ++i)
+    // Get a random string.
+    std::string s = connstrs[std::rand() % 2];
     {
-      SQLHDBC hdbc = NULL;
-      ok_env(henv, SQLAllocConnect(henv, &hdbc));
-      ok_con(hdbc, SQLSetConnectAttr(hdbc, CB_FIDO_GLOBAL,
-        (void*)(ptr), SQL_IS_POINTER));
+      SQLCHAR *connstr = (SQLCHAR*)s.c_str();
+      fido_var = FIDO_VAL_DEFAULT;
+      for (int i = 0; i < 3; ++i)
+      {
+        SQLHDBC hdbc = NULL;
+        ok_env(henv, SQLAllocConnect(henv, &hdbc));
+        ok_con(hdbc, SQLSetConnectAttr(hdbc, CB_FIDO_GLOBAL,
+          (void*)(ptr), SQL_IS_POINTER));
 
-      SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connstr, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
-      SQLDisconnect(hdbc);
-      SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+        SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connstr, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+        SQLDisconnect(hdbc);
+        SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
 
-      is(fido_var != FIDO_VAL_DEFAULT);
+        is(fido_var != FIDO_VAL_DEFAULT);
+      }
     }
     return SQL_SUCCESS;
   };
 
 
-  auto fido_thr_conn_check = [henv, connstr](
+  auto fido_thr_conn_check = [henv, connstrs](
     void (*callback_func)(const char*), int idx)
   {
-    for (int i = 0; i < 10; ++i)
+    // Get a random string.
+    std::string s = connstrs[std::rand() % 2];
     {
-      SQLHDBC hdbc = NULL;
-      ok_env(henv, SQLAllocConnect(henv, &hdbc));
-      ok_con(hdbc, SQLSetConnectAttr(hdbc, CB_FIDO_CONNECTION,
-        (void *)(callback_func), SQL_IS_POINTER));
-      fido_var2[idx] = FIDO_VAL_DEFAULT;
+      SQLCHAR* connstr = (SQLCHAR*)s.c_str();
+      for (int i = 0; i < 3; ++i)
+      {
+        SQLHDBC hdbc = NULL;
+        ok_env(henv, SQLAllocConnect(henv, &hdbc));
+        ok_con(hdbc, SQLSetConnectAttr(hdbc, CB_FIDO_CONNECTION,
+          (void *)(callback_func), SQL_IS_POINTER));
+        fido_var2[idx] = FIDO_VAL_DEFAULT;
 
-      SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connstr, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
-      SQLDisconnect(hdbc);
-      SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
-      int expected_val = idx + 1;
-      is_num(expected_val, fido_var2[idx]);
+        SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connstr, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+        SQLDisconnect(hdbc);
+        SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+        int expected_val = idx + 1;
+        is_num(expected_val, fido_var2[idx]);
+      }
     }
     return SQL_SUCCESS;
   };

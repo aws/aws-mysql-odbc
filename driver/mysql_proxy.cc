@@ -94,10 +94,6 @@ void MYSQL_PROXY::init() {
     this->mysql = mysql_init(nullptr);
 }
 
-bool MYSQL_PROXY::ssl_set(const char* key, const char* cert, const char* ca, const char* capath, const char* cipher) {
-    return mysql_ssl_set(mysql, key, cert, ca, capath, cipher);
-}
-
 bool MYSQL_PROXY::change_user(const char* user, const char* passwd, const char* db) {
     return mysql_change_user(mysql, user, passwd, db);
 }
@@ -141,6 +137,18 @@ void MYSQL_PROXY::get_character_set_info(MY_CHARSET_INFO* charset) {
 
 bool MYSQL_PROXY::autocommit(bool auto_mode) {
     return mysql_autocommit(mysql, auto_mode);
+}
+
+bool MYSQL_PROXY::commit() {
+    return mysql_commit(mysql);
+}
+
+bool MYSQL_PROXY::rollback() {
+    return mysql_rollback(mysql);
+}
+
+bool MYSQL_PROXY::more_results() {
+    return mysql_more_results(mysql);
 }
 
 int MYSQL_PROXY::next_result() {
@@ -208,10 +216,6 @@ MYSQL_FIELD* MYSQL_PROXY::fetch_field(MYSQL_RES* result) {
     return mysql_fetch_field(result);
 }
 
-MYSQL_RES* MYSQL_PROXY::list_fields(const char* table, const char* wild) {
-    return mysql_list_fields(mysql, table, wild);
-}
-
 unsigned long MYSQL_PROXY::real_escape_string(char* to, const char* from, unsigned long length) {
     return mysql_real_escape_string(mysql, to, from, length);
 }
@@ -249,7 +253,12 @@ unsigned long MYSQL_PROXY::stmt_param_count(MYSQL_STMT* stmt) {
 }
 
 bool MYSQL_PROXY::stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
-    return mysql_stmt_bind_param(stmt, bnd);
+  return mysql_stmt_bind_param(stmt, bnd);
+}
+
+bool MYSQL_PROXY::stmt_bind_named_param(MYSQL_STMT *stmt, MYSQL_BIND *binds,
+                                        unsigned n_params, const char **names) {
+  return mysql_stmt_bind_named_param(stmt, binds, n_params, names);
 }
 
 bool MYSQL_PROXY::stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd) {
@@ -372,7 +381,7 @@ unsigned int MYSQL_PROXY::get_server_status() const {
 
 void MYSQL_PROXY::delete_ds() {
     if (ds) {
-        ds_delete(ds);
+        delete ds;
         ds = nullptr;
     }
 }
@@ -387,7 +396,6 @@ void MYSQL_PROXY::set_connection(CONNECTION_PROXY* connection_proxy) {
     close();
     this->mysql = connection_proxy->move_mysql_connection();
     // delete the ds initialized in CONNECTION_HANDLER::clone_dbc()
-    connection_proxy->delete_ds();
     delete connection_proxy;
 }
 

@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2000, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -38,13 +38,12 @@
 
 #include <locale.h>
 
-
 /*
   @type    : myodbc3 internal
   @purpose : internal function to execute query and return result
   frees query if query != stmt->query
 */
-SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
+SQLRETURN do_query(STMT *stmt, std::string query)
 {
     if (stmt && stmt->dbc && stmt->dbc->fh) {
       stmt->dbc->fh->invoke_start_time();
@@ -54,11 +53,12 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     SQLRETURN error = SQL_ERROR;
     int native_error = 0;
+    SQLULEN query_length = query.length();
     bool trigger_failover_upon_error = true;
 
     LOCK_STMT_DEFER(stmt);
 
-    if (!query)
+    if (query.empty())
     {
       /* Probably error from insert_param */
       goto exit;
@@ -78,10 +78,10 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
     if (query_length == 0)
     {
-      query_length= strlen(query);
+      query_length= strlen(query.c_str());
     }
 
-    MYLOG_STMT_TRACE(stmt, query);
+    MYLOG_STMT_TRACE(stmt, query.c_str());
     DO_LOCK_STMT();
 
     if ( !is_server_alive( stmt->dbc ) )
@@ -99,24 +99,24 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
      * and when no musltiple statements is allowed - we can't now parse query
      * that well to detect multiple queries.
      */
-    if (stmt->dbc->ds->cursor_prefetch_number > 0
-        && !stmt->dbc->ds->allow_multiple_statements
+    if (stmt->dbc->ds.opt_PREFETCH > 0
+        && !stmt->dbc->ds.opt_MULTI_STATEMENTS
         && stmt->stmt_options.cursor_type == SQL_CURSOR_FORWARD_ONLY
-        && scrollable(stmt, query, query+query_length)
+        && scrollable(stmt, query.c_str(), query.c_str() + query_length)
         && !ssps_used(stmt))
     {
       /* we might want to read primary key info at this point, but then we have to
          know if we have a select from a single table...
        */
       ssps_close(stmt);
-      scroller_reset(stmt);
+      stmt->scroller.reset();
 
       stmt->scroller.row_count= calc_prefetch_number(
-                                      stmt->dbc->ds->cursor_prefetch_number,
+                                      stmt->dbc->ds.opt_PREFETCH,
                                       stmt->ard->array_size,
                                       stmt->stmt_options.max_rows);
 
-      scroller_create(stmt, query, query_length);
+      scroller_create(stmt, query.c_str(), query_length);
       scroller_move(stmt);
       MYLOG_STMT_TRACE(stmt, stmt->scroller.query);
 
@@ -129,15 +129,42 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       }
     }
       /* Not using ssps for scroller so far. Relaxing a bit condition
-       if allow_multiple_statements option selected by primitive check if
+       if MULTI_STATEMENTS option selected by primitive check if
        this is a batch of queries */
     else if (ssps_used(stmt))
     {
-      native_error = 0;
-      if (stmt->param_bind.size() && stmt->param_count)
-        native_error = stmt->dbc->connection_proxy->stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
 
-      if (native_error == 0)
+      // This assertion will need to be revisited later.
+      // The situation when we can have at most one attribute is temporary.
+      assert(
+        (stmt->param_count == stmt->query_attr_names.size())
+        || (1+stmt->param_count == stmt->query_attr_names.size())
+      );
+
+      bool bind_failed = false;
+
+      // FIXME: What if runtime client library version does not agree with version used here?
+
+#if MYSQL_VERSION_ID >= 80300
+      // For older servers that don't support named params
+      // we just don't count them and specify the number of unnamed params.
+      unsigned int p_number = is_minimum_version(stmt->dbc->connection_proxy->get_server_version(), "8.3.0") ?
+        stmt->query_attr_names.size() : stmt->param_count;
+
+      if (p_number)
+      {
+        bind_failed = stmt->dbc->connection_proxy->stmt_bind_named_param(stmt->ssps,
+          stmt->param_bind.data(), p_number, stmt->query_attr_names.data());
+      }
+
+#else
+      if (stmt->param_bind.size() && stmt->param_count)
+      {
+        bind_failed = stmt->dbc->connection_proxy->stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
+      }
+#endif
+
+      if (!bind_failed)
       {
         native_error = stmt->dbc->connection_proxy->stmt_execute(stmt->ssps);
       }
@@ -149,7 +176,8 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
 
         /* For some errors - translating to more appropriate status */
         translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                        stmt->dbc->connection_proxy->stmt_errno(stmt->ssps));
+                        stmt->error.native_error);
+        error = stmt->error.retcode;
         goto exit;
       }
       MYLOG_STMT_TRACE(stmt, "ssps has been executed");
@@ -167,10 +195,10 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
         goto exit;
       }
 
-      SQLRETURN rc = stmt->dbc->execute_query(query, query_length, false);
+      SQLRETURN rc = stmt->dbc->execute_query(query.c_str(), query_length, false);
       if (SQL_SUCCEEDED(rc))
       {
-          const std::vector<std::string> statements = parse_query_into_statements(query);
+          const std::vector<std::string> statements = parse_query_into_statements(query.c_str());
           for (int i = statements.size() - 1; i >= 0; i--)
           {
               std::string statement = statements[i];
@@ -224,7 +252,7 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
       /* Query was supposed to return result, but result is NULL*/
       if (returned_result(stmt))
       {
-        stmt->set_error(MYERR_S1000);
+        error = stmt->set_error(MYERR_S1000);
         goto exit;
       }
       else /* Query was not supposed to return a result */
@@ -232,13 +260,15 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
         error= SQL_SUCCESS;     /* no result set */
         stmt->state= ST_EXECUTED;
         update_affected_rows(stmt);
+        // The query without results can end spans here.
+        stmt->telemetry.span_end(stmt);
         goto exit;
       }
     }
 
     if (bind_result(stmt) || get_result(stmt))
     {
-        stmt->set_error(MYERR_S1000);
+        error = stmt->set_error(MYERR_S1000);
         goto exit;
     }
     /* Caching row counts for queries returning resultset as well */
@@ -264,15 +294,14 @@ SQLRETURN do_query(STMT *stmt, char *query, SQLULEN query_length)
     error= SQL_SUCCESS;
 
 exit:
+    if (!SQL_SUCCEEDED(error)) {
+      stmt->telemetry.set_error(stmt, stmt->error.message);
+    }
+
     if (trigger_failover_upon_error && error == SQL_ERROR) {
       const char *error_code, *error_msg;
       if (stmt->dbc->fh->trigger_failover_if_needed(stmt->error.sqlstate.c_str(), error_code, error_msg))
         stmt->set_error(error_code, error_msg, 0);
-    }
-
-    if (query != GET_QUERY(&stmt->query))
-    {
-      x_free(query);
     }
 
     /*
@@ -281,13 +310,12 @@ exit:
     */
     if (GET_QUERY(&stmt->orig_query))
     {
-      copy_parsed_query(&stmt->orig_query, &stmt->query);
-      reset_parsed_query(&stmt->orig_query, NULL, NULL, NULL);
+      stmt->query = stmt->orig_query;
+      stmt->orig_query.reset(NULL, NULL, NULL);
     }
 
     return error;
 }
-
 
 /*
   @type    : myodbc3 internal
@@ -300,11 +328,10 @@ exit:
              so passing stmt->query->query can lead to memory leak.
 */
 
-SQLRETURN insert_params(STMT *stmt, SQLULEN row, char **finalquery,
-                        SQLULEN *finalquery_length)
+SQLRETURN insert_params(STMT *stmt, SQLULEN row, std::string &finalquery)
 {
   assert(stmt);
-  char *query= GET_QUERY(&stmt->query);
+  const char *query= GET_QUERY(&stmt->query);
   uint i,length, had_info= 0;
   SQLRETURN rc= SQL_SUCCESS;
 
@@ -316,7 +343,7 @@ SQLRETURN insert_params(STMT *stmt, SQLULEN row, char **finalquery,
   {
     DESCREC *aprec= desc_get_rec(stmt->apd, i, FALSE);
     DESCREC *iprec= desc_get_rec(stmt->ipd, i, FALSE);
-    char *pos;
+    const char *pos;
     MYSQL_BIND * bind;
 
     if (stmt->dummy_state != ST_DUMMY_PREPARED &&
@@ -338,7 +365,7 @@ SQLRETURN insert_params(STMT *stmt, SQLULEN row, char **finalquery,
     }
     else
     {
-      pos= get_param_pos(&stmt->query, i);
+      pos = stmt->query.get_param_pos(i);
       length= (uint) (pos-query);
 
       if (stmt->add_to_buffer(query, length) == NULL)
@@ -381,22 +408,7 @@ SQLRETURN insert_params(STMT *stmt, SQLULEN row, char **finalquery,
       goto memerror;
     }
 
-    if (finalquery_length!= NULL)
-    {
-      *finalquery_length = stmt->buf_pos();
-    }
-
-    if (finalquery!=NULL)
-    {
-      char *dupquery = NULL;
-
-      if (!(dupquery = (char*)myodbc_memdup(stmt->buf(),
-        stmt->buf_pos(), MYF(0))))
-      {
-        goto memerror;
-      }
-      *finalquery= dupquery;
-    }
+    finalquery = std::string(stmt->buf(), stmt->buf_pos());
   }
 
   return rc;
@@ -452,7 +464,7 @@ BOOL allocate_param_buffer(MYSQL_BIND *bind, unsigned long length)
   }
   else if(bind->buffer_length < length)
   {
-    bind->buffer= myodbc_realloc(bind->buffer, length, MYF(0));
+    bind->buffer= myodbc_realloc(bind->buffer, length);
     bind->buffer_length= length;
   }
 
@@ -476,26 +488,24 @@ unsigned long add2param_value(MYSQL_BIND *bind, unsigned long pos,
   return pos + length;
 }
 
-
-static
-BOOL bind_param(MYSQL_BIND *bind, const char *value, unsigned long length,
+bool bind_param(MYSQL_BIND *bind, const char *value, unsigned long length,
                 enum enum_field_types buffer_type)
 {
   if (bind->buffer == (void*)value)
   {
-    return FALSE;
+    return false;
   }
 
   if (allocate_param_buffer(bind, length))
   {
-    return TRUE;
+    return true;
   }
 
   memcpy(bind->buffer, value, length);
   bind->buffer_type= buffer_type;
   bind->length_value= length;
 
-  return FALSE;
+  return false;
 }
 
 /* TRUE - on memory allocation error */
@@ -591,78 +601,78 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
     case SQL_C_BIT:
     case SQL_C_TINYINT:
     case SQL_C_STINYINT:
-        *length= my_int2str((long)*((signed char *)*res), buff, -10, 0) - buff;
+        *length = (long)(my_int2str((long)*((signed char *)*res), buff, -10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_UTINYINT:
-        *length= my_int2str((long)*((unsigned char *)*res), buff, -10, 0) - buff;
+        *length = (long)(my_int2str((long)*((unsigned char *)*res), buff, -10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_SHORT:
     case SQL_C_SSHORT:
-        *length= my_int2str((long)*((short int *)*res), buff, -10, 0) - buff;
+        *length = (long)(my_int2str((long)*((short int *)*res), buff, -10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_USHORT:
-        *length= my_int2str((long)*((unsigned short int *)*res), buff, -10, 0) -
-                  buff;
+        *length = (long)(my_int2str((long)*((unsigned short int *)*res), buff, -10, 0) -
+                  buff);
         *res= buff;
         break;
     case SQL_C_LONG:
     case SQL_C_SLONG:
-        *length= my_int2str(*((SQLINTEGER*) *res), buff, -10, 0) - buff;
+        *length = (long)(my_int2str(*((SQLINTEGER*) *res), buff, -10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_ULONG:
-        *length= my_int2str(*((SQLUINTEGER*) *res), buff, 10, 0) - buff;
+        *length = (long)(my_int2str(*((SQLUINTEGER*) *res), buff, 10, 0) - buff);
         *res= buff;
         break;
     case SQL_C_SBIGINT:
-        *length= myodbc_ll2str(*((longlong*) *res), buff, -10) - buff;
+        *length = (long)(myodbc_ll2str(*((longlong*) *res), buff, -10) - buff);
         *res= buff;
         break;
     case SQL_C_UBIGINT:
-        *length= myodbc_ll2str(*((ulonglong*) *res), buff, 10) - buff;
+        *length = (long)(myodbc_ll2str(*((ulonglong*) *res), buff, 10) - buff);
         *res= buff;
         break;
     case SQL_C_FLOAT:
       if ( iprec->concise_type != SQL_NUMERIC && iprec->concise_type != SQL_DECIMAL )
       {
-        snprintf(buff, buff_max, "%.17e", *((float*) *res));
+        // Better precision
+        myodbc_d2str(*((float *)*res), buff, buff_max);
       }
       else
       {
-        /* We should perpare this data for string comparison */
-        snprintf(buff, buff_max, "%.15e", *((float*) *res));
+        // We should perpare this data for string comparison, less precision
+        myodbc_d2str(*((float *)*res), buff, buff_max, false);
       }
-      delocalize_radix(buff);
-      *length= strlen(*res= buff);
+      *length = (long)strlen(*res= buff);
       break;
     case SQL_C_DOUBLE:
       if ( iprec->concise_type != SQL_NUMERIC && iprec->concise_type != SQL_DECIMAL )
       {
-        snprintf(buff, buff_max, "%.17e", *((double*) *res));
+        myodbc_d2str(*((double *)*res), buff, buff_max);
       }
       else
       {
-        /* We should perpare this data for string comparison */
-        snprintf(buff, buff_max, "%.15e",*((double*) *res));
+        // We should perpare this data for string comparison, less precision
+        myodbc_d2str(*((double*)*res), buff, buff_max, false);
       }
-      delocalize_radix(buff);
-      *length= strlen(*res= buff);
+      *length = (long)strlen(*res= buff);
       break;
     case SQL_C_DATE:
     case SQL_C_TYPE_DATE:
       {
         DATE_STRUCT *date= (DATE_STRUCT*) *res;
-        if (stmt->dbc->ds->min_date_to_zero && !date->year
+        if (stmt->dbc->ds.opt_MIN_DATE_TO_ZERO && !date->year
           && (date->month == date->day == 1))
         {
-          *length= snprintf(buff, buff_max, "0000-00-00");
+          *length = myodbc_snprintf(buff, buff_max, "0000-00-00");
         }
         else
         {
-          *length= snprintf(buff, buff_max, "%04d-%02d-%02d", date->year, date->month, date->day);
+          *length = myodbc_snprintf(buff, buff_max, "%04d-%02d-%02d",
+                                    date->year, date->month, date->day);
         }
         *res= buff;
         break;
@@ -677,8 +687,8 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
           return stmt->set_error("22008", "Not a valid time value supplied", 0);
         }
 
-        *length = snprintf(buff, buff_max, "%02d:%02d:%02d",
-                           time->hour, time->minute, time->second);
+        *length = myodbc_snprintf(buff, buff_max, "%02d:%02d:%02d",
+                                  time->hour, time->minute, time->second);
         *res= buff;
         break;
       }
@@ -687,17 +697,18 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
       {
         TIMESTAMP_STRUCT *time= (TIMESTAMP_STRUCT*) *res;
 
-        if (stmt->dbc->ds->min_date_to_zero &&
+        if (stmt->dbc->ds.opt_MIN_DATE_TO_ZERO &&
             !time->year && (time->month == time->day == 1))
         {
-          *length= snprintf(buff, buff_max, "0000-00-00 %02d:%02d:%02d", time->hour,
-                            time->minute, time->second);
+          *length = myodbc_snprintf(buff, buff_max, "0000-00-00 %02d:%02d:%02d",
+                                    time->hour, time->minute, time->second);
         }
         else
         {
-          *length= snprintf(buff, buff_max, "%04d-%02d-%02d %02d:%02d:%02d",
-                            time->year, time->month, time->day,
-                            time->hour, time->minute, time->second);
+          *length = myodbc_snprintf(buff, buff_max,
+                    "%04d-%02d-%02d %02d:%02d:%02d",
+                    time->year, time->month, time->day,
+                    time->hour, time->minute, time->second);
         }
 
         if (time->fraction)
@@ -707,7 +718,8 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
           /* Start cleaning from the end */
           int tmp_pos= 9;
 
-          snprintf(tmp_buf, buff_max - *length, ".%09d", time->fraction);
+          myodbc_snprintf(tmp_buf, buff_max - *length,
+                          ".%09d", time->fraction);
 
           /*
             ODBC specification defines nanoseconds granularity for
@@ -738,7 +750,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
                       (SQLCHAR **) res,
                       (SQLCHAR) iprec->precision,
                       (SQLSCHAR) iprec->scale, &trunc);
-        *length= strlen(*res);
+        *length = (long)strlen(*res);
         /* TODO no way to return an error here? */
         if (trunc == SQLNUM_TRUNC_FRAC)
         {/* 01S07 SQL_SUCCESS_WITH_INFO */
@@ -762,28 +774,32 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
           /* Dirty-hackish */
           if (ssps_used(stmt))
           {
-            *length= sprintf(buff, "%d:%02d:00", interval->intval.day_second.hour,
-                                               interval->intval.day_second.minute);
+            *length = myodbc_snprintf(buff, buff_max, "%d:%02d:00",
+                                      interval->intval.day_second.hour,
+                                      interval->intval.day_second.minute);
           }
           else
           {
-            *length= sprintf(buff, "'%d:%02d:00'", interval->intval.day_second.hour,
-                                               interval->intval.day_second.minute);
+            *length = myodbc_snprintf(buff, buff_max, "'%d:%02d:00'",
+                                      interval->intval.day_second.hour,
+                                      interval->intval.day_second.minute);
           }
         }
         else
         {
           if (ssps_used(stmt))
           {
-            *length= sprintf(buff, "%d:%02d:%02d", interval->intval.day_second.hour,
-                                                 interval->intval.day_second.minute,
-                                                 interval->intval.day_second.second);
+            *length = myodbc_snprintf(buff, buff_max, "%d:%02d:%02d",
+                                      interval->intval.day_second.hour,
+                                      interval->intval.day_second.minute,
+                                      interval->intval.day_second.second);
           }
           else
           {
-            *length= sprintf(buff, "'%d:%02d:%02d'", interval->intval.day_second.hour,
-                                                 interval->intval.day_second.minute,
-                                                 interval->intval.day_second.second);
+            *length = myodbc_snprintf(buff, buff_max, "'%d:%02d:%02d'",
+                                      interval->intval.day_second.hour,
+                                      interval->intval.day_second.minute,
+                                      interval->intval.day_second.second);
           }
         }
 
@@ -861,7 +877,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
                                           apd->bind_offset_ptr,
                                           apd->bind_type,
                                           sizeof(SQLLEN), row);
-      length= *octet_length_ptr;
+      length = (long)*octet_length_ptr;
     }
 
     indicator_ptr= (SQLLEN*)ptr_offset_adjust(aprec->indicator_ptr,
@@ -872,7 +888,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
     if (aprec->data_ptr)
     {
       SQLINTEGER default_size= bind_length(aprec->concise_type,
-                                           aprec->octet_length);
+                                           (ulong)aprec->octet_length);
       data= (char*)ptr_offset_adjust(aprec->data_ptr, apd->bind_offset_ptr,
                               apd->bind_type, default_size, row);
     }
@@ -896,17 +912,17 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
       {
         if (aprec->concise_type == SQL_C_WCHAR)
         {
-          length= sqlwcharlen((SQLWCHAR *)data) * sizeof(SQLWCHAR);
+          length = (long)sqlwcharlen((SQLWCHAR *)data) * sizeof(SQLWCHAR);
         }
         else
         {
-          length= strlen(data);
+          length = (long)strlen(data);
         }
 
         if (!octet_length_ptr && aprec->octet_length > 0 &&
             aprec->octet_length != SQL_SETPARAM_VALUE_MAX)
         {
-          length= myodbc_min(length, aprec->octet_length);
+          length = (long)myodbc_min(length, aprec->octet_length);
         }
       }
       else
@@ -933,7 +949,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
     }
     else if (IS_DATA_AT_EXEC(octet_length_ptr))
     {
-        length= aprec->par.val_length();
+        length = (long)aprec->par.val_length();
         if ( !(data= aprec->par.val()) )
         {
           put_default_value(stmt, bind);
@@ -1008,11 +1024,6 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
         {
           TIMESTAMP_STRUCT ts;
 
-          /* For now I think it is safer to assume a dot is always a
-              separator */
-          /* aprec->concise_type == SQL_C_TYPE_TIMESTAMP
-          || aprec->concise_type == SQL_C_TIMESTAMP
-          || stmt->dbc->ds->dont_use_set_locale */
           str_to_ts(&ts, data, length, 1, TRUE);
 
           /* Overflow also possible if converted from other C types
@@ -1026,7 +1037,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
               Not sure if fraction should be considered as an overflow.
               In fact specs say about "time fields only"
             */
-          if (!stmt->dbc->ds->no_date_overflow && TIME_FIELDS_NONZERO(ts))
+          if (!stmt->dbc->ds.opt_NO_DATE_OVERFLOW && TIME_FIELDS_NONZERO(ts))
           {
             return stmt->set_error("22008", "Date overflow", 0);
           }
@@ -1128,11 +1139,13 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
 
           if (bind != NULL)
           {
-            length= sprintf(buff, "%02d:%02d:%02d", time->hour, time->minute, time->second);
+            length = myodbc_snprintf(buff, sizeof(buff), "%02d:%02d:%02d",
+                                     time->hour, time->minute, time->second);
           }
           else
           {
-            length= sprintf(buff, "'%02d:%02d:%02d'", time->hour, time->minute, time->second);
+            length = myodbc_snprintf(buff, sizeof(buff), "'%02d:%02d:%02d'",
+                                     time->hour, time->minute, time->second);
           }
 
           if (put_param_value(stmt, bind, buff, length))
@@ -1166,17 +1179,17 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
 
           if (bind != NULL)
           {
-            length= sprintf(buff, "%02d:%02d:%02d",
-                  hours,
-                  (int) time/100%100,
-                  (int) time%100);
+            length = myodbc_snprintf(buff, sizeof(buff), "%02d:%02d:%02d",
+                                     hours,
+                                     (int) time/100%100,
+                                     (int) time%100);
           }
           else
           {
-            length= sprintf(buff, "'%02d:%02d:%02d'",
-                  hours,
-                  (int) time/100%100,
-                  (int) time%100);
+            length = myodbc_snprintf(buff, sizeof(buff), "'%02d:%02d:%02d'",
+                                     hours,
+                                     (int) time/100%100,
+                                     (int) time%100);
           }
 
           if (put_param_value(stmt, bind, buff, length))
@@ -1209,12 +1222,12 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
         {
           char *to= buff, *from= data;
           char *end= from+length;
-          char *local_thousands_sep= thousands_sep;
-          char *local_decimal_point= decimal_point;
-          uint local_thousands_sep_length= thousands_sep_length;
-          uint local_decimal_point_length= decimal_point_length;
+          const char *local_thousands_sep = thousands_sep.c_str();
+          const char *local_decimal_point = decimal_point.c_str();
+          size_t local_thousands_sep_length = thousands_sep.length();
+          size_t local_decimal_point_length = decimal_point.length();
 
-          if (!stmt->dbc->ds->dont_use_set_locale)
+          if (!stmt->dbc->ds.opt_NO_LOCALE)
           {
             /* force use of . as decimal point */
             local_thousands_sep= ",";
@@ -1320,7 +1333,7 @@ memerror:
 
 SQLRETURN do_my_pos_cursor_std( STMT *pStmt, STMT *pStmtCursor )
 {
-  char *          pszQuery= GET_QUERY(&pStmt->query);
+  const char *    pszQuery= GET_QUERY(&pStmt->query);
   std::string     query;
   SQLRETURN       nReturn;
 
@@ -1403,8 +1416,10 @@ BOOL map_error_to_param_status( SQLUSMALLINT *param_status_ptr, SQLRETURN rc)
 
 SQLRETURN my_SQLExecute( STMT *pStmt )
 {
-  char       *query, *cursor_pos;
-  int         dae_rec, is_select_stmt, one_of_params_not_succeded= 0;
+  std::string query;
+  char *cursor_pos;
+  int         dae_rec, one_of_params_not_succeded= 0;
+  bool is_select_stmt;
   int         connection_failure= 0;
   STMT       *pStmtCursor = pStmt;
   SQLRETURN   rc = 0;
@@ -1420,252 +1435,283 @@ SQLRETURN my_SQLExecute( STMT *pStmt )
 
   CLEAR_STMT_ERROR( pStmt );
 
-  if (!GET_QUERY(&pStmt->query))
-      return pStmt->set_error( MYERR_S1010,
-                       "No previous SQLPrepare done", 0);
+  pStmt->clear_attr_names();
 
-  if (is_set_names_statement(GET_QUERY(&pStmt->query)))
+  if (ssps_used(pStmt))
   {
-    return pStmt->set_error( MYERR_42000,
-                     "SET NAMES not allowed by driver", 0);
+    // Telemetry info will be added on top of query_attr_names
+    pStmt->query_attr_names.resize(pStmt->param_count);
+    // For parameter binds the telemetry info is written into
+    // an existing element of the params set. Need to make sure it exists.
+    pStmt->allocate_param_bind(pStmt->param_count + 1);
+
+    pStmt->telemetry.span_start(pStmt, "SQL execute");
+  }
+  else
+  {
+    // Start the span for direct query execution "SQL statement"
+    pStmt->telemetry.span_start(pStmt);
   }
 
-  if ((cursor_pos= check_if_positioned_cursor_exists(pStmt, &pStmtCursor)))
+  try
   {
-    /* Save a copy of the query, because we're about to modify it. */
-    if (copy_parsed_query(&pStmt->query, &pStmt->orig_query))
+
+    if (!GET_QUERY(&pStmt->query))
     {
-      return pStmt->set_error(MYERR_S1001,NULL,4001);
+      rc = pStmt->set_error( MYERR_S1010,
+                        "No previous SQLPrepare done", 0);
+      throw pStmt->error;
     }
 
-    /* Cursor statement use mysql_use_result - thus any operation
-       will couse commands out of sync */
-    if (if_forward_cache(pStmtCursor))
+    if (is_set_names_statement(GET_QUERY(&pStmt->query)))
     {
-      return pStmt->set_error(MYERR_S1010,NULL,0);
+      rc = pStmt->set_error( MYERR_42000,
+                      "SET NAMES not allowed by driver", 0);
+      throw pStmt->error;
     }
 
-    /* Chop off the 'WHERE CURRENT OF ...' - doing it a hard way...*/
-    *cursor_pos= '\0';
-
-    return do_my_pos_cursor_std(pStmt, pStmtCursor);
-  }
-
-  my_SQLFreeStmt((SQLHSTMT)pStmt,FREE_STMT_RESET_BUFFERS);
-
-  query= GET_QUERY(&pStmt->query);
-
-  is_select_stmt= is_select_statement(&pStmt->query);
-
-  /* if ssps is used for select query then convert it to non ssps
-   single statement using UNION
-  */
-  if(is_select_stmt && ssps_used(pStmt) && pStmt->apd->array_size > 1)
-  {
-    ssps_close(pStmt);
-  }
-
-  if ( pStmt->ipd->rows_processed_ptr )
-  {
-    *pStmt->ipd->rows_processed_ptr= (SQLULEN)0;
-  }
-
-  LOCK_DBC(pStmt->dbc);
-
-  for (row= 0; row < pStmt->apd->array_size; ++row)
-  {
-    if ( pStmt->param_count )
+    if ((cursor_pos= check_if_positioned_cursor_exists(pStmt, &pStmtCursor)))
     {
-      /* "The SQL_DESC_ROWS_PROCESSED_PTR field of the APD points to a buffer
-      that contains the number of sets of parameters that have been processed,
-      including error sets."
-      "If SQL_NEED_DATA is returned, the value pointed to by the SQL_DESC_ROWS_PROCESSED_PTR
-      field of the APD is set to the set of parameters that is being processed".
-      And actually driver may continue to process paramsets after error.
-      We need to decide do we want that.
-      (http://msdn.microsoft.com/en-us/library/ms710963%28VS.85%29.aspx
-      see "Using Arrays of Parameters")
-      */
-      if ( pStmt->ipd->rows_processed_ptr )
-        *pStmt->ipd->rows_processed_ptr+= 1;
+      /* Save a copy of the query, because we're about to modify it. */
+      pStmt->orig_query = pStmt->query;
 
-      param_operation_ptr= (SQLUSMALLINT*)ptr_offset_adjust(pStmt->apd->array_status_ptr,
-                                            NULL,
-                                            0/*SQL_BIND_BY_COLUMN*/,
-                                            sizeof(SQLUSMALLINT), row);
-      param_status_ptr= (SQLUSMALLINT*)ptr_offset_adjust(pStmt->ipd->array_status_ptr,
-                                            NULL,
-                                            0/*SQL_BIND_BY_COLUMN*/,
-                                            sizeof(SQLUSMALLINT), row);
-
-      if ( param_operation_ptr
-        && *param_operation_ptr == SQL_PARAM_IGNORE)
+      /* Cursor statement use mysql_use_result - thus any operation
+        will couse commands out of sync */
+      if (if_forward_cache(pStmtCursor))
       {
-        /* http://msdn.microsoft.com/en-us/library/ms712631%28VS.85%29.aspx
-           - comments for SQL_ATTR_PARAM_STATUS_PTR */
-        if (param_status_ptr)
-          *param_status_ptr= SQL_PARAM_UNUSED;
-
-        continue;
+        rc = pStmt->set_error(MYERR_S1010,NULL,0);
+        throw pStmt->error;
       }
 
-      /*
-       * If any parameters are required at execution time, cannot perform the
-       * statement. It will be done through SQLPutData() and SQLParamData().
-       */
-      if ((dae_rec= desc_find_dae_rec(pStmt->apd)) > -1)
-      {
-        if (pStmt->apd->array_size > 1)
-        {
-          rc= pStmt->set_error("HYC00", "Parameter arrays "
-                              "with data at execution are not supported", 0);
-          lastError= param_status_ptr;
+      /* Chop off the 'WHERE CURRENT OF ...' - doing it a hard way...*/
+      *cursor_pos= '\0';
 
-          one_of_params_not_succeded= 1;
-
-          /* For other errors we continue processing of paramsets
-             So this creates some inconsistency. But I guess that's better
-             that user see diagnostics for this type of error */
-          break;
-        }
-
-        pStmt->current_param= dae_rec;
-        pStmt->dae_type= DAE_NORMAL;
-
-        return SQL_NEED_DATA;
-      }
-
-      /* Making copy of the built query if that is not last paramset for select
-         query. */
-      if (is_select_stmt && row < pStmt->apd->array_size - 1)
-      {
-        rc= insert_params(pStmt, row, NULL, &length);
-      }
-      else
-      {
-        rc= insert_params(pStmt, row, &query, &length);
-      }
-
-      /* Setting status for this paramset*/
-      if (map_error_to_param_status( param_status_ptr, rc))
-      {
-        lastError= param_status_ptr;
-      }
-
-      if (rc != SQL_SUCCESS)
-      {
-        one_of_params_not_succeded= 1;
-      }
-
+      rc = do_my_pos_cursor_std(pStmt, pStmtCursor);
       if (!SQL_SUCCEEDED(rc))
-      {
-        continue/*return rc*/;
-      }
-
-      /* For "SELECT" statement constructing single statement using
-         "UNION ALL" */
-      if (pStmt->apd->array_size > 1 && is_select_stmt)
-      {
-        if (row < pStmt->apd->array_size - 1)
-        {
-          const char * stmtsBinder= " UNION ALL ";
-          const ulong binderLength= strlen(stmtsBinder);
-
-          pStmt->add_to_buffer(stmtsBinder, binderLength);
-          length+= binderLength;
-        }
-      }
+        throw pStmt->error;
+      else
+        return rc;
     }
 
-    if (!is_select_stmt || row == pStmt->apd->array_size-1)
+    my_SQLFreeStmt((SQLHSTMT)pStmt,FREE_STMT_RESET_BUFFERS);
+
+    query= GET_QUERY(&pStmt->query);
+
+    is_select_stmt = pStmt->query.is_select_statement();
+
+    /* if ssps is used for select query then convert it to non ssps
+    single statement using UNION
+    */
+    if(is_select_stmt && ssps_used(pStmt) && pStmt->apd->array_size > 1)
     {
-      if (!connection_failure)
+      ssps_close(pStmt);
+    }
+
+    if ( pStmt->ipd->rows_processed_ptr )
+    {
+      *pStmt->ipd->rows_processed_ptr= (SQLULEN)0;
+    }
+
+    LOCK_DBC(pStmt->dbc);
+
+    for (row= 0; row < pStmt->apd->array_size; ++row)
+    {
+      if ( pStmt->param_count )
       {
-        rc= do_query(pStmt, query, length);
-      }
-      else
-      {
-        if (query != GET_QUERY(&pStmt->query))
+        /* "The SQL_DESC_ROWS_PROCESSED_PTR field of the APD points to a buffer
+        that contains the number of sets of parameters that have been processed,
+        including error sets."
+        "If SQL_NEED_DATA is returned, the value pointed to by the SQL_DESC_ROWS_PROCESSED_PTR
+        field of the APD is set to the set of parameters that is being processed".
+        And actually driver may continue to process paramsets after error.
+        We need to decide do we want that.
+        (http://msdn.microsoft.com/en-us/library/ms710963%28VS.85%29.aspx
+        see "Using Arrays of Parameters")
+        */
+        if ( pStmt->ipd->rows_processed_ptr )
+          *pStmt->ipd->rows_processed_ptr+= 1;
+
+        param_operation_ptr= (SQLUSMALLINT*)ptr_offset_adjust(pStmt->apd->array_status_ptr,
+                                              NULL,
+                                              0/*SQL_BIND_BY_COLUMN*/,
+                                              sizeof(SQLUSMALLINT), row);
+        param_status_ptr= (SQLUSMALLINT*)ptr_offset_adjust(pStmt->ipd->array_status_ptr,
+                                              NULL,
+                                              0/*SQL_BIND_BY_COLUMN*/,
+                                              sizeof(SQLUSMALLINT), row);
+
+        if ( param_operation_ptr
+          && *param_operation_ptr == SQL_PARAM_IGNORE)
         {
-          x_free(query);
+          /* http://msdn.microsoft.com/en-us/library/ms712631%28VS.85%29.aspx
+            - comments for SQL_ATTR_PARAM_STATUS_PTR */
+          if (param_status_ptr)
+            *param_status_ptr= SQL_PARAM_UNUSED;
+
+          continue;
         }
 
         /*
-          If the original query was modified, we reset stmt->query so that the
-          next execution re-starts with the original query.
+        * If any parameters are required at execution time, cannot perform the
+        * statement. It will be done through SQLPutData() and SQLParamData().
         */
-        if (GET_QUERY(&pStmt->orig_query))
+        if ((dae_rec= desc_find_dae_rec(pStmt->apd)) > -1)
         {
-          copy_parsed_query(&pStmt->orig_query, &pStmt->query);
-          reset_parsed_query(&pStmt->orig_query, NULL, NULL, NULL);
+          if (pStmt->apd->array_size > 1)
+          {
+            rc= pStmt->set_error("HYC00", "Parameter arrays "
+                                "with data at execution are not supported", 0);
+            lastError= param_status_ptr;
+
+            one_of_params_not_succeded= 1;
+
+            /* For other errors we continue processing of paramsets
+              So this creates some inconsistency. But I guess that's better
+              that user see diagnostics for this type of error */
+            break;
+          }
+
+          pStmt->current_param= dae_rec;
+          pStmt->dae_type= DAE_NORMAL;
+
+          return SQL_NEED_DATA;
         }
 
-        /* with broken connection we always return error for all next queries */
-        rc= SQL_ERROR;
+        /* Making copy of the built query if that is not last paramset for select
+          query. */
+        if (is_select_stmt && row < pStmt->apd->array_size - 1)
+        {
+          // Just ignore the dummy query
+          std::string dummy;
+          rc= insert_params(pStmt, row, dummy);
+        }
+        else
+        {
+          rc= insert_params(pStmt, row, query);
+        }
+
+        /* Setting status for this paramset*/
+        if (map_error_to_param_status( param_status_ptr, rc))
+        {
+          lastError= param_status_ptr;
+        }
+
+        if (rc != SQL_SUCCESS)
+        {
+          one_of_params_not_succeded= 1;
+        }
+
+        if (!SQL_SUCCEEDED(rc))
+        {
+          continue/*return rc*/;
+        }
+
+        /* For "SELECT" statement constructing single statement using
+          "UNION ALL" */
+        if (pStmt->apd->array_size > 1 && is_select_stmt)
+        {
+          if (row < pStmt->apd->array_size - 1)
+          {
+            const char * stmtsBinder= " UNION ALL ";
+            const size_t binderLength= strlen(stmtsBinder);
+
+            pStmt->add_to_buffer(stmtsBinder, binderLength);
+            length+= binderLength;
+          }
+        }
       }
 
-      if (is_connection_lost(pStmt->error.native_error)
-        && handle_connection_error(pStmt))
+      if (!is_select_stmt || row == pStmt->apd->array_size-1)
       {
-        connection_failure= 1;
-      }
+        if (!connection_failure)
+        {
+          rc = do_query(pStmt, query);
+        }
+        else
+        {
+          /*
+            If the original query was modified, we reset stmt->query so that the
+            next execution re-starts with the original query.
+          */
+          if (GET_QUERY(&pStmt->orig_query))
+          {
+            pStmt->query = pStmt->orig_query;
+            pStmt->orig_query.reset(NULL, NULL, NULL);
+          }
 
-      if (map_error_to_param_status(param_status_ptr, rc))
-      {
-        lastError= param_status_ptr;
-      }
+          /* with broken connection we always return error for all next queries */
+          rc= SQL_ERROR;
+        }
 
-      /* if we have anything but not SQL_SUCCESS for any paramset, we return SQL_SUCCESS_WITH_INFO
-         as the whole operation result */
-      if (rc != SQL_SUCCESS)
-      {
-        one_of_params_not_succeded= 1;
-      }
-      else
-      {
-        all_parameters_failed= 0;
-      }
+        if (is_connection_lost(pStmt->error.native_error)
+          && handle_connection_error(pStmt))
+        {
+          connection_failure= 1;
+        }
 
-      length= 0;
+        if (map_error_to_param_status(param_status_ptr, rc))
+        {
+          lastError= param_status_ptr;
+        }
+
+        /* if we have anything but not SQL_SUCCESS for any paramset, we return SQL_SUCCESS_WITH_INFO
+          as the whole operation result */
+        if (rc != SQL_SUCCESS)
+        {
+          one_of_params_not_succeded= 1;
+        }
+        else
+        {
+          all_parameters_failed= 0;
+        }
+
+        length= 0;
+      }
+    }
+
+    /* Changing status for last detected error to SQL_PARAM_ERROR as we have
+      diagnostics for it */
+    if (lastError != NULL)
+    {
+      *lastError= SQL_PARAM_ERROR;
+    }
+
+    /* Setting not processed paramsets status to SQL_PARAM_UNUSED
+      this is needed if we stop paramsets processing on error.
+    */
+    if (param_status_ptr != NULL)
+    {
+      while (++row < pStmt->apd->array_size)
+      {
+        param_status_ptr= (SQLUSMALLINT*)ptr_offset_adjust(pStmt->ipd->array_status_ptr,
+                                            NULL,
+                                            0/*SQL_BIND_BY_COLUMN*/,
+                                            sizeof(SQLUSMALLINT), row);
+
+        *param_status_ptr= SQL_PARAM_UNUSED;
+      }
+    }
+    /* code */
+
+    if (pStmt->dummy_state == ST_DUMMY_PREPARED)
+        pStmt->dummy_state= ST_DUMMY_EXECUTED;
+
+    if (pStmt->apd->array_size > 1)
+    {
+      if (all_parameters_failed)
+      {
+        rc = SQL_ERROR;
+        throw pStmt->error;
+      }
+      else if (one_of_params_not_succeded != 0)
+      {
+        return SQL_SUCCESS_WITH_INFO;
+      }
     }
   }
-
-  /* Changing status for last detected error to SQL_PARAM_ERROR as we have
-     diagnostics for it */
-  if (lastError != NULL)
+  catch(const MYERROR& e)
   {
-    *lastError= SQL_PARAM_ERROR;
-  }
-
-  /* Setting not processed paramsets status to SQL_PARAM_UNUSED
-     this is needed if we stop paramsets processing on error.
-  */
-  if (param_status_ptr != NULL)
-  {
-    while (++row < pStmt->apd->array_size)
-    {
-      param_status_ptr= (SQLUSMALLINT*)ptr_offset_adjust(pStmt->ipd->array_status_ptr,
-                                          NULL,
-                                          0/*SQL_BIND_BY_COLUMN*/,
-                                          sizeof(SQLUSMALLINT), row);
-
-      *param_status_ptr= SQL_PARAM_UNUSED;
-    }
-  }
-
-  if (pStmt->dummy_state == ST_DUMMY_PREPARED)
-      pStmt->dummy_state= ST_DUMMY_EXECUTED;
-
-  if (pStmt->apd->array_size > 1)
-  {
-    if (all_parameters_failed)
-    {
-      return SQL_ERROR;
-    }
-    else if (one_of_params_not_succeded != 0)
-    {
-      return SQL_SUCCESS_WITH_INFO;
-    }
+    pStmt->telemetry.set_error(pStmt, e.message);
   }
 
   return rc;
@@ -1684,7 +1730,7 @@ static SQLRETURN select_dae_param_desc(STMT *stmt, DESC **apd, unsigned int *par
     case DAE_SETPOS_INSERT:
     case DAE_SETPOS_UPDATE:
       *apd= stmt->setpos_apd.get();
-      *param_count= stmt->ard->rcount();
+      *param_count = (unsigned int)stmt->ard->rcount();
       break;
     default:
       return stmt->set_error("HY010",
@@ -1718,7 +1764,7 @@ static SQLRETURN find_next_dae_param(STMT *stmt,  SQLPOINTER *token)
     if (IS_DATA_AT_EXEC(octet_length_ptr))
     {
       SQLINTEGER default_size= bind_length(aprec->concise_type,
-                                            aprec->octet_length);
+                                          (ulong)aprec->octet_length);
       stmt->current_param= i + 1;
       if (token)
       {
@@ -1740,17 +1786,16 @@ static SQLRETURN find_next_dae_param(STMT *stmt,  SQLPOINTER *token)
 
 static SQLRETURN execute_dae(STMT *stmt)
 {
-  SQLRETURN rc = SQL_ERROR;
-  char *query;
-  SQLULEN query_len = 0;
+  SQLRETURN rc;
+  std::string query;
 
   switch (stmt->dae_type)
   {
   case DAE_NORMAL:
-    query= GET_QUERY(&stmt->query);
-    if (!SQL_SUCCEEDED(rc= insert_params(stmt, 0, &query, &query_len)))
+    query = GET_QUERY(&stmt->query);
+    if (!SQL_SUCCEEDED(rc= insert_params(stmt, 0, query)))
       break;
-    rc= do_query(stmt, query, query_len);
+    rc= do_query(stmt, query);
     break;
   case DAE_SETPOS_INSERT:
     stmt->dae_type= DAE_SETPOS_DONE;
@@ -1784,7 +1829,7 @@ static SQLRETURN find_next_out_stream(STMT *stmt, SQLPOINTER *token)
     if (token)
     {
       SQLINTEGER default_size= bind_length(rec->concise_type,
-                                          rec->octet_length);
+                                          (ulong)rec->octet_length);
       *token= ptr_offset_adjust(rec->data_ptr,
                                     stmt->ipd->bind_offset_ptr,
                                     stmt->ipd->bind_type,
@@ -1965,8 +2010,8 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     interfere with the existing one. Therefore, locking is not needed in
     the following block.
   */
-  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds->server8, dbc->ds->port);
-  CONNECTION_PROXY* proxy = dbc->connection_handler->connect(host, dbc->ds);
+  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds.opt_SERVER, dbc->ds.opt_PORT);
+  CONNECTION_PROXY* proxy = dbc->connection_handler->connect(host, &dbc->ds);
 
   /** @todo need to preserve and use ssl params */
   if (!proxy)
@@ -1978,8 +2023,8 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
   {
     char buff[40];
     /* buff is always big enough because max length of %lu is 15 */
-    snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->connection_proxy->thread_id());
-    if (proxy->real_query(buff, strlen(buff)))
+    myodbc_snprintf(buff, sizeof(buff), "KILL /*!50000 QUERY */ %lu", dbc->connection_proxy->thread_id());
+    if (proxy->real_query(buff, (unsigned long)strlen(buff)))
     {
       proxy->close();
       /* We do not set the SQLSTATE here, per the ODBC spec. */

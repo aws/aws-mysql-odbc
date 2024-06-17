@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2013, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -54,7 +54,9 @@ DECLARE_TEST(t_reset_connection)
   }
 
   ok_env(henv1, SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc1));
-  ok_con(hdbc1, SQLConnect(hdbc1, mydsn, strlen((char*)mydsn), myuid, strlen((char*)myuid), mypwd, strlen((char*)mypwd)));
+  ok_con(hdbc1, SQLConnect(hdbc1, mydsn, (SQLSMALLINT)strlen(mydsn),
+                           myuid, (SQLSMALLINT)strlen(myuid),
+                           mypwd, (SQLSMALLINT)strlen(mypwd)));
 
   ok_con(hdbc1, SQLAllocHandle(SQL_HANDLE_STMT, hdbc1, &hstmt1));
 
@@ -66,7 +68,8 @@ DECLARE_TEST(t_reset_connection)
   ok_stmt(hstmt1, SQLFreeStmt(hstmt1, SQL_DROP));
 
   ok_con(hdbc1, SQLSetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
-                                  "t_reset_connection", strlen("t_reset_connection")));
+                                  "t_reset_connection",
+                                  (SQLINTEGER)strlen("t_reset_connection")));
   ok_con(hdbc1, SQLGetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
                                   dbase, sizeof(dbase), &len));
 
@@ -82,7 +85,9 @@ DECLARE_TEST(t_reset_connection)
   ok_env(henv1, SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc1));
 
   /* Here the connection is supposed to be taken from the pool */
-  ok_con(hdbc1, SQLConnect(hdbc1, mydsn, strlen((char*)mydsn), myuid, strlen((char*)myuid), mypwd, strlen((char*)mypwd)));
+  ok_con(hdbc1, SQLConnect(hdbc1, mydsn, (SQLSMALLINT)strlen(mydsn),
+                           myuid, (SQLSMALLINT)strlen(myuid),
+                           mypwd, (SQLSMALLINT)strlen(mypwd)));
 
   ok_con(hdbc1, SQLGetConnectAttr(hdbc1, SQL_ATTR_CURRENT_CATALOG,
                                   dbase, sizeof(dbase), &len));

@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2012, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -35,7 +35,7 @@
 
 #include "driver.h"
 
-static const MY_QUERY_TYPE query_type[]=
+static const MY_QUERY_TYPE query_types_array[]=
 {
   /*myqtSelect*/      {'\1', '\1', NULL},
   /*myqtInsert*/      {'\0', '\1', NULL},
@@ -132,95 +132,75 @@ static const QUERY_TYPE_RESOLVING rule[]=
   {NULL, 0, 0, myqtOther, NULL, NULL}
 };
 
-MY_PARSED_QUERY * init_parsed_query(MY_PARSED_QUERY *pq)
-{
-  if (pq != NULL)
-  {
-    pq->query=      NULL;
-    pq->query_end=  NULL;
-    pq->last_char=  NULL;
-    pq->is_batch=   NULL;
+MY_PARSED_QUERY::MY_PARSED_QUERY() : buf(1024) {
+    query =      NULL;
+    query_end =  NULL;
+    last_char =  NULL;
+    is_batch =   NULL;
 
-    pq->query_type= myqtOther;
-
-    pq->token2.reserve(20);
-    pq->param_pos.reserve(20);
-  }
-
-  return pq;
+    query_type= myqtOther;
+    token2.reserve(20);
+    param_pos.reserve(20);
 }
 
 
-MY_PARSED_QUERY * reset_parsed_query(MY_PARSED_QUERY *pq, char * query,
-                                     char * query_end, CHARSET_INFO *cs)
+void MY_PARSED_QUERY::reset(char * query, char * query_end, CHARSET_INFO *cs)
 {
-  if (pq)
+  token2.clear();
+  param_pos.clear();
+  last_char = nullptr;
+  is_batch = nullptr;
+  query_type = myqtOther;
+  buf.reset();
+
+  if (query == nullptr)
   {
-    x_free(pq->query);
-
-    pq->token2.clear();
-    pq->param_pos.clear();
-
-    pq->last_char= NULL;
-    pq->is_batch=  NULL;
-
-    pq->query_type= myqtOther;
-
-    pq->query= query;
-
-    if (pq->query == NULL)
-    {
-      pq->cs=         NULL;
-      pq->query_end=  NULL;
+    this->query = nullptr;
+    this->cs = nullptr;
+    this->query_end = nullptr;
+  }
+  else
+  {
+    this->cs = cs;
+    size_t query_len = 0;
+    if (query_end) {
+      query_len = query_end - query;
+    } else if (query) {
+      query_len = strlen(query);
     }
-    else
-    {
-      pq->cs=         cs;
-      pq->query_end=  query_end == NULL ? query + strlen(query) : query_end;
-    }
-  }
-
-  return pq;
-}
-
-
-void delete_parsed_query(MY_PARSED_QUERY *pq)
-{
-  if (pq)
-  {
-    x_free(pq->query);
+    buf.add_to_buffer(query, query_len + 1);
+    buf.buf[query_len] = '\0';
+    this->query = buf.buf;
+    this->query_end = this->query + query_len;
   }
 }
 
 
-int copy_parsed_query(MY_PARSED_QUERY* src, MY_PARSED_QUERY *target)
+MY_PARSED_QUERY::~MY_PARSED_QUERY()
+{ }
+
+
+MY_PARSED_QUERY &MY_PARSED_QUERY::operator=(const MY_PARSED_QUERY &src)
 {
-  char * dummy= myodbc_strdup(GET_QUERY(src), MYF(0));
+  if (this == &src)
+    return *this;
 
-  if (dummy == NULL)
+  buf = src.buf;
+  reset(buf.buf, buf.buf + GET_QUERY_LENGTH(&src), cs);
+  if (src.last_char != NULL)
   {
-    return 1;
+    last_char = query + (src.last_char - src.query);
   }
 
-  reset_parsed_query(target, dummy,
-                     dummy + GET_QUERY_LENGTH(src), target->cs);
-
-
-  if (src->last_char != NULL)
+  if (src.is_batch != NULL)
   {
-    target->last_char= target->query + (src->last_char - src->query);
-  }
-  if (src->is_batch != NULL)
-  {
-    target->is_batch= target->query + (src->is_batch - src->query);
+    is_batch = query + (src.is_batch - src.query);
   }
 
-  target->query_type= src->query_type;
-
-  target->token2 = src->token2;
-  target->param_pos = src->param_pos;
-
-  return 0;
+  query_type = src.query_type;
+  token2 = src.token2;
+  param_pos = src.param_pos;
+  return *this;
 }
 
 
@@ -239,71 +219,73 @@ MY_PARSER * init_parser(MY_PARSER * parser, MY_PARSED_QUERY *pq)
 }
 
 
-char * get_token(MY_PARSED_QUERY *pq, uint index)
-{
-  if (index < pq->token2.size())
+const char *MY_PARSED_QUERY::get_token(uint index) {
+  if (index < token2.size())
   {
-    return GET_QUERY(pq) + pq->token2[index];
+    return query + token2[index];
+  }
+
+  return nullptr;
+}
+
+
+const char *MY_PARSED_QUERY::get_param_pos(uint index) {
+  if (index < param_pos.size())
+  {
+    return query + param_pos[index];
   }
 
   return NULL;
 }
 
 
-char* get_param_pos(MY_PARSED_QUERY* pq, uint index)
-{
-  if (index < pq->param_pos.size())
-  {
-    return GET_QUERY(pq) + pq->param_pos[index];
-  }
-
-  return NULL;
+bool MY_PARSED_QUERY::returns_result() {
+  return query_types_array[query_type].returns_rs;
 }
 
 
-BOOL returns_result(MY_PARSED_QUERY *pq)
-{
-  return query_type[pq->query_type].returns_rs;
-}
-
-
-BOOL preparable_on_server(MY_PARSED_QUERY *pq, const char *server_version)
-{
-  if (query_type[pq->query_type].preparable_on_server)
+bool MY_PARSED_QUERY::preparable_on_server(const char *server_version) {
+  if (query_types_array[query_type].preparable_on_server)
   {
-    return query_type[pq->query_type].server_version == NULL
+    return query_types_array[query_type].server_version == NULL
         || is_minimum_version(server_version,
-                            query_type[pq->query_type].server_version);
+                              query_types_array[query_type].server_version);
   }
 
   return FALSE;
 }
 
 
-char * get_cursor_name(MY_PARSED_QUERY *pq)
-{
-  if (TOKEN_COUNT(pq) > 4)
+const char *MY_PARSED_QUERY::get_cursor_name() {
+  size_t tcount = token_count();
+  if (tcount > 4)
   {
-    if ( case_compare(pq, get_token(pq, TOKEN_COUNT(pq) - 4), &where_)
-      && case_compare(pq, get_token(pq, TOKEN_COUNT(pq) - 3), &current)
-      && case_compare(pq, get_token(pq, TOKEN_COUNT(pq) - 2), &of))
+    if (case_compare(this, get_token((uint)tcount - 4), &where_) &&
+        case_compare(this, get_token((uint)tcount - 3), &current) &&
+        case_compare(this, get_token((uint)tcount - 2), &of))
     {
-      return get_token(pq, TOKEN_COUNT(pq) - 1);
+      return get_token((uint)tcount - 1);
     }
   }
 
   return NULL;
 }
 
+size_t MY_PARSED_QUERY::token_count() { return token2.size();}
 
 /* But returns bytes in current character. not sure that is needed though */
 int  get_ctype(MY_PARSER *parser)
 {
   if (END_NOT_REACHED(parser))
   {
-    parser->bytes_at_pos= parser->query->cs->cset->ctype(parser->query->cs,
+    int byte_count = parser->query->cs->cset->ctype(parser->query->cs,
                                       &parser->ctype, (const uchar*)parser->pos,
                                       (const uchar*) parser->query->query_end);
+    // We need to get the byte count after conversion.
+    // The libmysql ctype() function can return negated
+    // byte count for characters that do not have a
+    // corresponding Unicode endpoint.
+    parser->bytes_at_pos = (byte_count < 0 ? -byte_count : byte_count);
   }
   else
   {
@@ -363,7 +345,7 @@ const char * find_token(CHARSET_INFO *charset, const char * begin,
   /* we will not check 1st token in the string - no need at the moment */
   while ((token= mystr_get_prev_token(charset,&before, begin)) != begin)
   {
-    if (!myodbc_casecmp(token, target, strlen(target)))
+    if (!myodbc_casecmp(token, target, (uint)strlen(target)))
     {
       return token;
     }
@@ -380,7 +362,7 @@ const char * find_first_token(CHARSET_INFO *charset, const char * begin,
 
   while ((token= mystr_get_next_token(charset, &begin, end)) != end)
   {
-    if (!myodbc_casecmp(token, target, strlen(target)))
+    if (!myodbc_casecmp(token, target, (uint)strlen(target)))
     {
       return token;
     }
@@ -413,9 +395,9 @@ int is_set_names_statement(const char *query)
 /**
 Detect if a statement is a SELECT statement.
 */
-int is_select_statement(const MY_PARSED_QUERY *query)
+bool MY_PARSED_QUERY::is_select_statement()
 {
-  return query->query_type == myqtSelect;
+  return query_type == myqtSelect;
 }
 
 
@@ -519,7 +501,7 @@ BOOL stmt_returns_result(const MY_PARSED_QUERY *query)
 {
   if (query->query_type <= myqtOther)
   {
-    return query_type[query->query_type].returns_rs;
+    return query_types_array[query->query_type].returns_rs;
   }
   return FALSE;
 }
@@ -637,9 +619,9 @@ BOOL is_closing_quote(MY_PARSER *parser)
 
 
 /* Installs position on the character next after closing quote */
-char * find_closing_quote(MY_PARSER *parser)
+const char * find_closing_quote(MY_PARSER *parser)
 {
-  char *closing_quote= NULL;
+  const char *closing_quote = NULL;
   while(END_NOT_REACHED(parser))
   {
     if (is_escape(parser))
@@ -809,14 +791,14 @@ static
 BOOL process_rule(MY_PARSER *parser, const QUERY_TYPE_RESOLVING *rule_param)
 {
   uint i;
-  char *token;
+  const char *token;
 
-  for (i= rule_param->pos_from;
-       i <= myodbc_min(rule_param->pos_thru > 0 ? rule_param->pos_thru : rule_param->pos_from,
-                      TOKEN_COUNT(parser->query) - 1);
+  for (i= rule->pos_from;
+       i <= myodbc_min(rule->pos_thru > 0 ? rule->pos_thru : rule->pos_from,
+                      parser->query->token_count() - 1);
        ++i)
   {
-    token= get_token(parser->query, i);
+    token = parser->query->get_token(i);
 
     if (parser->pos && case_compare(parser->query, token, rule_param->keyword))
     {
@@ -911,7 +893,8 @@ BOOL remove_braces(MY_PARSER *parser)
   /* TODO: multibyte case */
   if (parser->query->token2.size() > 0)
   {
-    char *token= get_token(parser->query, 0);
+    // Buffer in std::string will be modified
+    char *token = (char*)parser->query->get_token(0);
 
     /* TODO: what about batch of queries - do we need to care? */
     /* only doing our unthankful job if we have both opening and closing braces
@@ -921,7 +904,7 @@ BOOL remove_braces(MY_PARSER *parser)
       && *parser->query->last_char == parser->syntax->odbc_escape_close->str[0])
     {
       token[0]= ' ';
-      *parser->query->last_char= ' ';
+      const_cast<char*>(parser->query->last_char)[0] = ' ';
 
       parser->pos= token;
 
@@ -935,11 +918,10 @@ BOOL remove_braces(MY_PARSER *parser)
       }
 
       /* If we had "{}" - we would have erase the only token */
-      if (TOKEN_COUNT(parser->query) > 0)
+      if (parser->query->token_count())
       {
-        token = get_token(parser->query, TOKEN_COUNT(parser->query) - 1);
-
-        if (parser->query->last_char == token)
+        if (parser->query->last_char ==
+            parser->query->get_token((uint)parser->query->token_count() - 1))
         {
           parser->query->token2.pop_back();
         }

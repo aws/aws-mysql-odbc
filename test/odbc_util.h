@@ -1,21 +1,21 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -126,7 +126,7 @@ struct xstring : public std::string
 
 struct xbuf
 {
-  std::unique_ptr<char> m_buf;
+  std::unique_ptr<char[]> m_buf;
   size_t size;
 
   void setval(int v, size_t cnt)
@@ -177,7 +177,7 @@ struct Exception
 
     if (SQL_IS_SUCCESS(drc))
       printf("# [%6s][%d] %*s\n",
-             sqlstate, length, native_error, (char*)msg);
+             sqlstate, native_error, length, (char*)msg);
     else
       printf("# Did not get expected diagnostics from SQLGetDiagRec() = %d\n",
              drc);
@@ -287,7 +287,7 @@ int describe_col(SQLHSTMT hstmt, int col, bool print_data = true,
   SQLULEN ulen_data = 0;
 
   SQLCHAR* col_name2 = col_name ? col_name : name;
-  SQLSMALLINT col_buf_len2 = col_buf_len ? col_buf_len : name.size;
+  SQLSMALLINT col_buf_len2 = col_buf_len ? col_buf_len : (SQLSMALLINT)name.size;
   SQLSMALLINT *name_len2 = name_len ? name_len : &num_buf[0];
   SQLSMALLINT *data_type2 = data_type ? data_type : &num_buf[1];
   SQLULEN *col_size2 = col_size ? col_size : &ulen_data;
@@ -686,21 +686,22 @@ struct HDBC
   xstring connout;
   connection con;
 
-  void connect(xstring opts = nullptr)
+  int connect(xstring opts = nullptr)
   {
     xbuf buf(4096);
     xstring cstr = con.m_connstr;
     cstr.append(opts);
-    ok_con(hdbc, SQLDriverConnect(hdbc, NULL, cstr, SQL_NTS, buf,
-                                  512, nullptr, SQL_DRIVER_NOPROMPT));
+    auto rc = SQLDriverConnect(hdbc, NULL, cstr, SQL_NTS, buf,
+                               512, nullptr, SQL_DRIVER_NOPROMPT);
     connout = buf;
+    return rc;
   }
 
   HDBC(SQLHENV h, bool do_connect = true) : henv(h), con(false)
   {
     ok_env(henv, SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc));
     if (do_connect)
-      connect();
+      ok_con(hdbc, connect());
     ok_con(hdbc, SQLSetConnectAttr(hdbc, SQL_ATTR_AUTOCOMMIT,
                                   (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0));
   }
@@ -779,7 +780,7 @@ const char* _my_fetch_data(SQLHSTMT hstmt, xbuf &buf, SQLUSMALLINT icol,
 {
     SQLLEN nLen;
 
-    SQLGetData(hstmt, icol, target_type, buf, buf.size, &nLen);
+    SQLGetData(hstmt, icol, target_type, (SQLCHAR*)buf, buf.size, &nLen);
     /* If Null value - putting down smth meaningful. also that allows caller to
        better/(in more easy way) test the value */
     if (nLen < 0)
@@ -811,7 +812,7 @@ void select_one_str(SQLHSTMT hstmt, const char* query, xbuf &buf,
 {
   sql(hstmt, query);
   is(SQLFetch(hstmt) == SQL_SUCCESS);
-  my_fetch_str(hstmt, buf, icol, true, buf.size);
+  my_fetch_str(hstmt, buf, icol, true, (int)buf.size);
   is(SQLFetch(hstmt) == SQL_NO_DATA);
   ok_stmt(hstmt, SQLFreeStmt(hstmt, SQL_CLOSE));
 }
@@ -833,8 +834,8 @@ struct temp_user
 
     name = "temp_user_" + username.substr(0, pos);
 
-    // Note: Host part in quotes because, e.g. in OCI there are host names like 
-    // `foo-172-20-0-2-1c1be116-ff67...` which would lead to SQL syntax error 
+    // Note: Host part in quotes because, e.g. in OCI there are host names like
+    // `foo-172-20-0-2-1c1be116-ff67...` which would lead to SQL syntax error
     // if not quotted.
 
     username = "`" + name + "`@`" + username.substr(pos+1) + "`";

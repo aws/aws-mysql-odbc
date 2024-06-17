@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2018, 2020 Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -103,6 +103,7 @@ DECLARE_TEST(my_json)
 
   ok_stmt(hstmt2, SQLFreeStmt(hstmt2, SQL_CLOSE));
 
+  odbc::stmt_reset(hstmt2);
   ok_sql(hstmt2, "DROP TABLE t_bug_json");
   free_basic_handles(&henv2, &hdbc2, &hstmt2);
   return OK;
@@ -418,7 +419,7 @@ int check_sqlgetdata_buf(SQLHSTMT hstmt, std::string &src_str)
   // Get a buffer, which is too small for all data
   T buf[3][buf_size];
   SQLLEN   cb_buf[3] = { SQL_NTS, SQL_NTS, SQL_NTS };
-  std::unique_ptr<T> row_data[3];
+  std::unique_ptr<T[]> row_data[3];
 
   odbc::sql(hstmt, "SELECT mb_data, tx_data, "
     "CAST(HEX(mb_data) AS CHAR) hex_data FROM t_sqlgetdata");
@@ -442,7 +443,7 @@ int check_sqlgetdata_buf(SQLHSTMT hstmt, std::string &src_str)
     row_data[i].reset(new T[row_data_len]);
     T* data_ptr = row_data[i].get();
 
-    is(cb_buf[i] >= buf_size * char_size);
+    is((size_t)cb_buf[i] >= buf_size * char_size);
     size_t row_data_offset = buf_size;
 
     memcpy(data_ptr, buf[i], buf_size * char_size);
@@ -545,6 +546,7 @@ DECLARE_TEST(t_bug33401384_JSON_param)
 
     odbc::stmt_execute(hstmt);
     odbc::stmt_close(hstmt);
+    odbc::stmt_reset(hstmt);
 
     odbc::sql(hstmt, "SELECT value FROM tab_bug33401384");
     ok_stmt(hstmt, SQLFetch(hstmt));
@@ -769,7 +771,7 @@ DECLARE_TEST(t_bug33353465_json_utf8mb4) {
         strlen(insert_val), nullptr));
     }
     odbc::stmt_execute(hstmt);
-
+    odbc::stmt_reset(hstmt);
     // Check the JSON and TEXT data inserted in the table.
     // Both should be identical.
     odbc::sql(hstmt, "SELECT * FROM " + tab.table_name);
@@ -819,6 +821,7 @@ DECLARE_TEST(t_bug_34350417_performance) {
 
     odbc::stmt_execute(hstmt);
     odbc::stmt_close(hstmt);
+    odbc::stmt_reset(hstmt);
 
     odbc::sql(hstmt, "SELECT * FROM " + tab.table_name);
     while (SQL_SUCCESS == SQLFetch(hstmt)) {
@@ -899,6 +902,7 @@ DECLARE_TEST(t_utf8mb4_param) {
                                      SQL_WCHAR, 0, 0, param, 6 * 2, nullptr));
 
     odbc::stmt_execute(hstmt1);
+    odbc::stmt_reset(hstmt1);
 
     // @Currency should use `collation_connection` collation
     // which is case sensitive and therefore 0 rows should be returned
@@ -915,7 +919,45 @@ DECLARE_TEST(t_utf8mb4_param) {
   ENDCATCH;
 }
 
+// Bug#35520983 - ANSI driver and charset=sjis hangs program
+DECLARE_TEST(t_bug35520983_sjis) {
+  try {
+    if (unicode_driver != 0)
+      skip("This is only supported by ANSI driver");
+
+    odbc::xstring opts = "CHARSET=sjis";
+    odbc::connection con(nullptr, nullptr, nullptr, nullptr, opts);
+    odbc::HSTMT hstmt1(con);
+
+    odbc::table tab(hstmt1, nullptr, "t_bug35520983_sjis",
+    "col1 TIMESTAMP, col2 varchar(10)",
+                  "DEFAULT CHARSET=sjis");
+    tab.insert("(NOW(), '\x82\xA0')");
+    tab.insert("(NOW(), '\x87\x8A')");
+    odbc::stmt_close(hstmt1);
+    odbc::sql(hstmt1, "SELECT * FROM " + tab.table_name +
+      " ORDER BY col1 ASC");
+
+    const char* expected[] = { "\x82\xA0", "\x87\x8A" };
+    int rnum = 0;
+    while (SQL_SUCCESS == SQLFetch(hstmt1)) {
+      char buf[10] = {0};
+      SQLLEN len = 0;
+      ok_stmt(hstmt, SQLGetData(hstmt1, 2, SQL_C_CHAR, buf,
+        sizeof(buf), &len));
+      is_num(expected[rnum][0], buf[0]);
+      is_num(expected[rnum][1], buf[1]);
+      is_num(2, len);
+      ++rnum;
+    }
+    is_num(2, rnum);
+    odbc::stmt_close(hstmt1);
+  }
+  ENDCATCH;
+}
+
 BEGIN_TESTS
+  ADD_TEST(t_bug35520983_sjis)
   ADD_TEST(t_utf8mb4_param)
   ADD_TEST(t_bug_34350417_performance)
   ADD_TEST(t_bug33353465_json_utf8mb4)

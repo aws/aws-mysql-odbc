@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2009, 2016, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2009, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -96,18 +96,10 @@ extern "C"
 
 
 #define my_sys_init my_init
-#define x_free(A) { void *tmpBuf= (A); if (tmpBuf) my_free((char *) tmpBuf); }
-#define myodbc_malloc(A,B) my_malloc(PSI_NOT_INSTRUMENTED,A,B)
-
-#define myodbc_realloc(A,B,C) my_realloc(PSI_NOT_INSTRUMENTED,A,B,C)
-#define myodbc_memdup(A,B,C) my_memdup(PSI_NOT_INSTRUMENTED,A,B,C)
-#define myodbc_strdup(A,B) my_strdup(PSI_NOT_INSTRUMENTED,A,B)
-
+#define x_free(A) { void *tmp= (A); if (tmp) free((char *) tmp); }
+#define myodbc_malloc(A, B) (B == MY_ZEROFILL ? calloc(A, 1) : malloc(A))
+#define myodbc_realloc(A, B) realloc(A, B)
 #define myodbc_snprintf snprintf
-
-  static inline void *alloc_root(MEM_ROOT *root, size_t length) {
-    return root->Alloc(length);
-  }
 
 
 /* Get rid of defines from my_config.h that conflict with our myconf.h */
@@ -117,6 +109,31 @@ extern "C"
 #ifdef PACKAGE
 # undef PACKAGE
 #endif
+
+#ifdef HAVE_LIBCRYPT
+#undef HAVE_LIBCRYPT
+#endif
+
+#ifdef PACKAGE_BUGREPORT
+#undef PACKAGE_BUGREPORT
+#endif
+
+#ifdef PACKAGE_NAME
+#undef PACKAGE_NAME
+#endif
+
+#ifdef PACKAGE_STRING
+#undef PACKAGE_STRING
+#endif
+
+#ifdef PACKAGE_TARNAME
+#undef PACKAGE_TARNAME
+#endif
+
+#ifdef PACKAGE_VERSION
+#undef PACKAGE_VERSION
+#endif
+
 
 /*
   It doesn't matter to us what SIZEOF_LONG means to MySQL's headers, but its

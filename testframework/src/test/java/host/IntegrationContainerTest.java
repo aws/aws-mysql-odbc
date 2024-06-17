@@ -174,11 +174,20 @@ public class IntegrationContainerTest {
       System.out.println(result.getStdout());
 
       System.out.println(
-        "apt-get install build-essential cmake git libgtk-3-dev libmysqlclient-dev unixodbc " +
+        "apt-get install build-essential cmake git libgtk-3-dev unixodbc " +
         "unixodbc-dev curl libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev -y");
       result = testContainer.execInContainer(
-        "apt-get", "install", "build-essential", "cmake", "git", "libgtk-3-dev", "libmysqlclient-dev",
+        "apt-get", "install", "build-essential", "cmake", "git", "libgtk-3-dev",
         "unixodbc", "unixodbc-dev", "curl", "libcurl4-openssl-dev", "libssl-dev", "uuid-dev", "zlib1g-dev", "-y");
+      System.out.println(result.getStdout());
+
+      System.out.println("curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-8.3.0-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz");
+      result = testContainer.execInContainer(
+        "curl", "-L", "https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-8.3.0-linux-glibc2.28-x86_64.tar.xz", "-o", "mysql.tar.gz");
+      System.out.println(result.getStdout());
+
+      System.out.println("tar xf mysql.tar.gz");
+      result = testContainer.execInContainer("tar", "xf", "mysql.tar.gz");
       System.out.println(result.getStdout());
 
       System.out.println("cmake -E make_directory ./build");

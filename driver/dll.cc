@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2000, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -36,8 +36,7 @@
 #include "driver.h"
 #include <locale.h>
 
-char *default_locale, *decimal_point, *thousands_sep;
-uint decimal_point_length,thousands_sep_length;
+std::string thousands_sep, decimal_point, default_locale;
 static int myodbc_inited=0;
 static int mysys_inited=0;
 
@@ -99,15 +98,13 @@ void myodbc_init(void)
     DECLARE_LOCALE_HANDLE
 
     init_getfunctions();
-    default_locale=myodbc_strdup(setlocale(LC_NUMERIC,NullS),MYF(0));
+    default_locale = setlocale(LC_NUMERIC,NullS);
 
     __LOCALE_SET("")
 
     tmp=localeconv();
-    decimal_point=myodbc_strdup(tmp->decimal_point,MYF(0));
-    decimal_point_length=strlen(decimal_point);
-    thousands_sep=myodbc_strdup(tmp->thousands_sep,MYF(0));
-    thousands_sep_length=strlen(thousands_sep);
+    decimal_point = tmp->decimal_point;
+    thousands_sep = tmp->thousands_sep;
 
     __LOCALE_RESTORE()
 
@@ -138,9 +135,6 @@ void myodbc_end()
 
   if (!myodbc_inited)
   {
-    x_free(decimal_point);
-    x_free(default_locale);
-    x_free(thousands_sep);
 
     /* my_thread_end_wait_time was added in 5.1.14 and 5.0.32 */
 #if !defined(NONTHREADSAFE) && \

@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of MySQL Connector/ODBC, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -92,7 +92,8 @@ SQLColAttributeImpl(SQLHSTMT hstmt, SQLUSMALLINT column,
 
   if (value)
   {
-    len= strlen((char *)value);
+    SQLCHAR *old_value= value;
+    len = (SQLINTEGER)strlen((char *)value);
 
     /* We set the error only when the result is intented to be returned */
     if ((char_attr || num_attr) && len > char_attr_max - 1)
@@ -218,7 +219,8 @@ SQLDescribeCol(SQLHSTMT hstmt, SQLUSMALLINT column,
 
   if (value)
   {
-    len= strlen((char *)value);
+    SQLCHAR *old_value= value;
+    len = (SQLINTEGER)strlen((char *)value);
 
     /* We set the error only when the result is intented to be returned */
     if (name && len > name_max - 1)
@@ -253,7 +255,7 @@ SQLDriverConnect(SQLHDBC hdbc, SQLHWND hwnd, SQLCHAR *in, SQLSMALLINT in_len,
   CHECK_HANDLE(hdbc);
 
   if (in_len == SQL_NTS)
-    in_len= strlen((char *)in);
+    in_len = (SQLSMALLINT)strlen((char *)in);
   if (!out_len)
     out_len= &dummy_out;
 
@@ -402,9 +404,7 @@ SQLGetConnectAttrImpl(SQLHDBC hdbc, SQLINTEGER attribute, SQLPOINTER value,
 
   if (char_value)
   {
-    SQLINTEGER len= SQL_NTS;
-
-    len= strlen((char *)char_value);
+    SQLINTEGER len = (SQLINTEGER)strlen((char *)char_value);
 
     /*
       This check is inside the statement, which does not
@@ -443,7 +443,6 @@ SQLGetCursorName(SQLHSTMT hstmt, SQLCHAR *cursor, SQLSMALLINT cursor_max,
 {
   STMT *stmt= (STMT *)hstmt;
   SQLCHAR *name;
-  SQLINTEGER len;
 
   LOCK_STMT(stmt);
   CLEAR_STMT_ERROR(stmt);
@@ -452,7 +451,7 @@ SQLGetCursorName(SQLHSTMT hstmt, SQLCHAR *cursor, SQLSMALLINT cursor_max,
     return stmt->set_error(MYERR_S1090, NULL, 0);
 
   name= MySQLGetCursorName(hstmt);
-  len= strlen((char *)name);
+  SQLINTEGER len = (SQLINTEGER)strlen((char *)name);
 
   if (cursor && cursor_max > 1)
     strmake((char *)cursor, (char *)name, cursor_max - 1);
@@ -476,7 +475,6 @@ SQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle,
 {
   DBC *dbc;
   SQLCHAR *value= NULL;
-  SQLINTEGER len= SQL_NTS;
 
   SQLRETURN rc= SQL_SUCCESS;
 
@@ -502,7 +500,7 @@ SQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle,
 
   if (value)
   {
-    len= strlen((char *)value);
+    size_t len = strlen((char *)value);
 
     /* We set the error only when the result is intented to be returned */
     if (info && len > info_max - 1)
@@ -513,7 +511,6 @@ SQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle,
 
     if (info && info_max > 1)
       strmake((char *)info, (char *)value, info_max - 1);
-
   }
 
   return rc;
@@ -542,7 +539,6 @@ SQLGetDiagRecImpl(SQLSMALLINT handle_type, SQLHANDLE handle,
   SQLRETURN rc;
   DBC *dbc;
   SQLCHAR *msg_value= NULL, *sqlstate_value= NULL;
-  SQLINTEGER len= SQL_NTS;
 
   if (handle == NULL)
   {
@@ -577,7 +573,7 @@ SQLGetDiagRecImpl(SQLSMALLINT handle_type, SQLHANDLE handle,
 
   if (msg_value)
   {
-    len= strlen((char *)msg_value);
+    size_t len= strlen((char *)msg_value);
 
     /*
       We set the error only when the result is intented to be returned
@@ -609,17 +605,14 @@ SQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT type, SQLPOINTER value,
 {
   DBC *dbc= (DBC *)hdbc;
   SQLCHAR *char_value= NULL;
-  SQLINTEGER len= SQL_NTS;
-
-  SQLRETURN rc;
 
   CHECK_HANDLE(hdbc);
 
-  rc= MySQLGetInfo(hdbc, type, &char_value, value, value_len);
+  SQLRETURN rc = MySQLGetInfo(hdbc, type, &char_value, value, value_len);
 
   if (char_value)
   {
-    len= strlen((char *)char_value);
+    size_t len = strlen((char *)char_value);
 
     /*
       MSSQL implementation does not return the truncation warning if the
@@ -633,7 +626,6 @@ SQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT type, SQLPOINTER value,
 
     if (value_len)
       *value_len= (SQLSMALLINT)len;
-
   }
 
   return rc;
@@ -670,7 +662,7 @@ SQLNativeSql(SQLHDBC hdbc, SQLCHAR *in, SQLINTEGER in_len,
 
   if (in_len == SQL_NTS)
   {
-    in_len= strlen((char *)in);
+    in_len = (SQLINTEGER)strlen((char *)in);
   }
 
   if (out_len)
@@ -716,7 +708,7 @@ SQLPrepareImpl(SQLHSTMT hstmt, SQLCHAR *str, SQLINTEGER str_len,
     we can pass it straight through. Otherwise it needs to be converted to
     the connection character set (probably utf-8).
   */
-  return MySQLPrepare(hstmt, str, str_len, false, false, force_prepare);
+  return MySQLPrepare(hstmt, str, str_len, false, force_prepare);
 }
 
 
@@ -777,6 +769,8 @@ SQLProcedures(SQLHSTMT hstmt,
 
   rc= MySQLProcedures(hstmt, catalog, catalog_len, schema, schema_len,
                       proc, proc_len);
+  // Remove parameters
+  ((STMT *)hstmt)->free_reset_params();
 
   return rc;
 }

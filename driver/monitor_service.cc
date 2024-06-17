@@ -68,7 +68,7 @@ std::shared_ptr<MONITOR_CONNECTION_CONTEXT> MONITOR_SERVICE::start_monitoring(
         throw std::invalid_argument(msg);
     }
 
-    bool enable_logging = ds && ds->save_queries;
+    bool enable_logging = ds && ds->opt_LOG_QUERY;
 
     std::shared_ptr<MONITOR> monitor = this->thread_container->get_or_create_monitor(
         node_keys,

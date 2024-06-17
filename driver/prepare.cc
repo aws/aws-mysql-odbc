@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2000, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -61,8 +61,7 @@
                     freeing the value is now up to the driver
 */
 SQLRETURN SQL_API MySQLPrepare(SQLHSTMT hstmt, SQLCHAR *query, SQLINTEGER len,
-                               bool dupe, bool reset_select_limit,
-                               bool force_prepare)
+                               bool reset_select_limit, bool force_prepare)
 {
   STMT *stmt= (STMT *)hstmt;
   /*
@@ -73,10 +72,10 @@ SQLRETURN SQL_API MySQLPrepare(SQLHSTMT hstmt, SQLCHAR *query, SQLINTEGER len,
 
   if (GET_QUERY(&stmt->orig_query) != NULL)
   {
-    reset_parsed_query(&stmt->orig_query, NULL, NULL, NULL);
+    stmt->orig_query.reset(NULL, NULL, NULL);
   }
 
-  return my_SQLPrepare(hstmt, query, len, dupe, reset_select_limit,
+  return my_SQLPrepare(hstmt, query, len, reset_select_limit,
                        force_prepare);
 }
 
@@ -86,27 +85,27 @@ SQLRETURN SQL_API MySQLPrepare(SQLHSTMT hstmt, SQLCHAR *query, SQLINTEGER len,
   @purpose : prepares an SQL string for execution
 */
 SQLRETURN my_SQLPrepare(SQLHSTMT hstmt, SQLCHAR *szSqlStr, SQLINTEGER cbSqlStr,
-                        bool dupe, bool reset_select_limit,
-                        bool force_prepare)
+                        bool reset_select_limit, bool force_prepare)
 {
   STMT *stmt= (STMT *) hstmt;
 
   CLEAR_STMT_ERROR(stmt);
 
-  reset_parsed_query(&stmt->query, NULL, NULL, NULL);
+  stmt->query.reset(NULL, NULL, NULL);
+  stmt->telemetry.span_start(stmt, "SQL prepare");
 
-  /* If we need to make a copy - !dupe or empty query string pointer
-     (dupp_str will make it an empty string) */
-  if (!(dupe && szSqlStr))
+  auto res = prepare(stmt, (char*)szSqlStr, cbSqlStr, reset_select_limit,
+               force_prepare);
+  if (!SQL_SUCCEEDED(res))
   {
-    if (!(szSqlStr= (SQLCHAR*)dupp_str((char *)szSqlStr, cbSqlStr)))
-    {
-      return stmt->set_error( MYERR_S1001, NULL, 4001);
-    }
+    stmt->telemetry.set_error(stmt, stmt->error);
+  }
+  else
+  {
+    stmt->telemetry.span_end(stmt);
   }
 
-  return prepare(stmt, (char*)szSqlStr, cbSqlStr, reset_select_limit,
-                 force_prepare);
+  return res;
 }
 
 
@@ -154,7 +153,7 @@ SQLRETURN SQL_API my_SQLBindParameter( SQLHSTMT     StatementHandle,
         Access treats BIGINT as a string on linked tables.
         The value is read correctly, but bound as a string.
       */
-      if (ParameterType == SQL_BIGINT && stmt->dbc->ds->default_bigint_bind_str)
+      if (ParameterType == SQL_BIGINT && stmt->dbc->ds.opt_DFLT_BIGINT_BIND_STR)
         ValueType= SQL_C_CHAR;
     }
     if (!SQL_SUCCEEDED(rc = stmt_SQLSetDescField(stmt, stmt->apd,
@@ -328,7 +327,7 @@ SQLRETURN SQL_API SQLDescribeParam( SQLHSTMT        hstmt,
     if (pfSqlType)
         *pfSqlType= SQL_VARCHAR;
     if (pcbColDef)
-        *pcbColDef= (stmt->dbc->ds->allow_big_results ? 24*1024*1024L : 255);
+        *pcbColDef= (stmt->dbc->ds.opt_BIG_PACKETS ? 24*1024*1024L : 255);
     if (pfNullable)
         *pfNullable= SQL_NULLABLE_UNKNOWN;
 

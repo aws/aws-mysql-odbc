@@ -1,23 +1,23 @@
 // Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
-// Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2007, 2024, Oracle and/or its affiliates.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License, version 2.0, as
 // published by the Free Software Foundation.
 //
-// This program is also distributed with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms,
-// as designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an
-// additional permission to link the program and your derivative works
-// with the separately licensed software that they have included with
-// MySQL.
+// This program is designed to work with certain software (including
+// but not limited to OpenSSL) that is licensed under separate terms, as
+// designated in a particular file or component or in included license
+// documentation. The authors of MySQL hereby grant you an additional
+// permission to link the program and your derivative works with the
+// separately licensed software that they have either included with
+// the program or referenced in the documentation.
 //
 // Without limiting anything contained in the foregoing, this file,
-// which is part of <MySQL Product>, is also subject to the
+// which is part of Connector/ODBC, is also subject to the
 // Universal FOSS Exception, version 1.0, a copy of which can be found at
-// http://oss.oracle.com/licenses/universal-foss-exception.
+// https://oss.oracle.com/licenses/universal-foss-exception.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -129,7 +129,7 @@ const char * wstr4output(const wchar_t *wstr)
 #define _MY_NEWLINE "\n"
 #endif
 
-SQLCHAR *mydriver= (SQLCHAR *)"{MySQL ODBC 8.0 Driver}";
+SQLCHAR *mydriver= (SQLCHAR *)"{AWS ODBC Driver for MySQL}";
 SQLCHAR *mydsn= (SQLCHAR *)"test";
 SQLCHAR *myuid= (SQLCHAR *)"root";
 SQLCHAR *mypwd= (SQLCHAR *)"";
@@ -569,7 +569,7 @@ do { \
 #define is_str(a, b, c) \
 do { \
   char *val_a= (char *)(a), *val_b= (char *)(b); \
-  int val_len= (int)(c) == SQL_NTS ? strlen(val_a) : (int)(c); \
+  int val_len= (int)(c) == SQL_NTS ? (int)strlen(val_a) : (int)(c); \
   if (strncmp(val_a, val_b, val_len) != 0) { \
     printf("# %s ('%*s') != '%*s' in %s on line %d\n", \
            #a, val_len, val_a, val_len, val_b, __FILE__, __LINE__); \
@@ -1301,7 +1301,7 @@ SQLRETURN get_connection(SQLHDBC *hdbc, const SQLCHAR *dsn, const SQLCHAR *uid,
   SQLCHAR     connOut[4096];
   SQLSMALLINT len;
   SQLRETURN   ret;
-  SQLCHAR     driver_name[16]; /* Should be enough for myodbc library file name */
+  SQLCHAR     driver_name[32]; /* Set length to 32 to account for the longer awsmysqlodbca library file name */
   SQLCHAR     *connIn;
 
   connIn = make_conn_str(dsn, uid, pwd, db, options, 0);

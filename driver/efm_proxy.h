@@ -53,7 +53,6 @@ public:
     MYSQL_RES* use_result() override;
     void free_result(MYSQL_RES* result) override;
     MYSQL_ROW fetch_row(MYSQL_RES* result) override;
-    MYSQL_RES* list_fields(const char* table, const char* wild) override;
     unsigned long real_escape_string(char* to, const char* from,
                                      unsigned long length) override;
 
@@ -66,7 +65,9 @@ public:
     int stmt_fetch(MYSQL_STMT* stmt) override;
     int stmt_fetch_column(MYSQL_STMT* stmt, MYSQL_BIND* bind_arg,
                           unsigned int column, unsigned long offset) override;
-    int stmt_store_result(MYSQL_STMT* stmt) override;
+    int stmt_store_result(MYSQL_STMT *stmt) override;
+    bool stmt_bind_named_param(MYSQL_STMT *stmt, MYSQL_BIND *binds,
+                               unsigned n_params, const char **names);
     bool stmt_bind_param(MYSQL_STMT* stmt, MYSQL_BIND* bnd) override;
     bool stmt_bind_result(MYSQL_STMT* stmt, MYSQL_BIND* bnd) override;
     bool stmt_close(MYSQL_STMT* stmt) override;
@@ -76,6 +77,7 @@ public:
                              const char* data, unsigned long length) override;
     MYSQL_RES* stmt_result_metadata(MYSQL_STMT* stmt) override;
     int next_result() override;
+    bool more_results() override;
     int stmt_next_result(MYSQL_STMT* stmt) override;
     bool real_connect_dns_srv(const char* dns_srv_name,
                               const char* user, const char* passwd,
