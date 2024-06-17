@@ -5,21 +5,20 @@
 1. Install the following programs to build the driver:
     - [CMake](https://cmake.org/download/)
     - [Visual Studio](https://visualstudio.microsoft.com/downloads/)
-      > The driver has been built successfully using `Visual Studio 2019`, and it may not build correctly with other versions. When installing Visual Studio, ensure the `Visual C++ 2019` and `Visual Studio Tools for CMake` packages are also installed.
     - [MySQL Server](https://dev.mysql.com/downloads/installer/)
 
 2. Refer to [Building the AWS SDK for C++](./BuildingAwsSdkCpp.md) to install required AWS dependencies.
    
 3. Build the driver in the `build` directory with the following commands:
     ```
-    cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE
+    cmake -S . -B build -G "Visual Studio 17 2022" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.3" -DMYSQLCLIENT_STATIC_LINKING=TRUE
     cmake --build build --config Release
     ```
 4. To build the installer, MySQL 8.0.36 is required. Other MySQL versions may not work. Download the [MySQL 8.0.36](https://downloads.mysql.com/archives/community/) ZIP archive or msi installer. If the zip archive is used, unzip it to a folder before using it.
 
     Run `build_installer.ps1` with specified MySQL 8.0.36 installation or unzipped folder path in a developer powershell. For example
     ```
-    .\build_installer.ps1 x64 Release "Visual Studio 16 2019"  "C:\Users\MyUser\Downloads\mysql-8.0.36-winx64\mysql-8.0.36-winx64"
+    .\build_installer.ps1 x64 Release "Visual Studio 17 2022"  "C:\Users\MyUser\Downloads\mysql-8.0.36-winx64\mysql-8.0.36-winx64"
     ```
 
 ### Troubleshooting:
