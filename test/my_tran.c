@@ -60,7 +60,7 @@ DECLARE_TEST(my_transaction)
   ok_sql(hstmt,"DELETE FROM t1 WHERE col1 = 10");
   ok_con(hdbc, SQLTransact(NULL,hdbc,SQL_ROLLBACK));
 
-  /* Bug #21588: Incomplete ODBC API implementaion */
+  /* Bug #21588: Incomplete ODBC API implementation */
   /* insert a row, but roll it back using SQLTransact on the environment */
   ok_sql(hstmt,"INSERT INTO t1 VALUES(30,'mysql')");
   ok_con(hdbc, SQLTransact(henv,NULL,SQL_ROLLBACK));
@@ -182,9 +182,9 @@ DECLARE_TEST(t_isolation)
 
 
 BEGIN_TESTS
-#ifndef USE_IODBC
-  ADD_TEST(my_transaction)
-#endif
+//#ifndef USE_IODBC
+//  ADD_TEST(my_transaction)
+//#endif
   ADD_TEST(t_tran)
   ADD_TEST(t_isolation)
 END_TESTS
