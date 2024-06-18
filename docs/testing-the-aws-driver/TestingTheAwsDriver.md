@@ -7,24 +7,24 @@
      
      - For release version unit tests, run the following command from repository root
         ```
-        cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DENABLE_UNIT_TESTS=TRUE
+        cmake -S . -B build -G "Visual Studio 17 2022" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.3" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DENABLE_UNIT_TESTS=TRUE
         cmake --build build --config Release
         ```
      - For debug version unit tests
 
        - Download MySQL debug binaries from [MySQL::Download MySQL Community Server](https://dev.mysql.com/downloads/mysql/).
 
-       - Extract the `mysqlclient.lib` from debug binaries. Make sure to backup your release version of mysqlclient.lib in `MYSQL_DIR\lib`, e.g. `C:\Program Files\MySQL\MySQL Server 8.0\lib`. Replace release version `mysqlclient.lib` with debug version of `mysqlclient.lib`.
+       - Extract the `mysqlclient.lib` from debug binaries. Make sure to backup your release version of mysqlclient.lib in `MYSQL_DIR\lib`, e.g. `C:\Program Files\MySQL\MySQL Server 8.3\lib`. Replace release version `mysqlclient.lib` with debug version of `mysqlclient.lib`.
        - Run the following command from repository root
 
         ```
-        cmake -S . -B build -G "Visual Studio 16 2019" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.0" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DENABLE_UNIT_TESTS=TRUE -DCMAKE_BUILD_TYPE=Debug
+        cmake -S . -B build -G "Visual Studio 17 2022" -DMYSQL_DIR="C:\Program Files\MySQL\MySQL Server 8.3" -DMYSQLCLIENT_STATIC_LINKING=TRUE -DENABLE_UNIT_TESTS=TRUE -DCMAKE_BUILD_TYPE=Debug
         cmake --build build --config Debug
         ```
    - **MacOS**
       - Run the following command from repository root 
         ```
-        cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DODBC_INCLUDES=/usr/local/Cellar/libiodbc/3.52.15/include -DENABLE_UNIT_TESTS=TRUE
+        cmake -S . -B build -G "Unix Makefiles" -DMYSQLCLIENT_STATIC_LINKING=true -DODBC_INCLUDES=/usr/local/Cellar/libiodbc/3.52.16/include -DENABLE_UNIT_TESTS=TRUE
         cmake --build build --config Release
         ```
    - **Linux**
