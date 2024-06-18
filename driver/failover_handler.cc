@@ -66,22 +66,22 @@ const std::regex AURORA_CUSTOM_CLUSTER_PATTERN(
     R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
     std::regex_constants::icase);
 const std::regex AURORA_CHINA_DNS_PATTERN(
-    R"#((.+)\.(proxy-|cluster-|cluster-ro-|cluster-custom-)?([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    R"#((.+)\.(proxy-|cluster-|cluster-ro-|cluster-custom-)?([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
 const std::regex AURORA_CHINA_PROXY_DNS_PATTERN(
-    R"#((.+)\.(proxy-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    R"#((.+)\.(proxy-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
 const std::regex AURORA_CHINA_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-|cluster-ro-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    R"#((.+)\.(cluster-|cluster-ro-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
 const std::regex AURORA_CHINA_WRITER_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    R"#((.+)\.(cluster-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
 const std::regex AURORA_CHINA_READER_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-ro-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    R"#((.+)\.(cluster-ro-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
 const std::regex AURORA_CHINA_CUSTOM_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.rds\.[a-zA-Z0-9\-]+\.amazonaws\.com\.cn))#",
+    R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
     std::regex_constants::icase);
 const std::regex IPV4_PATTERN(
     R"#(^(([1-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){1}(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){2}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$)#");
@@ -205,7 +205,7 @@ void FAILOVER_HANDLER::init_cluster_info() {
             throw std::runtime_error(err.str());
         }
 
-        if (host_patterns.size() == 0) {
+        if (host_patterns.empty()) {
             err << "Empty host pattern.";
             MYLOG_DBC_TRACE(dbc, err.str().c_str());
             throw std::runtime_error(err.str());
