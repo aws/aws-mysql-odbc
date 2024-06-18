@@ -76,7 +76,7 @@ target_link_libraries(
   unit_testing
   gtest_main
   gmock_main
-  myodbc-util
+  myodbc-util resolv
   awsmysqlodbca-static
 )
 
