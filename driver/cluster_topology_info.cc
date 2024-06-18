@@ -89,11 +89,11 @@ std::time_t CLUSTER_TOPOLOGY_INFO::time_last_updated() {
 
 // TODO harmonize time function across objects so the times are comparable
 void CLUSTER_TOPOLOGY_INFO::update_time() {
-    last_updated = time(0);
+    last_updated = time(nullptr);
 }
 
 std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_writer() {
-    if (writers.size() <= 0) {
+    if (writers.empty()) {
         throw std::runtime_error("No writer available");
     }
 
@@ -102,7 +102,7 @@ std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_writer() {
 
 std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_next_reader() {
     size_t num_readers = readers.size();
-    if (num_readers <= 0) {
+    if (readers.empty()) {
         throw std::runtime_error("No reader available");
     }
 
