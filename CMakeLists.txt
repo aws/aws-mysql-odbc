@@ -539,6 +539,7 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/ssl_setup.cmake)
 setup_ssl_libs()
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${ctpl_SOURCE_DIR})
 
 add_subdirectory(extra/otel)
 ADD_SUBDIRECTORY(util)

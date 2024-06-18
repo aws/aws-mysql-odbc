@@ -102,7 +102,7 @@ add_version_info(awsmysqlodbcS
   "Provides driver configuration GUI."
 )
 
-target_link_libraries(myodbc8S ${ODBCLIB} ${ODBCINSTLIB} otel_api)
+target_link_libraries(awsmysqlodbcS ${ODBCLIB} ${ODBCINSTLIB} otel_api)
 
 # Note: When using GTK+, these libraries will be linked to -gtk modules.
 

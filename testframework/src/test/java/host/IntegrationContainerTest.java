@@ -181,9 +181,9 @@ public class IntegrationContainerTest {
         "unixodbc", "unixodbc-dev", "curl", "libcurl4-openssl-dev", "libssl-dev", "uuid-dev", "zlib1g-dev", "-y");
       System.out.println(result.getStdout());
 
-      System.out.println("curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-8.3.0-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz");
+      System.out.println("curl -L https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-8.4.0-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz");
       result = testContainer.execInContainer(
-        "curl", "-L", "https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-8.3.0-linux-glibc2.28-x86_64.tar.xz", "-o", "mysql.tar.gz");
+        "curl", "-L", "https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-8.4.0-linux-glibc2.28-x86_64.tar.xz", "-o", "mysql.tar.gz");
       System.out.println(result.getStdout());
 
       System.out.println("tar xf mysql.tar.gz");

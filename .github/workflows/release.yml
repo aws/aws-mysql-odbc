@@ -45,7 +45,7 @@ jobs:
           ln -s /usr/local/opt/openssl@3/lib/libssl.3.dylib /usr/local/lib/
           ln -s /usr/local/opt/openssl@3/lib/libcrypto.3.dylib /usr/local/lib/
 
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
           
       - name: Build and install AWS SDK C++
@@ -107,7 +107,7 @@ jobs:
 #
 #      - name: Install MySQL client libs and include files
 #        run: |
-#          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz
+#          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz
 #          tar xf mysql.tar.gz
 #
 #      - name: Build and install AWS SDK C++
@@ -161,7 +161,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Add msbuild to PATH

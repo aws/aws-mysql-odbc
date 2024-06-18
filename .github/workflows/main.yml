@@ -34,7 +34,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Add msbuild to PATH
@@ -162,11 +162,11 @@ jobs:
 
           brew update
           brew unlink unixodbc
-          brew install libiodbc mysql@8.3 mysql-client@8.3
+          brew install libiodbc mysql@8.4 mysql-client@8.4
           brew link --overwrite --force libiodbc
-          brew link --overwrite --force mysql@8.3
-          echo 'export PATH="/usr/local/opt/mysql@8.3/bin:$PATH"' >> /Users/runner/.bash_profile
-          echo 'export PATH="/usr/local/opt/mysql-client@8.3/bin:$PATH"' >> /Users/runner/.bash_profile
+          brew link --overwrite --force mysql@8.4
+          echo 'export PATH="/usr/local/opt/mysql@8.4/bin:$PATH"' >> /Users/runner/.bash_profile
+          echo 'export PATH="/usr/local/opt/mysql-client@8.4/bin:$PATH"' >> /Users/runner/.bash_profile
 
           brew install openssl@3
           rm -f /usr/local/lib/libssl.3.dylib
@@ -176,7 +176,7 @@ jobs:
 
           source /Users/runner/.bash_profile
 
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64.tar.gz -o mysql.tar.gz
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
 
       - name: Cache AWS SDK libraries
