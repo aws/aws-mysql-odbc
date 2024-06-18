@@ -1063,7 +1063,7 @@ SQLRETURN STMT::bind_query_attrs(bool use_ssps)
     // For older servers that don't support named params
     // we just don't count them and specify the number of unnamed params.
     unsigned int p_number =
-      dbc->mysql->server_capabilities & CLIENT_QUERY_ATTRIBUTES
+      dbc->connection_proxy->get_server_capabilities() & CLIENT_QUERY_ATTRIBUTES
         ? query_attr_names.size() : param_count;
 
     if (p_number) {

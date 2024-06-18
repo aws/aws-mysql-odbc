@@ -449,7 +449,7 @@ SQLRETURN prepare(STMT *stmt, char * query, SQLINTEGER query_length,
 
      // After the parse and removal of curly brackets from the query
      // the result string for prepare is inside stmt->query.
-     int prep_res = stmt->dbc->connection_proxy->stmt_prepare(stmt->ssps, query, unsigned long)stmt->query.length());
+     int prep_res = stmt->dbc->connection_proxy->stmt_prepare(stmt->ssps, query, (unsigned long)stmt->query.length());
 
      if (prep_res)
       {
