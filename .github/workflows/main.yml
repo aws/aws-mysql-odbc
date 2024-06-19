@@ -40,11 +40,6 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Update CMAKE Version
-        shell: pwsh
-        run: |
-          choco upgrade cmake --pre
-
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
         uses: actions/cache@v4
