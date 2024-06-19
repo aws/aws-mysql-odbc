@@ -171,7 +171,7 @@ FILE(APPEND "${XML_DEPENDENCIES}" "</Component></Include>")
 
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/mysql_odbc.wxs.in
-               ${CMAKE_CURRENT_SOURCE_DIR}/mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}.wxs @ONLY)
+               ${CMAKE_CURRENT_SOURCE_DIR}/aws-mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}.wxs @ONLY)
 
 ADD_CUSTOM_TARGET(
         MSI_INSTALLER ALL
@@ -179,6 +179,12 @@ ADD_CUSTOM_TARGET(
 
 ADD_CUSTOM_COMMAND(
         OUTPUT ${MSI_PACKAGE}
+        DEPENDS mysql_odbc.wxs
+                mysql_odbc_fragment.wxs
+        COMMAND ${WIX_DIR}/candle.exe mysql_odbc.wxs.in mysql_odbc_fragment.wxs -o ${MSI_PACKAGE})
+
+ADD_CUSTOM_COMMAND(
+        OUTPUT mysql_odbc.wxs
         DEPENDS mysql_odbc.wxs.in
                 mysql_common_ui.wxs
-        COMMAND ${WIX_EXECUTABLE} build -arch ${XML_FILE_SOURCE_ARCH} -out ${MSI_PACKAGE} mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}.wxs mysql_odbc_fragment.wxs)
+        COMMAND ${WIX_EXECUTABLE} -arch ${XML_FILE_SOURCE_ARCH} aws-mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}.wxs -o mysql_odbc.wxs.in)

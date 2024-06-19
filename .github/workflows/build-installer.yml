@@ -1,0 +1,78 @@
+name: Build installer
+# This workflow is triggered on creating tags
+on:
+  push:
+    branches:
+      - windows-installer
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build-windows:
+    name: Windows
+    runs-on: windows-latest
+    env:
+      CMAKE_GENERATOR: Visual Studio 17 2022
+      WIX_DIR: "C:/Program Files (x86)/WiX Toolset v3.14/bin"
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Configure build environment/dependencies
+      - name: Install MySQL client libs
+        run: |
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          unzip -d C:/ mysql.zip
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Cache AWS SDK libraries
+        id: cache-dynamic-aws-sdk
+        uses: actions/cache@v4
+        with:
+          path: |
+            aws_sdk
+          key: ${{ runner.os }}-aws-sdk-dynamic-lib
+
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
+        run: |
+          .\build_aws_sdk_win.ps1 x64 ${{ env.BUILD_TYPE}} ON "${{env.CMAKE_GENERATOR}}"
+
+      - name: Setup nmake
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Run build installer script
+        shell: pwsh
+        run: |
+          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-skip-session-tagging: true
+          aws-access-key-id: ${{ secrets.AWS_BUILD_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_BUILD_SECRET_KEY }}
+          aws-region: us-west-2
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
+          role-duration-seconds: 3600
+
+      - name: Run signer script
+        shell: pwsh
+        working-directory: ./scripts
+        run: |
+          choco upgrade jq -y
+          . ".\sign_installer.ps1"
+          Invoke-SignInstaller ${{ github.workspace }}\wix winx64a ${{github.ref_name}} ${{ secrets.AWS_UNSIGNED_BUCKET }} ${{ secrets.AWS_SIGNED_BUCKET }} ${{ secrets.AWS_S3_KEY }}aws-mysql-odbc-${{github.ref_name}}-winx64a.msi
+      
+      - name: Upload Windows installer as artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: installers
+          path: ${{ github.workspace }}/wix/*.msi
+          if-no-files-found: error

@@ -34,7 +34,7 @@
     <!-- *****************************************************************************************
       Icons
     -->
-    <?include myodbc_version.xml ?>
+    <?include myodbc_version.wxs ?>
 
     <!-- *****************************************************************************************
       Directories / Files
@@ -106,8 +106,8 @@
               <?endif ?>
             </Component>
           <?endif ?>
-          <?include mysql_odbc_dependencies.xml ?>
-          <Directory Id="Plugindir" Name="plugin"><?include mysql_odbc_plugins.xml ?></Directory>
+          <?include mysql_odbc_dependencies.wxs ?>
+          <Directory Id="Plugindir" Name="plugin"><?include mysql_odbc_plugins.wxs ?></Directory>
         </Directory>  <!--INSTALLDIR-->
       </Directory>
       <!-- needed to make candle happy -->
