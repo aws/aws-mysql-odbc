@@ -1,7 +1,6 @@
-name: Release Draft
+name: Build installer
 # This workflow is triggered on creating tags
 on:
-  workflow_dispatch:
   pull_request:
       branches:
       - 'windows-installer'
