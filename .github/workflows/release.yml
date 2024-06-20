@@ -20,7 +20,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.0-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.36-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Add msbuild to PATH
@@ -36,7 +36,7 @@ jobs:
 
       - name: Run build installer script
         run: |
-          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-8.0.0-winx64
+          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-8.0.36-winx64
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4.0.2
