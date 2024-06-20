@@ -2,155 +2,12 @@ name: Release Draft
 # This workflow is triggered on creating tags
 on:
   push:
-    tags:
-      - "*.*.*"
-
+    branches:
+      - test-installer
 env:
   BUILD_TYPE: Release
 
 jobs:
-  build-mac:
-    name: macOS
-    runs-on: macos-13
-    env:
-      CMAKE_GENERATOR: Unix Makefiles
-      ODBC_DM_INCLUDES: /usr/local/include
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      # Configure build environment/dependencies
-      # Removing some /usr/local/bin files to avoid symlink issues wih brew update
-      - name: Install MySQL client libs & other dependencies
-        run: |
-          rm '/usr/local/bin/2to3'
-          rm '/usr/local/bin/2to3-3.11'
-          rm '/usr/local/bin/idle3'
-          rm '/usr/local/bin/idle3.11'
-          rm '/usr/local/bin/pydoc3'
-          rm '/usr/local/bin/pydoc3.11'
-          rm '/usr/local/bin/python3'
-          rm '/usr/local/bin/python3-config'
-          rm '/usr/local/bin/python3.11'
-          rm '/usr/local/bin/python3.11-config'
-
-          brew update
-          brew unlink unixodbc
-          brew install libiodbc mysql-client
-          brew link --overwrite --force libiodbc
-
-          brew install openssl@1.1
-          rm -f /usr/local/lib/libssl.1.1.dylib
-          rm -f /usr/local/lib/libcrypto.1.1.dylib
-          ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/
-          ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/
-
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
-          tar -xzvf mysql.tar.gz
-          
-      - name: Build and install AWS SDK C++
-        working-directory: ./scripts
-        run: |
-          ./build_aws_sdk_unix.sh $BUILD_TYPE
-
-      - name: Create build environment
-        run: cmake -E make_directory ${{ github.workspace }}/build
-
-      - name: Configure CMake
-        run: cmake -S . -B build
-                -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-                -DMYSQLCLIENT_STATIC_LINKING=true
-                -DODBC_INCLUDES=$ODBC_DM_INCLUDES
-                -DCONNECTOR_PLATFORM=macos
-                -DBUNDLE_DEPENDENCIES=true
-                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64
-
-      - name: Build driver
-        working-directory: ${{ github.workspace }}/build
-        run: |
-          export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
-          cmake --build .
-          
-      - name: Build installer
-        working-directory: ${{ github.workspace }}/build
-        if: success()
-        run: cpack .
-
-      - name: Upload macOS installer as artifact
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: installers
-          path: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
-          if-no-files-found: error
-
-  build-linux:
-    name: Linux
-    runs-on: ubuntu-20.04
-    env:
-      CMAKE_GENERATOR: Unix Makefiles
-      CXX: g++-7
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Install gcc7
-        run: sudo apt install g++-7
-
-      # Configure build environment/dependencies
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install 
-                build-essential 
-                libgtk-3-dev
-                unixodbc
-                unixodbc-dev
-                libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
-
-      - name: Install MySQL client libs and include files
-        run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64.tar.xz -o mysql.tar.gz
-          tar xf mysql.tar.gz
-
-      - name: Build and install AWS SDK C++
-        working-directory: ./scripts
-        run: |
-          ./build_aws_sdk_unix.sh $BUILD_TYPE
-
-      - name: Create build environment
-        shell: bash
-        run: cmake -E make_directory ${{ github.workspace }}/build
-
-      - name: Configure CMake
-        shell: bash
-        run: cmake -S . -B build
-                -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-                -DMYSQLCLIENT_STATIC_LINKING=true
-                -DWITH_UNIXODBC=1
-                -DCONNECTOR_PLATFORM=linux
-                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.12-x86_64/
-                -DBUNDLE_DEPENDENCIES=true
-
-      # Build driver
-      - name: Build driver
-        working-directory: ${{ github.workspace }}/build
-        shell: bash
-        run: cmake --build . --config $BUILD_TYPE
-
-      - name: Build installer
-        working-directory: ${{ github.workspace }}/build
-        if: success()
-        run: cpack .
-      
-      - name: Upload Linux installer as artifact
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: installers
-          path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
-          if-no-files-found: error
-
   build-windows:
     name: Windows
     runs-on: windows-2019
@@ -163,7 +20,7 @@ jobs:
       # Configure build environment/dependencies
       - name: Install MySQL client libs
         run: |
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.0-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
       - name: Add msbuild to PATH
@@ -179,7 +36,7 @@ jobs:
 
       - name: Run build installer script
         run: |
-          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
+          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-8.0.0-winx64
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4.0.2
@@ -207,25 +64,3 @@ jobs:
           name: installers
           path: ${{ github.workspace }}/wix/*.msi
           if-no-files-found: error
-
-  draft-release:
-    name: Create Draft Release
-    runs-on: ubuntu-20.04
-    needs: [build-mac, build-linux, build-windows]
-    steps:
-      - name: Download all installers
-        uses: actions/download-artifact@v3
-        with:
-          name: installers
-
-      # Get tag version for release
-      - name: Set Version Env Variable
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      
-      - name: Upload to Draft Release
-        uses: ncipollo/release-action@v1
-        with:
-          draft: true
-          name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
-          artifacts: "./*.pkg, ./*.tar.gz, ./*.msi"
-          token: ${{ secrets.GITHUB_TOKEN }}
