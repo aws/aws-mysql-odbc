@@ -89,8 +89,8 @@
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x86\myodbc-installer.exe" />
             </Component>
             <Component Id="ssl" Guid="d2987689-3f6f-4a7e-bbd9-3a95e256546b" SharedDllRefCount="yes">
-                <File Id="libcrypto_1_1.dll" Name="libcrypto-1_1.dll" KeyPath="yes" DiskId="1" Source="x86\libcrypto-1_1.dll" />
-                <File Id="libssl_1_1.dll" Name="libssl-1_1.dll" DiskId="1" Source="x86\libssl-1_1.dll" />
+                <File Id="libcrypto_3.dll" Name="libcrypto-3.dll" KeyPath="yes" DiskId="1" Source="x86\libcrypto-3.dll" />
+                <File Id="libssl_3.dll" Name="libssl-3.dll" DiskId="1" Source="x86\libssl-3.dll" />
             </Component>
           <?endif ?>
           <?include mysql_odbc_dependencies.xml ?>
