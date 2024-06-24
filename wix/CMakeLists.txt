@@ -181,4 +181,4 @@ ADD_CUSTOM_COMMAND(
         OUTPUT ${MSI_PACKAGE}
         DEPENDS mysql_odbc.wxs.in
                 mysql_common_ui.wxs
-        COMMAND ${WIX_EXECUTABLE} -arch ${XML_FILE_SOURCE_ARCH} -o ${MSI_PACKAGE} aws-mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}.wxs mysql_odbc_fragment.wxs)
+        COMMAND ${WIX_EXECUTABLE} build -arch ${XML_FILE_SOURCE_ARCH} -o ${MSI_PACKAGE} aws-mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}.wxs mysql_odbc_fragment.wxs)
