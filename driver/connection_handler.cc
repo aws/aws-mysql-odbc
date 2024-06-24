@@ -67,7 +67,7 @@ CONNECTION_PROXY* CONNECTION_HANDLER::connect(std::shared_ptr<HOST_INFO> host_in
     }
 
     DataSource* ds_to_use = new DataSource();
-    ds_to_use->copy(ds ? ds : &dbc->ds);
+    ds_to_use->copy(ds ? ds : dbc->ds);
     const auto new_host = to_sqlwchar_string(host_info->get_host());
 
     DBC* dbc_clone = clone_dbc(dbc, ds_to_use);
@@ -100,7 +100,7 @@ void CONNECTION_HANDLER::update_connection(
 
         // Update original ds to reflect change in host/server.
 
-        dbc->ds.opt_SERVER.set_remove_brackets((SQLWCHAR*) new_host_name_wstr.c_str(), new_host_name_wstr.size());
+        dbc->ds->opt_SERVER.set_remove_brackets((SQLWCHAR*) new_host_name_wstr.c_str(), new_host_name_wstr.size());
     }
 }
 

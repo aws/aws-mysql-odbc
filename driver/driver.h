@@ -243,7 +243,7 @@ extern std::mutex global_fido_mutex;
 /* data-at-exec handling done for current SQLSetPos() call */
 #define DAE_SETPOS_DONE 10
 
-#define DONT_USE_LOCALE_CHECK(STMT) if (!STMT->dbc->ds.opt_NO_LOCALE)
+#define DONT_USE_LOCALE_CHECK(STMT) if (!STMT->dbc->ds->opt_NO_LOCALE)
 
 #if defined _WIN32
 
@@ -614,7 +614,7 @@ struct DBC
                 *cxn_charset_info = nullptr;
   MY_SYNTAX_MARKERS *syntax = nullptr;
   // data source used to connect (parsed or stored)
-  DataSource    ds;
+  DataSource    *ds = nullptr;
   // value of the sql_select_limit currently set for a session
   //   (SQLULEN)(-1) if wasn't set
   SQLULEN       sql_select_limit = -1;
@@ -731,13 +731,13 @@ enum OUT_PARAM_STATE
 
 #define CAT_SCHEMA_SET_FULL(STMT, C, S, V, CZ, SZ, CL, SL) { \
   bool cat_is_set = false; \
-  if (!STMT->dbc->ds.opt_NO_CATALOG && (CL || !SL)) \
+  if (!STMT->dbc->ds->opt_NO_CATALOG && (CL || !SL)) \
   { \
     C = V;\
     S = nullptr; \
     cat_is_set = true; \
   } \
-  if (!STMT->dbc->ds.opt_NO_SCHEMA && !cat_is_set && SZ) \
+  if (!STMT->dbc->ds->opt_NO_SCHEMA && !cat_is_set && SZ) \
   { \
     S = V; \
     C = nullptr; \

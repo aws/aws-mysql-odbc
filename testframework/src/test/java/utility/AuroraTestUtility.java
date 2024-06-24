@@ -326,7 +326,7 @@ public class AuroraTestUtility {
    * De-authorizes IP from EC2 Security groups.
    */
   public void ec2DeauthorizesIP(String ipAddress) {
-    if (StringUtils.isNullOrEmpty(ipAddress)) {
+    if (StringUtils.isNullOrEmpty(ipAddress.trim())) {
       return;
     }
     try {

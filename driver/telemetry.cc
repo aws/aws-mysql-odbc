@@ -160,7 +160,7 @@ namespace telemetry
       );
     }
 
-    local_span->SetAttribute("db.user", (const char*)stmt->dbc->ds.opt_UID);
+    local_span->SetAttribute("db.user", (const char*)stmt->dbc->ds->opt_UID);
 
     return local_span;
   }

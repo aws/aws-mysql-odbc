@@ -149,7 +149,7 @@ void fix_result_types(STMT *stmt)
   MYSQL_RES *result= stmt->result;
   DESCREC *irrec;
   MYSQL_FIELD *field;
-  int capint32= stmt->dbc->ds.opt_COLUMN_SIZE_S32 ? 1 : 0;
+  int capint32= stmt->dbc->ds->opt_COLUMN_SIZE_S32 ? 1 : 0;
 
   stmt->state= ST_EXECUTED;  /* Mark set found */
 
@@ -446,7 +446,7 @@ copy_ansi_result(STMT *stmt,
 
   my_bool convert_binary= (field->charsetnr == BINARY_CHARSET_NUMBER ? 1 : 0) &&
                           (field->org_table_length == 0 ? 1 : 0) &&
-                          stmt->dbc->ds.opt_NO_BINARY_RESULT;
+                          stmt->dbc->ds->opt_NO_BINARY_RESULT;
 
   CHARSET_INFO *to_cs= stmt->dbc->ansi_charset_info,
                *from_cs= get_charset(field->charsetnr && (!convert_binary) ?
@@ -1156,7 +1156,7 @@ SQLSMALLINT get_sql_data_type(STMT *stmt, MYSQL_FIELD *field, char *buff)
 {
   my_bool field_is_binary= (field->charsetnr == BINARY_CHARSET_NUMBER ? 1 : 0) &&
                            ((field->org_table_length > 0 ? 1 : 0) ||
-                            !stmt->dbc->ds.opt_NO_BINARY_RESULT);
+                            !stmt->dbc->ds->opt_NO_BINARY_RESULT);
 
   switch (field->type) {
   case MYSQL_TYPE_BIT:
@@ -1214,7 +1214,7 @@ SQLSMALLINT get_sql_data_type(STMT *stmt, MYSQL_FIELD *field, char *buff)
   case MYSQL_TYPE_LONGLONG:
     if (buff)
     {
-      if (stmt->dbc->ds.opt_NO_BIGINT)
+      if (stmt->dbc->ds->opt_NO_BIGINT)
         buff= myodbc_stpmov(buff, "int");
       else
         buff= myodbc_stpmov(buff, "bigint");
@@ -1223,7 +1223,7 @@ SQLSMALLINT get_sql_data_type(STMT *stmt, MYSQL_FIELD *field, char *buff)
         (void)myodbc_stpmov(buff, " unsigned");
     }
 
-    if (stmt->dbc->ds.opt_NO_BIGINT)
+    if (stmt->dbc->ds->opt_NO_BIGINT)
       return SQL_INTEGER;
 
     return SQL_BIGINT;
@@ -1448,7 +1448,7 @@ SQLULEN fill_column_size_buff(char *buff, size_t buff_size, STMT *stmt, MYSQL_FI
 */
 static SQLLEN cap_length(STMT *stmt, unsigned long real_length)
 {
-  if (stmt->dbc->ds.opt_COLUMN_SIZE_S32 != 0 && real_length > INT_MAX32)
+  if (stmt->dbc->ds->opt_COLUMN_SIZE_S32 != 0 && real_length > INT_MAX32)
     return INT_MAX32;
 
   return real_length;
@@ -1504,7 +1504,7 @@ SQLULEN get_column_size(STMT *stmt, MYSQL_FIELD *field)
     return 0;
 
   case MYSQL_TYPE_LONGLONG:
-    if (stmt->dbc->ds.opt_NO_BIGINT)
+    if (stmt->dbc->ds->opt_NO_BIGINT)
       return 10; /* same as MYSQL_TYPE_LONG */
     else
       return (field->flags & UNSIGNED_FLAG) ? 20 : 19;
@@ -1626,7 +1626,7 @@ SQLSMALLINT get_decimal_digits(STMT *stmt __attribute__((unused)),
 */
 SQLLEN get_transfer_octet_length(STMT *stmt, MYSQL_FIELD *field)
 {
-  int capint32= stmt->dbc->ds.opt_COLUMN_SIZE_S32 ? 1 : 0;
+  int capint32= stmt->dbc->ds->opt_COLUMN_SIZE_S32 ? 1 : 0;
   SQLLEN length;
   /* cap at INT_MAX32 due to signed value */
   if (field->length > INT_MAX32)
@@ -1686,7 +1686,7 @@ SQLLEN get_transfer_octet_length(STMT *stmt, MYSQL_FIELD *field)
     return (field->length + 7) / 8;
 
   case MYSQL_TYPE_STRING:
-    if (stmt->dbc->ds.opt_PAD_SPACE)
+    if (stmt->dbc->ds->opt_PAD_SPACE)
     {
       unsigned int csmaxlen = get_charset_maxlen(field->charsetnr);
       if (!csmaxlen)
@@ -1734,7 +1734,7 @@ SQLLEN get_transfer_octet_length(STMT *stmt, MYSQL_FIELD *field)
 */
 SQLLEN get_display_size(STMT *stmt __attribute__((unused)),MYSQL_FIELD *field)
 {
-  int capint32 = stmt->dbc->ds.opt_COLUMN_SIZE_S32 ? 1 : 0;
+  int capint32 = stmt->dbc->ds->opt_COLUMN_SIZE_S32 ? 1 : 0;
   CHARSET_INFO *charset= get_charset(field->charsetnr, MYF(0));
   unsigned int mbmaxlen= charset ? charset->mbmaxlen : 1;
 
