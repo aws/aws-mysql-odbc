@@ -64,14 +64,14 @@ static SQLRETURN set_constmt_attr(SQLSMALLINT  HandleType,
             break;
 
         case SQL_ATTR_CURSOR_TYPE:
-            if (((STMT *)Handle)->dbc->ds.opt_FORWARD_CURSOR)
+            if (((STMT *)Handle)->dbc->ds->opt_FORWARD_CURSOR)
             {
                 options->cursor_type= SQL_CURSOR_FORWARD_ONLY;
                 if (ValuePtr != (SQLPOINTER)SQL_CURSOR_FORWARD_ONLY)
                     return set_handle_error(HandleType,Handle,MYERR_01S02,
                                             "Forcing the use of forward-only cursor)",0);
             }
-            else if (((STMT *)Handle)->dbc->ds.opt_DYNAMIC_CURSOR)
+            else if (((STMT *)Handle)->dbc->ds->opt_DYNAMIC_CURSOR)
             {
                 if (ValuePtr != (SQLPOINTER)SQL_CURSOR_KEYSET_DRIVEN)
                     options->cursor_type= (SQLUINTEGER)(SQLULEN)ValuePtr;
@@ -277,7 +277,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
           dbc->commit_flag= CHECK_AUTOCOMMIT_OFF;
           return SQL_SUCCESS;
         }
-        if (!(trans_supported(dbc)) || dbc->ds.opt_NO_TRANSACTIONS)
+        if (!(trans_supported(dbc)) || dbc->ds->opt_NO_TRANSACTIONS)
           return ((DBC*)hdbc)->set_error(MYERR_S1C00,
             "Transactions are not enabled", 4000);
 
@@ -355,7 +355,7 @@ MySQLSetConnectAttr(SQLHDBC hdbc, SQLINTEGER Attribute,
 
 
     case SQL_ATTR_ODBC_CURSORS:
-      if (dbc->ds.opt_FORWARD_CURSOR &&
+      if (dbc->ds->opt_FORWARD_CURSOR &&
         ValuePtr != (SQLPOINTER) SQL_CUR_USE_ODBC)
         return ((DBC*)hdbc)->set_error(MYERR_01S02,
           "Forcing the Driver Manager to use ODBC cursor library",0);
@@ -536,7 +536,7 @@ MySQLGetConnectAttr(SQLHDBC hdbc, SQLINTEGER attrib, SQLCHAR **char_attr,
     break;
 
   case SQL_ATTR_ODBC_CURSORS:
-    if (dbc->ds.opt_FORWARD_CURSOR)
+    if (dbc->ds->opt_FORWARD_CURSOR)
       *((SQLUINTEGER *)num_attr)= SQL_CUR_USE_ODBC;
     else
       *((SQLUINTEGER *)num_attr)= SQL_CUR_USE_IF_NEEDED;

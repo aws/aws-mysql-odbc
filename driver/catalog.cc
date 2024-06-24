@@ -542,10 +542,10 @@ int add_name_condition_pv_id(HSTMT hstmt, std::string &query, SQLCHAR * name,
   return an error if they were.
 */
 #define CHECK_CATALOG_SCHEMA(ST, CN, CL, SN, SL) \
-  if (ST->dbc->ds.opt_NO_CATALOG && CN && *CN && CL) \
+  if (ST->dbc->ds->opt_NO_CATALOG && CN && *CN && CL) \
     return ST->set_error("HY000", "Support for catalogs is disabled by " \
            "NO_CATALOG option, but non-empty catalog is specified.", 0); \
-  if (ST->dbc->ds.opt_NO_SCHEMA && SN && *SN && SL) \
+  if (ST->dbc->ds->opt_NO_SCHEMA && SN && *SN && SL) \
     return ST->set_error("HY000", "Support for schemas is disabled by " \
            "NO_SCHEMA option, but non-empty schema is specified.", 0); \
   if (CN && *CN && CL && SN && *SN && SL) \

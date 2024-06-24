@@ -46,17 +46,17 @@
 */
 
 #define if_forward_cache(st) ((st)->stmt_options.cursor_type == SQL_CURSOR_FORWARD_ONLY && \
-           (st)->dbc->ds.opt_NO_CACHE)
+           (st)->dbc->ds->opt_NO_CACHE)
 #define trans_supported(db) ((db)->connection_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS)
 #define autocommit_on(db) ((db)->connection_proxy->get_server_status() & SERVER_STATUS_AUTOCOMMIT)
 #define is_no_backslashes_escape_mode(db) ((db)->connection_proxy->get_server_status() & SERVER_STATUS_NO_BACKSLASH_ESCAPES)
 #define reset_ptr(x) {if (x) x= 0;}
 #define digit(A) ((int) (A - '0'))
 
-#define MYLOG_QUERY(A,B) {if ((A)->dbc->ds.opt_LOG_QUERY) \
+#define MYLOG_QUERY(A,B) {if ((A)->dbc->ds->opt_LOG_QUERY) \
                query_print((A)->dbc->query_log,(char*) B);}
 
-#define MYLOG_DBC_QUERY(A,B) {if((A)->ds.opt_LOG_QUERY) \
+#define MYLOG_DBC_QUERY(A,B) {if((A)->ds->opt_LOG_QUERY) \
                query_print((A)->query_log,(char*) B);}
 
 /* A few character sets we care about. */

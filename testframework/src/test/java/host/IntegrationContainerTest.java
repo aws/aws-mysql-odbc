@@ -195,26 +195,28 @@ public class IntegrationContainerTest {
       System.out.println(result.getStdout());
 
       String buildCommand = "cmake -S . -B build " +
-        "-DCMAKE_BUILD_TYPE=Debug " +
+        "-DCMAKE_BUILD_TYPE=Release " +
         "-DMYSQLCLIENT_STATIC_LINKING=TRUE " +
         "-DENABLE_INTEGRATION_TESTS=" + (enableIntegrationTests ? "TRUE " : "FALSE ") +
         "-DENABLE_PERFORMANCE_TESTS=" + (enablePerformanceTests ? "TRUE " : "FALSE ") +
         "-DENABLE_UNIT_TESTS=" + (enableUnitTests ? "TRUE " : "FALSE ") +
+        "-DMYSQL_DIR=./mysql-8.3.0-linux-glibc2.28-x86_64/" +
         "-DWITH_UNIXODBC=1";
       System.out.println(buildCommand);
 
       result = testContainer.execInContainer(
         "cmake", "-S", ".", "-B", "build", 
-          "-DCMAKE_BUILD_TYPE=Debug", 
+          "-DCMAKE_BUILD_TYPE=Release",
           "-DMYSQLCLIENT_STATIC_LINKING=TRUE",
           "-DENABLE_INTEGRATION_TESTS=" + (enableIntegrationTests ? "TRUE" : "FALSE"),
           "-DENABLE_PERFORMANCE_TESTS=" + (enablePerformanceTests ? "TRUE" : "FALSE"),
           "-DENABLE_UNIT_TESTS=" + (enableUnitTests ? "TRUE" : "FALSE"),
+          "-DMYSQL_DIR=./mysql-8.3.0-linux-glibc2.28-x86_64/",
           "-DWITH_UNIXODBC=1");
       System.out.println(result.getStdout());
 
-      System.out.println("cmake --build ./build --config Debug");
-      result = testContainer.execInContainer("cmake",  "--build",  "./build", "--config", "Debug");
+      System.out.println("cmake --build ./build --config Release");
+      result = testContainer.execInContainer("cmake",  "--build",  "./build", "--config", "Release");
       System.out.println(result.getStdout());
     } catch (Exception e) {
       fail("Test container failed during driver/test building process.");
@@ -239,7 +241,7 @@ public class IntegrationContainerTest {
     if (!StringUtils.isNullOrEmpty(ACCESS_KEY) && !StringUtils.isNullOrEmpty(SECRET_ACCESS_KEY)) {
       // Comment out below to not create a new cluster & instances
       if (StringUtils.isNullOrEmpty(dbClusterIdentifier)) {
-        dbClusterIdentifier = "test-mysql-" + System.nanoTime();
+        dbClusterIdentifier = "mysql-odbc-" + System.nanoTime();
       }
 
       AuroraClusterInfo clusterInfo = auroraUtil.createCluster(TEST_USERNAME, TEST_PASSWORD, dbClusterIdentifier, TEST_DATABASE);

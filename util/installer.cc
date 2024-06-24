@@ -1038,6 +1038,8 @@ void DataSource::reset() {
   this->opt_FAILURE_DETECTION_COUNT.set_default(DEFAULT_FAILURE_DETECTION_COUNT);
   this->opt_MONITOR_DISPOSAL_TIME.set_default(MONITOR_DISPOSAL_TIME_MS);
   this->opt_FAILURE_DETECTION_TIMEOUT.set_default(FAILURE_DETECTION_TIMEOUT_SECS);
+
+  this->opt_AUTH_PORT.set_default(-1);
 }
 
 SQLWSTRING DataSource::to_kvpair(SQLWCHAR delim) {

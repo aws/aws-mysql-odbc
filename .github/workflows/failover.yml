@@ -173,7 +173,6 @@ jobs:
 #          -DCONNECTOR_PLATFORM=linux
 #          -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64/
 #          -DENABLE_UNIT_TESTS=TRUE
-#          -DENABLE_INTEGRATION_TESTS=FALSE
 #
 #      - name: copy AWS SDK libraries to driver library
 #        run: |
