@@ -179,12 +179,6 @@ ADD_CUSTOM_TARGET(
 
 ADD_CUSTOM_COMMAND(
         OUTPUT ${MSI_PACKAGE}
-        DEPENDS mysql_odbc.wxs
-                mysql_odbc_fragment.wxs
-        COMMAND ${WIX_DIR}/candle.exe mysql_odbc.wxs.in mysql_odbc_fragment.wxs -o ${MSI_PACKAGE})
-
-ADD_CUSTOM_COMMAND(
-        OUTPUT mysql_odbc.wxs
         DEPENDS mysql_odbc.wxs.in
                 mysql_common_ui.wxs
-        COMMAND ${WIX_EXECUTABLE} -arch ${XML_FILE_SOURCE_ARCH} aws-mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}.wxs -o mysql_odbc.wxs.in)
+        COMMAND ${WIX_EXECUTABLE} -arch ${XML_FILE_SOURCE_ARCH} -o ${MSI_PACKAGE} aws-mysql-odbc-${ODBC_VERSION}-${MSI_VERSION}.wxs mysql_odbc_fragment.wxs)
