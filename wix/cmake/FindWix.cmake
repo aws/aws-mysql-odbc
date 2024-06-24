@@ -35,7 +35,7 @@ IF(DEFINED $ENV{WIX_DIR})
 ENDIF(DEFINED $ENV{WIX_DIR})
 
 # Wix installer creates WIX environment variable
-FIND_PATH(WIX_DIR wix.exe
+FIND_PATH(WIX_DIR candle.exe
 	$ENV{WIX_DIR}/bin
 	$ENV{WIX}/bin
 	"$ENV{ProgramFiles}/wix/bin"
