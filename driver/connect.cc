@@ -1022,12 +1022,12 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     return SQL_ERROR;
   }
 
-  ds = dsrc;
+  ds = *dsrc;
   /* init all needed UTF-8 strings */
-  const char *opt_db = ds->opt_DATABASE;
+  const char *opt_db = ds.opt_DATABASE;
   database = opt_db ? opt_db : "";
 
-  if (ds->opt_LOG_QUERY && !log_file)
+  if (ds.opt_LOG_QUERY && !log_file)
       log_file = init_log_file();
 
   /* Set the statement error prefix based on the server version. */
@@ -1042,7 +1042,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   int set_reconnect_result = 0;
 #if MYSQL_VERSION_ID < 80300
   /* This needs to be set after connection, or it doesn't stick.  */
-  if (ds->opt_AUTO_RECONNECT)
+  if (ds.opt_AUTO_RECONNECT)
   {
     connection_proxy->options(MYSQL_OPT_RECONNECT, (char *)&on);
   }
@@ -1054,7 +1054,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   /* Make sure autocommit is set as configured. */
   if (commit_flag == CHECK_AUTOCOMMIT_OFF)
   {
-    if (!transactions_supported() || ds->opt_NO_TRANSACTIONS)
+    if (!transactions_supported() || ds.opt_NO_TRANSACTIONS)
     {
       commit_flag = CHECK_AUTOCOMMIT_ON;
       rc = set_error(MYERR_01S02,
@@ -1130,7 +1130,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     new   old   new   reconnect option ignored with warning
     new   new    *    reconnect option ignored with warning
   */
-  if (ds->opt_AUTO_RECONNECT && set_reconnect_result)
+  if (ds.opt_AUTO_RECONNECT && set_reconnect_result)
   {
     set_error("HY000",
       "The option AUTO_RECONNECT is not supported "
@@ -1596,20 +1596,20 @@ void DBC::free_connection_stmts()
 SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 {
   DBC *dbc= (DBC *) hdbc;
-  DataSource* ds = dbc->ds;
+  DataSource ds = dbc->ds;
 
-  if (ds->opt_GATHER_PERF_METRICS) {
+  if (ds.opt_GATHER_PERF_METRICS) {
     std::string cluster_id_str = "";
     if (dbc->fh) {
       cluster_id_str = dbc->fh->cluster_id;
     }
 
-    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds->opt_GATHER_PERF_METRICS_PER_INSTANCE) && dbc->connection_proxy) {
+    if (((cluster_id_str == DEFAULT_CLUSTER_ID) || ds.opt_GATHER_PERF_METRICS_PER_INSTANCE) && dbc->connection_proxy) {
       cluster_id_str = dbc->connection_proxy->get_host();
       cluster_id_str.append(":").append(std::to_string(dbc->connection_proxy->get_port()));
     }
 
-    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds->opt_GATHER_PERF_METRICS_PER_INSTANCE, dbc->log_file, dbc->id);
+    CLUSTER_AWARE_METRICS_CONTAINER::report_metrics(cluster_id_str, dbc->ds.opt_GATHER_PERF_METRICS_PER_INSTANCE, dbc->log_file, dbc->id);
   }
 
   CHECK_HANDLE(hdbc);
@@ -1618,7 +1618,7 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 
   dbc->close();
 
-  if (ds->opt_LOG_QUERY)
+  if (ds.opt_LOG_QUERY)
       end_log_file();
 
   /* free allocated packet buffer */

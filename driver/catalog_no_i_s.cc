@@ -50,19 +50,19 @@ std::string get_database_name(STMT *stmt,
                               bool try_reget)
 {
   std::string db;
-  if (!stmt->dbc->ds->opt_NO_CATALOG && catalog && catalog_len)
+  if (!stmt->dbc->ds.opt_NO_CATALOG && catalog && catalog_len)
   {
     // Catalog parameter can be used
     db = (catalog_len != SQL_NTS ? std::string((char *)catalog, catalog_len) :
       std::string((char *)catalog));
   }
-  else if(!stmt->dbc->ds->opt_NO_SCHEMA && schema && schema_len)
+  else if(!stmt->dbc->ds.opt_NO_SCHEMA && schema && schema_len)
   {
     // Schema parameter can be used
     db = (schema_len != SQL_NTS ? std::string((char*)schema, schema_len) :
       std::string((char *)schema));
   }
-  else if (!stmt->dbc->ds->opt_NO_CATALOG || !stmt->dbc->ds->opt_NO_SCHEMA)
+  else if (!stmt->dbc->ds.opt_NO_CATALOG || !stmt->dbc->ds.opt_NO_SCHEMA)
   {
     if (!try_reget)
       return db;

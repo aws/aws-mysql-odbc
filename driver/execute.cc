@@ -99,8 +99,8 @@ SQLRETURN do_query(STMT *stmt, std::string query)
      * and when no musltiple statements is allowed - we can't now parse query
      * that well to detect multiple queries.
      */
-    if (stmt->dbc->ds->opt_PREFETCH > 0
-        && !stmt->dbc->ds->opt_MULTI_STATEMENTS
+    if (stmt->dbc->ds.opt_PREFETCH > 0
+        && !stmt->dbc->ds.opt_MULTI_STATEMENTS
         && stmt->stmt_options.cursor_type == SQL_CURSOR_FORWARD_ONLY
         && scrollable(stmt, query.c_str(), query.c_str() + query_length)
         && !ssps_used(stmt))
@@ -112,7 +112,7 @@ SQLRETURN do_query(STMT *stmt, std::string query)
       stmt->scroller.reset();
 
       stmt->scroller.row_count= calc_prefetch_number(
-                                      stmt->dbc->ds->opt_PREFETCH,
+                                      stmt->dbc->ds.opt_PREFETCH,
                                       stmt->ard->array_size,
                                       stmt->stmt_options.max_rows);
 
@@ -664,7 +664,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
     case SQL_C_TYPE_DATE:
       {
         DATE_STRUCT *date= (DATE_STRUCT*) *res;
-        if (stmt->dbc->ds->opt_MIN_DATE_TO_ZERO && !date->year
+        if (stmt->dbc->ds.opt_MIN_DATE_TO_ZERO && !date->year
           && (date->month == date->day == 1))
         {
           *length = myodbc_snprintf(buff, buff_max, "0000-00-00");
@@ -697,7 +697,7 @@ SQLRETURN convert_c_type2str(STMT *stmt, SQLSMALLINT ctype, DESCREC *iprec,
       {
         TIMESTAMP_STRUCT *time= (TIMESTAMP_STRUCT*) *res;
 
-        if (stmt->dbc->ds->opt_MIN_DATE_TO_ZERO &&
+        if (stmt->dbc->ds.opt_MIN_DATE_TO_ZERO &&
             !time->year && (time->month == time->day == 1))
         {
           *length = myodbc_snprintf(buff, buff_max, "0000-00-00 %02d:%02d:%02d",
@@ -1037,7 +1037,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
               Not sure if fraction should be considered as an overflow.
               In fact specs say about "time fields only"
             */
-          if (!stmt->dbc->ds->opt_NO_DATE_OVERFLOW && TIME_FIELDS_NONZERO(ts))
+          if (!stmt->dbc->ds.opt_NO_DATE_OVERFLOW && TIME_FIELDS_NONZERO(ts))
           {
             return stmt->set_error("22008", "Date overflow", 0);
           }
@@ -1227,7 +1227,7 @@ SQLRETURN insert_param(STMT *stmt, MYSQL_BIND *bind, DESC* apd,
           size_t local_thousands_sep_length = thousands_sep.length();
           size_t local_decimal_point_length = decimal_point.length();
 
-          if (!stmt->dbc->ds->opt_NO_LOCALE)
+          if (!stmt->dbc->ds.opt_NO_LOCALE)
           {
             /* force use of . as decimal point */
             local_thousands_sep= ",";
@@ -2010,8 +2010,8 @@ SQLRETURN SQL_API SQLCancel(SQLHSTMT hstmt)
     interfere with the existing one. Therefore, locking is not needed in
     the following block.
   */
-  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds->opt_SERVER, dbc->ds->opt_PORT);
-  CONNECTION_PROXY* proxy = dbc->connection_handler->connect(host, dbc->ds);
+  auto host = std::make_shared<HOST_INFO>((const char*)dbc->ds.opt_SERVER, dbc->ds.opt_PORT);
+  CONNECTION_PROXY* proxy = dbc->connection_handler->connect(host, &dbc->ds);
 
   /** @todo need to preserve and use ssl params */
   if (!proxy)

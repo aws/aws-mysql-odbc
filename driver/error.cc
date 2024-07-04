@@ -544,11 +544,11 @@ MySQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle, SQLSMALLINT record,
       return SQL_ERROR;
 
     if (handle_type == SQL_HANDLE_DESC)
-      ds= desc->stmt->dbc->ds;
+      ds= &desc->stmt->dbc->ds;
     else if (handle_type == SQL_HANDLE_STMT)
-      ds= stmt->dbc->ds;
+      ds= &stmt->dbc->ds;
     else if (handle_type == SQL_HANDLE_DBC)
-      ds= dbc->ds;
+      ds= &dbc->ds;
     else
       *char_value= (SQLCHAR*)"";
 
@@ -579,11 +579,11 @@ MySQLGetDiagField(SQLSMALLINT handle_type, SQLHANDLE handle, SQLSMALLINT record,
     if (record <= 0)
       return SQL_ERROR;
     if (handle_type == SQL_HANDLE_DESC)
-      ds = desc->stmt->dbc->ds;
+      ds = &desc->stmt->dbc->ds;
     else if (handle_type == SQL_HANDLE_STMT)
-      ds = stmt->dbc->ds;
+      ds = &stmt->dbc->ds;
     else if (handle_type == SQL_HANDLE_DBC)
-      ds = dbc->ds;
+      ds = &dbc->ds;
     else
       *char_value= (SQLCHAR *)"";
 

@@ -119,16 +119,16 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
     MYINFO_SET_USHORT(SQL_CL_START);
 
   case SQL_CATALOG_NAME:
-    MYINFO_SET_STR(dbc->ds->opt_NO_CATALOG ? "" : "Y");
+    MYINFO_SET_STR(dbc->ds.opt_NO_CATALOG ? "" : "Y");
 
   case SQL_CATALOG_NAME_SEPARATOR:
-    MYINFO_SET_STR(dbc->ds->opt_NO_CATALOG ? "" : ".");
+    MYINFO_SET_STR(dbc->ds.opt_NO_CATALOG ? "" : ".");
 
   case SQL_CATALOG_TERM:
-    MYINFO_SET_STR(dbc->ds->opt_NO_CATALOG ? "" : "database");
+    MYINFO_SET_STR(dbc->ds.opt_NO_CATALOG ? "" : "database");
 
   case SQL_CATALOG_USAGE:
-    MYINFO_SET_ULONG(!dbc->ds->opt_NO_CATALOG ?
+    MYINFO_SET_ULONG(!dbc->ds.opt_NO_CATALOG ?
       (SQL_CU_DML_STATEMENTS | SQL_CU_PROCEDURE_INVOCATION |
        SQL_CU_TABLE_DEFINITION | SQL_CU_INDEX_DEFINITION |
        SQL_CU_PRIVILEGE_DEFINITION) :
@@ -222,7 +222,7 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
 #endif
 
   case SQL_DATA_SOURCE_NAME:
-    MYINFO_SET_STR(dbc->ds->opt_DSN);
+    MYINFO_SET_STR(dbc->ds.opt_DSN);
 
   case SQL_DATA_SOURCE_READ_ONLY:
     MYINFO_SET_STR("N");
@@ -292,8 +292,8 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
       MYINFO_SET_ULONG(0);
 
   case SQL_DYNAMIC_CURSOR_ATTRIBUTES1:
-    if (!dbc->ds->opt_FORWARD_CURSOR &&
-        dbc->ds->opt_DYNAMIC_CURSOR)
+    if (!dbc->ds.opt_FORWARD_CURSOR &&
+        dbc->ds.opt_DYNAMIC_CURSOR)
       MYINFO_SET_ULONG(SQL_CA1_NEXT | SQL_CA1_ABSOLUTE | SQL_CA1_RELATIVE |
                        SQL_CA1_LOCK_NO_CHANGE | SQL_CA1_POS_POSITION |
                        SQL_CA1_POS_UPDATE | SQL_CA1_POS_DELETE |
@@ -303,8 +303,8 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
       MYINFO_SET_ULONG(0);
 
   case SQL_DYNAMIC_CURSOR_ATTRIBUTES2:
-    if (!dbc->ds->opt_FORWARD_CURSOR &&
-        dbc->ds->opt_DYNAMIC_CURSOR)
+    if (!dbc->ds.opt_FORWARD_CURSOR &&
+        dbc->ds.opt_DYNAMIC_CURSOR)
       MYINFO_SET_ULONG(SQL_CA2_SENSITIVITY_ADDITIONS |
                        SQL_CA2_SENSITIVITY_DELETIONS |
                        SQL_CA2_SENSITIVITY_UPDATES |
@@ -321,7 +321,7 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
     MYINFO_SET_USHORT(SQL_FILE_NOT_SUPPORTED);
 
   case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1:
-    MYINFO_SET_ULONG(dbc->ds->opt_FORWARD_CURSOR ?
+    MYINFO_SET_ULONG(dbc->ds.opt_FORWARD_CURSOR ?
                      SQL_CA1_NEXT :
                      SQL_CA1_NEXT | SQL_CA1_ABSOLUTE | SQL_CA1_RELATIVE |
                      SQL_CA1_LOCK_NO_CHANGE | SQL_CA1_POS_POSITION |
@@ -332,7 +332,7 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
   case SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES2:
     MYINFO_SET_ULONG(SQL_CA2_MAX_ROWS_SELECT | SQL_CA2_MAX_ROWS_INSERT |
                      SQL_CA2_MAX_ROWS_DELETE | SQL_CA2_MAX_ROWS_UPDATE |
-                     (dbc->ds->opt_FORWARD_CURSOR ?
+                     (dbc->ds.opt_FORWARD_CURSOR ?
                       0 : SQL_CA2_CRC_EXACT));
 
   case SQL_GETDATA_EXTENSIONS:
@@ -565,7 +565,7 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
 
   // SQL_MAX_QUALIFIER_NAME_LEN is also defined as SQL_MAX_CATALOG_NAME_LEN
   case SQL_MAX_CATALOG_NAME_LEN:
-    if (!dbc->ds->opt_NO_CATALOG)
+    if (!dbc->ds.opt_NO_CATALOG)
       MYINFO_SET_USHORT(64);
     else
       MYINFO_SET_USHORT(0);
@@ -623,7 +623,7 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
 
   // SQL_MAX_OWNER_NAME_LEN is also defined as SQL_MAX_SCHEMA_NAME_LEN
   case SQL_MAX_SCHEMA_NAME_LEN:
-    if (!dbc->ds->opt_NO_SCHEMA)
+    if (!dbc->ds.opt_NO_SCHEMA)
       MYINFO_SET_USHORT(64);
     else
       MYINFO_SET_USHORT(0);
@@ -705,7 +705,7 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
       MYINFO_SET_STR("N");
 
   case SQL_POS_OPERATIONS:
-    if (dbc->ds->opt_FORWARD_CURSOR)
+    if (dbc->ds.opt_FORWARD_CURSOR)
       MYINFO_SET_ULONG(0);
     else
       MYINFO_SET_ULONG(SQL_POS_POSITION | SQL_POS_UPDATE | SQL_POS_DELETE |
@@ -718,10 +718,10 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
     MYINFO_SET_STR("N");
 
   case SQL_SCHEMA_TERM:
-    MYINFO_SET_STR((dbc->ds->opt_NO_SCHEMA) ? "" : "database");
+    MYINFO_SET_STR((dbc->ds.opt_NO_SCHEMA) ? "" : "database");
 
   case SQL_SCHEMA_USAGE:
-    if (!dbc->ds->opt_NO_SCHEMA)
+    if (!dbc->ds.opt_NO_SCHEMA)
       MYINFO_SET_ULONG(SQL_SU_DML_STATEMENTS | SQL_SU_PROCEDURE_INVOCATION |
                        SQL_SU_TABLE_DEFINITION | SQL_SU_INDEX_DEFINITION |
                        SQL_SU_PRIVILEGE_DEFINITION);
@@ -730,9 +730,9 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
 
   case SQL_SCROLL_OPTIONS:
     MYINFO_SET_ULONG(SQL_SO_FORWARD_ONLY |
-      (dbc->ds->opt_FORWARD_CURSOR ?
+      (dbc->ds.opt_FORWARD_CURSOR ?
        0 : SQL_SO_STATIC |
-       (dbc->ds->opt_DYNAMIC_CURSOR ? SQL_SO_DYNAMIC : 0)));
+       (dbc->ds.opt_DYNAMIC_CURSOR ? SQL_SO_DYNAMIC : 0)));
 
   case SQL_SEARCH_PATTERN_ESCAPE:
     MYINFO_SET_STR("\\");
@@ -854,13 +854,13 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
                      SQL_FN_TD_WEEK | SQL_FN_TD_YEAR);
 
   case SQL_TXN_CAPABLE:
-    if (trans_supported(dbc) && (!dbc->ds->opt_NO_TRANSACTIONS))
+    if (trans_supported(dbc) && (!dbc->ds.opt_NO_TRANSACTIONS))
       MYINFO_SET_USHORT(SQL_TC_DDL_COMMIT);
     else
       MYINFO_SET_USHORT(SQL_TC_NONE);
 
   case SQL_TXN_ISOLATION_OPTION:
-    if (!trans_supported(dbc) || (dbc->ds->opt_NO_TRANSACTIONS))
+    if (!trans_supported(dbc) || (dbc->ds.opt_NO_TRANSACTIONS))
       MYINFO_SET_ULONG(SQL_TXN_READ_COMMITTED);
     else
       MYINFO_SET_ULONG(SQL_TXN_READ_COMMITTED | SQL_TXN_READ_UNCOMMITTED |
@@ -870,7 +870,7 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
     MYINFO_SET_ULONG(SQL_U_UNION | SQL_U_UNION_ALL);
 
   case SQL_USER_NAME:
-    MYINFO_SET_STR(dbc->ds->opt_UID);
+    MYINFO_SET_STR(dbc->ds.opt_UID);
 
   case SQL_XOPEN_CLI_YEAR:
     MYINFO_SET_STR("1992");
@@ -888,7 +888,7 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
     MYINFO_SET_STR("Y");
 
   case SQL_POSITIONED_STATEMENTS:
-    if (dbc->ds->opt_FORWARD_CURSOR)
+    if (dbc->ds.opt_FORWARD_CURSOR)
       MYINFO_SET_ULONG(0);
     else
       MYINFO_SET_ULONG(SQL_PS_POSITIONED_DELETE | SQL_PS_POSITIONED_UPDATE);
@@ -901,12 +901,12 @@ MySQLGetInfo(SQLHDBC hdbc, SQLUSMALLINT fInfoType,
     MYINFO_SET_ULONG(SQL_SS_ADDITIONS | SQL_SS_DELETIONS | SQL_SS_UPDATES);
 
   case SQL_FETCH_DIRECTION:
-    if (dbc->ds->opt_FORWARD_CURSOR)
+    if (dbc->ds.opt_FORWARD_CURSOR)
       MYINFO_SET_ULONG(SQL_FD_FETCH_NEXT);
     else
       MYINFO_SET_ULONG(SQL_FD_FETCH_NEXT | SQL_FD_FETCH_FIRST |
                        SQL_FD_FETCH_LAST |
-                       (dbc->ds->opt_NO_DEFAULT_CURSOR ? 0 : SQL_FD_FETCH_PRIOR) |
+                       (dbc->ds.opt_NO_DEFAULT_CURSOR ? 0 : SQL_FD_FETCH_PRIOR) |
                        SQL_FD_FETCH_ABSOLUTE | SQL_FD_FETCH_RELATIVE);
 
   case SQL_ODBC_SAG_CLI_CONFORMANCE:

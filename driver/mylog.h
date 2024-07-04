@@ -37,7 +37,7 @@
 
 #define MYLOG_STMT_TRACE(A, B)                                              \
   {                                                                         \
-    if ((A)->dbc->ds->opt_LOG_QUERY)                                         \
+    if ((A)->dbc->ds.opt_LOG_QUERY)                                         \
       trace_print((A)->dbc->log_file, (A)->dbc->id, (const char *)B);       \
   }
 #define MYLOG_DBC_TRACE(A, ...) \
