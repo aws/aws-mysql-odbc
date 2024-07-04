@@ -405,13 +405,13 @@ void btnDetails_Click (HWND hwnd)
 
     // Auth mode dropdown
     HWND auth_tab = TabCtrl_1.hTabPages[AWS_AUTH_TAB - 1];
-    HWND AUTH_MODE_dlg = GetDlgItem(auth_tab, IDC_EDIT_AUTH_MODE);
+    HWND auth_mode_dlg = GetDlgItem(auth_tab, IDC_EDIT_AUTH_MODE);
 
-    ComboBox_ResetContent(AUTH_MODE_dlg);
+    ComboBox_ResetContent(auth_mode_dlg);
 
-    ComboBox_AddString(AUTH_MODE_dlg, L"");
-    ComboBox_AddString(AUTH_MODE_dlg, LSTR(AUTH_MODE_IAM));
-    ComboBox_AddString(AUTH_MODE_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
+    ComboBox_AddString(auth_mode_dlg, L"");
+    ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_IAM));
+    ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
 
     // Failover mode dropdown
     HWND failover_tab = TabCtrl_1.hTabPages[FAILOVER_TAB - 1];
