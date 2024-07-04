@@ -1,9 +1,6 @@
 name: Build installer
-# This workflow is triggered on creating tags
 on:
-  push:
-    branches:
-      - windows-installer
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
