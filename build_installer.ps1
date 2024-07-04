@@ -47,13 +47,14 @@ $ARCHITECTURE = $args[0]
 $CONFIGURATION = $args[1]
 $GENERATOR = $args[2]
 $MYSQL_DIR = $args[3]
+$WIX_DIR = $args[4]
 
 # Set default values
 if ($null -eq $CONFIGURATION) {
     $CONFIGURATION = "Release"
 }
 if ($null -eq $MYSQL_DIR) {
-    $MYSQL_DIR = "C:\Program Files\MySQL\MySQL Server 8.0"
+    $MYSQL_DIR = "C:\Program Files\MySQL\MySQL Server 8.3"
 }
 
 # BUILD DRIVER
@@ -81,10 +82,15 @@ Copy-Item .\LICENSE.txt .\Wix\doc
 
 Set-Location .\Wix
 if ($ARCHITECTURE -eq "x64") {
-    cmake -DMSI_64=1 -G "NMake Makefiles"
-}
-else {
+    if ($null -eq $WIX_DIR) {
+        cmake -DMSI_64=1 -G "NMake Makefiles"
+    } else {
+        cmake -DMSI_64=1 -G "NMake Makefiles" -DWIX_DIR="$WIX_DIR"
+    }
+} elseif ($null -eq $WIX_DIR) {
     cmake -DMSI_64=0 -G "NMake Makefiles"
+} else {
+    cmake -DMSI_64=0 -G "NMake Makefiles" -DWIX_DIR="$WIX_DIR"
 }
 nmake
 

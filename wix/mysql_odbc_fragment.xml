@@ -1,32 +1,35 @@
-﻿<!-- *****************************************************************************************
+<?xml version="1.0" encoding="utf-8" ?>
+
+<!-- *****************************************************************************************
  Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
- Copyright (c) 2007, 2024, Oracle and/or its affiliates.
-
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License, version 2.0, as
- published by the Free Software Foundation.
-
- This program is designed to work with certain software (including
- but not limited to OpenSSL) that is licensed under separate terms, as
- designated in a particular file or component or in included license
- documentation. The authors of MySQL hereby grant you an additional
- permission to link the program and your derivative works with the
- separately licensed software that they have either included with
- the program or referenced in the documentation.
-
- Without limiting anything contained in the foregoing, this file,
- which is part of Connector/ODBC, is also subject to the
- Universal FOSS Exception, version 1.0, a copy of which can be found at
- https://oss.oracle.com/licenses/universal-foss-exception.
-
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- See the GNU General Public License, version 2.0, for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software Foundation, Inc.,
- 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+  
+ Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved. 
+ 
+ This program is free software; you can redistribute it and/or modify 
+ it under the terms of the GNU General Public License, version 2.0, as 
+ published by the Free Software Foundation. 
+ 
+ This program is also distributed with certain software (including 
+ but not limited to OpenSSL) that is licensed under separate terms, 
+ as designated in a particular file or component or in included license 
+ documentation. The authors of MySQL hereby grant you an 
+ additional permission to link the program and your derivative works 
+ with the separately licensed software that they have included with 
+ MySQL. 
+ 
+ Without limiting anything contained in the foregoing, this file, 
+ which is part of MySQL Connector/ODBC, is also subject to the 
+ Universal FOSS Exception, version 1.0, a copy of which can be found at 
+ http://oss.oracle.com/licenses/universal-foss-exception. 
+ 
+ This program is distributed in the hope that it will be useful, but 
+ WITHOUT ANY WARRANTY; without even the implied warranty of 
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ See the GNU General Public License, version 2.0, for more details. 
+ 
+ You should have received a copy of the GNU General Public License 
+ along with this program; if not, write to the Free Software Foundation, Inc., 
+ 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA 
 -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
@@ -66,16 +69,8 @@
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x64\myodbc-installer.exe" />
             </Component>
             <Component Id="ssl" Guid="64730b5a-73bb-4888-9ac1-5ef99a8f8ff4" SharedDllRefCount="yes" Win64="yes">
-              <?if $(var.odbc_ver_num) < 80018 ?>
-                <File Id="libeay32.dll" Name="libeay32.dll" KeyPath="yes" DiskId="1" Source="x64\libeay32.dll" />
-                <File Id="ssleay32.dll" Name="ssleay32.dll" DiskId="1" Source="x64\ssleay32.dll" />
-              <?elseif $(var.odbc_ver_num) < 80100 ?>
-                <File Id="libcrypto_1_1_x64.dll" Name="libcrypto-1_1-x64.dll" KeyPath="yes" DiskId="1" Source="x64\libcrypto-1_1-x64.dll" />
-                <File Id="libssl_1_1_x64.dll" Name="libssl-1_1-x64.dll" DiskId="1" Source="x64\libssl-1_1-x64.dll" />
-              <?else ?>
                 <File Id="libcrypto_3_x64.dll" Name="libcrypto-3-x64.dll" KeyPath="yes" DiskId="1" Source="x64\libcrypto-3-x64.dll" />
                 <File Id="libssl_3_x64.dll" Name="libssl-3-x64.dll" DiskId="1" Source="x64\libssl-3-x64.dll" />
-              <?endif ?>
             </Component>
           <?else ?>
             <Component Id="driver" Guid="2d5f8fc4-4cc3-46b7-9221-f28a5f930ebf" SharedDllRefCount="yes">
@@ -94,16 +89,8 @@
               <File Id="installer" Name="myodbc-installer.exe" KeyPath="yes" DiskId="1" Source="x86\myodbc-installer.exe" />
             </Component>
             <Component Id="ssl" Guid="d2987689-3f6f-4a7e-bbd9-3a95e256546b" SharedDllRefCount="yes">
-              <?if $(var.odbc_ver_num) < 80018 ?>
-                <File Id="libeay32.dll" Name="libeay32.dll" KeyPath="yes" DiskId="1" Source="x86\libeay32.dll" />
-                <File Id="ssleay32.dll" Name="ssleay32.dll" DiskId="1" Source="x86\ssleay32.dll" />
-              <?elseif $(var.odbc_ver_num) < 80034 ?>
-                <File Id="libcrypto_1_1.dll" Name="libcrypto-1_1.dll" KeyPath="yes" DiskId="1" Source="x86\libcrypto-1_1.dll" />
-                <File Id="libssl_1_1.dll" Name="libssl-1_1.dll" DiskId="1" Source="x86\libssl-1_1.dll" />
-              <?else ?>
                 <File Id="libcrypto_3.dll" Name="libcrypto-3.dll" KeyPath="yes" DiskId="1" Source="x86\libcrypto-3.dll" />
                 <File Id="libssl_3.dll" Name="libssl-3.dll" DiskId="1" Source="x86\libssl-3.dll" />
-              <?endif ?>
             </Component>
           <?endif ?>
           <?include mysql_odbc_dependencies.xml ?>
