@@ -75,7 +75,7 @@ BEGIN
         BEGIN
             VALUE "Comments", "provides core driver functionality\0"
             VALUE "CompanyName", "Amazon.com Inc. or affiliates.\0"
-	          VALUE "FileDescription", "MySQL ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ @DRIVER_TYPE@ Driver\0"
+	          VALUE "FileDescription", "AWS ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ @DRIVER_TYPE@ DRIVER For MySQL\0"
             VALUE "FileVersion", MYODBC_STRFILEVER
             VALUE "InternalName", "awsmysqlodbc@CONNECTOR_DRIVER_TYPE_SHORT@\0"
             VALUE "LegalCopyright", "Copyright (c) 1995, 2018, Oracle and/or its affiliates.\0"

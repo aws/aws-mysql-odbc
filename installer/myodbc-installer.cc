@@ -122,7 +122,7 @@ const char usage[] =
 "|                                                                      \n"
 #ifndef _WIN32
 "|    Register a Unicode driver (UNIX example)                          \n"
-"|    shell> myodbc-installer -d -a -n \"MySQL ODBC " MYODBC_STRSERIES " Unicode Driver\" \\ \n"
+"|    shell> myodbc-installer -d -a -n \"AWS ODBC " MYODBC_STRSERIES " Unicode Driver For MySQL \" \\ \n"
 "|              -t \"DRIVER=/path/to/driver/awsmysqlodbcw.so;SETUP=/path/to/gui/awsmysqlodbcS.so\"\n"
 "|                                                                      \n"
 "|      Note                                                            \n"
@@ -130,7 +130,7 @@ const char usage[] =
 "|           some 64-bit systems, and /usr/lib64 for most 64-bit systems\n"
 "|                                                                      \n"
 "|         * driver_name is awsmysqlodbca.so for the ANSI version and     \n"
-"|           awsmysqlodbcw.so for the Unicode version of MySQL ODBC Driver\n"
+"|           awsmysqlodbcw.so for the Unicode version of AWS ODBC Driver for MySQL\n"
 "|                                                                      \n"
 "|         * The SETUP parameter is optional; it provides location of   \n"
 "|           the GUI module (awsmysqlodbcS.so) for DSN setup, which       \n"
@@ -138,17 +138,17 @@ const char usage[] =
 "|                                                                      \n"
 #else
 "|    Register a Unicode driver (Windows example)                       \n"
-"|    shell> myodbc-installer -d -a -n \"MySQL ODBC " MYODBC_STRSERIES " Unicode Driver\" \\ \n"
+"|    shell> myodbc-installer -d -a -n \"AWS ODBC " MYODBC_STRSERIES " Unicode Driver for MySQL\" \\ \n"
 "|              -t \"DRIVER=awsmysqlodbcw.dll;SETUP=awsmysqlodbcS.dll\"\n"
 "|                                                                      \n"
 "|      Note                                                            \n"
 "|         * driver_name is awsmysqlodbca.dll for the ANSI version and       \n"
-"|           awsmysqlodbcw.dll for the Unicode version of MySQL ODBC Driver  \n"
+"|           awsmysqlodbcw.dll for the Unicode version of AWS ODBC Driver for MySQL \n"
 "|                                                                      \n"
 #endif
 "|    Add a new system data source name for Unicode driver              \n"
 "|    shell> myodbc-installer -s -a -c2 -n \"test\" \\                  \n"
-"|              -t \"DRIVER=MySQL ODBC " MYODBC_STRSERIES " Unicode Driver;SERVER=localhost;DATABASE=test;UID=myid;PWD=mypwd\"\n"
+"|              -t \"DRIVER=AWS ODBC " MYODBC_STRSERIES " Unicode Driver for MySQL;SERVER=localhost;DATABASE=test;UID=myid;PWD=mypwd\"\n"
 "|                                                                      \n"
 "|    List data source name attributes for 'test'                       \n"
 "|    shell> myodbc-installer -s -l -c2 -n \"test\"                    \n"
@@ -678,7 +678,7 @@ int add_datasource(DataSource *ds, const SQLWCHAR *attrs)
   {
     // We will not return the error code 1, just print a warning to stderr.
     fprintf(stderr, "[WARNING] The option AUTO_RECONNECT is not "
-      "supported by MySQL ODBC Driver version 8.3 and newer.\n");
+      "supported by the AWS ODBC Driver for MySQL.\n");
   }
 #endif
 
