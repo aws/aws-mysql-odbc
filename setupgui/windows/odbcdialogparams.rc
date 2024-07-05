@@ -221,7 +221,7 @@ IDD_TAB4 DIALOGEX 0, 0, 209, 281
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    RTEXT           "Failover Mode:", IDC_STATIC, 12, 13, 116, 8
+    RTEXT           "Failover mode:", IDC_STATIC, 12, 13, 116, 8
     COMBOBOX        IDC_EDIT_FAILOVER_MODE, 132, 11, 196, 12,
                     CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     RTEXT           "&Host pattern:",IDC_STATIC,12,30,117,8
@@ -238,16 +238,16 @@ BEGIN
     EDITTEXT        IDC_EDIT_FAILOVER_WRITER_RECONNECT_INTERVAL,132,113,64,12,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Reader connect timeout (ms):",IDC_STATIC,11,132,117,8
     EDITTEXT        IDC_EDIT_FAILOVER_READER_CONNECT_TIMEOUT,132,130,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Host Connect timeout (s):",IDC_STATIC,11,149,117,8
+    RTEXT           "Host connect timeout (s):",IDC_STATIC,11,149,117,8
     EDITTEXT        IDC_EDIT_CONNECT_TIMEOUT,132,147,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Host Read/Write timeout (s):",IDC_STATIC,11,166,117,8
+    RTEXT           "Host read/write timeout (s):",IDC_STATIC,11,166,117,8
     EDITTEXT        IDC_EDIT_NETWORK_TIMEOUT,132,164,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "&Enable Cluster Failover",IDC_CHECK_ENABLE_CLUSTER_FAILOVER,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 220, 64, 89, 10
+    CONTROL         "&Enable Ccluster failover",IDC_CHECK_ENABLE_CLUSTER_FAILOVER,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 210, 64, 89, 10
     CONTROL         "&Gather performance metrics", IDC_CHECK_GATHER_PERF_METRICS,
-                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 220, 81, 100, 10
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 210, 81, 100, 10
     CONTROL         "&Gather instance-specific metrics", IDC_CHECK_GATHER_PERF_METRICS_PER_INSTANCE,
-                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED, 220, 96, 100, 10
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP | WS_DISABLED, 210, 96, 120, 10
 END
 
 IDD_TAB5 DIALOGEX 0, 0, 209, 181
