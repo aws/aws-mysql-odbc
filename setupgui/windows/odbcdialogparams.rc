@@ -242,7 +242,7 @@ BEGIN
     EDITTEXT        IDC_EDIT_CONNECT_TIMEOUT,132,147,64,12,ES_AUTOHSCROLL | ES_NUMBER
     RTEXT           "Host read/write timeout (s):",IDC_STATIC,11,166,117,8
     EDITTEXT        IDC_EDIT_NETWORK_TIMEOUT,132,164,64,12,ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "&Enable Ccluster failover",IDC_CHECK_ENABLE_CLUSTER_FAILOVER,
+    CONTROL         "&Enable cluster failover",IDC_CHECK_ENABLE_CLUSTER_FAILOVER,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP, 210, 64, 89, 10
     CONTROL         "&Gather performance metrics", IDC_CHECK_GATHER_PERF_METRICS,
                     "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 210, 81, 100, 10
