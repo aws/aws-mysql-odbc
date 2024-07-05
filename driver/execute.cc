@@ -134,52 +134,13 @@ SQLRETURN do_query(STMT *stmt, std::string query)
     else if (ssps_used(stmt))
     {
 
-      // This assertion will need to be revisited later.
-      // The situation when we can have at most one attribute is temporary.
-      assert(
-        (stmt->param_count == stmt->query_attr_names.size())
-        || (1+stmt->param_count == stmt->query_attr_names.size())
-      );
-
-      bool bind_failed = false;
-
-      // FIXME: What if runtime client library version does not agree with version used here?
-
-#if MYSQL_VERSION_ID >= 80300
-      // For older servers that don't support named params
-      // we just don't count them and specify the number of unnamed params.
-      unsigned int p_number = is_minimum_version(stmt->dbc->connection_proxy->get_server_version(), "8.3.0") ?
-        stmt->query_attr_names.size() : stmt->param_count;
-
-      if (p_number)
-      {
-        bind_failed = stmt->dbc->connection_proxy->stmt_bind_named_param(stmt->ssps,
-          stmt->param_bind.data(), p_number, stmt->query_attr_names.data());
-      }
-
-#else
-      if (stmt->param_bind.size() && stmt->param_count)
-      {
-        bind_failed = stmt->dbc->connection_proxy->stmt_bind_param(stmt->ssps, &stmt->param_bind[0]);
-      }
-#endif
-
-      if (!bind_failed)
-      {
-        native_error = stmt->dbc->connection_proxy->stmt_execute(stmt->ssps);
-      }
-      else
-      {
-        stmt->set_error("HY000",
-                       stmt->dbc->connection_proxy->stmt_error(stmt->ssps),
-                       stmt->dbc->connection_proxy->stmt_errno(stmt->ssps));
-
-        /* For some errors - translating to more appropriate status */
-        translate_error((char*)stmt->error.sqlstate.c_str(), MYERR_S1000,
-                        stmt->error.native_error);
+      native_error = stmt->bind_query_attrs(true);
+      if (native_error == SQL_ERROR) {
         error = stmt->error.retcode;
         goto exit;
       }
+
+      native_error = stmt->dbc->connection_proxy->stmt_execute(stmt->ssps);
       MYLOG_STMT_TRACE(stmt, "ssps has been executed");
     }
     else
@@ -191,7 +152,7 @@ SQLRETURN do_query(STMT *stmt, std::string query)
 
       if (stmt->bind_query_attrs(false) == SQL_ERROR)
       {
-        error = SQL_ERROR;
+        error = stmt->error.retcode;
         goto exit;
       }
 

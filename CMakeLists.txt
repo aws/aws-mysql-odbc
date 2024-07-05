@@ -231,6 +231,7 @@ include(CheckCSourceCompiles)
 include(CheckCXXSourceCompiles)
 INCLUDE(${CMAKE_SOURCE_DIR}/cmake/character_sets.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/libutils.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/version_info.cmake)
 
 # We need some extra FAIL_REGEX patterns
 # Note that CHECK_C_SOURCE_COMPILES is a misnomer, it will also link.
@@ -356,12 +357,9 @@ ENDIF(WIN32)
 
 #-----------------------------------------------------
 
-#-------- configuring paths to odbc heders for compatibility checks ---------
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake/sqlcolattrib1.c.cmake ${CMAKE_BINARY_DIR}/cmake/sqlcolattrib1.c @ONLY)
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake/sqlcolattrib2.c.cmake ${CMAKE_BINARY_DIR}/cmake/sqlcolattrib2.c @ONLY)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake/sqlparamopt1.c.cmake ${CMAKE_BINARY_DIR}/cmake/sqlparamopt1.c @ONLY)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake/sqlparamopt2.c.cmake ${CMAKE_BINARY_DIR}/cmake/sqlparamopt2.c @ONLY)
-#-----------------------------------------------------
+
 
 #------------------ check compatibility---------------
 TRY_COMPILE(COMPILE_RESULT ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/cmake/sqlcolattrib1.c)
@@ -381,24 +379,33 @@ ELSE(COMPILE_RESULT)
         ENDIF(COMPILE_RESULT1)
 ENDIF(COMPILE_RESULT)
 
-TRY_COMPILE(COMPILE_RESULT ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/cmake/sqlparamopt1.c)
-MESSAGE(STATUS "Checking if SQLParamOptions() 2nd and 3rd arg is compatible with SQLULEN - ${COMPILE_RESULT}")
 
-IF(COMPILE_RESULT)
-        ADD_DEFINITIONS(-DUSE_SQLPARAMOPTIONS_SQLULEN_PTR)
-ELSE(COMPILE_RESULT)
-        TRY_COMPILE(COMPILE_RESULT1 ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/cmake/sqlparamopt2.c)
-        MESSAGE(STATUS "Checking if SQLParamOptions() 2nd and 3rd arg is compatible with SQLUINTEGER - ${COMPILE_RESULT1}")
+IF(NOT WIN32 AND NOT WITH_UNIXODBC)
+  # This should be done only for iODBC because it has problems mapping
+  # deprecated ODBC 1.0 functions to newer API.
+  CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake/sqlparamopt1.c.cmake ${CMAKE_BINARY_DIR}/cmake/sqlparamopt1.c @ONLY)
+  CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake/sqlparamopt2.c.cmake ${CMAKE_BINARY_DIR}/cmake/sqlparamopt2.c @ONLY)
 
-        IF(COMPILE_RESULT1)
-                ADD_DEFINITIONS(-DUSE_SQLPARAMOPTIONS_SQLUINTEGER_PTR)
-        ELSE(COMPILE_RESULT1)
-                # SQLULEN is a default
-    MESSAGE(STATUS "Apparently odbc headers could not be found. 2nd and 3rd parameters assumed to be (*)SQLULEN by default")
-                ADD_DEFINITIONS(-DUSE_SQLPARAMOPTIONS_SQLULEN_PTR)
-        ENDIF(COMPILE_RESULT1)
+  TRY_COMPILE(COMPILE_RESULT ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/cmake/sqlparamopt1.c)
+  MESSAGE(STATUS "Checking if SQLParamOptions() 2nd and 3rd arg is compatible with SQLULEN - ${COMPILE_RESULT}")
 
-ENDIF(COMPILE_RESULT)
+  IF(COMPILE_RESULT)
+          ADD_DEFINITIONS(-DUSE_SQLPARAMOPTIONS_SQLULEN_PTR)
+  ELSE(COMPILE_RESULT)
+          TRY_COMPILE(COMPILE_RESULT1 ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/cmake/sqlparamopt2.c)
+          MESSAGE(STATUS "Checking if SQLParamOptions() 2nd and 3rd arg is compatible with SQLUINTEGER - ${COMPILE_RESULT1}")
+
+          IF(COMPILE_RESULT1)
+                  ADD_DEFINITIONS(-DUSE_SQLPARAMOPTIONS_SQLUINTEGER_PTR)
+          ELSE(COMPILE_RESULT1)
+                  # SQLULEN is a default
+      MESSAGE(STATUS "Apparently odbc headers could not be found. 2nd and 3rd parameters assumed to be (*)SQLULEN by default")
+                  ADD_DEFINITIONS(-DUSE_SQLPARAMOPTIONS_SQLULEN_PTR)
+          ENDIF(COMPILE_RESULT1)
+
+  ENDIF(COMPILE_RESULT)
+ENDIF()
+
 #-----------------------------------------------------
 
   IF(NOT NO_THREADS)
@@ -497,7 +504,15 @@ ELSE(WIN32)
 
     else()
 
-    add_compile_options( -w )
+    add_compile_options(
+      -w
+      -Wno-error=implicit-function-declaration #(1)
+    )
+
+    # (1) -- this warning was turned into error in clang, see discussion
+    # at [1]
+    #
+    # [1] https://discourse.llvm.org/t/configure-script-breakage-with-the-new-werror-implicit-function-declaration/65213/3
 
   endif()
 
@@ -524,20 +539,9 @@ INCLUDE(${CMAKE_SOURCE_DIR}/cmake/ssl_setup.cmake)
 setup_ssl_libs()
 
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
-
 INCLUDE_DIRECTORIES(${ctpl_SOURCE_DIR})
 
-ADD_LIBRARY(otel_api INTERFACE)
-# Note: For now make it phony target on platforms other than Linux
-if(NOT (WIN32 OR APPLE OR CMAKE_SYSTEM_NAME MATCHES "SunOS"))
-  message(STATUS "Adding OTel support")
-  set(TELEMETRY ON)
-  target_include_directories(otel_api INTERFACE
-    "${CMAKE_SOURCE_DIR}/extra/otel/opentelemetry-cpp-1.8.3/api/include"
-  )
-  target_compile_definitions(otel_api INTERFACE TELEMETRY)
-endif()
-
+add_subdirectory(extra/otel)
 ADD_SUBDIRECTORY(util)
 ADD_SUBDIRECTORY(driver)
 
@@ -628,7 +632,7 @@ SET(CPACK_SOURCE_PACKAGE_FILE_NAME    "${CPACK_PACKAGE_NAME}-${CONNECTOR_VERSION
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY   "${CPACK_PACKAGE_NAME}-${CONNECTOR_VERSION}${EXTRA_NAME_SUFFIX2}${PACKAGE_DRIVER_TYPE_SUFFIX}-${CONNECTOR_PLATFORM}")
 IF(WIN32)
   SET(CPACK_GENERATOR                 "ZIP")
-  SET(CPACK_PACKAGE_FILE_NAME         "${CPACK_PACKAGE_NAME}-noinstall-${CONNECTOR_VERSION}${EXTRA_NAME_SUFFIX2}${PACKAGE_DRIVER_TYPE_SUFFIX}-${CONNECTOR_PLATFORM}")
+  SET(CPACK_PACKAGE_FILE_NAME         "${CPACK_PACKAGE_NAME}-${CONNECTOR_VERSION}${EXTRA_NAME_SUFFIX2}${PACKAGE_DRIVER_TYPE_SUFFIX}-${CONNECTOR_PLATFORM}")
 ELSEIF(APPLE)
   SET(CPACK_GENERATOR                 "productbuild")
   SET(CPACK_PACKAGE_FILE_NAME         "${CPACK_PACKAGE_INSTALL_DIRECTORY}")
@@ -639,10 +643,10 @@ ELSEIF(APPLE)
   SET(CPACK_RESOURCE_FILE_WELCOME     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/macosx/Welcome.html")
   SET(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/scripts/macosx/ReadMe.html")
   SET(CPACK_POSTFLIGHT_UNSPECIFIED_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/scripts/macosx/postflight")
-ELSE()
+ELSE(WIN32)
   SET(CPACK_GENERATOR                 "TGZ")
   SET(CPACK_PACKAGE_FILE_NAME         "${CPACK_PACKAGE_INSTALL_DIRECTORY}")
-ENDIF()
+ENDIF(WIN32)
 
 SET(CPACK_SOURCE_IGNORE_FILES
 \\\\.bzr/
@@ -760,7 +764,7 @@ set(AUTH_PLUGINS
 )
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "SunOS")
-  list(APPEND AUTH_PLUGINS webauthn fido)
+  list(APPEND AUTH_PLUGINS webauthn)
   # Note: Kerberos authentication plugin is not supported on macOS
   if(NOT APPLE)
     list(APPEND AUTH_PLUGINS kerberos)
@@ -774,7 +778,6 @@ endif()
 # will break... For example: `krb5support` must go before `krb5`
 
 set(AUTH_DEPS_webauthn fido2)
-set(AUTH_DEPS_fido fido2)
 
 if(WIN32)
   set(AUTH_DEPS_kerberos
@@ -793,7 +796,7 @@ if(NOT APPLE AND NOT CMAKE_SYSTEM_NAME MATCHES "SunOS")
   set(AUTH_DEPS_ldap_sasl libsasl ${AUTH_DEPS_kerberos})
 endif()
 if(WIN32)
-  list(APPEND AUTH_DEPS_ldap_sasl 
+  list(APPEND AUTH_DEPS_ldap_sasl
     saslSCRAM saslGSSAPI.dll ${AUTH_DEPS_kerberos}
   )
 endif()
@@ -819,10 +822,16 @@ endif(APPLE)
 # List plugins and other libraries that can be found bundled with the server
 # but which are not relevant on client-side and can be safely ignored.
 
-set(IGNORED_PLUGINS qa_auth_client telemetry_client)
+set(IGNORED_PLUGINS
+  qa_auth_client
+  # note: we have our own telemetry code, not using the client library plugin
+  telemetry_client
+  authentication_fido_client  # note: replaced by webauthn plugin
+)
 
 set(IGNORED_LIBS
-  abseil_dll  # Added in 8.0.37
+  libabsl abseil_dll # Since 8.4.0
+  libpolyglot  # present on MacOS since 8.4.0
   libmysql lber libprotobuf
   ldap  # note: this is needed only by server-side plugin
   libcurl libmecab zlib
@@ -916,7 +925,10 @@ macro(bundle_libs to_bundle ignored)
     # On windows, libs are in bin directory
 
     if(WIN32)
-      file(GLOB _bundled1 "${MYSQL_DIR}/bin/*${CMAKE_SHARED_LIBRARY_SUFFIX}*")
+      file(GLOB _bundled1
+        "${MYSQL_DIR}/bin/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
+        "${MYSQL_DIR}/bin/sasl2/*${CMAKE_SHARED_LIBRARY_SUFFIX}*" # SASL plugins
+      )
     endif()
 
   endif()

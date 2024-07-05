@@ -73,6 +73,8 @@
  typedef unsigned int class_id_t;
 #endif
 
+using std::nullptr_t;
+
 
 #include "error.h"
 #include "parse.h"

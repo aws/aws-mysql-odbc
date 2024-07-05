@@ -52,44 +52,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
 #endif //_WIN32
 
-#include "..\..\VersionInfo.h"
-#include <mysql_version.h>
-VS_VERSION_INFO VERSIONINFO
-FILEVERSION MYODBC_FILEVER
-PRODUCTVERSION MYODBC_PRODUCTVER
-FILEFLAGSMASK 0x3L
-#ifdef _DEBUG
- FILEFLAGS 0x29L
-#else
- FILEFLAGS 0x28L
-#endif
- FILEOS 0x40004L
- FILETYPE 0x2L
- FILESUBTYPE 0x0L
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904e4"
-        BEGIN
-            VALUE "Comments", "provides setup library functionality\0"
-            VALUE "CompanyName", "Amazon.com Inc. or affiliates.\0"
-            VALUE "FileDescription", "AWS ODBC Driver for MySQL Setup Library\0"
-            VALUE "FileVersion", MYODBC_STRFILEVER
-            VALUE "InternalName", "awsmysqlodbcS\0"
-            VALUE "LegalCopyright", "Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. Copyright (c) 1995, 2018, Oracle and/or its affiliates.\0"
-            VALUE "LegalTrademarks", "MySQL, MyODBC, Connector/ODBC are trademarks of Oracle Corporation\0"
-            VALUE "OriginalFilename", "awsmysqlodbcS.dll\0"
-            VALUE "PrivateBuild", "Production\0"
-            VALUE "ProductName", "Connector/ODBC 8.2\0"
-            VALUE "ProductVersion", MYODBC_STRPRODUCTVER
-            VALUE "SpecialBuild", "GA release\0"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1252
-    END
-END
 
 /////////////////////////////////////////////////////////////////////////////
 //

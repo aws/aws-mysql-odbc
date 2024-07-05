@@ -437,53 +437,34 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   if(!fido_func && global_fido_callback)
     fido_func = global_fido_callback;
 
-  std::vector<std::string> plugin_types = {
-    "fido", "webauthn"
-  };
-
   if (fido_func || fido_callback_is_set)
   {
-    int plugin_load_failures = 0;
-    for (std::string plugin_type : plugin_types)
-    {
-      std::string plugin_name = "authentication_" + plugin_type +
-        "_client";
-      struct st_mysql_client_plugin* plugin =
+    std::string plugin_name = "authentication_webauthn_client";
+    struct st_mysql_client_plugin* plugin =
         connection_proxy->client_find_plugin(
             plugin_name.c_str(),
             MYSQL_CLIENT_AUTHENTICATION_PLUGIN);
 
-      if (plugin)
-      {
-        std::string opt_name = (plugin_type == "webauthn" ?
-          "plugin_authentication_webauthn_client" :
-          plugin_type) + "_messages_callback";
-
-        if (mysql_plugin_options(plugin, opt_name.c_str(),
-             (const void*)fido_func))
-        {
-          // If plugin is loaded, but the callback option fails to set
-          // the error is reported.
-          return set_error("HY000",
-            "Failed to set a FIDO authentication callback function", 0);
-        }
-      }
-      else
-      {
-        // Do not report an error yet.
-        // Just increment the failure count.
-        ++plugin_load_failures;
-      }
-    }
-
-    if (plugin_load_failures == plugin_types.size())
+    if (plugin)
     {
-      // Report error only if all plugins failed to load
-      return set_error("HY000", "Failed to set a FIDO "
-        "authentication callback because none of FIDO "
-        "authentication plugins (fido, webauthn) could "
-        "be loaded", 0);
+      std::string opt_name = "plugin_authentication_webauthn_client_messages_callback";
+
+      if (mysql_plugin_options(plugin, opt_name.c_str(),
+            (const void*)fido_func))
+      {
+        // If plugin is loaded, but the callback option fails to set
+        // the error is reported.
+        return set_error("HY000",
+          "Failed to set a WebAuthn authentication callback function", 0);
+      }
     }
+    else
+    {
+      return set_error("HY000", "Failed to set a WebAuthn authentciation "
+                                "callback beacause the WebAuthn authentication "
+                                "plugin could not be loaded", 0);
+    }
+
     fido_callback_is_set = fido_func;
   }
   else
@@ -1625,75 +1606,6 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC hdbc)
 
   dbc->database.clear();
   return SQL_SUCCESS;
-}
-
-
-void DBC::execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
-  std::vector<MYSQL_BIND> &param_bind, MYSQL_BIND *result_bind)
-{
-  STMT stmt{this, param_bind.size()};
-  telemetry::Telemetry<STMT> stmt_telemetry;
-
-  try
-  {
-    // Prepare the query
-
-    stmt_telemetry.span_start(&stmt, "SQL prepare");
-
-    if (connection_proxy->stmt_prepare(pstmt, query.c_str(), (unsigned long)query.length()))
-    {
-      throw nullptr;
-    }
-
-    stmt_telemetry.span_end(&stmt);
-
-    // Execute it.
-
-    stmt_telemetry.span_start(&stmt, "SQL execute");
-
-#if MYSQL_VERSION_ID >= 80300
-
-    // Move attributes to `param_bind` if any. They are bound as named parameters on top of the regular anonymous ones.
-
-    for (size_t pos = param_bind.size(); pos < stmt.param_bind.size(); ++pos)
-      param_bind.emplace_back(std::move(stmt.param_bind[pos]));
-
-    if (!param_bind.empty() &&
-        connection_proxy->stmt_bind_named_param(pstmt, param_bind.data(),
-        (unsigned int)stmt.query_attr_names.size(),
-        stmt.query_attr_names.data())
-      )
-#else
-    if (!param_bind.empty() && mysql_stmt_bind_param(pstmt, param_bind.data()))
-#endif
-    {
-      throw nullptr;
-    }
-
-    if (connection_proxy->stmt_execute(pstmt) ||
-      (result_bind && mysql_stmt_bind_result(pstmt, result_bind))
-    )
-    {
-      throw nullptr;
-    }
-
-    // Fetch results
-
-    if (result_bind && connection_proxy->stmt_store_result(pstmt))
-    {
-      throw nullptr;
-    }
-
-    stmt_telemetry.span_end(&stmt);
-
-  }
-  catch(nullptr_t)
-  {
-    set_error("HY000");
-    stmt_telemetry.set_error(&stmt, error.message);
-    stmt_telemetry.span_end(&stmt);
-    throw error;
-  }
 }
 
 

@@ -38,11 +38,6 @@
  *									   *
  *   SQLAllocHandle	 (ISO 92)					   *
  *   SQLFreeHandle	 (ISO 92)					   *
- *   SQLAllocEnv	 (ODBC, Deprecated)				   *
- *   SQLAllocConnect	 (ODBC, Deprecated)				   *
- *   SQLAllocStmt	 (ODBC, Deprecated)				   *
- *   SQLFreeEnv		 (ODBC, Deprecated)				   *
- *   SQLFreeConnect	 (ODBC, Deprecated)				   *
  *   SQLFreeStmt	 (ISO 92)					   *
  *									   *
 ****************************************************************************/
@@ -209,19 +204,6 @@ SQLRETURN SQL_API my_SQLAllocEnv(SQLHENV *phenv)
 
 
 /*
-  @type    : ODBC 1.0 API
-  @purpose : to allocate the environment handle
-*/
-
-SQLRETURN SQL_API SQLAllocEnv(SQLHENV *phenv)
-{
-  CHECK_ENV_OUTPUT(phenv);
-
-  return my_SQLAllocEnv(phenv);
-}
-
-
-/*
   @type    : myodbc3 internal
   @purpose : to free the environment handle
 */
@@ -238,17 +220,6 @@ SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
     return(SQL_SUCCESS);
 }
 
-
-/*
-  @type    : ODBC 1.0 API
-  @purpose : to free the environment handle
-*/
-SQLRETURN SQL_API SQLFreeEnv(SQLHENV henv)
-{
-    CHECK_HANDLE(henv);
-
-    return my_SQLFreeEnv(henv);
-}
 
 #ifndef _UNIX_
 SQLRETURN my_GetLastError(ENV *henv)
@@ -318,23 +289,6 @@ SQLRETURN SQL_API my_SQLAllocConnect(SQLHENV henv, SQLHDBC *phdbc)
 
     return(SQL_SUCCESS);
 }
-
-
-/*
-  @type    : ODBC 1.0 API
-  @purpose : to allocate the connection handle and to
-       maintain the connection list
-*/
-
-SQLRETURN SQL_API SQLAllocConnect(SQLHENV henv, SQLHDBC *phdbc)
-{
-  /* Checking only henv because phdbc will be checked later */
-  CHECK_HANDLE(henv);
-  CHECK_DBC_OUTPUT(henv, phdbc);
-
-  return my_SQLAllocConnect(henv, phdbc);
-}
-
 
 
 /* ODBC specs suggest(and that actually makes sense) to do jobs that require communication with server
@@ -412,19 +366,6 @@ SQLRETURN SQL_API my_SQLFreeConnect(SQLHDBC hdbc)
 }
 
 
-/*
-  @type    : ODBC 1.0 API
-  @purpose : to allocate the connection handle and to
-       maintain the connection list
-*/
-SQLRETURN SQL_API SQLFreeConnect(SQLHDBC hdbc)
-{
-  CHECK_HANDLE(hdbc);
-
-  return my_SQLFreeConnect(hdbc);
-}
-
-
 /* Allocates memory for parameter binds in vector.
  */
 void STMT::allocate_param_bind(uint elements)
@@ -474,20 +415,6 @@ SQLRETURN SQL_API my_SQLAllocStmt(SQLHDBC hdbc, SQLHSTMT *phstmt)
 
   *phstmt = (SQLHSTMT*)stmt.release();
   return SQL_SUCCESS;
-}
-
-
-/*
-  @type    : ODBC 1.0 API
-  @purpose : allocates the statement handle
-*/
-
-SQLRETURN SQL_API SQLAllocStmt(SQLHDBC hdbc,SQLHSTMT *phstmt)
-{
-  CHECK_HANDLE(hdbc);
-  CHECK_STMT_OUTPUT(hdbc, phstmt);
-
-    return my_SQLAllocStmt(hdbc,phstmt);
 }
 
 

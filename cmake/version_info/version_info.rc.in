@@ -1,0 +1,39 @@
+// Version info resources for @BASE@
+// Note: This is a generated file -- see cmake/version_info.cmake in the source tree.
+
+#include <windows.h>
+#define VER_PRIVATEBUILD 0x0L
+#define VER_PRERELEASE 0x0L
+
+
+VS_VERSION_INFO VERSIONINFO
+  FILEVERSION    @ODBC_VERSION_RAW@,0
+  PRODUCTVERSION @ODBC_VERSION_RAW@,0
+  FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+  FILEFLAGS      @FILEFLAGS@
+  FILEOS         VOS__WINDOWS32
+  FILETYPE       @FILETYPE@
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904e4"
+        BEGIN
+            VALUE "Comments", "provides core driver functionality\0"
+            VALUE "CompanyName", "Amazon.com Inc. or affiliates.\0"
+	          VALUE "FileDescription", "MySQL ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ @DRIVER_TYPE@ Driver\0"
+            VALUE "FileVersion", MYODBC_STRFILEVER
+            VALUE "InternalName", "awsmysqlodbc@CONNECTOR_DRIVER_TYPE_SHORT@\0"
+            VALUE "LegalCopyright", "Copyright (c) 1995, 2018, Oracle and/or its affiliates.\0"
+            VALUE "LegalTrademarks", "MySQL, MyODBC, Connector/ODBC are trademarks of Oracle Corporation\0"
+            VALUE "OriginalFilename", "awsmysqlodbc@CONNECTOR_DRIVER_TYPE_SHORT@.dll\0"
+            VALUE "PrivateBuild", "Production\0"
+	          VALUE "ProductName", "Connector/ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@\0"
+            VALUE "ProductVersion", MYODBC_STRPRODUCTVER
+	          VALUE "SpecialBuild", "@CONNECTOR_QUALITY@ release\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END
