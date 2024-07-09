@@ -76,7 +76,7 @@ Copy-Item .\build\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x64
 Copy-Item .\build\bin\$CONFIGURATION\myodbc-installer.exe .\Wix\x86
 Copy-Item .\INFO_BIN .\Wix\doc
 Copy-Item .\INFO_SRC .\Wix\doc
-Copy-Item .\ChangeLog .\Wix\doc
+Copy-Item .\CHANGELOG.md .\Wix\doc
 Copy-Item .\README.md .\Wix\doc
 Copy-Item .\LICENSE.txt .\Wix\doc
 
