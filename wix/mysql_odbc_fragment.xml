@@ -57,7 +57,7 @@
               <File Id="awsmysqlodbca.dll" Name="awsmysqlodbca.dll" Checksum="yes" KeyPath="yes" DiskId="1" Source="x64\awsmysqlodbca.dll"/>
               <File Id="awsmysqlodbcw.dll" Name="awsmysqlodbcw.dll" Checksum="yes" DiskId="1" Source="x64\awsmysqlodbcw.dll"/>
               <File Id="readme" Name="README.md" DiskId="1" Source="doc\README.md"/>
-              <File Id="changelog" Name="CHANGELOG.md" DiskId="1" Source="doc\ChangeLog"/>
+              <File Id="changelog" Name="CHANGELOG.md" DiskId="1" Source="doc\CHANGELOG.md"/>
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
@@ -77,7 +77,7 @@
               <File Id="awsmysqlodbca.dll" Name="awsmysqlodbca.dll" Checksum="yes" KeyPath="yes" DiskId="1" Source="x86\awsmysqlodbca.dll"/>
               <File Id="awsmysqlodbcw.dll" Name="awsmysqlodbcw.dll" Checksum="yes" DiskId="1" Source="x86\awsmysqlodbcw.dll"/>
               <File Id="readme" Name="README.md" DiskId="1" Source="doc\README.md"/>
-              <File Id="changelog" Name="CHANGELOG.md" DiskId="1" Source="doc\ChangeLog"/>
+              <File Id="changelog" Name="CHANGELOG.md" DiskId="1" Source="doc\CHANGELOG.md"/>
               <File Id="license" Name="LICENSE.txt" DiskId="1" Source="doc\LICENSE.txt" />
               <File Id="info_bin" Name="INFO_BIN" DiskId="1" Source="doc\INFO_BIN" />
               <File Id="info_src" Name="INFO_SRC" DiskId="1" Source="doc\INFO_SRC" />
