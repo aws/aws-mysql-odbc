@@ -45,7 +45,7 @@ jobs:
           ln -s /usr/local/opt/openssl@3/lib/libssl.3.dylib /usr/local/lib/
           ln -s /usr/local/opt/openssl@3/lib/libcrypto.3.dylib /usr/local/lib/
 
-          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64.tar.gz -o mysql.tar.gz
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
           
       - name: Build and install AWS SDK C++
@@ -64,7 +64,7 @@ jobs:
                 -DODBC_INCLUDES=$ODBC_DM_INCLUDES
                 -DCONNECTOR_PLATFORM=macos
                 -DBUNDLE_DEPENDENCIES=true
-                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-macos13-x86_64
+                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64
 
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
