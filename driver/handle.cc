@@ -350,37 +350,37 @@ int reset_connection(DBC *dbc)
 
 int wakeup_connection(DBC *dbc)
 {
-  DataSource &ds = dbc->ds;
+  DataSource *ds = dbc->ds;
 
 #if MFA_ENABLED
-  if(ds.opt_PWD1)
+  if(ds->opt_PWD1)
   {
     int fator = 2;
     dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
-                         (const char*)ds.opt_PWD1);
+                         (const char*)ds->opt_PWD1);
   }
 
-  if (ds.opt_PWD2)
+  if (ds->opt_PWD2)
   {
     ds_get_utf8attr(ds->pwd2, &ds->pwd28);
     int fator = 2;
     dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
-                         (const char *)ds.opt_PWD2);
+                         (const char *)ds->opt_PWD2);
   }
 
-  if (ds.opt_PWD3)
+  if (ds->opt_PWD3)
   {
     ds_get_utf8attr(ds->pwd3, &ds->pwd38);
     int fator = 3;
     dbc->connection_proxy->options4(MYSQL_OPT_USER_PASSWORD,
                          &fator,
-                         (const char *)ds.opt_PWD3);
+                         (const char *)ds->opt_PWD3);
   }
 #endif
 
-  if (dbc->connection_proxy->change_user(ds.opt_UID, ds.opt_PWD, ds.opt_DATABASE))
+  if (dbc->connection_proxy->change_user(ds->opt_UID, ds->opt_PWD, ds->opt_DATABASE))
   {
     return 1;
   }

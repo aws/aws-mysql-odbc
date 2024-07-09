@@ -77,7 +77,7 @@ class ConnectionString {
         length += sprintf(conn_in + length, "LOG_QUERY=%d;", m_log_query ? 1 : 0); 
       }
       if (is_set_failover_mode) {
-        length += sprintf(conn_in + length, "failover_mode=%s;", m_failover_mode.c_str());
+        length += sprintf(conn_in + length, "FAILOVER_MODE=%s;", m_failover_mode.c_str());
       }
       if (is_set_multi_statements) {
         length += sprintf(conn_in + length, "MULTI_STATEMENTS=%d;", m_multi_statements ? 1 : 0);

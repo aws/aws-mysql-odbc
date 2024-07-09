@@ -58,7 +58,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContainerHelper {
-  private static final String TEST_CONTAINER_IMAGE_NAME = "ubuntu:20.04";
+  private static final String TEST_CONTAINER_IMAGE_NAME = "ubuntu:22.04";
   private static final DockerImageName TOXIPROXY_IMAGE =
       DockerImageName.parse("shopify/toxiproxy:2.1.0");
 
