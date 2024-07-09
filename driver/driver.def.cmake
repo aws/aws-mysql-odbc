@@ -1,6 +1,6 @@
 ; Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+;Copyright (c) 2001, 2024, Oracle and/or its affiliates.
 ;
-; Copyright (c) 2001, 2024, Oracle and/or its affiliates.
 ;
 ; This program is free software; you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License, version 2.0, as
@@ -32,8 +32,7 @@
 ;
 LIBRARY awsmysqlodbc@CONNECTOR_DRIVER_TYPE_SHORT@.DLL
 VERSION 0@CONNECTOR_MAJOR@.@CONNECTOR_MINOR_PADDED@
-;DESCRIPTION "MySQL ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ @DRIVER_TYPE@ Driver, Copyright (c) 1995, 2018, Oracle and/or its affiliates"
-
+;DESCRIPTION "AWS ODBC @CONNECTOR_MAJOR@.@CONNECTOR_MINOR@ @DRIVER_TYPE@ Driver for MySQL, Modifications Copyright Amazon.com, Inc. or its affiliates"
 ;CODE MOVEABLE DISCARDABLE
 ;DATA MOVEABLE MULTIPLE
 ;PROTMODE
