@@ -41,6 +41,7 @@ static char* test_user;
 static char* test_pwd;
 static unsigned int test_port;
 static char* iam_user;
+static char* test_region;
 
 static std::string test_endpoint;
 
@@ -60,6 +61,7 @@ protected:
         test_port = INTEGRATION_TEST_UTILS::str_to_int(
             INTEGRATION_TEST_UTILS::get_env_var("MYSQL_PORT", "3306"));
         iam_user = INTEGRATION_TEST_UTILS::get_env_var("IAM_USER", "john_doe");
+        test_region = INTEGRATION_TEST_UTILS::get_env_var("RDS_REGION", "us-east-2");
 
         auto conn_str_builder = ConnectionStringBuilder();
         auto conn_str = conn_str_builder
@@ -126,7 +128,7 @@ protected:
             .withDatabase(test_db)
             .withEnableClusterFailover(false) // Failover interferes with some of our tests
             .withAuthMode("IAM")
-            .withAuthRegion("us-east-2")
+            .withAuthRegion(test_region)
             .withAuthExpiration(900);
     }
 

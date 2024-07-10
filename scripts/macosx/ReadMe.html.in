@@ -15,7 +15,7 @@
     </td>
     <td>
       <b>
-	MySQL Connctor/ODBC
+	AWS ODBC Driver for MySQL
 	<br>
 	@VERSION@
       </b>
@@ -24,7 +24,7 @@
 </table>
 
 <p>
-  This package contains a binary release of MySQL Connector/ODBC for Mac OS X.
+  This package contains a binary release of AWS MYSQL ODBC Driver for Mac OS X.
 </p>
 
 <p>
