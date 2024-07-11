@@ -15,7 +15,7 @@
     </td>
     <td>
       <b>
-	MySQL Connector/ODBC
+	AWS ODBC Driver for MySQL
 	<br>
 	@VERSION@
       </b>
@@ -24,9 +24,9 @@
 </table>
 
 <p>
-  This is the installer for MySQL Connector/ODBC, which allows applications
-  to work with MySQL servers by using the cross-platform, database-agnostic
-  ODBC interface.
+  This is the installer for Amazon Web Services (AWS) ODBC Driver for MySQL. The AWS ODBC Driver for MySQL allows an
+  application to take advantage of the features of clustered MySQL databases.
+  It is based on and can be used as a drop-in compatible for the MySQL Connector/ODBC driver, and is compatible with all MySQL deployments.
 </p>
  
 <br>

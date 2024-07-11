@@ -113,7 +113,7 @@ function Invoke-SignInstaller {
     # Remove unsigned installer and remove "-signed" in signed installer name
     Write-Host "Removing unsigned executable."
     Remove-Item -Path $unsignedInstallerPath
-    Rename-Item -Path $signedInstallerPath -NewName "awsmysql-odbc-$OdbcVersion-$Architecture.msi"
+    Rename-Item -Path $signedInstallerPath -NewName "aws-mysql-odbc-$OdbcVersion-$Architecture.msi"
 
     return $true
 }

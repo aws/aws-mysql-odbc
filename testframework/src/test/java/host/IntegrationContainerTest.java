@@ -288,7 +288,7 @@ public class IntegrationContainerTest {
       .withEnv("AWS_SECRET_ACCESS_KEY", SECRET_ACCESS_KEY)
       .withEnv("AWS_SESSION_TOKEN", SESSION_TOKEN)
       .withEnv("RDS_ENDPOINT", ENDPOINT == null ? "" : ENDPOINT)
-      .withEnv("RDS_REGION", REGION == null ? "" : "us-east-2")
+      .withEnv("RDS_REGION", REGION == null ? "us-east-2" : REGION)
       .withEnv("TOXIPROXY_CLUSTER_NETWORK_ALIAS", "toxiproxy-instance-cluster")
       .withEnv("TOXIPROXY_RO_CLUSTER_NETWORK_ALIAS", "toxiproxy-ro-instance-cluster")
       .withEnv("PROXIED_DOMAIN_NAME_SUFFIX", PROXIED_DOMAIN_NAME_SUFFIX)

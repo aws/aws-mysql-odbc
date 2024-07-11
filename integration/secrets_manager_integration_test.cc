@@ -49,7 +49,7 @@ class SecretsManagerIntegrationTest : public testing::Test {
 
     int MYSQL_PORT = INTEGRATION_TEST_UTILS::str_to_int(
         INTEGRATION_TEST_UTILS::get_env_var("MYSQL_PORT", "3306"));
-
+    char* TEST_REGION = INTEGRATION_TEST_UTILS::get_env_var("RDS_REGION", "us-east-2");
     std::string MYSQL_CLUSTER_URL = std::getenv("TEST_SERVER");
 
     SQLHENV env = nullptr;
@@ -88,7 +88,7 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWithRegion) {
                             .withDSN(dsn)
                             .withServer(MYSQL_CLUSTER_URL)
                             .withAuthMode("SECRETS MANAGER")
-                            .withAuthRegion("us-east-2")
+                            .withAuthRegion(TEST_REGION)
                             .withSecretId(SECRETS_ARN)
                             .build();
     SQLCHAR conn_out[4096] = "\0";
@@ -139,7 +139,7 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerInvalidSecretID) {
                             .withDSN(dsn)
                             .withServer(MYSQL_CLUSTER_URL)
                             .withAuthMode("SECRETS MANAGER")
-                            .withAuthRegion("us-east-2")
+                            .withAuthRegion(TEST_REGION)
                             .withSecretId("invalid-id")
                             .build();
     SQLCHAR conn_out[4096] = "\0";
