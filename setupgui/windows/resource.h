@@ -1,40 +1,12 @@
-/////////////////////////////////////////////////////////////////////////////
-// Modifications Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-//
-// Copyright (c) 2006, 2024, Oracle and/or its affiliates.
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License, version 2.0, as
-// published by the Free Software Foundation.
-//
-// This program is designed to work with certain software (including
-// but not limited to OpenSSL) that is licensed under separate terms, as
-// designated in a particular file or component or in included license
-// documentation. The authors of MySQL hereby grant you an additional
-// permission to link the program and your derivative works with the
-// separately licensed software that they have either included with
-// the program or referenced in the documentation.
-//
-// Without limiting anything contained in the foregoing, this file,
-// which is part of Connector/ODBC, is also subject to the
-// Universal FOSS Exception, version 1.0, a copy of which can be found at
-// https://oss.oracle.com/licenses/universal-foss-exception.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the GNU General Public License, version 2.0, for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software Foundation, Inc.,
-// 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by odbcdialogparams.rc
 //
+#define MYSQL_PORT_DEFAULT              0
 #define IDR_RT_MANIFEST1                1
 #define IDC_MYICON                      2
 #define IDCANCEL2                       3
+#define PROTOCOL_VERSION                10
 #define IDHELP2                         11
 #define IDD_DIALOG_DIALOG               102
 #define IDS_APP_TITLE                   103
@@ -57,6 +29,7 @@
 #define IDD_TAB8                        139
 #define IDD_TAB9                        140
 #define IDD_TAB10                       141
+#define IDD_TAB11                       142
 #define IDC_LOGO                        1000
 #define IDC_EDIT                        1010
 #define IDC_EDIT_PASSWORD               1010
@@ -73,6 +46,7 @@
 #define IDC_RSAKEYCHOOSER               1030
 #define IDC_SSLCRLCHOOSER               1031
 #define IDC_SSLCRLPATHCHOOSER           1032
+#define MYSQL_PORT                      3306
 #define IDC_EDIT_drvname                10000
 #define IDC_EDIT_DSN                    10000
 #define IDC_EDIT_drvdesc                10001
@@ -105,7 +79,6 @@
 #define IDC_CHECK_ZERO_DATE_TO_MIN      10022
 #define IDC_CHECK_IGNORE_SPACE          10023
 #define IDC_CHECK_NO_CATALOG            10025
-#define IDC_CHECK_NO_SCHEMA             10069
 #define IDC_CHECK_USE_MYCNF             10026
 #define IDC_CHECK_NO_TRANSACTIONS       10027
 #define IDC_CHECK_FORWARD_CURSOR        10028
@@ -129,7 +102,7 @@
 #define IDC_CHECK_NO_SSPS               10047
 #define IDC_CHECK_CAN_HANDLE_EXP_PWD    10048
 #define IDC_CHECK_ENABLE_CLEARTEXT_PLUGIN 10049
-#define IDC_CHECK_DFLT_BIGINT_BIND_STR 10050
+#define IDC_CHECK_DFLT_BIGINT_BIND_STR  10050
 #define IDC_EDIT_RSAKEY                 10051
 #define IDC_EDIT_PLUGIN_DIR             10053
 #define IDC_EDIT_DEFAULT_AUTH           10054
@@ -137,13 +110,14 @@
 #define IDC_CHECK_NO_DATE_OVERFLOW      10057
 #define IDC_CHECK_NO_TLS_1_2            10060
 #define IDC_CHECK_NO_TLS_1_3            10061
-#define IDC_EDIT_SSL_MODE                10062
+#define IDC_EDIT_SSL_MODE               10062
 #define IDC_CHECK_GET_SERVER_PUBLIC_KEY 10063
 #define IDC_CHECK_ENABLE_LOCAL_INFILE   10064
 #define IDC_CHECK_ENABLE_DNS_SRV        10065
 #define IDC_CHECK_MULTI_HOST            10066
 #define IDC_EDIT_LOAD_DATA_LOCAL_DIR    10067
 #define IDC_CHOOSER_LOAD_DATA_LOCAL_DIR 10068
+#define IDC_CHECK_NO_SCHEMA             10069
 #define IDC_EDIT_pwd2                   10069
 #define IDC_EDIT_pwd3                   10070
 #define IDC_EDIT_OCI_CONFIG_FILE        10071
@@ -163,27 +137,36 @@
 #define IDC_EDIT_FAILOVER_TOPOLOGY_REFRESH_RATE 10085
 #define IDC_EDIT_FAILOVER_WRITER_RECONNECT_INTERVAL 10086
 #define IDC_EDIT_FAILOVER_READER_CONNECT_TIMEOUT 10087
-#define IDC_EDIT_CONNECT_TIMEOUT		10088
+#define IDC_EDIT_CONNECT_TIMEOUT        10088
 #define IDC_EDIT_NETWORK_TIMEOUT        10089
 #define IDC_EDIT_FAILOVER_MODE          10090
-#define IDC_CHECK_ENABLE_FAILURE_DETECTION     10100
-#define IDC_EDIT_FAILURE_DETECTION_TIME        10101
-#define IDC_EDIT_FAILURE_DETECTION_INTERVAL    10102
-#define IDC_EDIT_FAILURE_DETECTION_COUNT       10103
-#define IDC_EDIT_FAILURE_DETECTION_TIMEOUT     10104
-#define IDC_EDIT_MONITOR_DISPOSAL_TIME         10105
+#define IDC_CHECK_ENABLE_FAILURE_DETECTION 10100
+#define IDC_EDIT_FAILURE_DETECTION_TIME 10101
+#define IDC_EDIT_FAILURE_DETECTION_INTERVAL 10102
+#define IDC_EDIT_FAILURE_DETECTION_COUNT 10103
+#define IDC_EDIT_FAILURE_DETECTION_TIMEOUT 10104
+#define IDC_EDIT_MONITOR_DISPOSAL_TIME  10105
 #define IDC_EDIT_AUTH_MODE              11001
-#define IDC_EDIT_AUTH_REGION            11002
-#define IDC_EDIT_AUTH_HOST              11003
-#define IDC_EDIT_AUTH_PORT              11004
-#define IDC_EDIT_AUTH_EXPIRATION        11005
-#define IDC_EDIT_AUTH_SECRET_ID         11006
+#define IDC_EDIT_AUTH_REGION            11003
+#define IDC_EDIT_AUTH_HOST              11004
+#define IDC_EDIT_AUTH_PORT              11005
+#define IDC_EDIT_AUTH_EXPIRATION        11006
+#define IDC_EDIT_AUTH_SECRET_ID         11007
 #define IDC_BUTTON_TEST                 11014
 #define IDC_BUTTON_HELP                 11015
+#define IDC_EDIT_IDP_USERNAME           11020
+#define IDC_EDIT_IDP_PASSWORD           11021
+#define IDC_EDIT_IDP_ENDPOINT           11022
+#define IDC_EDIT_APP_ID					11023
+#define IDC_EDIT_IAM_ROLE_ARN           11024
+#define IDC_EDIT_IAM_IDP_ARN            11025
+#define IDC_EDIT_FED_AUTH_MODE          11026
+#define IDC_EDIT_IDP_PORT				11027
+#define MYSQL_ADMIN_PORT                33062
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1

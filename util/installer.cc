@@ -244,6 +244,16 @@ static SQLWCHAR W_AUTH_PORT[] = { 'I', 'A', 'M', '_', 'P', 'O', 'R', 'T', 0 };
 static SQLWCHAR W_AUTH_EXPIRATION[] = { 'I', 'A', 'M', '_', 'E', 'X', 'P', 'I', 'R', 'A', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 0 };
 static SQLWCHAR W_AUTH_SECRET_ID[] = { 'S', 'E', 'C', 'R', 'E', 'T', '_', 'I', 'D', 0 };
 
+/* Federated Authentication */
+static SQLWCHAR W_FED_AUTH_MODE[] = { 'F', 'E', 'D', '_', 'A', 'U', 'T', 'H', '_', 'M', 'O', 'D', 'E', 0 };
+static SQLWCHAR W_IDP_USERNAME[] = { 'I', 'D', 'P', '_', 'U', 'S', 'E', 'R', 'N', 'A', 'M', 'E', 0 };
+static SQLWCHAR W_IDP_PASSWORD[] = { 'I', 'D', 'P', '_', 'P', 'A', 'S', 'S', 'W', 'O', 'R', 'D', 0 };
+static SQLWCHAR W_IDP_ENDPOINT[] = { 'I', 'D', 'P', '_', 'E', 'N', 'D', 'P', 'O', 'I', 'N', 'T', 0 };
+static SQLWCHAR W_IAM_ROLE_ARN[] = { 'I', 'A', 'M', '_', 'R', 'O', 'L', 'E', '_', 'A', 'R', 'N', 0 };
+static SQLWCHAR W_IAM_IDP_ARN[] = { 'I', 'A', 'M', '_', 'I', 'D', 'P', '_', 'A', 'R', 'N', 0 };
+static SQLWCHAR W_APP_ID[] = { 'A', 'P', 'P', '_', 'I', 'D', 0 };
+static SQLWCHAR W_IDP_PORT[] = { 'I', 'D', 'P', '_', 'P', 'O', 'R', 'T', 0 };
+
 /* Failover */
 static SQLWCHAR W_ENABLE_CLUSTER_FAILOVER[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
 static SQLWCHAR W_FAILOVER_MODE[] = { 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', '_', 'M', 'O', 'D', 'E', 0};
@@ -309,6 +319,8 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         W_TLS_VERSIONS, W_SSL_CRL, W_SSL_CRLPATH,
                         /* AWS Auth */
                         W_AUTH_MODE, W_AUTH_REGION, W_AUTH_HOST, W_AUTH_PORT, W_AUTH_EXPIRATION, W_AUTH_SECRET_ID,
+                        /* FED Auth*/
+                        W_IDP_USERNAME, W_IDP_PASSWORD, W_IDP_ENDPOINT, W_IDP_PORT, W_APP_ID, W_IAM_ROLE_ARN, W_IAM_IDP_ARN,
                         /* Failover */
                         W_ENABLE_CLUSTER_FAILOVER, W_FAILOVER_MODE,
                         W_GATHER_PERF_METRICS, W_GATHER_PERF_METRICS_PER_INSTANCE,

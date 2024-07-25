@@ -373,6 +373,7 @@ void btnDetails_Click (HWND hwnd)
       L"Connection",
       L"Authentication",
       L"AWS Authentication",
+      L"Federated Authentication",
       L"Cluster Failover",
       L"Monitoring",
       L"Metadata",
@@ -392,6 +393,7 @@ void btnDetails_Click (HWND hwnd)
                     MAKEINTRESOURCE(IDD_TAB8),
                     MAKEINTRESOURCE(IDD_TAB9),
                     MAKEINTRESOURCE(IDD_TAB10),
+                    MAKEINTRESOURCE(IDD_TAB11),
                     0};
 
     New_TabControl( &TabCtrl_1,                 // address of TabControl struct
@@ -412,6 +414,16 @@ void btnDetails_Click (HWND hwnd)
     ComboBox_AddString(auth_mode_dlg, L"");
     ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_IAM));
     ComboBox_AddString(auth_mode_dlg, LSTR(AUTH_MODE_SECRETS_MANAGER));
+
+    // Federated auth mode dropdown
+    HWND fed_auth_tab = TabCtrl_1.hTabPages[FED_AUTH_TAB - 1];
+    HWND fed_auth_mode_dlg = GetDlgItem(fed_auth_tab, IDC_EDIT_FED_AUTH_MODE);
+
+    ComboBox_ResetContent(fed_auth_mode_dlg);
+
+    ComboBox_AddString(fed_auth_mode_dlg, L"");
+    ComboBox_AddString(fed_auth_mode_dlg, LSTR(FED_AUTH_MODE_ADFS));
+    ComboBox_AddString(fed_auth_mode_dlg, LSTR(FED_AUTH_MODE_OKTA));
 
     // Failover mode dropdown
     HWND failover_tab = TabCtrl_1.hTabPages[FAILOVER_TAB - 1];
