@@ -221,11 +221,11 @@ public:
     MOCK_METHOD(Aws::SecretsManager::Model::GetSecretValueOutcome, GetSecretValue, (const Aws::SecretsManager::Model::GetSecretValueRequest&), (const));
 };
 
-class MOCK_TOKEN_GENERATOR : public TOKEN_GENERATOR {
+class MOCK_AUTH_UTIL : public AUTH_UTIL {
 public:
-    MOCK_TOKEN_GENERATOR() : TOKEN_GENERATOR() {};
+    MOCK_AUTH_UTIL() : AUTH_UTIL() {};
 
-    MOCK_METHOD(std::string, generate_auth_token, (const char*, const char*, unsigned, const char*));
+    MOCK_METHOD(std::string, get_auth_token, (const char*, const char*, unsigned int, const char*));
 };
 
 #endif /* __MOCKOBJECTS_H__ */

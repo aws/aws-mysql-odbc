@@ -28,3 +28,31 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include "adfs_proxy.h"
+#include "driver.h"
+
+ADFS_PROXY::ADFS_PROXY(DBC* dbc, DataSource* ds) : ADFS_PROXY(dbc, ds, nullptr) {};
+
+ADFS_PROXY::ADFS_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
+  this->next_proxy = next_proxy;
+  if (ds->opt_AUTH_REGION) {
+      this->auth_util = std::make_shared<AUTH_UTIL>((const char*)ds->opt_AUTH_REGION);
+  }
+  else {
+      this->auth_util = std::make_shared<AUTH_UTIL>();
+  }
+}
+
+#ifdef UNIT_TEST_BUILD
+ADFS_PROXY::ADFS_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy,
+    std::shared_ptr<AUTH_UTIL> auth_util) : CONNECTION_PROXY(dbc, ds) {
+    this->next_proxy = next_proxy;
+    this->auth_util = auth_util;
+}
+#endif
+
+ADFS_PROXY::~ADFS_PROXY() { this->auth_util.reset(); }
+
+bool ADFS_PROXY::connect(const char* host, const char* user, const char* password, const char* database,
+                         unsigned int port, const char* socket, unsigned long flags) {
+  return true;
+}

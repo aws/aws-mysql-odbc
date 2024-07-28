@@ -29,13 +29,8 @@
 
 #include <functional>
 
-#include "aws_sdk_helper.h"
 #include "driver.h"
 #include "iam_proxy.h"
-
-namespace {
-    AWS_SDK_HELPER SDK_HELPER;
-}
 
 std::unordered_map<std::string, TOKEN_INFO> IAM_PROXY::token_cache;
 std::mutex IAM_PROXY::token_cache_mutex;
@@ -43,34 +38,26 @@ std::mutex IAM_PROXY::token_cache_mutex;
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
-    ++SDK_HELPER;
+  this->next_proxy = next_proxy;
+  if (ds->opt_AUTH_REGION) {
+    this->auth_util = std::make_shared<AUTH_UTIL>((const char*)ds->opt_AUTH_REGION);
+  } else {
+    this->auth_util = std::make_shared<AUTH_UTIL>();
+  }
+}
 
-    this->next_proxy = next_proxy;
-
-    Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
-    Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
-
-    Aws::RDS::RDSClientConfiguration client_config;
-    if (ds->opt_AUTH_REGION) {
-        client_config.region = (const char*) ds->opt_AUTH_REGION;
-    }
-
-    this->token_generator = std::make_shared<TOKEN_GENERATOR>(credentials, client_config);
+IAM_PROXY::~IAM_PROXY() {
+    this->auth_util.reset();
 }
 
 #ifdef UNIT_TEST_BUILD
 IAM_PROXY::IAM_PROXY(DBC *dbc, DataSource *ds, CONNECTION_PROXY *next_proxy,
-                     std::shared_ptr<TOKEN_GENERATOR> token_generator) : CONNECTION_PROXY(dbc, ds) {
+                     std::shared_ptr<AUTH_UTIL> auth_util) : CONNECTION_PROXY(dbc, ds) {
 
     this->next_proxy = next_proxy;
-    this->token_generator = token_generator;
+    this->auth_util = auth_util;
 }
 #endif
-
-IAM_PROXY::~IAM_PROXY() {
-    this->token_generator.reset();
-    --SDK_HELPER;
-}
 
 bool IAM_PROXY::connect(const char* host, const char* user, const char* password,
                         const char* database, unsigned int port, const char* socket, unsigned long flags) {
@@ -101,7 +88,7 @@ std::string IAM_PROXY::get_auth_token(
     }
 
     std::string auth_token;
-    std::string cache_key = build_cache_key(host, region, port, user);
+    std::string cache_key = this->auth_util->build_cache_key(host, region, port, user);
     using_cached_token = false;
 
     {
@@ -125,22 +112,12 @@ std::string IAM_PROXY::get_auth_token(
         }
 
         // Generate new token
-        auth_token = token_generator->generate_auth_token(host, region, port, user);
+        auth_token = this->auth_util->get_auth_token(host, region, port, user);
 
         token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
     }
 
     return auth_token;
-}
-
-std::string IAM_PROXY::build_cache_key(
-    const char* host, const char* region, unsigned int port, const char* user) {
-
-    // Format should be "<region>:<host>:<port>:<user>"
-    return std::string(region)
-        .append(":").append(host)
-        .append(":").append(std::to_string(port))
-        .append(":").append(user);
 }
 
 void IAM_PROXY::clear_token_cache() {

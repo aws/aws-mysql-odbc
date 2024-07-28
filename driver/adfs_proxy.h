@@ -30,15 +30,40 @@
 #ifndef __ADFS_PROXY__
 #define __ADFS_PROXY__
 
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
-#include <aws/rds/RDSClient.h>
 #include <unordered_map>
-
-#include "connection_proxy.h"
+#include "auth_util.h"
 
 class ADFS_PROXY : public CONNECTION_PROXY {
+public:
+    ADFS_PROXY() = default;
+    ADFS_PROXY(DBC* dbc, DataSource* ds);
+    ADFS_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
+#ifdef UNIT_TEST_BUILD
+    ADFS_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<AUTH_UTIL> auth_util);
+#endif
+    ~ADFS_PROXY() override;
+    bool connect(
+        const char* host,
+        const char* user,
+        const char* password,
+        const char* database,
+        unsigned int port,
+        const char* socket,
+        unsigned long flags) override;
     
-}
+protected:
+    static std::unordered_map<std::string, TOKEN_INFO> token_cache;
+    static std::mutex token_cache_mutex;
+    std::shared_ptr<AUTH_UTIL> auth_util;
+    bool using_cached_token = false;
+
+    static void clear_token_cache();
+
+#ifdef UNIT_TEST_BUILD
+    // Allows for testing private/protected methods
+    friend class TEST_UTILS;
+#endif
+};
 
 #endif
 

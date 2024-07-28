@@ -28,3 +28,37 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include "auth_util.h"
+#include "aws_sdk_helper.h"
+#include "driver.h"
+
+namespace {
+AWS_SDK_HELPER SDK_HELPER;
+}
+
+AUTH_UTIL::AUTH_UTIL(const char* region) {
+  ++SDK_HELPER;
+
+  Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
+  Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
+
+  Aws::RDS::RDSClientConfiguration client_config;
+  if (region) {
+    client_config.region = region;
+  }
+
+  this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
+};
+
+std::string AUTH_UTIL::get_auth_token(const char* host, const char* region, unsigned int port, const char* user) {
+  return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
+}
+
+std::string AUTH_UTIL::build_cache_key(const char* host, const char* region, unsigned int port, const char* user) {
+  // Format should be "<region>:<host>:<port>:<user>"
+  return std::string(region).append(":").append(host).append(":").append(std::to_string(port)).append(":").append(user);
+}
+
+AUTH_UTIL::~AUTH_UTIL() {
+  this->rds_client.reset();
+  --SDK_HELPER;
+}

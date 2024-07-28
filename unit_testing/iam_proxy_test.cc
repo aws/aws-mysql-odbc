@@ -54,7 +54,7 @@ protected:
     DBC *dbc;
     DataSource *ds;
     MOCK_CONNECTION_PROXY *mock_connection_proxy;
-    std::shared_ptr<MOCK_TOKEN_GENERATOR> mock_token_generator;
+    std::shared_ptr<MOCK_AUTH_UTIL> mock_auth_util;
 
     static void SetUpTestSuite() {
         Aws::InitAPI(options);
@@ -79,7 +79,7 @@ protected:
         ds->opt_AUTH_EXPIRATION = TEST_EXPIRATION;
 
         mock_connection_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
-        mock_token_generator = std::make_shared<MOCK_TOKEN_GENERATOR>();
+        mock_auth_util = std::make_shared<MOCK_AUTH_UTIL>();
     }
 
     void TearDown() override {
@@ -104,10 +104,10 @@ TEST_F(IamProxyTest, TokenGetsCachedAndRetrieved) {
     EXPECT_FALSE(TEST_UTILS::token_cache_contains_key(cache_key));
 
     // We should only generate the token once.
-    EXPECT_CALL(*mock_token_generator, generate_auth_token(_, _, _, _))
+    EXPECT_CALL(*mock_auth_util, get_auth_token(_, _, _, _))
         .WillOnce(Return(TEST_TOKEN));
 
-    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_auth_util);
 
     std::string token1 = iam_proxy.get_auth_token(
         TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str(), 100);
@@ -126,11 +126,11 @@ TEST_F(IamProxyTest, TokenGetsCachedAndRetrieved) {
 
 TEST_F(IamProxyTest, MultipleCachedTokens) {
     // Two separate tokens should be generated.
-    EXPECT_CALL(*mock_token_generator, generate_auth_token(_, TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str()))
+    EXPECT_CALL(*mock_auth_util, get_auth_token(_, TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str()))
         .WillOnce(Return(TEST_TOKEN))
         .WillOnce(Return(TEST_TOKEN));
 
-    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_auth_util);
     const char *host2 = "test_host2";
 
     iam_proxy.get_auth_token(
@@ -153,12 +153,12 @@ TEST_F(IamProxyTest, MultipleCachedTokens) {
 
 TEST_F(IamProxyTest, RegenerateTokenAfterExpiration) {
     // We will generate the token twice because the first token will expire before the 2nd call to get_auth_token().
-    EXPECT_CALL(*mock_token_generator, 
-        generate_auth_token(TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str()))
+    EXPECT_CALL(*mock_auth_util, 
+        get_auth_token(TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str()))
         .WillOnce(Return(TEST_TOKEN))
         .WillOnce(Return(TEST_TOKEN));
 
-    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_auth_util);
     
     const unsigned int time_to_expire = 5;
     iam_proxy.get_auth_token(
@@ -180,12 +180,12 @@ TEST_F(IamProxyTest, RegenerateTokenAfterExpiration) {
 
 TEST_F(IamProxyTest, ForceGenerateNewToken) {
     // We expect a token to be generated twice because the 2nd call to get_auth_token forces a fresh token.
-    EXPECT_CALL(*mock_token_generator, 
-        generate_auth_token(TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str()))
+    EXPECT_CALL(*mock_auth_util, 
+        get_auth_token(TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str()))
         .WillOnce(Return(TEST_TOKEN))
         .WillOnce(Return(TEST_TOKEN));
 
-    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_auth_util);
 
     const unsigned int time_to_expire = 100;
     iam_proxy.get_auth_token(
@@ -209,11 +209,11 @@ TEST_F(IamProxyTest, RetryConnectionWithFreshTokenAfterFailingWithCachedToken) {
         .WillOnce(Return(true));
 
     // Only called twice because one of the above connection attempts used a cached token.
-    EXPECT_CALL(*mock_token_generator, generate_auth_token(_, _, _, _))
+    EXPECT_CALL(*mock_auth_util, get_auth_token(_, _, _, _))
         .WillOnce(Return(TEST_TOKEN))
         .WillOnce(Return(TEST_TOKEN));
 
-    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_auth_util);
 
     // First successful connection to get a token cached.
     bool ret = iam_proxy.connect(TEST_HOST.c_str(), TEST_USER.c_str(), "", "", TEST_PORT, "", 0);
@@ -231,10 +231,10 @@ TEST_F(IamProxyTest, UseRegularPortWhenAuthPortIsNotProvided) {
     ds->opt_AUTH_PORT = UNDEFINED_PORT;
     
     // Verify that we generate the token with the regular port when we do not have auth port.
-    EXPECT_CALL(*mock_token_generator, generate_auth_token(_, _, TEST_PORT, _))
+    EXPECT_CALL(*mock_auth_util, get_auth_token(_, _, TEST_PORT, _))
         .WillOnce(Return(TEST_TOKEN));
 
-    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_token_generator);
+    IAM_PROXY iam_proxy(dbc, ds, mock_connection_proxy, mock_auth_util);
 
     iam_proxy.connect(TEST_HOST.c_str(), TEST_USER.c_str(), "", "", TEST_PORT, "", 0);
 
