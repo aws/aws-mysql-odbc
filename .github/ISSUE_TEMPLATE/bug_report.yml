@@ -22,7 +22,7 @@ body:
   - type: input
     id: connection-config
     attributes:
-      label: Was cluster failover and enhanced failure detection enabled? Was any AWS authentication methods used? What other connection properties were set?
+      label: Were cluster failover and/or enhanced failure detection enabled? Were any AWS authentication methods used? What other connection properties were set?
     validations:
       required: true
   - type: textarea
