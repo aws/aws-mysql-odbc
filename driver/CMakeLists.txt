@@ -58,6 +58,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   SET(DRIVER_NAME_STATIC "awsmysqlodbc${CONNECTOR_DRIVER_TYPE_SHORT}-static")
 
   SET(DRIVER_SRCS
+    adfs_proxy.cc
+    auth_util.cc
     aws_sdk_helper.cc
     base_metrics_holder.cc
     catalog.cc
@@ -122,6 +124,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.def.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.def @ONLY)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
     SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc
+                                   adfs_proxy.h
+                                   auth_util.h
                                    aws_sdk_helper.h
                                    base_metrics_holder.h
                                    catalog.h

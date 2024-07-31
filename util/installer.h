@@ -315,6 +315,18 @@ unsigned int get_network_timeout(unsigned int seconds);
   X(AUTH_PORT)                       \
   X(AUTH_EXPIRATION)
 
+#define FED_AUTH_STR_OPTIONS_LIST(X) \
+  X(FED_AUTH_MODE)                   \
+  X(IDP_USERNAME)                   \
+  X(IDP_PASSWORD)                    \
+  X(IDP_ENDPOINT)                    \
+  X(IAM_ROLE_ARN)                    \
+  X(IAM_IDP_ARN)                     \
+  X(APP_ID)
+
+#define FED_AUTH_INT_OPTIONS_LIST(X) \
+    X(IDP_PORT)
+
 #define FAILOVER_BOOL_OPTIONS_LIST(X) \
   X(ENABLE_CLUSTER_FAILOVER)          \
   X(GATHER_PERF_METRICS)              \
@@ -355,15 +367,14 @@ unsigned int get_network_timeout(unsigned int seconds);
               X(OCI_CONFIG_FILE) X(OCI_CONFIG_PROFILE)                        \
                   X(AUTHENTICATION_KERBEROS_MODE) X(TLS_VERSIONS) X(SSL_CRL)  \
                       X(SSL_CRLPATH) X(SSLVERIFY) X(OPENTELEMETRY)            \
-                          AWS_AUTH_STR_OPTIONS_LIST(X)                        \
-                              FAILOVER_STR_OPTIONS_LIST(X)
+                          AWS_AUTH_STR_OPTIONS_LIST(X) FAILOVER_STR_OPTIONS_LIST(X) FED_AUTH_STR_OPTIONS_LIST(X)
 
 #define INT_OPTIONS_LIST(X)                                      \
   X(PORT)                                                        \
   X(READTIMEOUT)                                                 \
   X(WRITETIMEOUT)                                                \
   X(CLIENT_INTERACTIVE) X(PREFETCH) FAILOVER_INT_OPTIONS_LIST(X) \
-      AWS_AUTH_INT_OPTIONS_LIST(X) MONITORING_INT_OPTIONS_LIST(X)
+      AWS_AUTH_INT_OPTIONS_LIST(X) MONITORING_INT_OPTIONS_LIST(X) FED_AUTH_INT_OPTIONS_LIST(X)
 
 // TODO: remove AUTO_RECONNECT when special handling (warning)
 //       is not needed anymore.
@@ -474,6 +485,9 @@ extern const SQLWCHAR W_INVALID_ATTR_STR[];
 
 #define AUTH_MODE_IAM              "IAM"
 #define AUTH_MODE_SECRETS_MANAGER  "SECRETS MANAGER"
+
+#define FED_AUTH_MODE_ADFS "ADFS"
+#define FED_AUTH_MODE_OKTA "OKTA"
 
 #define FAILOVER_MODE_STRICT_WRITER     "STRICT WRITER"
 #define FAILOVER_MODE_STRICT_READER     "STRICT READER"

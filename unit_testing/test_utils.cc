@@ -112,7 +112,7 @@ std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> TEST_UTILS::get_contexts(
 }
 
 std::string TEST_UTILS::build_cache_key(const char* host, const char* region, unsigned int port, const char* user) {
-    return IAM_PROXY::build_cache_key(host, region, port, user);
+    return AUTH_UTIL::build_cache_key(host, region, port, user);
 }
 
 bool TEST_UTILS::token_cache_contains_key(std::string cache_key) {

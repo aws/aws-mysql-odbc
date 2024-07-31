@@ -27,54 +27,38 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-
-#ifndef __IAM_PROXY__
-#define __IAM_PROXY__
-
-#include <unordered_map>
 #include "auth_util.h"
+#include "aws_sdk_helper.h"
+#include "driver.h"
 
-class IAM_PROXY : public CONNECTION_PROXY {
-public:
-    IAM_PROXY() = default;
-    IAM_PROXY(DBC* dbc, DataSource* ds);
-    IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
-#ifdef UNIT_TEST_BUILD
-    IAM_PROXY(DBC *dbc, DataSource *ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<AUTH_UTIL> auth_util);
-#endif
-    ~IAM_PROXY() override;
+namespace {
+AWS_SDK_HELPER SDK_HELPER;
+}
 
-    bool connect(
-        const char* host,
-        const char* user,
-        const char* password,
-        const char* database,
-        unsigned int port,
-        const char* socket,
-        unsigned long flags) override;
+AUTH_UTIL::AUTH_UTIL(const char* region) {
+  ++SDK_HELPER;
 
-    bool change_user(const char* user, const char* passwd,
-        const char* db) override;
+  Aws::Auth::DefaultAWSCredentialsProviderChain credentials_provider;
+  Aws::Auth::AWSCredentials credentials = credentials_provider.GetAWSCredentials();
 
-    std::string get_auth_token(
-        const char* host,const char* region, unsigned int port,
-        const char* user, unsigned int time_until_expiration,
-        bool force_generate_new_token = false);
+  Aws::RDS::RDSClientConfiguration client_config;
+  if (region) {
+    client_config.region = region;
+  }
 
-protected:
-    static std::unordered_map<std::string, TOKEN_INFO> token_cache;
-    static std::mutex token_cache_mutex;
-    std::shared_ptr<AUTH_UTIL> auth_util;
-    bool using_cached_token = false;
-
-    static void clear_token_cache();
-
-    bool invoke_func_with_generated_token(std::function<bool(const char*)> func);
-
-#ifdef UNIT_TEST_BUILD
-    // Allows for testing private/protected methods
-    friend class TEST_UTILS;
-#endif
+  this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
 };
 
-#endif /* __IAM_PROXY__ */
+std::string AUTH_UTIL::get_auth_token(const char* host, const char* region, unsigned int port, const char* user) {
+  return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
+}
+
+std::string AUTH_UTIL::build_cache_key(const char* host, const char* region, unsigned int port, const char* user) {
+  // Format should be "<region>:<host>:<port>:<user>"
+  return std::string(region).append(":").append(host).append(":").append(std::to_string(port)).append(":").append(user);
+}
+
+AUTH_UTIL::~AUTH_UTIL() {
+  this->rds_client.reset();
+  --SDK_HELPER;
+}

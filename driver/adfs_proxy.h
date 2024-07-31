@@ -27,23 +27,21 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-
-#ifndef __IAM_PROXY__
-#define __IAM_PROXY__
+#ifndef __ADFS_PROXY__
+#define __ADFS_PROXY__
 
 #include <unordered_map>
 #include "auth_util.h"
 
-class IAM_PROXY : public CONNECTION_PROXY {
+class ADFS_PROXY : public CONNECTION_PROXY {
 public:
-    IAM_PROXY() = default;
-    IAM_PROXY(DBC* dbc, DataSource* ds);
-    IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
+    ADFS_PROXY() = default;
+    ADFS_PROXY(DBC* dbc, DataSource* ds);
+    ADFS_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
 #ifdef UNIT_TEST_BUILD
-    IAM_PROXY(DBC *dbc, DataSource *ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<AUTH_UTIL> auth_util);
+    ADFS_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<AUTH_UTIL> auth_util);
 #endif
-    ~IAM_PROXY() override;
-
+    ~ADFS_PROXY() override;
     bool connect(
         const char* host,
         const char* user,
@@ -52,15 +50,7 @@ public:
         unsigned int port,
         const char* socket,
         unsigned long flags) override;
-
-    bool change_user(const char* user, const char* passwd,
-        const char* db) override;
-
-    std::string get_auth_token(
-        const char* host,const char* region, unsigned int port,
-        const char* user, unsigned int time_until_expiration,
-        bool force_generate_new_token = false);
-
+    
 protected:
     static std::unordered_map<std::string, TOKEN_INFO> token_cache;
     static std::mutex token_cache_mutex;
@@ -69,12 +59,11 @@ protected:
 
     static void clear_token_cache();
 
-    bool invoke_func_with_generated_token(std::function<bool(const char*)> func);
-
 #ifdef UNIT_TEST_BUILD
     // Allows for testing private/protected methods
     friend class TEST_UTILS;
 #endif
 };
 
-#endif /* __IAM_PROXY__ */
+#endif
+

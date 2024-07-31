@@ -30,6 +30,7 @@
 #ifndef __TESTUTILS_H__
 #define __TESTUTILS_H__
 
+#include "driver/auth_util.h" 
 #include "driver/driver.h"
 #include "driver/failover.h"
 #include "driver/iam_proxy.h"

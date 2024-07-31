@@ -27,54 +27,52 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
+#ifndef __AUTH_UTIL__
+#define __AUTH_UTIL__
 
-#ifndef __IAM_PROXY__
-#define __IAM_PROXY__
+#include <aws/core/auth/AWSCredentialsProviderChain.h>
+#include <aws/rds/RDSClient.h>
 
-#include <unordered_map>
-#include "auth_util.h"
+#include "connection_proxy.h"
 
-class IAM_PROXY : public CONNECTION_PROXY {
-public:
-    IAM_PROXY() = default;
-    IAM_PROXY(DBC* dbc, DataSource* ds);
-    IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy);
-#ifdef UNIT_TEST_BUILD
-    IAM_PROXY(DBC *dbc, DataSource *ds, CONNECTION_PROXY* next_proxy, std::shared_ptr<AUTH_UTIL> auth_util);
-#endif
-    ~IAM_PROXY() override;
+constexpr auto DEFAULT_TOKEN_EXPIRATION_SEC = 15 * 60;
 
-    bool connect(
-        const char* host,
-        const char* user,
-        const char* password,
-        const char* database,
-        unsigned int port,
-        const char* socket,
-        unsigned long flags) override;
+class TOKEN_INFO {
+ public:
+  TOKEN_INFO() {};
+  TOKEN_INFO(std::string token) : TOKEN_INFO(token, DEFAULT_TOKEN_EXPIRATION_SEC) {};
+  TOKEN_INFO(std::string token, unsigned int seconds_until_expiration) {
+    this->token = token;
+    this->expiration_time = std::chrono::system_clock::now() + std::chrono::seconds(seconds_until_expiration);
+  }
 
-    bool change_user(const char* user, const char* passwd,
-        const char* db) override;
+  bool is_expired() {
+    std::chrono::system_clock::time_point current_time = std::chrono::system_clock::now();
+    return current_time > this->expiration_time;
+  }
 
-    std::string get_auth_token(
-        const char* host,const char* region, unsigned int port,
-        const char* user, unsigned int time_until_expiration,
-        bool force_generate_new_token = false);
+  std::string token;
 
-protected:
-    static std::unordered_map<std::string, TOKEN_INFO> token_cache;
-    static std::mutex token_cache_mutex;
-    std::shared_ptr<AUTH_UTIL> auth_util;
-    bool using_cached_token = false;
+ private:
+  std::chrono::system_clock::time_point expiration_time;
+};
 
-    static void clear_token_cache();
+class AUTH_UTIL {
+ public:
+  AUTH_UTIL() {};
+  AUTH_UTIL(const char* region);
+  ~AUTH_UTIL();
 
-    bool invoke_func_with_generated_token(std::function<bool(const char*)> func);
+  virtual std::string get_auth_token(const char* host, const char* region, unsigned int port, const char* user);
+  static std::string build_cache_key(const char* host, const char* region, unsigned int port, const char* user);
+
+ private:
+  std::shared_ptr<Aws::RDS::RDSClient> rds_client;
 
 #ifdef UNIT_TEST_BUILD
-    // Allows for testing private/protected methods
-    friend class TEST_UTILS;
+  // Allows for testing private/protected methods
+  friend class TEST_UTILS;
 #endif
 };
 
-#endif /* __IAM_PROXY__ */
+#endif
