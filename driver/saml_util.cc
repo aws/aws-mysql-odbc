@@ -27,48 +27,48 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "auth_util.h"
-#include "aws_sdk_helper.h"
-#include "driver.h"
+#include "saml_util.h"
+#include <aws/core/auth/AWSCredentials.h>
+#include <aws/sts/STSClient.h>
+#include <aws/sts/model/AssumeRoleWithSAMLRequest.h>
+#include <aws/sts/model/AssumeRoleWithSAMLResult.h>
 
 namespace {
 AWS_SDK_HELPER SDK_HELPER;
 }
 
-AUTH_UTIL::AUTH_UTIL(const char* region) {
+Aws::Auth::AWSCredentials SAML_UTIL::get_aws_credentials(const char* host, const char* region, const char* role_arn,
+                                                         const char* idp_arn, const std::string& assertion) {
   ++SDK_HELPER;
+  Aws::STS::STSClientConfiguration client_config;
 
-  Aws::RDS::RDSClientConfiguration client_config;
   if (region) {
     client_config.region = region;
   }
 
-  this->rds_client = std::make_shared<Aws::RDS::RDSClient>(
-          Aws::Auth::DefaultAWSCredentialsProviderChain().GetAWSCredentials(),
-          client_config);
-};
+  auto sts_client = std::make_shared<Aws::STS::STSClient>(client_config);
 
-AUTH_UTIL::AUTH_UTIL(const char* region, Aws::Auth::AWSCredentials credentials) {
-  ++SDK_HELPER;
+  Aws::STS::Model::AssumeRoleWithSAMLRequest sts_req;
 
-  Aws::RDS::RDSClientConfiguration client_config;
-  if (region) {
-    client_config.region = region;
+  sts_req.SetRoleArn(role_arn);
+  sts_req.SetPrincipalArn(idp_arn);
+  sts_req.SetSAMLAssertion(assertion);
+
+  const Aws::Utils::Outcome<Aws::STS::Model::AssumeRoleWithSAMLResult, Aws::STS::STSError> outcome =
+      sts_client->AssumeRoleWithSAML(sts_req);
+
+  if (!outcome.IsSuccess()) {
+    // Returns an empty set of credentials.
+    sts_client.reset();
+    --SDK_HELPER;
+    return Aws::Auth::AWSCredentials();
   }
 
-  this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
-}
-
-std::string AUTH_UTIL::get_auth_token(const char* host, const char* region, unsigned int port, const char* user) {
-  return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
-}
-
-std::string AUTH_UTIL::build_cache_key(const char* host, const char* region, unsigned int port, const char* user) {
-  // Format should be "<region>:<host>:<port>:<user>"
-  return std::string(region).append(":").append(host).append(":").append(std::to_string(port)).append(":").append(user);
-}
-
-AUTH_UTIL::~AUTH_UTIL() {
-  this->rds_client.reset();
+  const Aws::STS::Model::AssumeRoleWithSAMLResult& result = outcome.GetResult();
+  const Aws::STS::Model::Credentials& temp_credentials = result.GetCredentials();
+  const auto credentials = Aws::Auth::AWSCredentials(
+      temp_credentials.GetAccessKeyId(), temp_credentials.GetSecretAccessKey(), temp_credentials.GetSessionToken());
+  sts_client.reset();
   --SDK_HELPER;
-}
+  return credentials;
+};

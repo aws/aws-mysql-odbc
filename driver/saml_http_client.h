@@ -27,48 +27,33 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "auth_util.h"
-#include "aws_sdk_helper.h"
-#include "driver.h"
+#ifndef __SAMLHTTPCLIENT_H__
+#define __SAMLHTTPCLIENT_H__
 
-namespace {
-AWS_SDK_HELPER SDK_HELPER;
-}
+#define CPPHTTPLIB_OPENSSL_SUPPORT
 
-AUTH_UTIL::AUTH_UTIL(const char* region) {
-  ++SDK_HELPER;
+#include <httplib.h>
+#include <nlohmann/json.hpp>
 
-  Aws::RDS::RDSClientConfiguration client_config;
-  if (region) {
-    client_config.region = region;
-  }
-
-  this->rds_client = std::make_shared<Aws::RDS::RDSClient>(
-          Aws::Auth::DefaultAWSCredentialsProviderChain().GetAWSCredentials(),
-          client_config);
+class SAML_HTTP_EXCEPTION: public std::exception {
+public:
+    SAML_HTTP_EXCEPTION(const std::string& msg) : m_msg(msg) {};
+    virtual std::string error_message() const throw() {
+        return this->m_msg;
+    }
+private:
+    const std::string m_msg;
 };
 
-AUTH_UTIL::AUTH_UTIL(const char* region, Aws::Auth::AWSCredentials credentials) {
-  ++SDK_HELPER;
+class SAML_HTTP_CLIENT {
+ public:
+  SAML_HTTP_CLIENT(std::string host);
+  ~SAML_HTTP_CLIENT() = default;
+  virtual nlohmann::json post(const std::string& path, const nlohmann::json& value);
+  virtual nlohmann::json get(const std::string& path);
 
-  Aws::RDS::RDSClientConfiguration client_config;
-  if (region) {
-    client_config.region = region;
-  }
+ private:
+  const std::string host;
+};
 
-  this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
-}
-
-std::string AUTH_UTIL::get_auth_token(const char* host, const char* region, unsigned int port, const char* user) {
-  return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
-}
-
-std::string AUTH_UTIL::build_cache_key(const char* host, const char* region, unsigned int port, const char* user) {
-  // Format should be "<region>:<host>:<port>:<user>"
-  return std::string(region).append(":").append(host).append(":").append(std::to_string(port)).append(":").append(user);
-}
-
-AUTH_UTIL::~AUTH_UTIL() {
-  this->rds_client.reset();
-  --SDK_HELPER;
-}
+#endif

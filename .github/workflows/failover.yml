@@ -42,6 +42,11 @@ jobs:
           unzip -d C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug mysql-debug.zip
           mv -Force C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/debug/mysqlclient.lib C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/mysqlclient.lib
 
+      - name: Install OpenSSL 3
+        run: |
+          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.3.1.zip -o openssl3.zip
+          unzip -d C:/ openssl3.zip
+
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
 
@@ -71,6 +76,9 @@ jobs:
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
+                -DOPENSSL_INCLUDE_DIR="C:/openssl-3/x64/include/"
+                -DOPENSSL_LIBRARY="C:/openssl-3/x64/bin/libssl-3-x64.dll"
+                -DCRYPTO_LIBRARY="C:/openssl-3/x64/bin/libcrypto-3-x64.dll"
 
       # Configure test environment
       - name: Build Driver

@@ -44,7 +44,7 @@ Write-Host $args
 # Make AWS SDK source directory
 New-Item -Path $SRC_DIR -ItemType Directory -Force | Out-Null
 # Clone the AWS SDK CPP repo
-git clone --recurse-submodules -b "1.11.21" "https://github.com/aws/aws-sdk-cpp.git" $SRC_DIR
+git clone --recurse-submodules -b "1.11.394" "https://github.com/aws/aws-sdk-cpp.git" $SRC_DIR
 
 # Make and move to build directory
 New-Item -Path $BUILD_DIR -ItemType Directory -Force | Out-Null
@@ -57,7 +57,7 @@ cmake $SRC_DIR `
     -D TARGET_ARCH="WINDOWS" `
     -D CMAKE_INSTALL_PREFIX=$INSTALL_DIR `
     -D CMAKE_BUILD_TYPE=$CONFIGURATION `
-    -D BUILD_ONLY="rds;secretsmanager" `
+    -D BUILD_ONLY="rds;secretsmanager;sts" `
     -D ENABLE_TESTING="OFF" `
     -D BUILD_SHARED_LIBS=$BUILD_SHARED_LIBS `
     -D CPP_STANDARD="17"

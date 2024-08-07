@@ -61,6 +61,7 @@ class AUTH_UTIL {
  public:
   AUTH_UTIL() {};
   AUTH_UTIL(const char* region);
+  AUTH_UTIL(const char* region, Aws::Auth::AWSCredentials credentials);
   ~AUTH_UTIL();
 
   virtual std::string get_auth_token(const char* host, const char* region, unsigned int port, const char* user);

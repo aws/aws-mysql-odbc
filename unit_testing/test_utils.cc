@@ -119,7 +119,7 @@ bool TEST_UTILS::token_cache_contains_key(std::string cache_key) {
     return IAM_PROXY::token_cache.find(cache_key) != IAM_PROXY::token_cache.end();
 }
 
-void TEST_UTILS::clear_token_cache(IAM_PROXY &iam_proxy) {
+void TEST_UTILS::clear_token_cache(IAM_PROXY& iam_proxy) {
     iam_proxy.clear_token_cache();
 }
 

@@ -311,13 +311,13 @@ void setUnsignedFieldData(gchar *widget_name, unsigned int param);
   if (READ_BOOL(framenum, name))     \
     params->opt_##name = true;       \
   else                               \
-    params->opt_##name.set_default(false)
+    params->opt_##name = false;
 
 #define GET_BOOL_TAB(framenum, name) \
   if (READ_BOOL_TAB(framenum, name)) \
     params->opt_##name = true;       \
   else                               \
-    params->opt_##name.set_default(false)
+    params->opt_##name = false;
 
 #define SET_BOOL(hwnd, name) \
   SET_CHECKED(hwnd, name, params->opt_##name)

@@ -287,8 +287,10 @@ my_bool getBoolFieldDataTab(unsigned int framenum, int idc)
   HWND checkbox = GetDlgItem(TabCtrl_1.hTabPages[framenum-1], idc);
 
   assert(checkbox);
-  if (checkbox)
-      return !!Button_GetCheck(checkbox);
+  if (checkbox) {
+    auto res = !!Button_GetCheck(checkbox);
+    return res;
+  }
 
   return false;
 }
@@ -708,15 +710,40 @@ void FormMain_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         wchar_t authMode[20];
         ComboBox_GetText(GetDlgItem(authTab, IDC_EDIT_AUTH_MODE), authMode, sizeof(authMode));
 
-        BOOL usingIAM = wcscmp(authMode, L"IAM") == 0;
+        BOOL usingIAM = wcsicmp(authMode, L"IAM") == 0;
         EnableWindow(port, usingIAM);
         EnableWindow(host, usingIAM);
         EnableWindow(expiration, usingIAM);
 
-        BOOL usingSecretsManager = wcscmp(authMode, L"SECRETS MANAGER") == 0;
+        BOOL usingSecretsManager = wcsicmp(authMode, L"SECRETS MANAGER") == 0;
         EnableWindow(secret_id, usingSecretsManager);
       }
       break;
+    case IDC_EDIT_FED_AUTH_MODE:
+    {
+        HWND fedAuthMode = TabCtrl_1.hTabPages[FED_AUTH_TAB - 1];
+        assert(fedAuthMode);
+
+        HWND endpoint = GetDlgItem(fedAuthMode, IDC_EDIT_IDP_ENDPOINT);
+        HWND user = GetDlgItem(fedAuthMode, IDC_EDIT_IDP_USERNAME);
+        HWND pass = GetDlgItem(fedAuthMode, IDC_EDIT_IDP_PASSWORD);
+        HWND roleArn = GetDlgItem(fedAuthMode, IDC_EDIT_IAM_ROLE_ARN);
+        HWND idpArn = GetDlgItem(fedAuthMode, IDC_EDIT_IAM_IDP_ARN);
+        HWND appId = GetDlgItem(fedAuthMode, IDC_EDIT_APP_ID);
+        assert(endpoint);
+        assert(user);
+        assert(pass);
+        assert(roleArn);
+        assert(idpArn);
+        assert(appId);
+
+        wchar_t fedMode[20];
+        ComboBox_GetText(GetDlgItem(fedAuthMode, IDC_EDIT_FED_AUTH_MODE), fedMode, sizeof(fedMode));
+
+        BOOL usingOkta = wcsicmp(fedMode, L"OKTA") == 0;
+        EnableWindow(appId, usingOkta);
+    }
+    break;
     case IDC_CHECK_GATHER_PERF_METRICS:
       {
         HWND failoverTab = TabCtrl_1.hTabPages[FAILOVER_TAB-1];
