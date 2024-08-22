@@ -87,6 +87,7 @@ jobs:
           DRIVER_PATH: ${{ github.workspace }}
 
       - name: 'Get Github Action IP'
+        if: always()
         id: ip
         uses: haythem/public-ip@v1.3
         
