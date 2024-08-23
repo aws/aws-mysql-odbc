@@ -47,7 +47,8 @@
 
 #include "connection_handler.h"
 #include "connection_proxy.h"
-#include "failover.h"
+// #include "failover.h"
+#include "failover_export.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
 #if !defined(__attribute__) && !defined(__GNUC__)
@@ -625,7 +626,7 @@ struct DBC
 
   telemetry::Telemetry<DBC> telemetry;
 
-  FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
+  FAILOVER_HANDLER_EXPORT *fh = nullptr; /* Failover handler */
   std::shared_ptr<CONNECTION_HANDLER> connection_handler = nullptr;
 
   DBC(ENV *p_env);

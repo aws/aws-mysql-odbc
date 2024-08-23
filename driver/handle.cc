@@ -50,6 +50,7 @@
 #include "driver.h"
 #include "efm_proxy.h"
 #include "iam_proxy.h"
+#include "iam_proxy_export.h"
 #include "mysql_proxy.h"
 #include "secrets_manager_proxy.h"
 
@@ -130,7 +131,7 @@ void DBC::init_proxy_chain(DataSource* dsrc)
     if (dsrc->opt_AUTH_MODE) {
         const char* auth_mode = (const char*) dsrc->opt_AUTH_MODE;
         if (!myodbc_strcasecmp(AUTH_MODE_IAM, auth_mode)) {
-            CONNECTION_PROXY* iam_proxy = new IAM_PROXY(this, dsrc);
+            CONNECTION_PROXY* iam_proxy = new IAM_PROXY_EXPORT(this, dsrc);
             iam_proxy->set_next_proxy(head);
             head = iam_proxy;
         }

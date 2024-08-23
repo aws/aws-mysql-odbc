@@ -181,6 +181,10 @@ if(use_gtk)
     endif()
 
     #set_target_properties(${${gtk}_target} PROPERTIES LINKER_LANGUAGE CXX)
+    
+    # TODO - Test Exported Failover	?? Needed?
+    TARGET_INCLUDE_DIRECTORIES(${${gtk}_target} PRIVATE "C:/Users/yuenhcol/Documents/Code/aws-odbc-failover")
+    TARGET_LINK_LIBRARIES(${${gtk}_target} "C:/Users/yuenhcol/Documents/Code/aws-odbc-failover/build/Release/aws-odbc-failover-export.lib")
 
   endforeach(gtk)
 

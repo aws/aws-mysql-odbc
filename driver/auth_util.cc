@@ -54,7 +54,6 @@ std::string AUTH_UTIL::get_auth_token(const char* host, const char* region, unsi
 }
 
 std::string AUTH_UTIL::build_cache_key(const char* host, const char* region, unsigned int port, const char* user) {
-  // Format should be "<region>:<host>:<port>:<user>"
   return std::string(region).append(":").append(host).append(":").append(std::to_string(port)).append(":").append(user);
 }
 

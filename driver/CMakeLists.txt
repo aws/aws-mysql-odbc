@@ -79,9 +79,9 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     efm_proxy.cc
     error.cc
     execute.cc
-    failover_handler.cc
-    failover_reader_handler.cc
-    failover_writer_handler.cc
+#    failover_handler.cc
+#    failover_reader_handler.cc
+#    failover_writer_handler.cc
     handle.cc
     host_info.cc
     iam_proxy.cc
@@ -309,5 +309,22 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME_STATIC} PUBLIC ${AWSSDK_INCLUDE_DIR})
   TARGET_LINK_LIBRARIES(${DRIVER_NAME_STATIC} ${AWSSDK_LINK_LIBRARIES})
   #------------------------------
+
+  # TODO - Need to copy the DLL to the release folder / lib
+  #        CONFIGURE_FILE?
+  # TODO - Need proper pathing / remove hardcoding
+
+  # TODO - Test Exported IAM Auth
+  TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME} PRIVATE "C:/Users/yuenhcol/Code/aws-iam-proxy")
+  TARGET_LINK_LIBRARIES(${DRIVER_NAME} "C:/Users/yuenhcol/Code/aws-iam-proxy/build/Release/aws-odbc-iam-proxy.lib")
+  TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME_STATIC} PRIVATE "C:/Users/yuenhcol/Code/aws-iam-proxy")
+  TARGET_LINK_LIBRARIES(${DRIVER_NAME_STATIC} "C:/Users/yuenhcol/Code/aws-iam-proxy/build/Release/aws-odbc-iam-proxy.lib")
+
+  # TODO - Test Exported Failover
+  TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME} PRIVATE "C:/Users/yuenhcol/Documents/Code/aws-odbc-failover")
+  TARGET_LINK_LIBRARIES(${DRIVER_NAME} "C:/Users/yuenhcol/Documents/Code/aws-odbc-failover/build/Release/aws-odbc-failover-export.lib")
+  TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME_STATIC} PRIVATE "C:/Users/yuenhcol/Documents/Code/aws-odbc-failover")
+  TARGET_LINK_LIBRARIES(${DRIVER_NAME_STATIC} "C:/Users/yuenhcol/Documents/Code/aws-odbc-failover/build/Release/aws-odbc-failover-export.lib")
+
 
 ENDWHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
