@@ -62,7 +62,9 @@ public class IntegrationContainerTest {
           System.getenv("TEST_PASSWORD") : "my_test_password";
   private static final String ACCESS_KEY = System.getenv("AWS_ACCESS_KEY_ID");
   private static final String SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
-  private static final String SESSION_TOKEN = System.getenv("AWS_SESSION_TOKEN");
+  private static final String SESSION_TOKEN = 
+      !StringUtils.isNullOrEmpty(System.getenv("AWS_SESSION_TOKEN")) ? 
+          System.getenv("AWS_SESSION_TOKEN") : "";
   private static final String ENDPOINT = System.getenv("RDS_ENDPOINT");
   private static final String REGION = System.getenv("RDS_REGION");
   private static final String DOCKER_UID = "1001";
@@ -173,12 +175,14 @@ public class IntegrationContainerTest {
       Container.ExecResult result = testContainer.execInContainer("apt-get", "update");
       System.out.println(result.getStdout());
 
+      // Install dependencies w/ apt-get and auto-confirm with -y
+      // Denies any configuration changes e.g. Unixodbc changing odbc.ini, using `yes n`
       System.out.println(
-        "apt-get install build-essential cmake git libgtk-3-dev unixodbc " +
+        "yes n | apt-get install build-essential cmake git libgtk-3-dev unixodbc " +
         "unixodbc-dev curl libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev -y");
+      // Using `sh` as piping `|` is a property of shell
       result = testContainer.execInContainer(
-        "apt-get", "install", "build-essential", "cmake", "git", "libgtk-3-dev",
-        "unixodbc", "unixodbc-dev", "curl", "libcurl4-openssl-dev", "libssl-dev", "uuid-dev", "zlib1g-dev", "-y");
+        "sh", "-c", "yes n | apt-get install build-essential cmake git libgtk-3-dev unixodbc unixodbc-dev curl libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev -y");
       System.out.println(result.getStdout());
 
       System.out.println("curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-8.3.0-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz");
@@ -194,13 +198,19 @@ public class IntegrationContainerTest {
       result = testContainer.execInContainer("cmake",  "-E",  "make_directory", "./build");
       System.out.println(result.getStdout());
 
+      // Build AWS SDK within test container
+      // This will allow driver to run on Windows machines
+      System.out.println("bash ./scripts/build_aws_sdk_unix.sh Release");
+      result = testContainer.execInContainer("bash", "./scripts/build_aws_sdk_unix.sh", "Release");
+      System.out.println(result.getStdout());
+
       String buildCommand = "cmake -S . -B build " +
         "-DCMAKE_BUILD_TYPE=Release " +
         "-DMYSQLCLIENT_STATIC_LINKING=TRUE " +
         "-DENABLE_INTEGRATION_TESTS=" + (enableIntegrationTests ? "TRUE " : "FALSE ") +
         "-DENABLE_PERFORMANCE_TESTS=" + (enablePerformanceTests ? "TRUE " : "FALSE ") +
         "-DENABLE_UNIT_TESTS=" + (enableUnitTests ? "TRUE " : "FALSE ") +
-        "-DMYSQL_DIR=./mysql-8.3.0-linux-glibc2.28-x86_64/" +
+        "-DMYSQL_DIR=./mysql-8.3.0-linux-glibc2.28-x86_64/ " +
         "-DWITH_UNIXODBC=1";
       System.out.println(buildCommand);
 
@@ -297,7 +307,7 @@ public class IntegrationContainerTest {
       .withEnv("DB_CONN_STR_SUFFIX", "." + dbConnStrSuffix)
       .withEnv("PROXIED_CLUSTER_TEMPLATE", "?." + dbConnStrSuffix + PROXIED_DOMAIN_NAME_SUFFIX)
       .withEnv("SECRETS_ARN", secretsArn);
-        
+
     // Add mysql instances & proxies to container env
     for (int i = 0; i < mySqlInstances.size(); i++) {
       // Add instance
