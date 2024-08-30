@@ -506,7 +506,7 @@ ENDIF(WIN32)
 #------------ find the AWS SDK for C++ package---------
 LIST(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/aws_sdk/install")
 
-FIND_PACKAGE(AWSSDK REQUIRED COMPONENTS rds secretsmanager)
+FIND_PACKAGE(AWSSDK REQUIRED COMPONENTS rds secretsmanager sts)
 
 #------------------------------------------------------
 
@@ -814,7 +814,6 @@ else(APPLE)
     libssl libcrypto ssleay libeay ${AWSSDK_LINK_LIBRARIES}
   )
 endif(APPLE)
-
 
 # List plugins and other libraries that can be found bundled with the server
 # but which are not relevant on client-side and can be safely ignored.

@@ -37,6 +37,13 @@ jobs:
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
+      - name: Install OpenSSL 3
+        run: |
+          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.3.1.zip -o openssl3.zip
+          unzip -d C:/ openssl3.zip
+          cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/
+          cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
+
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
 
@@ -66,6 +73,7 @@ jobs:
                 -DMYSQL_SQL="C:/mysql-${{ vars.MYSQL_VERSION }}-winx64"
                 -DCMAKE_BUILD_TYPE=$BUILD_TYPE
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
+                -DOPENSSL_INCLUDE_DIR="C:/openssl-3/x64/include/"
 
       # Configure test environment
       - name: Build Driver and Copy files
@@ -73,8 +81,8 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         run: |
           cmake --build . --config $BUILD_TYPE
-          cp -r lib/Release/* C:/Windows/System32/
-          cp -r bin/Release/* C:/Windows/System32/
+          cp -r lib/$BUILD_TYPE/* C:/Windows/System32/
+          cp -r bin/$BUILD_TYPE/* C:/Windows/System32/
 
       - name: Add DSN to registry
         shell: bash
@@ -157,11 +165,11 @@ jobs:
 
           brew update
           brew unlink unixodbc
-          brew install libiodbc mysql@8.3 mysql-client@8.3
+          brew install libiodbc mysql@8.4 mysql-client@8.4
           brew link --overwrite --force libiodbc
-          brew link --overwrite --force mysql@8.3
-          echo 'export PATH="/usr/local/opt/mysql@8.3/bin:$PATH"' >> /Users/runner/.bash_profile
-          echo 'export PATH="/usr/local/opt/mysql-client@8.3/bin:$PATH"' >> /Users/runner/.bash_profile
+          brew link --overwrite --force mysql@8.4
+          echo 'export PATH="/usr/local/opt/mysql@8.4/bin:$PATH"' >> /Users/runner/.bash_profile
+          echo 'export PATH="/usr/local/opt/mysql-client@8.4/bin:$PATH"' >> /Users/runner/.bash_profile
 
           brew install openssl@3
           rm -f /usr/local/lib/libssl.3.dylib

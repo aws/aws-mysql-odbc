@@ -36,6 +36,7 @@
 #include "driver/connection_proxy.h"
 #include "driver/failover.h"
 #include "driver/iam_proxy.h"
+#include "driver/saml_http_client.h"
 #include "driver/monitor_thread_container.h"
 #include "driver/monitor_service.h"
 
@@ -228,4 +229,10 @@ public:
     MOCK_METHOD(std::string, get_auth_token, (const char*, const char*, unsigned int, const char*));
 };
 
+class MOCK_SAML_HTTP_CLIENT : public SAML_HTTP_CLIENT {
+public:
+    MOCK_SAML_HTTP_CLIENT(std::string host) : SAML_HTTP_CLIENT(host) {};
+    MOCK_METHOD(nlohmann::json, post, (const std::string&, const nlohmann::json&));
+    MOCK_METHOD(nlohmann::json, get, (const std::string&));
+};
 #endif /* __MOCKOBJECTS_H__ */

@@ -27,48 +27,33 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "auth_util.h"
-#include "aws_sdk_helper.h"
-#include "driver.h"
+#include "saml_http_client.h"
+#include <utility>
 
-namespace {
-AWS_SDK_HELPER SDK_HELPER;
+SAML_HTTP_CLIENT::SAML_HTTP_CLIENT(std::string host) : host{std::move(host)} {}
+
+nlohmann::json SAML_HTTP_CLIENT::post(const std::string& path, const nlohmann::json& value) {
+  httplib::Client client(host);
+  if (auto res = client.Post(path.c_str(), value.dump(), "application/json")) {
+    if (res->status == httplib::StatusCode::OK_200) {
+      nlohmann::json json_object = nlohmann::json::parse(res->body);
+      return json_object;
+    }
+
+    throw SAML_HTTP_EXCEPTION(std::to_string(res->status) + " " + res->reason);
+  }
+  throw SAML_HTTP_EXCEPTION("Post request failed");
 }
 
-AUTH_UTIL::AUTH_UTIL(const char* region) {
-  ++SDK_HELPER;
-
-  Aws::RDS::RDSClientConfiguration client_config;
-  if (region) {
-    client_config.region = region;
+nlohmann::json SAML_HTTP_CLIENT::get(const std::string& path) {
+  httplib::Client client(host);
+  client.set_follow_location(true);
+  if (auto res = client.Get(path.c_str())) {
+    if (res->status == httplib::StatusCode::OK_200) {
+      return res->body;
+    }
+    throw SAML_HTTP_EXCEPTION(std::to_string(res->status) + " " + res->reason);
   }
 
-  this->rds_client = std::make_shared<Aws::RDS::RDSClient>(
-          Aws::Auth::DefaultAWSCredentialsProviderChain().GetAWSCredentials(),
-          client_config);
-};
-
-AUTH_UTIL::AUTH_UTIL(const char* region, Aws::Auth::AWSCredentials credentials) {
-  ++SDK_HELPER;
-
-  Aws::RDS::RDSClientConfiguration client_config;
-  if (region) {
-    client_config.region = region;
-  }
-
-  this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
-}
-
-std::string AUTH_UTIL::get_auth_token(const char* host, const char* region, unsigned int port, const char* user) {
-  return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
-}
-
-std::string AUTH_UTIL::build_cache_key(const char* host, const char* region, unsigned int port, const char* user) {
-  // Format should be "<region>:<host>:<port>:<user>"
-  return std::string(region).append(":").append(host).append(":").append(std::to_string(port)).append(":").append(user);
-}
-
-AUTH_UTIL::~AUTH_UTIL() {
-  this->rds_client.reset();
-  --SDK_HELPER;
+  throw SAML_HTTP_EXCEPTION("Get request failed");
 }

@@ -1051,7 +1051,9 @@ void DataSource::reset() {
   this->opt_MONITOR_DISPOSAL_TIME.set_default(MONITOR_DISPOSAL_TIME_MS);
   this->opt_FAILURE_DETECTION_TIMEOUT.set_default(FAILURE_DETECTION_TIMEOUT_SECS);
 
-  this->opt_AUTH_PORT.set_default(-1);
+  this->opt_IDP_PORT.set_default(-1);
+  this->opt_AUTH_PORT.set_default(opt_PORT);
+  this->opt_AUTH_EXPIRATION.set_default(900); // 15 minutes
 }
 
 SQLWSTRING DataSource::to_kvpair(SQLWCHAR delim) {
@@ -1171,7 +1173,6 @@ int DataSource::add() {
 #define MFA_COND(X) || k == W_##X
 #define SKIP_COND(X) || k == W_##X
 
-
   for (const auto &el : m_opt_map) {
     auto &k = el.first;
     auto &v = el.second;
@@ -1182,6 +1183,13 @@ int DataSource::add() {
       continue;
 
     SQLWSTRING val = v;
+#ifdef WIN32
+    // If v is boolean and is set to false on Windows, the line above converts v to an empty string.
+    // We want it to be set to "0" instead.
+    if (val.empty() && v.get_type() == optionBase::opt_type::BOOL) {
+      val = reinterpret_cast<const wchar_t*>("0");
+    }
+#endif
     if (k == W_PWD MFA_OPTS(MFA_COND)) {
       // Escape the password(s)
       val = escape_brackets(v, false);
