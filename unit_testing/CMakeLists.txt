@@ -55,6 +55,7 @@ add_executable(
   test_utils.h
   test_utils.cc
 
+  adfs_proxy_test.cc
   cluster_aware_metrics_test.cc
   efm_proxy_test.cc
   iam_proxy_test.cc

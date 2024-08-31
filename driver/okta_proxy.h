@@ -36,7 +36,7 @@
 #include "saml_http_client.h"
 #include "saml_util.h"
 
-namespace {
+namespace OKTA_REGEX {
 const std::regex SAML_RESPONSE_PATTERN(R"#(name=\"SAMLResponse\".+value=\"(.+)\"/\>)#", std::regex_constants::icase);
 }
 

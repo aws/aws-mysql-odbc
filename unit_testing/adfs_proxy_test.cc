@@ -31,8 +31,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "test_utils.h"
+#include "driver/adfs_proxy.h"
 #include "mock_objects.h"
+#include "test_utils.h"
 
 using ::testing::_;
 using ::testing::Return;
@@ -40,31 +41,29 @@ using ::testing::StrEq;
 
 namespace {
 const std::string TEST_HOST{"test_host"};
-const std::string TEST_REGION{"test_region"};
 const std::string TEST_USER{"test_user"};
-const std::string TEST_APP_ID{"test_app"};
 const std::string TEST_ENDPOINT{"test_endpoint"};
 const std::string TEST_IDP_USERNAME{"test_idp_username"};
 const std::string TEST_IDP_PASSWORD{"test_idp_password"};
-
-const nlohmann::json TEST_SESSION_TOKEN = {{"sessionToken", "20111sTEtWA8_kJzLH-JQ87ScdVRZOa6NcaX9-letters"}};
-const std::string EXPECTED_TOKEN = "20111sTEtWA8_kJzLH-JQ87ScdVRZOa6NcaX9-letters";
-
-const nlohmann::json TEST_ASSERTION =
-    "input name=\"SAMLResponse\" type=\"hidden\" "
+const std::string SIGN_IN_PAGE_URL = "/adfs/ls/IdpInitiatedSignOn.aspx?loginToRp=urn:amazon:webservices";
+const nlohmann::json TEST_SIGN_IN_PAGE =
+    "<form action=\"/adfs/ls/IdpInitiatedSignOn.aspx?loginToRp=urn:amazon:webservices\">\n<input id=\"userNameInput\" "
+    "name=\"UserName\"/>\n<input id=\"passwordInput\" name=\"Password\"/>\n<input id=\"optionForms\" "
+    "name=\"AuthMethod\" "
+    "value=\"FormsAuthentication\"/>\n";
+const nlohmann::json TEST_SIGN_IN_RESPONSE =
+    "name=\"SAMLResponse\" "
     "value=\"PHNhbWwycDpSZXNwb25zZSBEZXN0aW5hdGlvbj0iaHR0cHM6Ly9zaWduaW4uYXdzLmFtYXpvbi5jb20vc2FtbCI+"
     "PC9zYW1sMnA6UmVzcG9uc2U+\"/>";
 const nlohmann::json EXPECTED_ASSERTION =
-    "PHNhbWwycDpSZXNwb25zZSBEZXN0aW5hdGlvbj0iaHR0cHM6Ly9zaWduaW4uYXdzLmFtYXpvbi5jb20vc2FtbCI+PC9zYW1sMnA6UmVzcG9uc2U+";
-
-constexpr unsigned int TEST_PORT = 3306;
-constexpr unsigned int TEST_EXPIRATION = 100;
+    "PHNhbWwycDpSZXNwb25zZSBEZXN0aW5hdGlvbj0iaHR0cHM6Ly9zaWduaW4uYXdzLmFtYXpvbi5jb20vc2FtbCI+"
+    "PC9zYW1sMnA6UmVzcG9uc2U+";
 }  // namespace
 
 static SQLHENV env;
 static Aws::SDKOptions options;
 
-class OktaProxyTest : public testing::Test {
+class AdfsProxyTest : public testing::Test {
  protected:
   DBC* dbc;
   DataSource* ds;
@@ -88,14 +87,10 @@ class OktaProxyTest : public testing::Test {
     ds = new DataSource();
 
     ds->opt_AUTH_HOST.set_remove_brackets(to_sqlwchar_string(TEST_HOST).c_str(), TEST_HOST.size());
-    ds->opt_AUTH_REGION.set_remove_brackets(to_sqlwchar_string(TEST_REGION).c_str(), TEST_REGION.size());
     ds->opt_UID.set_remove_brackets(to_sqlwchar_string(TEST_USER).c_str(), TEST_USER.size());
     ds->opt_IDP_USERNAME.set_remove_brackets(to_sqlwchar_string(TEST_IDP_USERNAME).c_str(), TEST_IDP_USERNAME.size());
     ds->opt_IDP_PASSWORD.set_remove_brackets(to_sqlwchar_string(TEST_IDP_PASSWORD).c_str(), TEST_IDP_PASSWORD.size());
     ds->opt_IDP_ENDPOINT.set_remove_brackets(to_sqlwchar_string(TEST_ENDPOINT).c_str(), TEST_ENDPOINT.size());
-    ds->opt_APP_ID.set_remove_brackets(to_sqlwchar_string(TEST_APP_ID).c_str(), TEST_APP_ID.size());
-    ds->opt_AUTH_PORT = TEST_PORT;
-    ds->opt_AUTH_EXPIRATION = TEST_EXPIRATION;
 
     mock_saml_http_client = std::make_shared<MOCK_SAML_HTTP_CLIENT>(TEST_ENDPOINT, 10, 10, true);
     mock_auth_util = std::make_shared<MOCK_AUTH_UTIL>();
@@ -104,34 +99,20 @@ class OktaProxyTest : public testing::Test {
   void TearDown() override { cleanup_odbc_handles(nullptr, dbc, ds); }
 };
 
-TEST_F(OktaProxyTest, GetSAMLURL) {
-  const std::string expected_uri = "/app/amazon_aws/test_app/sso/saml";
+TEST_F(AdfsProxyTest, GetSAMLAssertion) {
+  const httplib::Headers response_body = {{"Set-Cookie", "cookie"}};
+  const nlohmann::json expected_cookie = {{"Cookie", "cookie"}};
+  const std::string expected_post_body =
+      "AuthMethod=FormsAuthentication&Password=test_idp_password&UserName=test_idp_username";
+  const httplib::Headers header = {};
 
-  auto okta_util = OKTA_SAML_UTIL(mock_saml_http_client);
-  const std::string url = OKTA_SAML_UTIL::get_saml_url(ds);
-  EXPECT_EQ(expected_uri, url);
-};
+  EXPECT_CALL(*mock_saml_http_client, get(StrEq(SIGN_IN_PAGE_URL), header)).WillOnce(Return(TEST_SIGN_IN_PAGE));
+  EXPECT_CALL(*mock_saml_http_client,
+              post(StrEq(SIGN_IN_PAGE_URL), expected_post_body, "application/x-www-form-urlencoded"))
+      .WillOnce(Return(TEST_SIGN_IN_RESPONSE));
 
-TEST_F(OktaProxyTest, GetSessionToken) {
-  const nlohmann::json request_body = {{"username", "test_idp_username"}, {"password", "test_idp_password"}};
-  EXPECT_CALL(*mock_saml_http_client, post(StrEq("/api/v1/authn"), request_body.dump(), "application/json"))
-      .WillOnce(Return(TEST_SESSION_TOKEN));
+  ADFS_SAML_UTIL adfs_util(mock_saml_http_client);
 
-  OKTA_SAML_UTIL okta_util(mock_saml_http_client);
-  const std::string token = okta_util.get_session_token(ds);
-  EXPECT_EQ(EXPECTED_TOKEN, token);
-};
-
-TEST_F(OktaProxyTest, GetSAMLAssertion) {
-  const std::string expected_uri =
-      "/app/amazon_aws/test_app/sso/saml?onetimetoken=20111sTEtWA8_kJzLH-JQ87ScdVRZOa6NcaX9-letters";
-  const nlohmann::json request_body = {{"username", "test_idp_username"}, {"password", "test_idp_password"}};
-
-  EXPECT_CALL(*mock_saml_http_client, post(StrEq("/api/v1/authn"), request_body.dump(), "application/json")).WillOnce(Return(TEST_SESSION_TOKEN));
-  EXPECT_CALL(*mock_saml_http_client, get(_, _)).WillOnce(Return(TEST_ASSERTION));
-
-  OKTA_SAML_UTIL okta_util(mock_saml_http_client);
-
-  const std::string assertion = okta_util.get_saml_assertion(ds);
+  const std::string assertion = adfs_util.get_saml_assertion(ds);
   EXPECT_EQ(EXPECTED_ASSERTION, assertion);
 }

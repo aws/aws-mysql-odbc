@@ -22,6 +22,13 @@ jobs:
         run: |
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
+      
+      - name: Install OpenSSL 3
+        run: |
+          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.3.1.zip -o openssl3.zip
+          unzip -d C:/ openssl3.zip
+          cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/
+          cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2

@@ -31,11 +31,11 @@
 #define __MOCKOBJECTS_H__
 
 #include <aws/secretsmanager/SecretsManagerClient.h>
+#include <aws/rds/RdsClient.h>
 #include <gmock/gmock.h>
 
 #include "driver/connection_proxy.h"
 #include "driver/failover.h"
-#include "driver/iam_proxy.h"
 #include "driver/saml_http_client.h"
 #include "driver/monitor_thread_container.h"
 #include "driver/monitor_service.h"
@@ -225,14 +225,13 @@ public:
 class MOCK_AUTH_UTIL : public AUTH_UTIL {
 public:
     MOCK_AUTH_UTIL() : AUTH_UTIL() {};
-
-    MOCK_METHOD(std::string, get_auth_token, (const char*, const char*, unsigned int, const char*));
+    MOCK_METHOD(std::string, generate_token, (const char*, const char*, unsigned int, const char*));
 };
 
 class MOCK_SAML_HTTP_CLIENT : public SAML_HTTP_CLIENT {
 public:
     MOCK_SAML_HTTP_CLIENT(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl) : SAML_HTTP_CLIENT(host, connect_timeout, socket_timeout, enable_ssl) {};
-    MOCK_METHOD(nlohmann::json, post, (const std::string&, const nlohmann::json&));
-    MOCK_METHOD(nlohmann::json, get, (const std::string&));
+    MOCK_METHOD(nlohmann::json, post, (const std::string&, const std::string&, const std::string&));
+    MOCK_METHOD(nlohmann::json, get, (const std::string&, const httplib::Headers&));
 };
 #endif /* __MOCKOBJECTS_H__ */

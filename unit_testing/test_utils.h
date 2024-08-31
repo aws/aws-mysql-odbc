@@ -58,8 +58,7 @@ public:
     static size_t get_map_size(std::shared_ptr<MONITOR_THREAD_CONTAINER> container);
     static std::list<std::shared_ptr<MONITOR_CONNECTION_CONTEXT>> get_contexts(std::shared_ptr<MONITOR> monitor);
     static std::string build_cache_key(const char* host, const char* region, unsigned int port, const char* user);
-    static bool token_cache_contains_key(std::string cache_key);
-    static void clear_token_cache(IAM_PROXY& iam_proxy);
+    static bool token_cache_contains_key(std::unordered_map<std::string, TOKEN_INFO> token_cache, std::string cache_key);
     static std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& get_secrets_cache();
     static bool try_parse_region_from_secret(std::string secret, std::string& region);
     static bool is_dns_pattern_valid(std::string host);

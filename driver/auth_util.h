@@ -63,12 +63,16 @@ class AUTH_UTIL {
   AUTH_UTIL(const char* region);
   AUTH_UTIL(const char* region, Aws::Auth::AWSCredentials credentials);
   ~AUTH_UTIL();
-
-  virtual std::string get_auth_token(const char* host, const char* region, unsigned int port, const char* user);
+  virtual std::pair<std::string, bool> get_auth_token(std::unordered_map<std::string, TOKEN_INFO>& token_cache,
+                                                      std::mutex& token_cache_mutex, const char* host,
+                                                      const char* region, unsigned int port, const char* user,
+                                                      unsigned int time_until_expiration,
+                                                      bool force_generate_new_token = false);
   static std::string build_cache_key(const char* host, const char* region, unsigned int port, const char* user);
 
  private:
   std::shared_ptr<Aws::RDS::RDSClient> rds_client;
+  virtual std::string generate_token(const char* host, const char* region, unsigned int port, const char* user);
 
 #ifdef UNIT_TEST_BUILD
   // Allows for testing private/protected methods

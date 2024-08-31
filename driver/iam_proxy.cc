@@ -28,6 +28,7 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include <functional>
+#include <tuple>
 
 #include "driver.h"
 #include "iam_proxy.h"
@@ -69,54 +70,6 @@ bool IAM_PROXY::change_user(const char* user, const char* passwd, const char* db
     return invoke_func_with_generated_token(f);
 }
 
-std::string IAM_PROXY::get_auth_token(
-    const char* host, const char* region, unsigned int port,
-    const char* user, unsigned int time_until_expiration,
-    bool force_generate_new_token) {
-
-    if (!host) {
-        host = "";
-    }
-    if (!region) {
-        region = "";
-    }
-    if (!user) {
-        user = "";
-    }
-
-    std::string auth_token;
-    std::string cache_key = this->auth_util->build_cache_key(host, region, port, user);
-    using_cached_token = false;
-
-    {
-        std::unique_lock<std::mutex> lock(token_cache_mutex);
-
-        if (force_generate_new_token) {
-            token_cache.erase(cache_key);
-        }
-        else {
-            // Search for token in cache
-            auto find_token = token_cache.find(cache_key);
-            if (find_token != token_cache.end()) {
-                TOKEN_INFO info = find_token->second;
-                if (info.is_expired()) {
-                    token_cache.erase(cache_key);
-                } else {
-                    using_cached_token = true;
-                    return info.token;
-                }
-            }
-        }
-
-        // Generate new token
-        auth_token = this->auth_util->get_auth_token(host, region, port, user);
-
-        token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
-    }
-
-    return auth_token;
-}
-
 void IAM_PROXY::clear_token_cache() {
     std::unique_lock<std::mutex> lock(token_cache_mutex);
     token_cache.clear();
@@ -125,7 +78,7 @@ void IAM_PROXY::clear_token_cache() {
 bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)> func) {
 
     // Use user provided auth host if present, otherwise, use server host
-  const char *AUTH_HOST = ds->opt_AUTH_HOST ? (const char *)ds->opt_AUTH_HOST
+  const char *auth_host = ds->opt_AUTH_HOST ? (const char *)ds->opt_AUTH_HOST
                                             : (const char *)ds->opt_SERVER;
 
   // Go with default region if region is not provided.
@@ -138,15 +91,17 @@ bool IAM_PROXY::invoke_func_with_generated_token(std::function<bool(const char*)
         iam_port = ds->opt_PORT;
     }
 
-    std::string auth_token = this->get_auth_token(AUTH_HOST, region, iam_port, 
-                                                  (const char*)ds->opt_UID, ds->opt_AUTH_EXPIRATION);
+    std::string auth_token;
+    bool using_cached_token;
+    std::tie(auth_token, using_cached_token) = this->auth_util->get_auth_token(
+        token_cache, token_cache_mutex, auth_host, region, iam_port, ds->opt_UID, ds->opt_AUTH_EXPIRATION);
 
     bool connect_result = func(auth_token.c_str());
     if (!connect_result) {
         if (using_cached_token) {
             // Retry func with a fresh token
-            auth_token = this->get_auth_token(AUTH_HOST, region, iam_port, (const char*)ds->opt_UID,
-                                              ds->opt_AUTH_EXPIRATION, true);
+            std::tie(auth_token, using_cached_token) = this->auth_util->get_auth_token(token_cache, token_cache_mutex, auth_host, region, iam_port,
+                                                ds->opt_UID, ds->opt_AUTH_EXPIRATION, true);
             if (func(auth_token.c_str())) {
                 return true;
             }
