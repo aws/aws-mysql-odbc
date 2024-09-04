@@ -253,6 +253,9 @@ static SQLWCHAR W_IAM_ROLE_ARN[] = { 'I', 'A', 'M', '_', 'R', 'O', 'L', 'E', '_'
 static SQLWCHAR W_IAM_IDP_ARN[] = { 'I', 'A', 'M', '_', 'I', 'D', 'P', '_', 'A', 'R', 'N', 0 };
 static SQLWCHAR W_APP_ID[] = { 'A', 'P', 'P', '_', 'I', 'D', 0 };
 static SQLWCHAR W_IDP_PORT[] = { 'I', 'D', 'P', '_', 'P', 'O', 'R', 'T', 0 };
+static SQLWCHAR W_CLIENT_CONNECT_TIMEOUT[] = {'C', 'L', 'I', 'E', 'N', 'T', '_', 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0};
+static SQLWCHAR W_CLIENT_SOCKET_TIMEOUT[] = {'C', 'L', 'I', 'E', 'N', 'T', '_', 'S', 'O', 'C', 'K', 'E', 'T', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0};
+static SQLWCHAR W_ENABLE_SSL[] = {'E', 'N', 'A', 'B', 'L', 'E', '_', 'S', 'S', 'L', 0};
 
 /* Failover */
 static SQLWCHAR W_ENABLE_CLUSTER_FAILOVER[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'C', 'L', 'U', 'S', 'T', 'E', 'R', '_', 'F', 'A', 'I', 'L', 'O', 'V', 'E', 'R', 0 };
@@ -321,6 +324,7 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         W_AUTH_MODE, W_AUTH_REGION, W_AUTH_HOST, W_AUTH_PORT, W_AUTH_EXPIRATION, W_AUTH_SECRET_ID,
                         /* FED Auth*/
                         W_IDP_USERNAME, W_IDP_PASSWORD, W_IDP_ENDPOINT, W_IDP_PORT, W_APP_ID, W_IAM_ROLE_ARN, W_IAM_IDP_ARN,
+                        W_CLIENT_CONNECT_TIMEOUT, W_CLIENT_SOCKET_TIMEOUT, W_ENABLE_SSL,
                         /* Failover */
                         W_ENABLE_CLUSTER_FAILOVER, W_FAILOVER_MODE,
                         W_GATHER_PERF_METRICS, W_GATHER_PERF_METRICS_PER_INSTANCE,
@@ -1051,9 +1055,11 @@ void DataSource::reset() {
   this->opt_MONITOR_DISPOSAL_TIME.set_default(MONITOR_DISPOSAL_TIME_MS);
   this->opt_FAILURE_DETECTION_TIMEOUT.set_default(FAILURE_DETECTION_TIMEOUT_SECS);
 
-  this->opt_IDP_PORT.set_default(-1);
   this->opt_AUTH_PORT.set_default(opt_PORT);
   this->opt_AUTH_EXPIRATION.set_default(900); // 15 minutes
+  this->opt_CLIENT_CONNECT_TIMEOUT.set_default(60);
+  this->opt_CLIENT_SOCKET_TIMEOUT.set_default(60);
+  this->opt_ENABLE_SSL.set_default(true);
 }
 
 SQLWSTRING DataSource::to_kvpair(SQLWCHAR delim) {

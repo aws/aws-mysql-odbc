@@ -43,7 +43,7 @@ const std::regex SAML_RESPONSE_PATTERN(R"#(name=\"SAMLResponse\".+value=\"(.+)\"
 class OKTA_SAML_UTIL : public SAML_UTIL {
  public:
   OKTA_SAML_UTIL(const std::shared_ptr<SAML_HTTP_CLIENT>& client);
-  OKTA_SAML_UTIL(std::string host);
+  OKTA_SAML_UTIL(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl);
   std::string get_saml_assertion(DataSource* ds) override;
   std::string get_session_token(DataSource* ds) const;
   static std::string get_saml_url(DataSource* ds);

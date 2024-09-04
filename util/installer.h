@@ -325,12 +325,17 @@ unsigned int get_network_timeout(unsigned int seconds);
   X(APP_ID)
 
 #define FED_AUTH_INT_OPTIONS_LIST(X) \
-    X(IDP_PORT)
+  X(IDP_PORT)                        \
+  X(CLIENT_SOCKET_TIMEOUT)           \
+  X(CLIENT_CONNECT_TIMEOUT)
+
+#define FED_AUTH_BOOL_OPTIONS_LIST(X) \
+  X(ENABLE_SSL)
 
 #define FAILOVER_BOOL_OPTIONS_LIST(X) \
   X(ENABLE_CLUSTER_FAILOVER)          \
   X(GATHER_PERF_METRICS)              \
-  X(GATHER_PERF_METRICS_PER_INSTANCE)
+  X(GATHER_PERF_METRICS_PER_INSTANCE) \
 
 #define FAILOVER_STR_OPTIONS_LIST(X) \
   X(HOST_PATTERN)                    \
@@ -396,7 +401,8 @@ unsigned int get_network_timeout(unsigned int seconds);
                                   X(ENABLE_LOCAL_INFILE) X(ENABLE_DNS_SRV)     \
                                       X(MULTI_HOST)                            \
                                           FAILOVER_BOOL_OPTIONS_LIST(X)        \
-                                              MONITORING_BOOL_OPTIONS_LIST(X)
+                                              MONITORING_BOOL_OPTIONS_LIST(X) \
+                                                FED_AUTH_BOOL_OPTIONS_LIST(X)
 
 #define FULL_OPTIONS_LIST(X) \
   STR_OPTIONS_LIST(X) INT_OPTIONS_LIST(X) BOOL_OPTIONS_LIST(X)

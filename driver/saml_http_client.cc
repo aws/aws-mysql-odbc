@@ -30,10 +30,20 @@
 #include "saml_http_client.h"
 #include <utility>
 
-SAML_HTTP_CLIENT::SAML_HTTP_CLIENT(std::string host) : host{std::move(host)} {}
+SAML_HTTP_CLIENT::SAML_HTTP_CLIENT(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl)
+    : host{std::move(host)}, connect_timeout(connect_timeout), socket_timeout(socket_timeout), enable_ssl(enable_ssl) {}
+
+httplib::Client SAML_HTTP_CLIENT::get_client() const {
+  httplib::Client client(host);
+  client.enable_server_certificate_verification(enable_ssl);
+  client.set_connection_timeout(connect_timeout);
+  client.set_read_timeout(socket_timeout);
+  client.set_write_timeout(socket_timeout);
+  return client;
+}
 
 nlohmann::json SAML_HTTP_CLIENT::post(const std::string& path, const nlohmann::json& value) {
-  httplib::Client client(host);
+  httplib::Client client = this->get_client();
   if (auto res = client.Post(path.c_str(), value.dump(), "application/json")) {
     if (res->status == httplib::StatusCode::OK_200) {
       nlohmann::json json_object = nlohmann::json::parse(res->body);
@@ -46,7 +56,7 @@ nlohmann::json SAML_HTTP_CLIENT::post(const std::string& path, const nlohmann::j
 }
 
 nlohmann::json SAML_HTTP_CLIENT::get(const std::string& path) {
-  httplib::Client client(host);
+  httplib::Client client = this->get_client();
   client.set_follow_location(true);
   if (auto res = client.Get(path.c_str())) {
     if (res->status == httplib::StatusCode::OK_200) {

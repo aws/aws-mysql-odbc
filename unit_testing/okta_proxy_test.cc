@@ -97,7 +97,7 @@ class OktaProxyTest : public testing::Test {
     ds->opt_AUTH_PORT = TEST_PORT;
     ds->opt_AUTH_EXPIRATION = TEST_EXPIRATION;
 
-    mock_saml_http_client = std::make_shared<MOCK_SAML_HTTP_CLIENT>(TEST_ENDPOINT);
+    mock_saml_http_client = std::make_shared<MOCK_SAML_HTTP_CLIENT>(TEST_ENDPOINT, 10, 10, true);
     mock_auth_util = std::make_shared<MOCK_AUTH_UTIL>();
   }
 
