@@ -231,7 +231,7 @@ public:
 
 class MOCK_SAML_HTTP_CLIENT : public SAML_HTTP_CLIENT {
 public:
-    MOCK_SAML_HTTP_CLIENT(std::string host) : SAML_HTTP_CLIENT(host) {};
+    MOCK_SAML_HTTP_CLIENT(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl) : SAML_HTTP_CLIENT(host, connect_timeout, socket_timeout, enable_ssl) {};
     MOCK_METHOD(nlohmann::json, post, (const std::string&, const nlohmann::json&));
     MOCK_METHOD(nlohmann::json, get, (const std::string&));
 };

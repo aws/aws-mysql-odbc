@@ -1057,9 +1057,9 @@ void DataSource::reset() {
 
   this->opt_AUTH_PORT.set_default(opt_PORT);
   this->opt_AUTH_EXPIRATION.set_default(900); // 15 minutes
-  this->opt_ENABLE_SSL.set_default(true);
   this->opt_CLIENT_CONNECT_TIMEOUT.set_default(60);
   this->opt_CLIENT_SOCKET_TIMEOUT.set_default(60);
+  this->opt_ENABLE_SSL.set_default(true);
 }
 
 SQLWSTRING DataSource::to_kvpair(SQLWCHAR delim) {
