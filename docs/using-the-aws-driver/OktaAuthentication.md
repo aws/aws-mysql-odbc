@@ -44,3 +44,7 @@ When a user wants access to a resource, it authenticates with the IdP. From this
 | `CLIENT_SOCKET_TIMEOUT`  |    No    | The read and write timeout value in seconds for the HttpClient used during the Okta authentication workflow.                                                                                                   | `60`          | `30`                                                   |
 | `CLIENT_CONNECT_TIMEOUT` |    No    | The connect timeout value in seconds for the HttpClient used during the Okta authentication workflow.                                                                                                          | `60`          | `30`                                                   |
 | `ENABLE_SSL`             |    No    | Set to false to enable server certificate verification. Useful during local development when testing locally hosted servers using self-signed certificates. Not recommended for production.                    | `true`        | `false`                                                |
+
+If you are working with the Windows DSN UI, click `Details >>` and navigate to the `Federated Authentication` tab to configure the parameters.
+
+![sample_okta_dsn](../images/sample_okta_dsn.png)
