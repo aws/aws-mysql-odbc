@@ -47,13 +47,17 @@ private:
 
 class SAML_HTTP_CLIENT {
  public:
-  SAML_HTTP_CLIENT(std::string host);
+  SAML_HTTP_CLIENT(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl);
   ~SAML_HTTP_CLIENT() = default;
   virtual nlohmann::json post(const std::string& path, const nlohmann::json& value);
   virtual nlohmann::json get(const std::string& path);
 
  private:
   const std::string host;
+  const int connect_timeout;
+  const int socket_timeout;
+  const bool enable_ssl;
+  httplib::Client get_client() const;
 };
 
 #endif

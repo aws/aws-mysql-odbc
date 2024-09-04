@@ -43,7 +43,10 @@ OKTA_PROXY::OKTA_PROXY(DBC* dbc, DataSource* ds) : OKTA_PROXY(dbc, ds, nullptr) 
 OKTA_PROXY::OKTA_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
   this->next_proxy = next_proxy;
   const std::string idp_host{static_cast<const char*>(ds->opt_IDP_ENDPOINT)};
-  this->saml_util = std::make_shared<OKTA_SAML_UTIL>(idp_host);
+  const int client_connect_timeout = ds->opt_CLIENT_CONNECT_TIMEOUT;
+  const int client_socket_timeout = ds->opt_CLIENT_SOCKET_TIMEOUT;
+  const bool enable_ssl = ds->opt_ENABLE_SSL;
+  this->saml_util = std::make_shared<OKTA_SAML_UTIL>(idp_host, client_connect_timeout, client_socket_timeout, enable_ssl);
 }
 
 bool OKTA_PROXY::connect(const char* host, const char* user, const char* password, const char* database,
@@ -122,8 +125,8 @@ void OKTA_PROXY::clear_token_cache() {
 
 OKTA_SAML_UTIL::OKTA_SAML_UTIL(const std::shared_ptr<SAML_HTTP_CLIENT>& client) { this->http_client = client; }
 
-OKTA_SAML_UTIL::OKTA_SAML_UTIL(std::string host) {
-  this->http_client = std::make_shared<SAML_HTTP_CLIENT>("https://" + host);
+OKTA_SAML_UTIL::OKTA_SAML_UTIL(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl) {
+  this->http_client = std::make_shared<SAML_HTTP_CLIENT>("https://" + host, connect_timeout, socket_timeout, enable_ssl);
 }
 
 std::string OKTA_SAML_UTIL::get_saml_url(DataSource* ds) {

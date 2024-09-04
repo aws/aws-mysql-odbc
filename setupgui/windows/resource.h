@@ -192,6 +192,9 @@
 #define IDC_EDIT_IAM_IDP_ARN            11025
 #define IDC_EDIT_FED_AUTH_MODE          11026
 #define IDC_EDIT_IDP_PORT				11027
+#define IDC_EDIT_CLIENT_CONNECT_TIMEOUT 11028
+#define IDC_EDIT_CLIENT_SOCKET_TIMEOUT  11029
+#define IDC_CHECK_ENABLE_SSL            11030
 #define MYSQL_ADMIN_PORT                33062
 #define IDC_STATIC                      -1
 
