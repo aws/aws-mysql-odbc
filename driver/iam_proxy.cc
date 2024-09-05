@@ -39,11 +39,8 @@ IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds) : IAM_PROXY(dbc, ds, nullptr) {};
 
 IAM_PROXY::IAM_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
   this->next_proxy = next_proxy;
-  if (ds->opt_AUTH_REGION) {
-    this->auth_util = std::make_shared<AUTH_UTIL>((const char*)ds->opt_AUTH_REGION);
-  } else {
-    this->auth_util = std::make_shared<AUTH_UTIL>();
-  }
+  const char* region = ds->opt_AUTH_REGION ? static_cast<const char*>(ds->opt_AUTH_REGION) : Aws::Region::US_EAST_1;
+  this->auth_util = std::make_shared<AUTH_UTIL>(region);
 }
 
 IAM_PROXY::~IAM_PROXY() {
