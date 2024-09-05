@@ -42,11 +42,13 @@ OKTA_PROXY::OKTA_PROXY(DBC* dbc, DataSource* ds) : OKTA_PROXY(dbc, ds, nullptr) 
 
 OKTA_PROXY::OKTA_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
   this->next_proxy = next_proxy;
-  const std::string idp_host{static_cast<const char*>(ds->opt_IDP_ENDPOINT)};
+  std::string host{static_cast<const char*>(ds->opt_IDP_ENDPOINT)};
+  host += ":" + std::to_string(ds->opt_IDP_PORT);
+      
   const int client_connect_timeout = ds->opt_CLIENT_CONNECT_TIMEOUT;
   const int client_socket_timeout = ds->opt_CLIENT_SOCKET_TIMEOUT;
   const bool enable_ssl = ds->opt_ENABLE_SSL;
-  this->saml_util = std::make_shared<OKTA_SAML_UTIL>(idp_host, client_connect_timeout, client_socket_timeout, enable_ssl);
+  this->saml_util = std::make_shared<OKTA_SAML_UTIL>(host, client_connect_timeout, client_socket_timeout, enable_ssl);
 }
 
 bool OKTA_PROXY::connect(const char* host, const char* user, const char* password, const char* database,
@@ -57,7 +59,7 @@ bool OKTA_PROXY::connect(const char* host, const char* user, const char* passwor
 }
 
 bool OKTA_PROXY::invoke_func_with_fed_credentials(std::function<bool(const char*)> func) {
-  const char* region = ds->opt_AUTH_REGION ? static_cast<const char*>(ds->opt_AUTH_REGION) : Aws::Region::US_EAST_1;
+  const char* region = ds->opt_FED_AUTH_REGION ? static_cast<const char*>(ds->opt_FED_AUTH_REGION) : Aws::Region::US_EAST_1;
   std::string assertion;
   try {
     assertion = this->saml_util->get_saml_assertion(ds);
@@ -74,8 +76,8 @@ bool OKTA_PROXY::invoke_func_with_fed_credentials(std::function<bool(const char*
   this->auth_util = std::make_shared<AUTH_UTIL>(region, credentials);
 
   const char* AUTH_HOST =
-      ds->opt_AUTH_HOST ? static_cast<const char*>(ds->opt_AUTH_HOST) : static_cast<const char*>(ds->opt_SERVER);
-  int auth_port = ds->opt_AUTH_PORT;
+      ds->opt_FED_AUTH_HOST ? static_cast<const char*>(ds->opt_FED_AUTH_HOST) : static_cast<const char*>(ds->opt_SERVER);
+  int auth_port = ds->opt_FED_AUTH_PORT;
   if (auth_port == UNDEFINED_PORT) {
     // Use regular port if user does not provide an alternative port for AWS authentication
     auth_port = ds->opt_PORT;

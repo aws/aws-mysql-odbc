@@ -317,17 +317,21 @@ unsigned int get_network_timeout(unsigned int seconds);
 
 #define FED_AUTH_STR_OPTIONS_LIST(X) \
   X(FED_AUTH_MODE)                   \
-  X(IDP_USERNAME)                   \
+  X(IDP_USERNAME)                    \
   X(IDP_PASSWORD)                    \
   X(IDP_ENDPOINT)                    \
   X(IAM_ROLE_ARN)                    \
   X(IAM_IDP_ARN)                     \
-  X(APP_ID)
+  X(APP_ID)                          \
+  X(FED_AUTH_HOST)                   \
+  X(FED_AUTH_REGION)
 
 #define FED_AUTH_INT_OPTIONS_LIST(X) \
   X(IDP_PORT)                        \
   X(CLIENT_SOCKET_TIMEOUT)           \
-  X(CLIENT_CONNECT_TIMEOUT)
+  X(CLIENT_CONNECT_TIMEOUT)          \
+  X(FED_AUTH_PORT)                   \
+  X(FED_AUTH_EXPIRATION)
 
 #define FED_AUTH_BOOL_OPTIONS_LIST(X) \
   X(ENABLE_SSL)
