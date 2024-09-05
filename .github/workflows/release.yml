@@ -79,9 +79,9 @@ jobs:
 
       - name: Upload macOS installer as artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: installers
+          name: installers-mac
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
           if-no-files-found: error
 
@@ -143,9 +143,9 @@ jobs:
 
       - name: Upload Linux installer as artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: installers
+          name: installers-linux
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
           if-no-files-found: error
 
@@ -165,6 +165,13 @@ jobs:
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
+      - name: Install OpenSSL 3
+        run: |
+          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.3.1.zip -o openssl3.zip
+          unzip -d C:/ openssl3.zip
+          cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/
+          cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
+
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
 
@@ -178,7 +185,7 @@ jobs:
 
       - name: Run build installer script
         run: |
-          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}"
+          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" C:/openssl-3/x64/include/
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4.0.2
@@ -201,9 +208,9 @@ jobs:
       
       - name: Upload Windows installer as artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: installers
+          name: installers-windows
           path: ${{ github.workspace }}/wix/*.msi
           if-no-files-found: error
 
@@ -212,10 +219,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-mac, build-linux, build-windows]
     steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
       - name: Download all installers
         uses: actions/download-artifact@v4.1.7
         with:
-          name: installers
+          path: installers
+          pattern: installers-*
+          merge-multiple: true
 
       # Get tag version for release
       - name: Set Version Env Variable
@@ -233,5 +244,5 @@ jobs:
           draft: true
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
           bodyFile: RELEASE_DETAILS.md
-          artifacts: "./*.pkg, ./*.tar.gz, ./*.msi"
+          artifacts: "*/*.pkg, */*.tar.gz, */*.msi"
           token: ${{ secrets.GITHUB_TOKEN }}

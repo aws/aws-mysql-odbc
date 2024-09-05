@@ -4,6 +4,7 @@ on:
 
 env:
   BUILD_TYPE: Release
+  DRIVER_VERSION: 1.1.0
 
 jobs:
   build-windows:
@@ -64,7 +65,7 @@ jobs:
         run: |
           choco upgrade jq -y
           . ".\sign_installer.ps1"
-          Invoke-SignInstaller ${{ github.workspace }}\wix winx64a ${{github.ref_name}} ${{ secrets.AWS_UNSIGNED_BUCKET }} ${{ secrets.AWS_SIGNED_BUCKET }} ${{ secrets.AWS_S3_KEY }}aws-mysql-odbc-${{github.ref_name}}-winx64a.msi
+          Invoke-SignInstaller ${{ github.workspace }}\wix winx64a ${{ env.DRIVER_VERSION}} ${{ secrets.AWS_UNSIGNED_BUCKET }} ${{ secrets.AWS_SIGNED_BUCKET }} ${{ secrets.AWS_S3_KEY }}aws-mysql-odbc-${{ env.DRIVER_VERSION}}-winx64a.msi
       
       - name: Upload Windows installer as artifact
         if: success()

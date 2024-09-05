@@ -16,6 +16,8 @@ on:
       - 'docs/**'
       - 'ISSUE_TEMPLATE/**'
       - '**/remove-old-artifacts.yml'
+      - '**/build-installer.yml'
+      - '**/release.yml'
 
 env:
   BUILD_TYPE: Release
