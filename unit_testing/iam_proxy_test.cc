@@ -85,6 +85,7 @@ protected:
     }
 
     void TearDown() override {
+        delete mock_connection_proxy;
         token_cache.clear();
         cleanup_odbc_handles(nullptr, dbc, ds);
     }
@@ -97,8 +98,6 @@ TEST_F(IamProxyTest, TokenExpiration) {
 
     std::this_thread::sleep_for(std::chrono::seconds(time_to_expire + 1));
     EXPECT_TRUE(info.is_expired());
-
-    delete mock_connection_proxy;
 }
 
 TEST_F(IamProxyTest, TokenGetsCachedAndRetrieved) {
