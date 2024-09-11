@@ -34,6 +34,10 @@
 
 #define MAX_REDIRECT_COUNT 20
 
+#if !defined(WIN32)
+#define stricmp strcasecmp
+#endif
+
 SAML_HTTP_CLIENT::SAML_HTTP_CLIENT(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl)
     : host{std::move(host)}, connect_timeout(connect_timeout), socket_timeout(socket_timeout), enable_ssl(enable_ssl) {}
 
