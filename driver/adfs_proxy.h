@@ -37,11 +37,11 @@
 #include "saml_util.h"
 
 namespace ADFS_REGEX {
-const std::regex FORM_ACTION_PATTERN(R"#(<form.*?action=\"([^\"]+)\")#", std::regex_constants::icase);
-const std::regex SAML_RESPONSE_PATTERN("\"SAMLResponse\"\\W+value=\"(.*?)\"(\\s*/>)", std::regex_constants::icase);
-const std::regex URL_PATTERN(R"#(^(https)://[-a-zA-Z0-9+&@#/%?=~_!:,.']*[-a-zA-Z0-9+&@#/%=~_'])#",
-                             std::regex_constants::icase);
-const std::regex INPUT_TAG_PATTERN(R"#(<input id=(.*))#", std::regex_constants::icase);
+  const std::regex FORM_ACTION_PATTERN(R"#(<form.*?action=\"([^\"]+)\")#", std::regex_constants::icase);
+  const std::regex SAML_RESPONSE_PATTERN("\"SAMLResponse\"\\W+value=\"(.*?)\"(\\s*/>)", std::regex_constants::icase);
+  const std::regex URL_PATTERN(R"#(^(https)://[-a-zA-Z0-9+&@#/%?=~_!:,.']*[-a-zA-Z0-9+&@#/%=~_'])#",
+                               std::regex_constants::icase);
+  const std::regex INPUT_TAG_PATTERN(R"#(<input id=(.*))#", std::regex_constants::icase);
 }  // namespace ADFS_REGEX
 
 class ADFS_SAML_UTIL : public SAML_UTIL {
@@ -52,7 +52,7 @@ class ADFS_SAML_UTIL : public SAML_UTIL {
   std::shared_ptr<SAML_HTTP_CLIENT> http_client;
 
  private:
-  static std::string escape_html_entity(const std::string& html);
+  static std::string unescape_html_entity(const std::string& html);
   std::vector<std::string> get_input_tags_from_html(const std::string& body);
   std::string get_value_by_key(const std::string& input, const std::string& key);
   std::string get_parameters_from_html(DataSource* ds, const std::string& body);

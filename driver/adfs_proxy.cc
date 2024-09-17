@@ -76,17 +76,16 @@ std::string ADFS_SAML_UTIL::get_saml_assertion(DataSource* ds) {
   if (!std::regex_search(body, m, ADFS_REGEX::FORM_ACTION_PATTERN)) {
     return std::string();
   }
-  std::string form_action = escape_html_entity(m.str(1));
+  std::string form_action = unescape_html_entity(m.str(1));
   const std::string params = get_parameters_from_html(ds, body);
   const std::string content = get_form_action_body(form_action, params);
-  printf("hjello %s\n", content.c_str());
   if (std::regex_search(content, m, ADFS_REGEX::SAML_RESPONSE_PATTERN)) {
     return m.str(1);
   }
   return std::string();
 }
 
-std::string ADFS_SAML_UTIL::escape_html_entity(const std::string& html) {
+std::string ADFS_SAML_UTIL::unescape_html_entity(const std::string& html) {
   std::string retval("");
   int i = 0;
   int length = html.length();
@@ -151,7 +150,7 @@ std::string ADFS_SAML_UTIL::get_value_by_key(const std::string& input, const std
   std::smatch matches;
   if (std::regex_search(input, matches, std::regex(pattern))) {
     MYLOG_TRACE(init_log_file(), 0, "get_value_by_key");
-    return escape_html_entity(matches.str(2));
+    return unescape_html_entity(matches.str(2));
   }
   return "";
 }
@@ -170,10 +169,8 @@ std::string ADFS_SAML_UTIL::get_parameters_from_html(DataSource* ds, const std::
 
     if (nameLower.find("username") != std::string::npos) {
       parameters.insert(std::pair<std::string, std::string>(name, username));
-    } else if (nameLower.find("authmethod") != std::string::npos) {
-      if (!value.empty()) {
-        parameters.insert(std::pair<std::string, std::string>(name, value));
-      }
+    } else if ((nameLower.find("authmethod") != std::string::npos) && !value.empty()) {
+      parameters.insert(std::pair<std::string, std::string>(name, value));
     } else if (nameLower.find("password") != std::string::npos) {
       parameters.insert(std::pair<std::string, std::string>(name, password));
     } else if (!name.empty()) {
@@ -201,11 +198,7 @@ std::string ADFS_SAML_UTIL::get_form_action_body(const std::string& url, const s
         "Failed to get SAML Assertion from ADFS : " + e.error_message() + ". Please verify your ADFS credentials.";
     throw SAML_HTTP_EXCEPTION(error);
   }
-
-  if (res.empty()) {
-    return "";
-  }
-  return res;
+  return res.empty() ? "" : res;
 }
 
 #ifdef UNIT_TEST_BUILD
