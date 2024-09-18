@@ -85,7 +85,6 @@ protected:
     }
 
     void TearDown() override {
-        delete mock_connection_proxy;
         token_cache.clear();
         cleanup_odbc_handles(nullptr, dbc, ds);
     }
@@ -98,6 +97,7 @@ TEST_F(IamProxyTest, TokenExpiration) {
 
     std::this_thread::sleep_for(std::chrono::seconds(time_to_expire + 1));
     EXPECT_TRUE(info.is_expired());
+    delete mock_connection_proxy;
 }
 
 TEST_F(IamProxyTest, TokenGetsCachedAndRetrieved) {
@@ -125,6 +125,7 @@ TEST_F(IamProxyTest, TokenGetsCachedAndRetrieved) {
     EXPECT_EQ(TEST_TOKEN, token1);
     EXPECT_TRUE(token1 == token2);
     EXPECT_TRUE(use_cached_bool);
+    delete mock_connection_proxy;
 }
 
 TEST_F(IamProxyTest, MultipleCachedTokens) {
@@ -152,6 +153,7 @@ TEST_F(IamProxyTest, MultipleCachedTokens) {
     EXPECT_NE(cache_key1, cache_key2);
     EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(token_cache, cache_key1));
     EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(token_cache, cache_key2));
+    delete mock_connection_proxy;
 }
 
 TEST_F(IamProxyTest, RegenerateTokenAfterExpiration) {
@@ -179,6 +181,7 @@ TEST_F(IamProxyTest, RegenerateTokenAfterExpiration) {
                                              TEST_PORT, TEST_USER.c_str(), time_to_expire);
 
     EXPECT_TRUE(TEST_UTILS::token_cache_contains_key(token_cache, cache_key));
+    delete mock_connection_proxy;
 }
 
 TEST_F(IamProxyTest, ForceGenerateNewToken) {
@@ -196,6 +199,7 @@ TEST_F(IamProxyTest, ForceGenerateNewToken) {
     // even though the first token has not yet expired
     token_test_auth_util->get_auth_token(token_cache, token_cache_mutex,
         TEST_HOST.c_str(), TEST_REGION.c_str(), TEST_PORT, TEST_USER.c_str(), time_to_expire, true);
+    delete mock_connection_proxy;
 }
 
 TEST_F(IamProxyTest, RetryConnectionWithFreshTokenAfterFailingWithCachedToken) {
