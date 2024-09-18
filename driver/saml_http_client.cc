@@ -30,6 +30,14 @@
 #include "saml_http_client.h"
 #include <utility>
 
+#include "mylog.h"
+
+#define MAX_REDIRECT_COUNT 20
+
+#if !defined(WIN32)
+#define stricmp strcasecmp
+#endif
+
 SAML_HTTP_CLIENT::SAML_HTTP_CLIENT(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl)
     : host{std::move(host)}, connect_timeout(connect_timeout), socket_timeout(socket_timeout), enable_ssl(enable_ssl) {}
 
@@ -42,28 +50,61 @@ httplib::Client SAML_HTTP_CLIENT::get_client() const {
   return client;
 }
 
-nlohmann::json SAML_HTTP_CLIENT::post(const std::string& path, const nlohmann::json& value) {
+
+nlohmann::json SAML_HTTP_CLIENT::post(const std::string& path, const std::string& value,
+                                      const std::string& content_type) {
   httplib::Client client = this->get_client();
-  if (auto res = client.Post(path.c_str(), value.dump(), "application/json")) {
-    if (res->status == httplib::StatusCode::OK_200) {
-      nlohmann::json json_object = nlohmann::json::parse(res->body);
-      return json_object;
+  auto res = client.Post(path.c_str(), value, content_type);
+  if (!res) {
+    throw SAML_HTTP_EXCEPTION("Post request failed");
+  }
+  if (res->status == httplib::StatusCode::OK_200) {
+    if (stricmp(content_type.c_str(), "application/json") == 0) {
+      return nlohmann::json::parse(res->body);
+    }
+    return res->body;
+  }
+
+  int count = MAX_REDIRECT_COUNT;
+  while (res->status == httplib::StatusCode::Found_302 && count > 0) {
+    auto headers = res->headers;
+    auto pos = headers.find("location");
+    if (pos != headers.end()) {
+      httplib::Headers cookies = {};
+      std::string cookiestr;
+      for (auto const& x : headers) {
+        if (stricmp(x.first.c_str(), "Set-Cookie") == 0) {
+          cookiestr += x.second;
+          cookiestr += ";";
+        }
+      }
+      cookies.emplace("Cookie", cookiestr);
+
+      httplib::Client redirect_client = this->get_client();
+      res = redirect_client.Get(pos->second.c_str(), cookies);
+      count--;
     }
 
-    throw SAML_HTTP_EXCEPTION(std::to_string(res->status) + " " + res->reason);
+    if (res->status == httplib::StatusCode::OK_200) {
+      if (stricmp(content_type.c_str(), "application/json") == 0) {
+        return nlohmann::json::parse(res->body);
+      }
+
+      return res->body;
+    }
   }
-  throw SAML_HTTP_EXCEPTION("Post request failed");
+  throw SAML_HTTP_EXCEPTION(std::to_string(res->status) + " " + res->reason);
 }
 
-nlohmann::json SAML_HTTP_CLIENT::get(const std::string& path) {
+nlohmann::json SAML_HTTP_CLIENT::get(const std::string& path, const httplib::Headers& headers) {
   httplib::Client client = this->get_client();
   client.set_follow_location(true);
-  if (auto res = client.Get(path.c_str())) {
+
+  if (auto res = (headers.empty() ? client.Get(path) : client.Get(path, headers))) {
     if (res->status == httplib::StatusCode::OK_200) {
       return res->body;
     }
     throw SAML_HTTP_EXCEPTION(std::to_string(res->status) + " " + res->reason);
   }
-
   throw SAML_HTTP_EXCEPTION("Get request failed");
 }

@@ -115,12 +115,8 @@ std::string TEST_UTILS::build_cache_key(const char* host, const char* region, un
     return AUTH_UTIL::build_cache_key(host, region, port, user);
 }
 
-bool TEST_UTILS::token_cache_contains_key(std::string cache_key) {
-    return IAM_PROXY::token_cache.find(cache_key) != IAM_PROXY::token_cache.end();
-}
-
-void TEST_UTILS::clear_token_cache(IAM_PROXY& iam_proxy) {
-    iam_proxy.clear_token_cache();
+bool TEST_UTILS::token_cache_contains_key(std::unordered_map<std::string, TOKEN_INFO> token_cache, std::string cache_key) {
+    return token_cache.find(cache_key) != token_cache.end();
 }
 
 std::map<std::pair<Aws::String, Aws::String>, Aws::Utils::Json::JsonValue>& TEST_UTILS::get_secrets_cache() {

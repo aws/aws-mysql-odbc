@@ -38,13 +38,13 @@
 std::unordered_map<std::string, TOKEN_INFO> OKTA_PROXY::token_cache;
 std::mutex OKTA_PROXY::token_cache_mutex;
 
-OKTA_PROXY::OKTA_PROXY(DBC* dbc, DataSource* ds) : OKTA_PROXY(dbc, ds, nullptr) {};
+OKTA_PROXY::OKTA_PROXY(DBC* dbc, DataSource* ds) : OKTA_PROXY(dbc, ds, nullptr){};
 
 OKTA_PROXY::OKTA_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CONNECTION_PROXY(dbc, ds) {
   this->next_proxy = next_proxy;
   std::string host{static_cast<const char*>(ds->opt_IDP_ENDPOINT)};
   host += ":" + std::to_string(ds->opt_IDP_PORT);
-      
+
   const int client_connect_timeout = ds->opt_CLIENT_CONNECT_TIMEOUT;
   const int client_socket_timeout = ds->opt_CLIENT_SOCKET_TIMEOUT;
   const bool enable_ssl = ds->opt_ENABLE_SSL;
@@ -59,7 +59,8 @@ bool OKTA_PROXY::connect(const char* host, const char* user, const char* passwor
 }
 
 bool OKTA_PROXY::invoke_func_with_fed_credentials(std::function<bool(const char*)> func) {
-  const char* region = ds->opt_FED_AUTH_REGION ? static_cast<const char*>(ds->opt_FED_AUTH_REGION) : Aws::Region::US_EAST_1;
+  const char* region =
+      ds->opt_FED_AUTH_REGION ? static_cast<const char*>(ds->opt_FED_AUTH_REGION) : Aws::Region::US_EAST_1;
   std::string assertion;
   try {
     assertion = this->saml_util->get_saml_assertion(ds);
@@ -75,21 +76,25 @@ bool OKTA_PROXY::invoke_func_with_fed_credentials(std::function<bool(const char*
       this->saml_util->get_aws_credentials(idp_host, region, iam_role_arn, idp_arn, assertion);
   this->auth_util = std::make_shared<AUTH_UTIL>(region, credentials);
 
-  const char* AUTH_HOST =
-      ds->opt_FED_AUTH_HOST ? static_cast<const char*>(ds->opt_FED_AUTH_HOST) : static_cast<const char*>(ds->opt_SERVER);
+  const char* auth_host = ds->opt_FED_AUTH_HOST ? static_cast<const char*>(ds->opt_FED_AUTH_HOST)
+                                                : static_cast<const char*>(ds->opt_SERVER);
   int auth_port = ds->opt_FED_AUTH_PORT;
   if (auth_port == UNDEFINED_PORT) {
     // Use regular port if user does not provide an alternative port for AWS authentication
     auth_port = ds->opt_PORT;
   }
 
-  std::string auth_token = this->auth_util->get_auth_token(AUTH_HOST, region, auth_port, ds->opt_UID);
+  std::string auth_token;
+  bool using_cached_token;
+  std::tie(auth_token, using_cached_token) = this->auth_util->get_auth_token(
+      token_cache, token_cache_mutex, auth_host, region, auth_port, ds->opt_UID, ds->opt_AUTH_EXPIRATION);
 
   bool connect_result = func(auth_token.c_str());
   if (!connect_result) {
     if (using_cached_token) {
       // Retry func with a fresh token
-      auth_token = this->auth_util->get_auth_token(AUTH_HOST, region, auth_port, ds->opt_UID);
+      std::tie(auth_token, using_cached_token) = this->auth_util->get_auth_token(
+          token_cache, token_cache_mutex, auth_host, region, auth_port, ds->opt_UID, ds->opt_AUTH_EXPIRATION, true);
       if (func(auth_token.c_str())) {
         return true;
       }
@@ -128,7 +133,8 @@ void OKTA_PROXY::clear_token_cache() {
 OKTA_SAML_UTIL::OKTA_SAML_UTIL(const std::shared_ptr<SAML_HTTP_CLIENT>& client) { this->http_client = client; }
 
 OKTA_SAML_UTIL::OKTA_SAML_UTIL(std::string host, int connect_timeout, int socket_timeout, bool enable_ssl) {
-  this->http_client = std::make_shared<SAML_HTTP_CLIENT>("https://" + host, connect_timeout, socket_timeout, enable_ssl);
+  this->http_client =
+      std::make_shared<SAML_HTTP_CLIENT>("https://" + host, connect_timeout, socket_timeout, enable_ssl);
 }
 
 std::string OKTA_SAML_UTIL::get_saml_url(DataSource* ds) {
@@ -145,7 +151,7 @@ std::string OKTA_SAML_UTIL::get_session_token(DataSource* ds) const {
   const nlohmann::json request_body = {{"username", username}, {"password", password}};
   nlohmann::json res;
   try {
-    res = this->http_client->post(session_token_endpoint, request_body);
+    res = this->http_client->post(session_token_endpoint, request_body.dump(), "application/json");
   } catch (SAML_HTTP_EXCEPTION& e) {
     const std::string error =
         "Failed to get session token from Okta : " + e.error_message() + ". Please verify your Okta credentials.";
@@ -163,8 +169,8 @@ std::string OKTA_SAML_UTIL::get_saml_assertion(DataSource* ds) {
   try {
     res = this->http_client->get(this->get_saml_url(ds) + "?onetimetoken=" + token);
   } catch (SAML_HTTP_EXCEPTION& e) {
-    const std::string error =
-        "Failed to get SAML assertion from Okta : " + e.error_message() + ". Please verify your Okta identity provider configuration on AWS.";
+    const std::string error = "Failed to get SAML assertion from Okta : " + e.error_message() +
+                              ". Please verify your Okta identity provider configuration on AWS.";
     throw SAML_HTTP_EXCEPTION(error);
   }
   const auto body = std::string(res);
@@ -179,7 +185,7 @@ std::string OKTA_SAML_UTIL::get_saml_assertion(DataSource* ds) {
     return std::string();
   };
 
-  return f(SAML_RESPONSE_PATTERN);
+  return f(OKTA_REGEX::SAML_RESPONSE_PATTERN);
 }
 
 std::string OKTA_SAML_UTIL::replace_all(std::string str, const std::string& from, const std::string& to) {

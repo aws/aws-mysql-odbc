@@ -55,17 +55,10 @@ public:
 
     bool change_user(const char* user, const char* passwd,
         const char* db) override;
-
-    std::string get_auth_token(
-        const char* host,const char* region, unsigned int port,
-        const char* user, unsigned int time_until_expiration,
-        bool force_generate_new_token = false);
-
 protected:
     static std::unordered_map<std::string, TOKEN_INFO> token_cache;
     static std::mutex token_cache_mutex;
     std::shared_ptr<AUTH_UTIL> auth_util;
-    bool using_cached_token = false;
 
     static void clear_token_cache();
 

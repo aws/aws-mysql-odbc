@@ -44,8 +44,7 @@ AUTH_UTIL::AUTH_UTIL(const char* region) {
   }
 
   this->rds_client = std::make_shared<Aws::RDS::RDSClient>(
-          Aws::Auth::DefaultAWSCredentialsProviderChain().GetAWSCredentials(),
-          client_config);
+      Aws::Auth::DefaultAWSCredentialsProviderChain().GetAWSCredentials(), client_config);
 };
 
 AUTH_UTIL::AUTH_UTIL(const char* region, Aws::Auth::AWSCredentials credentials) {
@@ -59,7 +58,52 @@ AUTH_UTIL::AUTH_UTIL(const char* region, Aws::Auth::AWSCredentials credentials) 
   this->rds_client = std::make_shared<Aws::RDS::RDSClient>(credentials, client_config);
 }
 
-std::string AUTH_UTIL::get_auth_token(const char* host, const char* region, unsigned int port, const char* user) {
+std::pair<std::string, bool> AUTH_UTIL::get_auth_token(std::unordered_map<std::string, TOKEN_INFO>& token_cache,
+                                                       std::mutex& token_cache_mutex, const char* host,
+                                                       const char* region, unsigned int port, const char* user,
+                                                       unsigned int time_until_expiration,
+                                                       bool force_generate_new_token) {
+  if (!host) {
+    host = "";
+  }
+  if (!region) {
+    region = "";
+  }
+  if (!user) {
+    user = "";
+  }
+
+  std::string auth_token;
+  const std::string cache_key = this->build_cache_key(host, region, port, user);
+  bool using_cached_token = false;
+
+  {
+    std::unique_lock<std::mutex> lock(token_cache_mutex);
+
+    if (force_generate_new_token) {
+      token_cache.erase(cache_key);
+    } else {
+      // Search for token in cache
+      auto find_token = token_cache.find(cache_key);
+      if (find_token != token_cache.end()) {
+        TOKEN_INFO info = find_token->second;
+        if (info.is_expired()) {
+          token_cache.erase(cache_key);
+        } else {
+          using_cached_token = true;
+          return std::make_pair(info.token, using_cached_token);
+        }
+      }
+    }
+
+    // Generate new token
+    auth_token = this->generate_token(host, region, port, user);
+    token_cache[cache_key] = TOKEN_INFO(auth_token, time_until_expiration);
+  }
+  return std::make_pair(auth_token, using_cached_token);
+}
+
+std::string AUTH_UTIL::generate_token(const char* host, const char* region, unsigned int port, const char* user) {
   return this->rds_client->GenerateConnectAuthToken(host, region, port, user);
 }
 
