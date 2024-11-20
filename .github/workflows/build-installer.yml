@@ -30,6 +30,8 @@ jobs:
         run: |
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz
           tar xf mysql.tar.gz
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz -o openssl-3.4.0.tar.gz
+          tar xzvf openssl-3.4.0.tar.gz
 
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
@@ -50,6 +52,7 @@ jobs:
                 -DCONNECTOR_PLATFORM=linux
                 -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64/
                 -DBUNDLE_DEPENDENCIES=true
+                -DOPENSSL_INCLUDE_DIR=./openssl-3.4.0/include/
 
       # Build driver
       - name: Build driver
