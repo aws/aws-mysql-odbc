@@ -47,12 +47,10 @@
  *									   *
 ****************************************************************************/
 
-#include "adfs_proxy.h"
 #include "driver.h"
 #include "efm_proxy.h"
 #include "iam_proxy.h"
 #include "mysql_proxy.h"
-#include "okta_proxy.h"
 #include "secrets_manager_proxy.h"
 
 #include <mutex>
@@ -140,20 +138,6 @@ void DBC::init_proxy_chain(DataSource* dsrc)
             CONNECTION_PROXY* secrets_manager_proxy = new SECRETS_MANAGER_PROXY(this, dsrc);
             secrets_manager_proxy->set_next_proxy(head);
             head = secrets_manager_proxy;
-        }
-    }
-
-    if (dsrc->opt_FED_AUTH_MODE) {
-        const char* fed_auth_mode = (const char*)dsrc->opt_FED_AUTH_MODE;
-        if (!myodbc_strcasecmp(FED_AUTH_MODE_ADFS, fed_auth_mode)) {
-            CONNECTION_PROXY* adfs_proxy = new ADFS_PROXY(this, dsrc);
-            adfs_proxy->set_next_proxy(head);
-            head = adfs_proxy;
-        }
-        else if (!myodbc_strcasecmp(FED_AUTH_MODE_OKTA, fed_auth_mode)) {
-            CONNECTION_PROXY* okta_proxy = new OKTA_PROXY(this, dsrc);
-            okta_proxy->set_next_proxy(head);
-            head = okta_proxy;
         }
     }
 

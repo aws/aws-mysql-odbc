@@ -58,7 +58,6 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   SET(DRIVER_NAME_STATIC "awsmysqlodbc${CONNECTOR_DRIVER_TYPE_SHORT}-static")
 
   SET(DRIVER_SRCS
-    adfs_proxy.cc
     auth_util.cc
     aws_sdk_helper.cc
     base_metrics_holder.cc
@@ -94,14 +93,11 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     my_stmt.cc
     mylog.cc
     mysql_proxy.cc
-    okta_proxy.cc
     options.cc
     parse.cc
     prepare.cc
     query_parsing.cc
     results.cc
-    saml_http_client.cc
-    saml_util.cc
     secrets_manager_proxy.cc
     topology_service.cc
     transact.cc
@@ -127,7 +123,6 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.def.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.def @ONLY)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
     SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc
-                                   adfs_proxy.h
                                    auth_util.h
                                    aws_sdk_helper.h
                                    base_metrics_holder.h
@@ -152,11 +147,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    mylog.h
                                    mysql_proxy.h
                                    myutil.h
-                                   okta_proxy.h
                                    parse.h
                                    query_parsing.h
-                                   saml_http_client.h
-                                   saml_util.h
                                    secrets_manager_proxy.h
                                    topology_service.h
                                    ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
@@ -300,26 +292,6 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
   #MESSAGE("Setting RPATH for ${DRIVER_NAME}")
 
   MATH(EXPR DRIVER_INDEX "${DRIVER_INDEX} + 1")
-
-  #------------DEPENDENCIES FOR FEDERATED AUTH---------
-  include(FetchContent)
-
-  FetchContent_Declare(
-          json
-          URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
-  )
-
-  FetchContent_Declare(
-          httplib
-          URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.16.1.zip
-  )
-
-  FetchContent_MakeAvailable(httplib json)
-
-  TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME} PUBLIC "${httplib_SOURCE_DIR}" ${OPENSSL_INCLUDE_DIR})
-  TARGET_LINK_LIBRARIES(${DRIVER_NAME} nlohmann_json::nlohmann_json)
-  TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME_STATIC} PUBLIC "${httplib_SOURCE_DIR}" ${OPENSSL_INCLUDE_DIR})
-  TARGET_LINK_LIBRARIES(${DRIVER_NAME_STATIC} nlohmann_json::nlohmann_json)
 
   #------------AWS SDK------------------
   LIST(APPEND SERVICE_LIST rds secretsmanager sts aws-c-compression aws-c-sdkutils)

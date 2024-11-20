@@ -55,7 +55,6 @@ add_executable(
   test_utils.h
   test_utils.cc
 
-  adfs_proxy_test.cc
   cluster_aware_metrics_test.cc
   efm_proxy_test.cc
   iam_proxy_test.cc
@@ -68,7 +67,6 @@ add_executable(
   monitor_test.cc
   monitor_thread_container_test.cc
   multi_threaded_monitor_service_test.cc
-  okta_proxy_test.cc
   query_parsing_test.cc
   secrets_manager_proxy_test.cc
   topology_service_test.cc
