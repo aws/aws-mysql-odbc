@@ -51,8 +51,6 @@ jobs:
                 -DCONNECTOR_PLATFORM=linux
                 -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64/
                 -DBUNDLE_DEPENDENCIES=true
-                -DCMAKE_CXX_COMPILER=$(which g++)
-                -DCMAKE_C_COMPILER=$(which gcc)
 
       # Build driver
       - name: Build driver
