@@ -32,6 +32,8 @@ jobs:
           tar xf mysql.tar.gz
           curl -L https://github.com/openssl/openssl/releases/download/openssl-3.4.0/openssl-3.4.0.tar.gz -o openssl-3.4.0.tar.gz
           tar xzvf openssl-3.4.0.tar.gz
+          cd openssl-3.4.0
+          ./Configure
 
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
@@ -46,7 +48,7 @@ jobs:
         shell: bash
         run: cmake -S . -B build
                 -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+                -DCMAKE_BUILD_TYPE=$BUILD_TYPE  
                 -DMYSQLCLIENT_STATIC_LINKING=true
                 -DWITH_UNIXODBC=1
                 -DCONNECTOR_PLATFORM=linux
