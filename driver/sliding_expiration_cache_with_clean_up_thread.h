@@ -39,14 +39,13 @@ template <class K, class V>
 class SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD : public SLIDING_EXPIRATION_CACHE<K, V> {
  public:
   SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD();
-  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(SHOULD_DISPOSE_FUNC<V>* should_dispose_func,
-                                                ITEM_DISPOSAL_FUNC<V>* item_disposal_func);
-  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(SHOULD_DISPOSE_FUNC<V>* should_dispose_func,
-                                                ITEM_DISPOSAL_FUNC<V>* item_disposal_func,
+  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func,
+                                                std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func);
+  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func,
+                                                std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func,
                                                 long long clean_up_interval_nanos);
   ~SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD() = default;
 
-  
   /**
    * Stop clean up thread. Should be called at the end of the cache's lifetime.
    */

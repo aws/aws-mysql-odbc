@@ -57,6 +57,8 @@
 
 #include <mutex>
 
+#include "custom_endpoint_proxy.h"
+
 thread_local long thread_count = 0;
 
 std::mutex g_lock;
@@ -122,6 +124,12 @@ void DBC::close()
 void DBC::init_proxy_chain(DataSource* dsrc)
 {
     CONNECTION_PROXY *head = new MYSQL_PROXY(this, dsrc);
+
+    if (dsrc->opt_ENABLE_CUSTOM_ENDPOINT_MONITORING) {
+        CONNECTION_PROXY* custom_endpoint_proxy = new CUSTOM_ENDPOINT_PROXY(this, dsrc);
+        custom_endpoint_proxy->set_next_proxy(head);
+        head = custom_endpoint_proxy;
+    }
 
     if (dsrc->opt_ENABLE_FAILURE_DETECTION) {
         CONNECTION_PROXY* efm_proxy = new EFM_PROXY(this, dsrc);

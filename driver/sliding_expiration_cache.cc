@@ -33,6 +33,8 @@
 #include <utility>
 #include <vector>
 
+#include "custom_endpoint_monitor.h"
+
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE<K, V>::remove_and_dispose(K key) {
   if (this->cache.count(key)) {
@@ -64,12 +66,12 @@ void SLIDING_EXPIRATION_CACHE<K, V>::clean_up() {
 }
 
 template <class K, class V>
-V SLIDING_EXPIRATION_CACHE<K, V>::compute_if_absent(K key, std::function<K(V)> mapping_function,
+V SLIDING_EXPIRATION_CACHE<K, V>::compute_if_absent(K key, std::function<V(K)> mapping_function,
                                                     long long item_expiration_nanos) {
   this->clean_up();
   auto cache_item = std::make_shared<CACHE_ITEM>(mapping_function(key),
                                    std::chrono::steady_clock::now() + std::chrono::nanoseconds(item_expiration_nanos));
-  this->cache.emplace(key, cache_item);
+  this->cache[key] = cache_item;
   return cache_item->with_extend_expiration(item_expiration_nanos)->item;
 }
 
@@ -135,3 +137,6 @@ void SLIDING_EXPIRATION_CACHE<K, V>::set_clean_up_interval_nanos(long long clean
 }
 
 template class SLIDING_EXPIRATION_CACHE<std::string, std::string>;
+template class SLIDING_EXPIRATION_CACHE<std::string, std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>>;
+template class SHOULD_DISPOSE_FUNC<std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>>;
+template class ITEM_DISPOSAL_FUNC<std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>>;

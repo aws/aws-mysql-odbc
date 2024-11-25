@@ -74,7 +74,7 @@ std::pair<std::string, bool> AUTH_UTIL::get_auth_token(std::unordered_map<std::s
   }
 
   std::string auth_token;
-  const std::string cache_key = this->build_cache_key(host, region, port, user);
+  const std::string cache_key = build_cache_key(host, region, port, user);
   bool using_cached_token = false;
 
   {
