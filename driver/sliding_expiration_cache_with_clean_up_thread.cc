@@ -30,6 +30,9 @@
 #include "sliding_expiration_cache_with_clean_up_thread.h"
 
 #include <string>
+#include <utility>
+
+#include "custom_endpoint_monitor.h"
 
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::init_clean_up_thread() {
@@ -65,16 +68,17 @@ SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::SLIDING_EXPIRATION_CACHE_WI
 
 template <class K, class V>
 SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(
-    SHOULD_DISPOSE_FUNC<V>* should_dispose_func, ITEM_DISPOSAL_FUNC<V>* item_disposal_func)
-    : SLIDING_EXPIRATION_CACHE<K, V>(should_dispose_func, item_disposal_func) {
+    std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func,
+    std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func)
+    : SLIDING_EXPIRATION_CACHE<K, V>(std::move(should_dispose_func), std::move(item_disposal_func)) {
   this->init_clean_up_thread();
 }
 
 template <class K, class V>
 SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(
-    SHOULD_DISPOSE_FUNC<V>* should_dispose_func, ITEM_DISPOSAL_FUNC<V>* item_disposal_func,
-    long long clean_up_interval_nanos)
-    : SLIDING_EXPIRATION_CACHE<K, V>(should_dispose_func, item_disposal_func, clean_up_interval_nanos) {
+    std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func,
+    std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func, long long clean_up_interval_nanos)
+    : SLIDING_EXPIRATION_CACHE<K, V>(std::move(should_dispose_func), std::move(item_disposal_func), clean_up_interval_nanos) {
   this->init_clean_up_thread();
 }
 
@@ -96,3 +100,4 @@ void SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::release_resources() {
 }
 
 template class SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::string>;
+template class SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>>;

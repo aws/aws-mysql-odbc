@@ -27,27 +27,47 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#ifndef __RDS_UTILS__
-#define __RDS_UTILS__
+#ifndef __CACHE_MAP__
+#define __CACHE_MAP__
 
-#include <regex>
+#include <chrono>
+#include <memory>
+#include <unordered_map>
 
-class RDS_UTILS {
+template <class K, class V>
+class CACHE_MAP {
  public:
-  static bool is_dns_pattern_valid(std::string host);
-  static bool is_rds_dns(std::string host);
-  static bool is_rds_cluster_dns(std::string host);
-  static bool is_rds_proxy_dns(std::string host);
-  static bool is_rds_writer_cluster_dns(std::string host);
-  static bool is_rds_reader_cluster_dns(std::string host);
-  static bool is_rds_custom_cluster_dns(std::string host);
-  static bool is_ipv4(std::string host);
-  static bool is_ipv6(std::string host);
+  class CACHE_ITEM {
+   public:
+    CACHE_ITEM() = default;
+    CACHE_ITEM(V item, std::chrono::steady_clock::time_point expiration_time)
+        : item(item), expiration_time(expiration_time){};
+    ~CACHE_ITEM() = default;
+    V item;
 
-  static std::string get_rds_cluster_host_url(std::string host);
-  static std::string get_rds_cluster_id(std::string host);
-  static std::string get_rds_instance_host_pattern(std::string host);
-  static std::string get_rds_region(std::string host);
+    bool is_expired() { return std::chrono::steady_clock::now() > this->expiration_time; }
+
+   private:
+    std::chrono::steady_clock::time_point expiration_time;
+  };
+
+  CACHE_MAP() = default;
+  ~CACHE_MAP() = default;
+
+  void put(K key, V value, long long item_expiration_nanos);
+  V get(K key, V default_value);
+  V get(K key, V default_value, long long item_expiration_nanos);
+  void remove(K key);
+  int size();
+  void clear();
+
+ protected:
+  void clean_up();
+  const long long clean_up_time_interval_nanos = 60000000000;  // 10 minute
+  std::atomic<std::chrono::steady_clock::time_point> clean_up_time_nanos;
+
+ private:
+  std::unordered_map<K, std::shared_ptr<CACHE_ITEM>> cache;
 };
 
 #endif

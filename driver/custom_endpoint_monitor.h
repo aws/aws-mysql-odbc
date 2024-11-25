@@ -27,27 +27,45 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#ifndef __RDS_UTILS__
-#define __RDS_UTILS__
+#ifndef __CUSTOM_ENDPOINT_MONITOR_H__
+#define __CUSTOM_ENDPOINT_MONITOR_H__
 
-#include <regex>
+#include <aws/rds/RDSClient.h>
 
-class RDS_UTILS {
+#include <ctpl_stl.h>
+#include "cache_map.h"
+#include "connection_handler.h"
+#include "connection_proxy.h"
+#include "custom_endpoint_info.h"
+#include "host_info.h"
+
+class CUSTOM_ENDPOINT_MONITOR : public std::enable_shared_from_this<CUSTOM_ENDPOINT_MONITOR> {
  public:
-  static bool is_dns_pattern_valid(std::string host);
-  static bool is_rds_dns(std::string host);
-  static bool is_rds_cluster_dns(std::string host);
-  static bool is_rds_proxy_dns(std::string host);
-  static bool is_rds_writer_cluster_dns(std::string host);
-  static bool is_rds_reader_cluster_dns(std::string host);
-  static bool is_rds_custom_cluster_dns(std::string host);
-  static bool is_ipv4(std::string host);
-  static bool is_ipv6(std::string host);
+  CUSTOM_ENDPOINT_MONITOR(const std::shared_ptr<HOST_INFO>& custom_endpoint_host_info, const std::string& endpoint_identifier,
+                          const std::string& region, DataSource* ds, bool enable_logging = false);
+  ~CUSTOM_ENDPOINT_MONITOR() = default;
 
-  static std::string get_rds_cluster_host_url(std::string host);
-  static std::string get_rds_cluster_id(std::string host);
-  static std::string get_rds_instance_host_pattern(std::string host);
-  static std::string get_rds_region(std::string host);
+  static bool should_dispose();
+  bool has_custom_endpoint_info() const;
+  void stop();
+  void run();
+  static void clear_cache();
+
+ protected:
+  static CACHE_MAP<std::string, std::shared_ptr<CUSTOM_ENDPOINT_INFO>> custom_endpoint_cache;
+  static constexpr long long CUSTOM_ENDPOINT_INFO_EXPIRATION_NANOS = 300000000000;  // 5 minutes
+  std::shared_ptr<HOST_INFO> custom_endpoint_host_info;
+  std::string endpoint_identifier;
+  std::string region;
+  long long refresh_rate_nanos;
+  bool enable_logging;
+  std::shared_ptr<FILE> logger;
+  ctpl::thread_pool thread_pool;
+  std::atomic_bool should_stop{false};
+  std::shared_ptr<Aws::RDS::RDSClient> rds_client;
+
+ private:
+  static std::string get_endpoints_as_string(const std::vector<Aws::RDS::Model::DBClusterEndpoint>& custom_endpoints);
 };
 
 #endif
