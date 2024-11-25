@@ -32,11 +32,11 @@
   @brief Failover functions.
 */
 
-#include <regex>
 #include <sstream>
 
 #include "driver.h"
 #include "mylog.h"
+#include "rds_utils.h"
 
 #if defined(__APPLE__) || defined(__linux__)
     #include <arpa/inet.h>    
@@ -47,48 +47,6 @@
 #endif
 
 namespace {
-const std::regex AURORA_DNS_PATTERN(
-    R"#((.+)\.(proxy-|cluster-|cluster-ro-|cluster-custom-)?([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
-    std::regex_constants::icase);
-const std::regex AURORA_PROXY_DNS_PATTERN(
-    R"#((.+)\.(proxy-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
-    std::regex_constants::icase);
-const std::regex AURORA_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-|cluster-ro-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
-    std::regex_constants::icase);
-const std::regex AURORA_WRITER_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
-    std::regex_constants::icase);
-const std::regex AURORA_READER_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-ro-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
-    std::regex_constants::icase);
-const std::regex AURORA_CUSTOM_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
-    std::regex_constants::icase);
-const std::regex AURORA_CHINA_DNS_PATTERN(
-    R"#((.+)\.(proxy-|cluster-|cluster-ro-|cluster-custom-)?([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
-    std::regex_constants::icase);
-const std::regex AURORA_CHINA_PROXY_DNS_PATTERN(
-    R"#((.+)\.(proxy-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
-    std::regex_constants::icase);
-const std::regex AURORA_CHINA_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-|cluster-ro-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
-    std::regex_constants::icase);
-const std::regex AURORA_CHINA_WRITER_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
-    std::regex_constants::icase);
-const std::regex AURORA_CHINA_READER_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-ro-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
-    std::regex_constants::icase);
-const std::regex AURORA_CHINA_CUSTOM_CLUSTER_PATTERN(
-    R"#((.+)\.(cluster-custom-)+([a-zA-Z0-9]+\.(rds\.[a-zA-Z0-9\-]+|[a-zA-Z0-9\-]+\.rds)\.amazonaws\.com\.cn))#",
-    std::regex_constants::icase);
-const std::regex IPV4_PATTERN(
-    R"#(^(([1-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){1}(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){2}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$)#");
-const std::regex IPV6_PATTERN(R"#(^[0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4}){7}$)#");
-const std::regex IPV6_COMPRESSED_PATTERN(
-    R"#(^(([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4}){0,5})?)::(([0-9A-Fa-f]{1,4}(:[0-9A-Fa-f]{1,4}){0,5})?)$)#");
-
 const char* MYSQL_READONLY_QUERY = "SELECT @@innodb_read_only AS is_reader";
 }  // namespace
 
@@ -160,7 +118,7 @@ SQLRETURN FAILOVER_HANDLER::init_connection() {
         }
 
         if (!ds->opt_FAILOVER_MODE) {
-            if (is_rds_reader_cluster_dns(this->current_host->get_host())) {
+            if (RDS_UTILS::is_rds_reader_cluster_dns(this->current_host->get_host())) {
                 ds->opt_FAILOVER_MODE.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(FAILOVER_MODE_READER_OR_WRITER).c_str(), SQL_NTS);
             } else {
                 ds->opt_FAILOVER_MODE.set_remove_brackets((SQLWCHAR*)to_sqlwchar_string(FAILOVER_MODE_STRICT_WRITER).c_str(), SQL_NTS);
@@ -214,7 +172,7 @@ void FAILOVER_HANDLER::init_cluster_info() {
         std::string host_pattern(host_patterns[0].name);
         unsigned int host_pattern_port = host_patterns[0].port;
 
-        if (!is_dns_pattern_valid(host_pattern)) {
+        if (!RDS_UTILS::is_dns_pattern_valid(host_pattern)) {
             err << "Invalid host pattern: '" << host_pattern
                 << "' - the host pattern must contain a '?' character as a "
                     "placeholder for the DB instance identifiers  of the cluster "
@@ -226,11 +184,11 @@ void FAILOVER_HANDLER::init_cluster_info() {
         auto host_template = std::make_shared<HOST_INFO>(host_pattern, host_pattern_port);
         topology_service->set_cluster_instance_template(host_template);
 
-        m_is_rds = is_rds_dns(host_pattern);
+        m_is_rds = RDS_UTILS::is_rds_dns(host_pattern);
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] m_is_rds=%s", m_is_rds ? "true" : "false");
-        m_is_rds_proxy = is_rds_proxy_dns(host_pattern);
+        m_is_rds_proxy = RDS_UTILS::is_rds_proxy_dns(host_pattern);
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] m_is_rds_proxy=%s", m_is_rds_proxy ? "true" : "false");
-        m_is_rds_custom_cluster = is_rds_custom_cluster_dns(host_pattern);
+        m_is_rds_custom_cluster = RDS_UTILS::is_rds_custom_cluster_dns(host_pattern);
 
         if (m_is_rds_proxy) {
             err << "RDS Proxy url can't be used as an instance pattern.";
@@ -251,14 +209,14 @@ void FAILOVER_HANDLER::init_cluster_info() {
             // If it's a cluster endpoint, or a reader cluster endpoint, then
             // let's use as cluster identification
             std::string cluster_rds_host =
-                get_rds_cluster_host_url(host_pattern);
+                RDS_UTILS::get_rds_cluster_host_url(host_pattern);
             if (!cluster_rds_host.empty()) {
                 set_cluster_id(cluster_rds_host, host_pattern_port);
             }
         }
 
         initialize_topology();
-    } else if (is_ipv4(main_host) || is_ipv6(main_host)) {
+    } else if (RDS_UTILS::is_ipv4(main_host) || RDS_UTILS::is_ipv6(main_host)) {
         // TODO: do we need to setup host template in this case?
         // HOST_INFO* host_template = new HOST_INFO();
         // host_template->host.assign(main_host);
@@ -285,9 +243,9 @@ void FAILOVER_HANDLER::init_cluster_info() {
         m_is_rds_proxy = false;  // actually we don't know
 
     } else {
-        m_is_rds = is_rds_dns(main_host);
+        m_is_rds = RDS_UTILS::is_rds_dns(main_host);
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] m_is_rds=%s", m_is_rds ? "true" : "false");
-        m_is_rds_proxy = is_rds_proxy_dns(main_host);
+        m_is_rds_proxy = RDS_UTILS::is_rds_proxy_dns(main_host);
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] m_is_rds_proxy=%s", m_is_rds_proxy ? "true" : "false");
 
         if (!m_is_rds) {
@@ -314,7 +272,7 @@ void FAILOVER_HANDLER::init_cluster_info() {
         } else {
             // It's RDS
 
-            std::string rds_instance_host = get_rds_instance_host_pattern(main_host);
+            std::string rds_instance_host = RDS_UTILS::get_rds_instance_host_pattern(main_host);
             if (!rds_instance_host.empty()) {
                 topology_service->set_cluster_instance_template(
                     std::make_shared<HOST_INFO>(rds_instance_host, main_port));
@@ -337,7 +295,7 @@ void FAILOVER_HANDLER::init_cluster_info() {
                 // If it's cluster endpoint or reader cluster endpoint,
                 // then let's use as cluster identification
 
-                std::string cluster_rds_host = get_rds_cluster_host_url(main_host);
+                std::string cluster_rds_host = RDS_UTILS::get_rds_cluster_host_url(main_host);
                 if (!cluster_rds_host.empty()) {
                     set_cluster_id(cluster_rds_host, main_port);
                 } else {
@@ -359,7 +317,7 @@ bool FAILOVER_HANDLER::should_connect_to_new_writer() {
         return false;
     }
 
-    if (!is_rds_writer_cluster_dns(host)) {
+    if (!RDS_UTILS::is_rds_writer_cluster_dns(host)) {
         return false;
     }
 
@@ -382,7 +340,7 @@ bool FAILOVER_HANDLER::should_connect_to_new_writer() {
     }
 
     std::string writer_host = writer->get_host();
-    if (is_rds_cluster_dns(writer_host.c_str())) {
+    if (RDS_UTILS::is_rds_cluster_dns(writer_host.c_str())) {
         return false;
     }
 
@@ -407,34 +365,6 @@ void FAILOVER_HANDLER::set_cluster_id(std::string cid) {
     this->cluster_id = cid;
     topology_service->set_cluster_id(this->cluster_id);
     metrics_container->set_cluster_id(this->cluster_id);
-}
-
-bool FAILOVER_HANDLER::is_dns_pattern_valid(std::string host) {
-    return (host.find("?") != std::string::npos);
-}
-
-bool FAILOVER_HANDLER::is_rds_dns(std::string host) {
-    return std::regex_match(host, AURORA_DNS_PATTERN) || std::regex_match(host, AURORA_CHINA_DNS_PATTERN);
-}
-
-bool FAILOVER_HANDLER::is_rds_cluster_dns(std::string host) {
-    return std::regex_match(host, AURORA_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_CLUSTER_PATTERN);
-}
-
-bool FAILOVER_HANDLER::is_rds_proxy_dns(std::string host) {
-    return std::regex_match(host, AURORA_PROXY_DNS_PATTERN) || std::regex_match(host, AURORA_CHINA_PROXY_DNS_PATTERN);
-}
-
-bool FAILOVER_HANDLER::is_rds_writer_cluster_dns(std::string host) {
-    return std::regex_match(host, AURORA_WRITER_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_WRITER_CLUSTER_PATTERN);
-}
-
-bool FAILOVER_HANDLER::is_rds_reader_cluster_dns(std::string host) {
-    return std::regex_match(host, AURORA_READER_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_READER_CLUSTER_PATTERN);
-}
-
-bool FAILOVER_HANDLER::is_rds_custom_cluster_dns(std::string host) {
-    return std::regex_match(host, AURORA_CUSTOM_CLUSTER_PATTERN) || std::regex_match(host, AURORA_CHINA_CUSTOM_CLUSTER_PATTERN);
 }
 
 bool FAILOVER_HANDLER::is_read_only() {
@@ -478,62 +408,6 @@ std::string FAILOVER_HANDLER::host_to_IP(std::string host) {
     return std::string(ipstr);
 }
 
-#if defined(__APPLE__) || defined(__linux__)
-    #define strcmp_case_insensitive(str1, str2) strcasecmp(str1, str2)
-#else
-    #define strcmp_case_insensitive(str1, str2) strcmpi(str1, str2)
-#endif
-
-std::string FAILOVER_HANDLER::get_rds_cluster_host_url(std::string host) {
-    auto f = [host](const std::regex pattern) {
-        std::smatch m;
-        if (std::regex_search(host, m, pattern) && m.size() > 1) {
-            std::string gr1 = m.size() > 1 ? m.str(1) : std::string("");
-            std::string gr2 = m.size() > 2 ? m.str(2) : std::string("");
-            std::string gr3 = m.size() > 3 ? m.str(3) : std::string("");
-            if (!gr1.empty() && !gr3.empty() &&
-                (strcmp_case_insensitive(gr2.c_str(), "cluster-") == 0 || strcmp_case_insensitive(gr2.c_str(), "cluster-ro-") == 0)) {
-                std::string result;
-                result.assign(gr1);
-                result.append(".cluster-");
-                result.append(gr3);
-
-                return result;
-            }
-        }
-        return std::string();
-    };
-
-    auto result = f(AURORA_CLUSTER_PATTERN);
-    if (!result.empty()) {
-        return result;
-    }
-
-    return f(AURORA_CHINA_CLUSTER_PATTERN);
-}
-
-std::string FAILOVER_HANDLER::get_rds_instance_host_pattern(std::string host) {
-    auto f = [host](const std::regex pattern) {
-        std::smatch m;
-        if (std::regex_search(host, m, pattern) && m.size() > 3) {
-            if (!m.str(3).empty()) {
-                std::string result("?.");
-                result.append(m.str(3));
-
-                return result;
-            }
-        }
-        return std::string();
-    };
-
-    auto result = f(AURORA_DNS_PATTERN);
-    if (!result.empty()) {
-        return result;
-    }
-
-    return f(AURORA_CHINA_DNS_PATTERN);
-}
-
 bool FAILOVER_HANDLER::is_failover_enabled() {
     return (dbc != nullptr && ds != nullptr &&
             ds->opt_ENABLE_CLUSTER_FAILOVER &&
@@ -568,15 +442,6 @@ SQLRETURN FAILOVER_HANDLER::reconnect(bool failover_enabled) {
         dbc->close();
     }
     return connection_handler->do_connect(dbc, ds, failover_enabled);
-}
-
-bool FAILOVER_HANDLER::is_ipv4(std::string host) {
-    return std::regex_match(host, IPV4_PATTERN);
-}
-
-bool FAILOVER_HANDLER::is_ipv6(std::string host) {
-    return std::regex_match(host, IPV6_PATTERN) ||
-           std::regex_match(host, IPV6_COMPRESSED_PATTERN);
 }
 
 // return true if failover is triggered, false if not triggered

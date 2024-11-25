@@ -128,33 +128,33 @@ bool TEST_UTILS::try_parse_region_from_secret(std::string secret, std::string& r
 }
 
 bool TEST_UTILS::is_dns_pattern_valid(std::string host) {
-    return FAILOVER_HANDLER::is_dns_pattern_valid(host);
+    return RDS_UTILS::is_dns_pattern_valid(host);
 }
 
 bool TEST_UTILS::is_rds_dns(std::string host) {
-    return FAILOVER_HANDLER::is_rds_dns(host);
+    return RDS_UTILS::is_rds_dns(host);
 }
 
 bool TEST_UTILS::is_rds_cluster_dns(std::string host) {
-    return FAILOVER_HANDLER::is_rds_cluster_dns(host);
+    return RDS_UTILS::is_rds_cluster_dns(host);
 }
 
 bool TEST_UTILS::is_rds_proxy_dns(std::string host) {
-    return FAILOVER_HANDLER::is_rds_proxy_dns(host);
+    return RDS_UTILS::is_rds_proxy_dns(host);
 }
 
 bool TEST_UTILS::is_rds_writer_cluster_dns(std::string host) {
-    return FAILOVER_HANDLER::is_rds_writer_cluster_dns(host);
+    return RDS_UTILS::is_rds_writer_cluster_dns(host);
 }
 
 bool TEST_UTILS::is_rds_custom_cluster_dns(std::string host) {
-    return FAILOVER_HANDLER::is_rds_custom_cluster_dns(host);
+    return RDS_UTILS::is_rds_custom_cluster_dns(host);
 }
 
 std::string TEST_UTILS::get_rds_cluster_host_url(std::string host) {
-    return FAILOVER_HANDLER::get_rds_cluster_host_url(host);
+    return RDS_UTILS::get_rds_cluster_host_url(host);
 }
 
 std::string TEST_UTILS::get_rds_instance_host_pattern(std::string host) {
-    return FAILOVER_HANDLER::get_rds_instance_host_pattern(host);
+    return RDS_UTILS::get_rds_instance_host_pattern(host);
 }
