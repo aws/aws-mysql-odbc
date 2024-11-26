@@ -38,6 +38,7 @@
 #include "driver/monitor.h"
 #include "driver/monitor_thread_container.h"
 #include "driver/secrets_manager_proxy.h"
+#include "driver/rds_utils.h"
 
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds);
 void cleanup_odbc_handles(SQLHENV env, DBC*& dbc, DataSource*& ds, bool call_myodbc_end = false);

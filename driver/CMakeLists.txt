@@ -99,6 +99,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     parse.cc
     prepare.cc
     query_parsing.cc
+    rds_utils.cc
     results.cc
     saml_http_client.cc
     saml_util.cc
@@ -155,6 +156,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    okta_proxy.h
                                    parse.h
                                    query_parsing.h
+                                   rds_utils.h
                                    saml_http_client.h
                                    saml_util.h
                                    secrets_manager_proxy.h
