@@ -104,6 +104,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     saml_http_client.cc
     saml_util.cc
     secrets_manager_proxy.cc
+    sliding_expiration_cache.cc
+    sliding_expiration_cache_with_clean_up_thread.cc
     topology_service.cc
     transact.cc
     utility.cc)
@@ -160,6 +162,8 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    saml_http_client.h
                                    saml_util.h
                                    secrets_manager_proxy.h
+                                   sliding_expiration_cache.h
+                                   sliding_expiration_cache_with_clean_up_thread.h
                                    topology_service.h
                                    ../MYODBC_MYSQL.h ../MYODBC_CONF.h ../MYODBC_ODBC.h)
     if(TELEMETRY)
