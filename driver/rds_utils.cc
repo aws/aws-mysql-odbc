@@ -28,6 +28,7 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include "rds_utils.h"
+#include <string>
 
 namespace {
 const std::regex AURORA_DNS_PATTERN(
