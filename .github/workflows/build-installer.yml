@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - chore/dyanmic_build
+      - chore/dynamic_build
 
 env:
   BUILD_TYPE: Release
@@ -42,7 +42,11 @@ jobs:
       - name: Create build environment
         shell: bash
         run: cmake -E make_directory ${{ github.workspace }}/build
-
+        
+      - name: copy AWS SDK libraries to driver library
+        run: |
+          cp ./aws_sdk/install/lib/*.so ./build/lib/
+      
       - name: Configure CMake
         shell: bash
         run: cmake -S . -B build
