@@ -803,17 +803,17 @@ endif()
 set(PLUGINS)
 
 # additional bundled dependencies of the client library
-if(APPLE)
-  set(BUNDLED_LIBS
-    libssl libcrypto ssleay libeay
-    libaws-c-auth libaws-c-cal libaws-c-common libaws-c-compression libaws-c-event-stream libaws-c-http libaws-c-io
-    libaws-c-mqtt libaws-c-s3 libaws-c-sdkutils libaws-checksums libaws-cpp-sdk-core libaws-cpp-sdk-rds libaws-cpp-sdk-secretsmanager libaws-crt-cpp
-  )
-else(APPLE)
+if(WIN32)
   set(BUNDLED_LIBS
     libssl libcrypto ssleay libeay ${AWSSDK_LINK_LIBRARIES}
   )
-endif(APPLE)
+else(WIN32)
+  set(BUNDLED_LIBS
+    libssl libcrypto ssleay libeay
+    libaws-c-auth libaws-c-cal libaws-c-common libaws-c-compression libaws-c-event-stream libaws-c-http libaws-c-io
+    libaws-c-mqtt libaws-c-s3 libaws-c-sdkutils libaws-checksums libaws-cpp-sdk-core libaws-cpp-sdk-rds libaws-cpp-sdk-secretsmanager libaws-cpp-sdk-sts libaws-crt-cpp
+  )
+endif(WIN32)
 
 # List plugins and other libraries that can be found bundled with the server
 # but which are not relevant on client-side and can be safely ignored.
@@ -922,6 +922,9 @@ macro(bundle_libs to_bundle ignored)
 
   # Process collected libraries
   set(libs ${${to_bundle}})
+  if(NOT MYSQLCLIENT_STATIC_LINKING)
+  set(libs ${libs} libmysqlclient)
+  endif()
 
   foreach(lib IN LISTS _bundled _bundled1)
 
