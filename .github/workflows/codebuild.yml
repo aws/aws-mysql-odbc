@@ -43,11 +43,11 @@ jobs:
         run: |
           ./build_aws_sdk_unix.sh $BUILD_TYPE
 
-      - name: 'Set up JDK 8'
+      - name: 'Set up JDK'
         uses: actions/setup-java@v4
         with:
           distribution: 'corretto'
-          java-version: 8
+          java-version: 17
 
       - name: 'Configure AWS Credentials'
         uses: aws-actions/configure-aws-credentials@v4
