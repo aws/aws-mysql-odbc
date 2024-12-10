@@ -177,6 +177,8 @@ public:
 
     void set_custom_error_message(const char* error_message);
 
+    virtual bool is_explicitly_closed() { return this->next_proxy->is_explicitly_closed(); };
+
 protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;

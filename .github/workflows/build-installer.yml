@@ -53,7 +53,7 @@ jobs:
       - name: Run build installer script
         shell: pwsh
         run: |
-          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}"
+          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" C:/openssl-3/x64/include/
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4.0.2
@@ -72,12 +72,12 @@ jobs:
         run: |
           choco upgrade jq -y
           . ".\sign_installer.ps1"
-          Invoke-SignInstaller ${{ github.workspace }}\wix winx64a ${{ env.DRIVER_VERSION}} ${{ secrets.AWS_UNSIGNED_BUCKET }} ${{ secrets.AWS_SIGNED_BUCKET }} ${{ secrets.AWS_S3_KEY }}aws-mysql-odbc-${{ env.DRIVER_VERSION}}-winx64a.msi
+          Invoke-SignInstaller ${{ github.workspace }}\wix winx64a ${{ env.DRIVER_VERSION }} ${{ secrets.AWS_UNSIGNED_BUCKET }} ${{ secrets.AWS_SIGNED_BUCKET }} ${{ secrets.AWS_S3_KEY }}aws-mysql-odbc-${{ env.DRIVER_VERSION }}-winx64a.msi
       
       - name: Upload Windows installer as artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: installers
+          name: installers-windows
           path: ${{ github.workspace }}/wix/*.msi
           if-no-files-found: error

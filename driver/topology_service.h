@@ -60,10 +60,11 @@ public:
     virtual ~TOPOLOGY_SERVICE();
 
     virtual void set_cluster_id(std::string cluster_id);
-    virtual void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to setcluster_instance_host
+    virtual void set_cluster_instance_template(std::shared_ptr<HOST_INFO> host_template);  //is this equivalent to set_cluster_instance_host
 
     virtual std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_topology(
         CONNECTION_PROXY* connection, bool force_update = false);
+    virtual void log_topology(const std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology);
     std::shared_ptr<CLUSTER_TOPOLOGY_INFO> get_cached_topology();
 
     std::shared_ptr<HOST_INFO> get_last_used_reader();

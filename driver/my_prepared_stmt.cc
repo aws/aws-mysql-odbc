@@ -1442,13 +1442,13 @@ SQLRETURN ssps_send_long_data(STMT *stmt, unsigned int param_number, const char 
   if ( stmt->dbc->connection_proxy->stmt_send_long_data(stmt->ssps, param_number, chunk, length))
   {
     uint err = stmt->dbc->connection_proxy->stmt_errno(stmt->ssps);
+    const char *error_code = "", *error_msg = "";
     switch (err)
     {
       case CR_INVALID_BUFFER_USE:
       /* We can fall back to assembling parameter's value on client */
         return SQL_SUCCESS_WITH_INFO;
       case CR_SERVER_GONE_ERROR:
-        const char *error_code, *error_msg;
         if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
           return stmt->set_error(error_code, error_msg, 0);
         else

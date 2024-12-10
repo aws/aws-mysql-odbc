@@ -295,6 +295,8 @@ void set_mem_error(CONNECTION_PROXY* connection_proxy)
 SQLRETURN handle_connection_error(STMT *stmt)
 {
   unsigned int err= stmt->dbc->connection_proxy->error_code();
+  const char *error_code = "", *error_msg = "";
+
   switch (err) {
   case 0:  /* no error */
     return SQL_SUCCESS;
@@ -303,7 +305,6 @@ SQLRETURN handle_connection_error(STMT *stmt)
 #if MYSQL_VERSION_ID > 80023
   case ER_CLIENT_INTERACTION_TIMEOUT:
 #endif
-    const char *error_code, *error_msg;
     if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
       return stmt->set_error(error_code, error_msg, 0);
     else

@@ -1606,7 +1606,8 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hstmt )
   if (nRetVal > 0)
   {
     nRetVal= stmt->dbc->connection_proxy->error_code();
-
+    const char *error_code = "", *error_msg = "";
+    
     switch ( nRetVal )
     {
       case CR_SERVER_GONE_ERROR:
@@ -1614,7 +1615,6 @@ SQLRETURN SQL_API SQLMoreResults( SQLHSTMT hstmt )
 #if MYSQL_VERSION_ID > 80023
       case ER_CLIENT_INTERACTION_TIMEOUT:
 #endif
-        const char *error_code, *error_msg;
         if (stmt->dbc->fh->trigger_failover_if_needed("08S01", error_code, error_msg))
           nReturn = stmt->set_error(error_code, error_msg, 0);
         else

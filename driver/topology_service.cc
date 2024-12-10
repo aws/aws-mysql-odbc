@@ -29,6 +29,7 @@
 
 #include "cluster_aware_metrics_container.h"
 #include "topology_service.h"
+#include <sstream>
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging)
     : dbc_id{dbc_id},
@@ -184,6 +185,24 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION
     }
 
     return cached_topology;
+}
+
+void TOPOLOGY_SERVICE::log_topology(const std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology) {
+    std::stringstream topology_str;
+    topology_str << "[TOPOLOGY_SERVICE] Topology: ";
+    if (topology->total_hosts() == 0) {
+        topology_str << "<empty topology>";
+        return;
+    }
+
+    for (const auto& host : topology->get_writers()) {
+        topology_str << "\n\t" << *host;
+    }
+
+    for (const auto& host : topology->get_readers()) {
+        topology_str << "\n\t" << *host;
+    }
+    MYLOG_TRACE(logger, dbc_id, topology_str.str().c_str());
 }
 
 // TODO consider thread safety and usage of pointers

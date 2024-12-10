@@ -1714,27 +1714,31 @@ SQLRETURN DBC::execute_query(const char* query,
     query_length = strlen(query);
   }
 
-  // return immediately if not connected
-  if (!this->connection_proxy->is_connected())
-  {
-    return set_error(MYERR_08S01, "The active SQL connection was lost. Please discard this connection.", 0);
+  unsigned int connection_error_code = 0;
+  if (!this->connection_proxy->is_connected()) {
+    if (this->connection_proxy->is_explicitly_closed()) {
+      MYLOG_DBC_TRACE(this, "The active SQL connection was explicitly closed.");
+    } else {
+      MYLOG_DBC_TRACE(this, "The active SQL connection was lost.");
+    }
+    connection_error_code = 2013;
   }
 
   bool server_alive = is_server_alive(this);
-  if (!server_alive || this->connection_proxy->real_query(query, query_length)) {
+  if (connection_error_code != 0 || !server_alive || this->connection_proxy->real_query(query, query_length)) {
     const unsigned int mysql_error_code = this->connection_proxy->error_code();
 
     MYLOG_DBC_TRACE(this, this->connection_proxy->error());
     result = set_error(MYERR_S1000, this->connection_proxy->error(), mysql_error_code);
 
-    if (!server_alive || is_connection_lost(mysql_error_code)) {
+    if (is_connection_lost(connection_error_code) || !server_alive || is_connection_lost(mysql_error_code)) {
       bool rollback = (!autocommit_on(this) && trans_supported(this)) || this->transaction_open;
       if (rollback) {
         MYLOG_DBC_TRACE(this, "Rolling back");
         this->connection_proxy->real_query("ROLLBACK", 8);
       }
 
-      const char *error_code, *error_msg;
+      const char *error_code = "", *error_msg = "";
       if (this->fh->trigger_failover_if_needed("08S01", error_code, error_msg)) {
         if (strcmp(error_code, "08007") == 0) {
           result = set_error(MYERR_08007, "Connection failure during transaction.", 0);
@@ -1750,5 +1754,4 @@ SQLRETURN DBC::execute_query(const char* query,
   }
 
   return result;
-
 }

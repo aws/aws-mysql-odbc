@@ -103,6 +103,8 @@ bool MYSQL_PROXY::real_connect(
     const char* db, unsigned int port, const char* unix_socket,
     unsigned long clientflag) {
 
+    this->explicitly_closed = false;
+    
     const MYSQL* new_mysql = mysql_real_connect(mysql, host, user, passwd, db, port, unix_socket, clientflag);
     return new_mysql != nullptr;
 }
@@ -162,6 +164,7 @@ int MYSQL_PROXY::stmt_next_result(MYSQL_STMT* stmt) {
 void MYSQL_PROXY::close() {
     mysql_close(mysql);
     mysql = nullptr;
+    this->explicitly_closed = true;
 }
 
 bool MYSQL_PROXY::real_connect_dns_srv(
@@ -411,3 +414,5 @@ void MYSQL_PROXY::close_socket() {
         MYLOG_DBC_TRACE(dbc, "closesocket() with return code: %d, error message: %s,", ret, strerror(socket_errno));
     }
 }
+
+bool MYSQL_PROXY::is_explicitly_closed() { return this->explicitly_closed; }

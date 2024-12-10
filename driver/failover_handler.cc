@@ -330,7 +330,6 @@ bool FAILOVER_HANDLER::should_connect_to_new_writer() {
 
     // We need to force refresh the topology if we are connected to a read only instance.
     auto topology = topology_service->get_topology(dbc->connection_proxy, is_read_only());
-
     std::shared_ptr<HOST_INFO> writer;
     try {
         writer = topology->get_writer();
@@ -431,6 +430,7 @@ void FAILOVER_HANDLER::initialize_topology() {
         MYLOG_DBC_TRACE(dbc,
                     "[FAILOVER_HANDLER] m_is_cluster_topology_available=%s",
                     m_is_cluster_topology_available ? "true" : "false");
+        topology_service->log_topology(current_topology);
         if (is_failover_enabled()) {
             this->dbc->env->failover_thread_pool.resize(current_topology->total_hosts());
         }
@@ -452,8 +452,15 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
     std::string ec(error_code ? error_code : "");
 
     if (!is_failover_enabled() || ec.empty()) {
+        MYLOG_DBC_TRACE(dbc,
+            "[FAILOVER_HANDLER] Skipping driver failover because either failover is explicitly disabled (is_failover_enabled=%s) or empty error code detected.", is_failover_enabled() ? "true" : "false");
         return false;
     }
+
+    MYLOG_DBC_TRACE(
+        dbc,
+        "[FAILOVER_HANDLER] Checking if network error should trigger driver failover. { error_code='%s', msg='%s' }.",
+        ec.c_str(), error_msg);
 
     bool failover_success = false; // If failover happened & succeeded
     bool in_transaction = !autocommit_on(dbc) || dbc->transaction_open;

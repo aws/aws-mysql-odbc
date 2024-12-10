@@ -162,9 +162,12 @@ public:
 
     void close_socket() override;
 
+    bool is_explicitly_closed() override;
+
 private:
     MYSQL* mysql = nullptr;
     std::shared_ptr<HOST_INFO> host = nullptr;
+    bool explicitly_closed = false;
 };
 
 
