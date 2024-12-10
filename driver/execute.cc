@@ -215,15 +215,16 @@ SQLRETURN do_query(STMT *stmt, std::string query)
                   break;
               }
           }
+        MYLOG_STMT_TRACE(stmt, "query has been successfully executed");
       }
       else
       {
           native_error = stmt->dbc->error.native_error;
           trigger_failover_upon_error = false; // possible failover was already handled in execute_query()
+          MYLOG_STMT_TRACE(stmt, "query execution has failed");
       }
     }
 
-    MYLOG_STMT_TRACE(stmt, "query has been executed");
 
     if (native_error)
     {
@@ -238,7 +239,7 @@ SQLRETURN do_query(STMT *stmt, std::string query)
       }
       else
       {
-          MYLOG_STMT_TRACE(stmt, stmt->dbc->error.message.c_str());
+          MYLOG_DBC_TRACE(stmt->dbc, "Error detected during query execution: sqlstate=%s, message=%s ", stmt->dbc->error.sqlstate.c_str(), stmt->dbc->error.message.c_str());
           stmt->set_error(stmt->dbc->error.sqlstate.c_str(),
               stmt->dbc->error.message.c_str(),
               stmt->dbc->error.native_error);

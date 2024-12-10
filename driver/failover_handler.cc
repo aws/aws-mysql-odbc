@@ -450,8 +450,13 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
                                                   const char*& error_msg) {
     new_error_code = error_code;
     std::string ec(error_code ? error_code : "");
+    std::string msg(error_msg);
+
+    MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Checking if network error should trigger driver failover. { error_code='%s', error_msg='%s' }.", ec.c_str(), msg.c_str());
 
     if (!is_failover_enabled() || ec.empty()) {
+        MYLOG_DBC_TRACE(dbc,
+            "[FAILOVER_HANDLER] Skipping driver failover because either failover is explicilty disabled (is_failover_enabled=%s) or empty error code detected.", is_failover_enabled() ? "true" : "false");
         return false;
     }
 
