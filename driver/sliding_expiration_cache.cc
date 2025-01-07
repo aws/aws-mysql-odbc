@@ -29,14 +29,14 @@
 
 #include "sliding_expiration_cache.h"
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE<K, V>::remove_and_dispose(K key) {
   if (this->cache.count(key)) {
-    CACHE_ITEM* cache_item = this->cache[key];
+    std::shared_ptr<CACHE_ITEM> cache_item = this->cache[key];
     if (item_disposal_func != nullptr) {
       item_disposal_func->dispose(cache_item->item);
     }
@@ -67,7 +67,7 @@ template <class K, class V>
 V SLIDING_EXPIRATION_CACHE<K, V>::compute_if_absent(K key, std::function<K(V)> mapping_function,
                                                     long long item_expiration_nanos) {
   this->clean_up();
-  auto cache_item = new CACHE_ITEM(mapping_function(key),
+  auto cache_item = std::make_shared<CACHE_ITEM>(mapping_function(key),
                                    std::chrono::steady_clock::now() + std::chrono::nanoseconds(item_expiration_nanos));
   this->cache.emplace(key, cache_item);
   return cache_item->with_extend_expiration(item_expiration_nanos)->item;
@@ -76,7 +76,7 @@ V SLIDING_EXPIRATION_CACHE<K, V>::compute_if_absent(K key, std::function<K(V)> m
 template <class K, class V>
 V SLIDING_EXPIRATION_CACHE<K, V>::put(K key, V value, long long item_expiration_nanos) {
   this->clean_up();
-  CACHE_ITEM* cache_item = new CACHE_ITEM(
+  std::shared_ptr<CACHE_ITEM> cache_item = std::make_shared<CACHE_ITEM>(
       std::move(value), std::chrono::steady_clock::now() + std::chrono::nanoseconds(item_expiration_nanos));
   this->cache[key] = cache_item;
   return cache_item->with_extend_expiration(item_expiration_nanos)->item;
@@ -87,7 +87,7 @@ V SLIDING_EXPIRATION_CACHE<K, V>::get(K key, long long item_expiration_nanos, V 
   this->clean_up();
 
   if (this->cache.count(key)) {
-    CACHE_ITEM* cache_item = this->cache[key];
+    std::shared_ptr<CACHE_ITEM> cache_item = this->cache[key];
     return cache_item->with_extend_expiration(item_expiration_nanos)->item;
   }
 

@@ -62,6 +62,7 @@ TEST_F(SlidingExpirationCacheTest, PutCache) {
 
   EXPECT_STREQ(cache_val_a.c_str(), cache.get(cache_key_a, cache_exp_long, "").c_str());
   EXPECT_STREQ(cache_val_b.c_str(), cache.get(cache_key_b, cache_exp_long, "").c_str());
+  cache.clear();
 }
 
 TEST_F(SlidingExpirationCacheTest, ComputeIfAbsent) {
@@ -77,6 +78,7 @@ TEST_F(SlidingExpirationCacheTest, ComputeIfAbsent) {
 
   EXPECT_STREQ("a", cache.get(cache_key_a, cache_exp_long, "").c_str());
   EXPECT_STREQ(cache_val_b.c_str(), cache.get(cache_key_b, cache_exp_long, "").c_str());
+  cache.clear();
 }
 
 TEST_F(SlidingExpirationCacheTest, PutCacheUpdate) {
@@ -93,11 +95,13 @@ TEST_F(SlidingExpirationCacheTest, PutCacheUpdate) {
   std::this_thread::sleep_for(std::chrono::nanoseconds(cache_exp_mid));
   EXPECT_STREQ(cache_val_b.c_str(), cache.get(cache_key_b, cache_exp_long, "").c_str());
   EXPECT_EQ(1, cache.size());
+  cache.clear();
 }
 
 TEST_F(SlidingExpirationCacheTest, GetCacheMiss) {
   SLIDING_EXPIRATION_CACHE<std::string, std::string> cache;
   EXPECT_STREQ("", cache.get(cache_key_a, cache_exp_long, "").c_str());
+  cache.clear();
 }
 
 TEST_F(SlidingExpirationCacheTest, GetCacheExpire) {
@@ -110,6 +114,7 @@ TEST_F(SlidingExpirationCacheTest, GetCacheExpire) {
   std::this_thread::sleep_for(std::chrono::nanoseconds(cache_exp_mid));
   EXPECT_STREQ("", cache.get(cache_key_a, cache_exp_short, "").c_str());
   EXPECT_EQ(0, cache.size());
+  cache.clear();
 }
 
 TEST_F(SlidingExpirationCacheTest, CacheClear) {
@@ -119,6 +124,7 @@ TEST_F(SlidingExpirationCacheTest, CacheClear) {
   EXPECT_EQ(2, cache.size());
   cache.clear();
   EXPECT_EQ(0, cache.size());
+  cache.clear();
 }
 
 TEST_F(SlidingExpirationCacheTest, ExpirationTimeUpdateGet) {
@@ -134,6 +140,7 @@ TEST_F(SlidingExpirationCacheTest, ExpirationTimeUpdateGet) {
   std::this_thread::sleep_for(std::chrono::nanoseconds(cache_exp_mid));
   EXPECT_STREQ(cache_val_a.c_str(), cache.get(cache_key_a, cache_exp_long, "").c_str());
   EXPECT_EQ(1, cache.size());
+  cache.clear();
 }
 
 TEST_F(SlidingExpirationCacheTest, GetCacheExpireThread) {
@@ -145,5 +152,6 @@ TEST_F(SlidingExpirationCacheTest, GetCacheExpireThread) {
   EXPECT_EQ(2, cache.size());
   std::this_thread::sleep_for(std::chrono::nanoseconds(cache_exp_mid));
   EXPECT_EQ(1, cache.size());
+  cache.clear();
   cache.release_resources();
 }

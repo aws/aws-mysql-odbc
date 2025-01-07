@@ -33,6 +33,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 
 template <class T>
@@ -117,7 +118,7 @@ class SLIDING_EXPIRATION_CACHE {
   void set_clean_up_interval_nanos(long long clean_up_interval_nanos);
 
  protected:
-  std::unordered_map<K, CACHE_ITEM*> cache;
+  std::unordered_map<K, std::shared_ptr<CACHE_ITEM>> cache;
   long long clean_up_interval_nanos = 6000000000;  // 1 minutes
   std::atomic<std::chrono::steady_clock::time_point> clean_up_time_nanos;
   SHOULD_DISPOSE_FUNC<V>* should_dispose_func;
@@ -127,7 +128,7 @@ class SLIDING_EXPIRATION_CACHE {
   void remove_if_expired(K key) {
     std::vector<V> items;
     if (this->cache.count(key)) {
-      CACHE_ITEM* cache_item = this->cache[key];
+      std::shared_ptr<CACHE_ITEM> cache_item = this->cache[key];
       if (cache_item != nullptr && cache_item->should_clean_up(this->should_dispose_func)) {
         if (item_disposal_func != nullptr) {
           item_disposal_func->dispose(items[0]);
