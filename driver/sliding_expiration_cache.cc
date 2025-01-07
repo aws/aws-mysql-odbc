@@ -31,6 +31,7 @@
 
 #include <utility>
 #include <vector>
+#include <string>
 
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE<K, V>::remove_and_dispose(K key) {

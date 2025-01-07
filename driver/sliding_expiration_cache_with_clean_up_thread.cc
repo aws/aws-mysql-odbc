@@ -29,6 +29,8 @@
 
 #include "sliding_expiration_cache_with_clean_up_thread.h"
 
+#include <string>
+
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::init_clean_up_thread() {
   if (!this->is_initialized) {
