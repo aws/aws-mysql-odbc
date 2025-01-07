@@ -71,6 +71,7 @@ add_executable(
   okta_proxy_test.cc
   query_parsing_test.cc
   secrets_manager_proxy_test.cc
+  sliding_expiration_cache_test.cc
   topology_service_test.cc
 )
 
