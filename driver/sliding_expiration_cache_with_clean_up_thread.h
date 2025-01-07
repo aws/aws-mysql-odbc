@@ -39,20 +39,31 @@ template <class K, class V>
 class SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD : public SLIDING_EXPIRATION_CACHE<K, V> {
  public:
   SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD();
-  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(SHOULD_DISPOSE_FUNC<V> should_dispose_func,
-                                                ITEM_DISPOSAL_FUNC<V> item_disposal_func);
-  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(SHOULD_DISPOSE_FUNC<V> should_dispose_func,
-                                                ITEM_DISPOSAL_FUNC<V> item_disposal_func, long clean_up_interval_nanos);
-  ~SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD();
+  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(SHOULD_DISPOSE_FUNC<V>* should_dispose_func,
+                                                ITEM_DISPOSAL_FUNC<V>* item_disposal_func);
+  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(SHOULD_DISPOSE_FUNC<V>* should_dispose_func,
+                                                ITEM_DISPOSAL_FUNC<V>* item_disposal_func,
+                                                long long clean_up_interval_nanos);
+  ~SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD() = default;
+
+  
+  /**
+   * Stop clean up thread. Should be called at the end of the cache's lifetime.
+   */
+  void release_resources();
+
+#ifdef UNIT_TEST_BUILD
+  SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(long long clean_up_interval_nanos);
+#endif
 
  protected:
   bool is_initialized = false;
+  bool should_stop = false;
   std::mutex mutex_;
   ctpl::thread_pool clean_up_thread_pool;
 
  private:
   void init_clean_up_thread();
-  void run();
 };
 
 #endif

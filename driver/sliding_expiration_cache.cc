@@ -29,30 +29,17 @@
 
 #include "sliding_expiration_cache.h"
 
+#include <utility>
+#include <vector>
+
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE<K, V>::remove_and_dispose(K key) {
-  const CACHE_ITEM cache_item = this->cache.erase(key);
-  if (cache_item != nullptr && item_disposal_func != nullptr) {
-    item_disposal_func->dispose(cache_item.item);
-  }
-}
-
-template <class K, class V>
-void SLIDING_EXPIRATION_CACHE<K, V>::remove_if_expired(K key) {
-  V item = nullptr;
-  for (auto& [key, cache_item] : this->cache) {
-    if (cache_item != nullptr && cache_item->should_clean_up(this->should_dispose_func)) {
-      item = cache_item.item;
-      break;
+  if (this->cache.count(key)) {
+    CACHE_ITEM* cache_item = this->cache[key];
+    if (item_disposal_func != nullptr) {
+      item_disposal_func->dispose(cache_item->item);
     }
-  }
-
-  if (item != nullptr) {
-    return;
-  }
-
-  if (item_disposal_func != nullptr) {
-    item_disposal_func->dispose(item);
+    this->cache.erase(key);
   }
 }
 
@@ -63,57 +50,71 @@ void SLIDING_EXPIRATION_CACHE<K, V>::clean_up() {
   }
 
   this->clean_up_time_nanos =
-      std::chrono::system_clock::now() + std::chrono::nanoseconds(this->clean_up_interval_nanos);
+      std::chrono::steady_clock::now() + std::chrono::nanoseconds(this->clean_up_interval_nanos);
 
+  std::vector<K> keys;
+  keys.reserve(this->cache.size());
   for (auto& [key, cache_item] : this->cache) {
+    keys.push_back(key);
+  }
+  for (const auto& key : keys) {
     this->remove_if_expired(key);
   }
 }
 
 template <class K, class V>
 V SLIDING_EXPIRATION_CACHE<K, V>::compute_if_absent(K key, std::function<K(V)> mapping_function,
-                                                    long item_expiration_nanos) {
+                                                    long long item_expiration_nanos) {
   this->clean_up();
-  const CACHE_ITEM cache_item = this->cache->emplace(
-      key, new CACHE_ITEM(mapping_function(key),
-                          std::chrono::system_clock::now() + std::chrono::nanoseconds(item_expiration_nanos)));
+  auto cache_item = new CACHE_ITEM(mapping_function(key),
+                                   std::chrono::steady_clock::now() + std::chrono::nanoseconds(item_expiration_nanos));
+  this->cache.emplace(key, cache_item);
   return cache_item->with_extend_expiration(item_expiration_nanos)->item;
 }
 
 template <class K, class V>
-V SLIDING_EXPIRATION_CACHE<K, V>::put(K key, V value, long item_expiration_nanos) {
+V SLIDING_EXPIRATION_CACHE<K, V>::put(K key, V value, long long item_expiration_nanos) {
   this->clean_up();
-  const CACHE_ITEM cache_item = this->cache[key];
-  this->cache[key] =
-      new CACHE_ITEM(value, std::chrono::system_clock::now() + std::chrono::nanoseconds(item_expiration_nanos));
-  return cache_item == nullptr ? cache_item : cache_item->with_extend_expiration(item_expiration_nanos)->item;
+  CACHE_ITEM* cache_item = new CACHE_ITEM(
+      std::move(value), std::chrono::steady_clock::now() + std::chrono::nanoseconds(item_expiration_nanos));
+  this->cache[key] = cache_item;
+  return cache_item->with_extend_expiration(item_expiration_nanos)->item;
 }
 
 template <class K, class V>
-V SLIDING_EXPIRATION_CACHE<K, V>::get(K key, long item_expiration_nanos) {
+V SLIDING_EXPIRATION_CACHE<K, V>::get(K key, long long item_expiration_nanos, V default_value) {
   this->clean_up();
-  const CACHE_ITEM cache_item = this->cache[key];
-  return cache_item == nullptr ? cache_item : cache_item->with_extend_expiration(item_expiration_nanos)->item;
+
+  if (this->cache.count(key)) {
+    CACHE_ITEM* cache_item = this->cache[key];
+    return cache_item->with_extend_expiration(item_expiration_nanos)->item;
+  }
+
+  return default_value;
 }
 
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE<K, V>::remove(K key) {
-  this->remove_and_dispose(key);
+  this->remove_and_dispose(std::move(key));
   clean_up();
 }
 
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE<K, V>::clear() {
+  std::vector<K> keys;
+  keys.reserve(this->cache.size());
   for (auto& [key, cache_item] : this->cache) {
+    keys.push_back(key);
+  }
+  for (const auto& key : keys) {
     this->remove_and_dispose(key);
   }
-
   this->cache.clear();
 }
 
 template <class K, class V>
 std::unordered_map<K, V> SLIDING_EXPIRATION_CACHE<K, V>::get_entries() {
-  const std::unordered_map<K, V> entries;
+  std::unordered_map<K, V> entries;
   for (auto& [key, cache_item] : this->cache) {
     entries[key] = cache_item->item;
   }
@@ -127,7 +128,9 @@ int SLIDING_EXPIRATION_CACHE<K, V>::size() {
 }
 
 template <class K, class V>
-void SLIDING_EXPIRATION_CACHE<K, V>::set_clean_up_interval_nanos(long clean_up_interval_nanos) {
+void SLIDING_EXPIRATION_CACHE<K, V>::set_clean_up_interval_nanos(long long clean_up_interval_nanos) {
   this->clean_up_interval_nanos = clean_up_interval_nanos;
-  this->clean_up_time_nanos = std::chrono::system_clock::now() + std::chrono::nanoseconds(clean_up_interval_nanos);
+  this->clean_up_time_nanos.store(std::chrono::steady_clock::now() + std::chrono::nanoseconds(clean_up_interval_nanos));
 }
+
+template class SLIDING_EXPIRATION_CACHE<std::string, std::string>;
