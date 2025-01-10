@@ -376,6 +376,7 @@ void btnDetails_Click (HWND hwnd)
       L"Authentication",
       L"AWS Authentication",
       L"Federated Authentication",
+      L"Custom Endpoint Monitoring",
       L"Cluster Failover",
       L"Monitoring",
       L"Metadata",
@@ -396,6 +397,7 @@ void btnDetails_Click (HWND hwnd)
                     MAKEINTRESOURCE(IDD_TAB9),
                     MAKEINTRESOURCE(IDD_TAB10),
                     MAKEINTRESOURCE(IDD_TAB11),
+                    MAKEINTRESOURCE(IDD_TAB12),
                     0};
 
     New_TabControl( &TabCtrl_1,                 // address of TabControl struct
