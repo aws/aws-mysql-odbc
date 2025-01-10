@@ -37,6 +37,7 @@ template <class K, class V>
 void CACHE_MAP<K, V>::put(K key, V value, long long item_expiration_nanos) {
   this->cache[key] = std::make_shared<CACHE_ITEM>(
     value, std::chrono::steady_clock::now() + std::chrono::nanoseconds(item_expiration_nanos));
+  this->clean_up();
 }
 
 template <class K, class V>
@@ -60,6 +61,7 @@ void CACHE_MAP<K, V>::remove(K key) {
   if (this->cache.count(key)) {
     this->cache.erase(key);
   }
+  this->clean_up();
 }
 
 template <class K, class V>
@@ -70,7 +72,6 @@ int CACHE_MAP<K, V>::size() {
 template <class K, class V>
 void CACHE_MAP<K, V>::clear() {
   this->cache.clear();
-  this->clean_up();
 }
 
 template <class K, class V>

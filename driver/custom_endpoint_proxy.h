@@ -72,7 +72,6 @@ class CUSTOM_ENDPOINT_PROXY : public CONNECTION_PROXY {
   long idle_monitor_expiration_ms;
 
   static SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>> monitors;
-  static std::mutex monitor_cache_mutex;
 
   std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> create_monitor_if_absent(DataSource* ds);
 
@@ -85,7 +84,6 @@ class CUSTOM_ENDPOINT_PROXY : public CONNECTION_PROXY {
 
  private:
   std::shared_ptr<FILE> logger;
-  std::mutex mutex_;
 };
 
 #endif
