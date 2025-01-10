@@ -277,7 +277,7 @@ static SQLWCHAR W_CONNECT_TIMEOUT[] = { 'C', 'O', 'N', 'N', 'E', 'C', 'T', '_', 
 static SQLWCHAR W_NETWORK_TIMEOUT[] = { 'N', 'E', 'T', 'W', 'O', 'R', 'K', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
 
 /* Monitoring */
-static SQLWCHAR W_ENABLE_FAILURE_DETECTION[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_','E', 'N', 'A', 'B', 'L', 'E', '_', 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', 0 };
+static SQLWCHAR W_ENABLE_FAILURE_DETECTION[] = { 'E', 'N', 'A', 'B', 'L', 'E', '_', 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', 0 };
 static SQLWCHAR W_FAILURE_DETECTION_TIME[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 0 };
 static SQLWCHAR W_FAILURE_DETECTION_INTERVAL[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'I', 'N', 'T', 'E', 'R', 'V', 'A', 'L', 0 };
 static SQLWCHAR W_FAILURE_DETECTION_COUNT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'C', 'O', 'U', 'N', 'T', 0 };

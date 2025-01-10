@@ -137,7 +137,7 @@ std::string RDS_UTILS::get_rds_cluster_id(std::string host) {
   auto f = [host](const std::regex pattern) {
     std::smatch m;
     if (std::regex_search(host, m, pattern) && m.size() > 1) {
-      return m.size() > 1 ? m.str(1) : std::string("");
+      return m.str(1);
     }
     return std::string();
   };
@@ -149,7 +149,6 @@ std::string RDS_UTILS::get_rds_cluster_id(std::string host) {
 
   return f(AURORA_CHINA_CLUSTER_PATTERN);
 }
-
 
 std::string RDS_UTILS::get_rds_instance_host_pattern(std::string host) {
   auto f = [host](const std::regex pattern) {
@@ -186,7 +185,6 @@ std::string RDS_UTILS::get_rds_region(std::string host) {
 
   return f(AURORA_CHINA_DNS_PATTERN);
 }
-
 
 bool RDS_UTILS::is_ipv4(std::string host) { return std::regex_match(host, IPV4_PATTERN); }
 bool RDS_UTILS::is_ipv6(std::string host) {

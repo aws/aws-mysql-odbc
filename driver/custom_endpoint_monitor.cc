@@ -139,27 +139,27 @@ void CUSTOM_ENDPOINT_MONITOR::run() {
 
     } catch (const std::exception& e) {
       // Log and continue monitoring.
-      if (this->enable_logging) {
-        MYLOG_TRACE(this->logger, 0, "Error while monitoring custom endpoint: %s", e.what());
-      }
+      MYLOG_TRACE(this->logger, 0, "Error while monitoring custom endpoint: %s", e.what());
     }
   });
 }
 
 std::string CUSTOM_ENDPOINT_MONITOR::get_endpoints_as_string(
   const std::vector<Aws::RDS::Model::DBClusterEndpoint>& custom_endpoints) {
+  if (custom_endpoints.empty()) {
+    return "<no endpoints>";
+  }
+
   std::string endpoints("[");
 
   for (auto const& e : custom_endpoints) {
     endpoints += e.GetDBClusterEndpointIdentifier();
     endpoints += ",";
   }
-  if (endpoints.empty()) {
-    endpoints = "<no endpoints>";
-  } else {
-    endpoints.pop_back();
-    endpoints += "]";
-  }
+
+  endpoints.pop_back();
+  endpoints += "]";
+
   return endpoints;
 }
 
