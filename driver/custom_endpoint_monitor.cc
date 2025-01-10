@@ -169,7 +169,7 @@ void CUSTOM_ENDPOINT_MONITOR::stop() {
   this->thread_pool.resize(0);
   custom_endpoint_cache.remove(this->custom_endpoint_host_info->get_host());
   --SDK_HELPER;
-  MYLOG_TRACE(this->logger, 0, "Stopped custom endpoint monitor for '%s'", this->custom_endpoint_host_info->get_host());
+  MYLOG_TRACE(this->logger, 0, "Stopped custom endpoint monitor for '%s'", this->custom_endpoint_host_info->get_host().c_str());
 }
 
 void CUSTOM_ENDPOINT_MONITOR::clear_cache() { custom_endpoint_cache.clear(); }
