@@ -30,6 +30,7 @@
 #ifndef __CACHE_MAP__
 #define __CACHE_MAP__
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <unordered_map>
