@@ -30,6 +30,10 @@
 #include "custom_endpoint_monitor.h"
 
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
+#include <aws/rds/model/DBClusterEndpoint.h>
+#include <aws/rds/model/DescribeDBClusterEndpointsRequest.h>
+#include <aws/rds/model/Filter.h>
+#include <vector>
 
 #include "allowed_and_blocked_hosts.h"
 #include "aws_sdk_helper.h"
