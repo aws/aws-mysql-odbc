@@ -32,6 +32,7 @@
 
 #include <memory>
 #include <string>
+#include <sstream>
 
 enum HOST_STATE { UP, DOWN };
 
@@ -49,6 +50,7 @@ public:
 
     int get_port();
     std::string get_host();
+    std::string get_host_id();
     std::string get_host_port_pair();
     bool equal_host_port_pair(HOST_INFO& hi);
     HOST_STATE get_host_state();
@@ -69,10 +71,18 @@ public:
 private:
     const std::string HOST_PORT_SEPARATOR = ":";
     const std::string host;
+    const std::string host_id;
     const int port = NO_PORT;
 
     HOST_STATE host_state;
     bool is_writer;
 };
+
+inline std::ostream& operator<<(std::ostream& str, HOST_INFO v) {
+    char buf[1024];
+    sprintf(buf, "HostSpec[host=%s, port=%d, %s, %s]", v.get_host().c_str(), v.get_port(),
+            v.is_host_writer() ? "WRITER" : "READER", v.last_updated.c_str());
+    return str << std::string(buf);
+}
 
 #endif /* __HOSTINFO_H__ */

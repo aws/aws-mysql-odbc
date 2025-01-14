@@ -40,7 +40,7 @@ AWS_INSTALL_DIR=$AWS_SRC_DIR/../install
 
 mkdir -p $AWS_SRC_DIR $AWS_BUILD_DIR $AWS_INSTALL_DIR
 
-git clone --recurse-submodules -b "1.11.394" "https://github.com/aws/aws-sdk-cpp.git" $AWS_SRC_DIR
+git clone --recurse-submodules -b "1.11.488" "https://github.com/aws/aws-sdk-cpp.git" $AWS_SRC_DIR
 
 cmake -S $AWS_SRC_DIR -B $AWS_BUILD_DIR -DCMAKE_INSTALL_PREFIX="${AWS_INSTALL_DIR}" -DCMAKE_BUILD_TYPE="${CONFIGURATION}" -DBUILD_ONLY="rds;secretsmanager;sts" -DENABLE_TESTING="OFF" -DBUILD_SHARED_LIBS="ON" -DCPP_STANDARD="14"
 cd $AWS_BUILD_DIR

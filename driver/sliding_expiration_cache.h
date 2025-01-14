@@ -129,12 +129,11 @@ class SLIDING_EXPIRATION_CACHE {
 
   void remove_and_dispose(K key);
   void remove_if_expired(K key) {
-    std::vector<V> items;
     if (this->cache.count(key)) {
       std::shared_ptr<CACHE_ITEM> cache_item = this->cache[key];
       if (cache_item != nullptr && cache_item->should_clean_up(this->should_dispose_func)) {
         if (item_disposal_func != nullptr) {
-          item_disposal_func->dispose(items[0]);
+          item_disposal_func->dispose(cache_item->item);
         }
         this->cache.erase(key);
       }

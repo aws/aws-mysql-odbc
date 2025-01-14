@@ -29,6 +29,9 @@
 
 #include "test_utils.h"
 
+#include "driver/custom_endpoint_monitor.h"
+#include "driver/custom_endpoint_proxy.h"
+
 void allocate_odbc_handles(SQLHENV& env, DBC*& dbc, DataSource*& ds) {
     SQLHDBC hdbc = nullptr;
 
@@ -155,6 +158,23 @@ std::string TEST_UTILS::get_rds_cluster_host_url(std::string host) {
     return RDS_UTILS::get_rds_cluster_host_url(host);
 }
 
+std::string TEST_UTILS::get_rds_cluster_id(std::string host) {
+    return RDS_UTILS::get_rds_cluster_id(host);
+}
+
+std::string TEST_UTILS::get_rds_instance_id(std::string host) {
+  return RDS_UTILS::get_rds_instance_id(host);
+}
+
 std::string TEST_UTILS::get_rds_instance_host_pattern(std::string host) {
     return RDS_UTILS::get_rds_instance_host_pattern(host);
+}
+
+CACHE_MAP<std::string, std::shared_ptr<CUSTOM_ENDPOINT_INFO>>& TEST_UTILS::get_custom_endpoint_cache() {
+  return std::ref(CUSTOM_ENDPOINT_MONITOR::custom_endpoint_cache);
+}
+
+SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>>&
+TEST_UTILS::get_custom_endpoint_monitor_cache() {
+  return std::ref(CUSTOM_ENDPOINT_PROXY::monitors);
 }

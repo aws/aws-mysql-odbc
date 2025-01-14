@@ -28,27 +28,32 @@
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include "custom_endpoint_proxy.h"
-#include "custom_endpoint_monitor.h"
-#include "installer.h"
 #include "mylog.h"
 #include "rds_utils.h"
 
 SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>>
-  CUSTOM_ENDPOINT_PROXY::monitors(std::make_shared<CUSTOM_ENDPOINTS_SHOULD_DISPOSE_FUNC>(),
-                                  std::make_shared<CUSTOM_ENDPOINTS_ITEM_DISPOSAL_FUNC>(), CACHE_CLEANUP_RATE_NANO);
+    CUSTOM_ENDPOINT_PROXY::monitors(std::make_shared<CUSTOM_ENDPOINTS_SHOULD_DISPOSE_FUNC>(),
+                                    std::make_shared<CUSTOM_ENDPOINTS_ITEM_DISPOSAL_FUNC>(), CACHE_CLEANUP_RATE_NANO);
+
+bool CUSTOM_ENDPOINT_PROXY::is_monitor_cache_initialized(false);
 
 CUSTOM_ENDPOINT_PROXY::CUSTOM_ENDPOINT_PROXY(DBC* dbc, DataSource* ds) : CUSTOM_ENDPOINT_PROXY(dbc, ds, nullptr) {}
 CUSTOM_ENDPOINT_PROXY::CUSTOM_ENDPOINT_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy)
-  : CONNECTION_PROXY(dbc, ds) {
+    : CONNECTION_PROXY(dbc, ds) {
   this->next_proxy = next_proxy;
+  this->topology_service = dbc->get_topology_service();
 
   if (ds->opt_LOG_QUERY) {
     this->logger = init_log_file();
   }
-
   this->should_wait_for_info = ds->opt_WAIT_FOR_CUSTOM_ENDPOINT_INFO;
   this->wait_on_cached_info_duration_ms = ds->opt_WAIT_FOR_CUSTOM_ENDPOINT_INFO_TIMEOUT_MS;
   this->idle_monitor_expiration_ms = ds->opt_CUSTOM_ENDPOINT_MONITOR_EXPIRATION_MS;
+
+  if (!is_monitor_cache_initialized) {
+    monitors.init_clean_up_thread();
+    is_monitor_cache_initialized = true;
+  }
 }
 
 bool CUSTOM_ENDPOINT_PROXY::connect(const char* host, const char* user, const char* password, const char* database,
@@ -71,8 +76,8 @@ bool CUSTOM_ENDPOINT_PROXY::connect(const char* host, const char* user, const ch
                                                 : RDS_UTILS::get_rds_region(host);
   if (this->region.empty()) {
     this->set_custom_error_message(
-      "Unable to determine connection region. If you are using a non-standard RDS URL, please set the "
-      "'custom_endpoint_region' property");
+        "Unable to determine connection region. If you are using a non-standard RDS URL, please set the "
+        "'custom_endpoint_region' property");
     return false;
   }
 
@@ -81,8 +86,31 @@ bool CUSTOM_ENDPOINT_PROXY::connect(const char* host, const char* user, const ch
     // If needed, wait a short time for custom endpoint info to be discovered.
     this->wait_for_custom_endpoint_info(monitor);
   }
-
   return this->next_proxy->connect(host, user, password, database, port, socket, flags);
+}
+
+int CUSTOM_ENDPOINT_PROXY::query(const char* q) {
+  if (!this->custom_endpoint_host.empty()) {
+    const std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> monitor = create_monitor_if_absent(ds);
+    if (this->should_wait_for_info) {
+      // If needed, wait a short time for custom endpoint info to be discovered.
+      this->wait_for_custom_endpoint_info(monitor);
+    }
+  }
+
+  return next_proxy->query(q);
+}
+
+int CUSTOM_ENDPOINT_PROXY::real_query(const char* q, unsigned long length) {
+  if (!this->custom_endpoint_host.empty()) {
+    const std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> monitor = create_monitor_if_absent(ds);
+    if (this->should_wait_for_info) {
+      // If needed, wait a short time for custom endpoint info to be discovered.
+      this->wait_for_custom_endpoint_info(monitor);
+    }
+  }
+
+  return next_proxy->real_query(q, length);
 }
 
 void CUSTOM_ENDPOINT_PROXY::wait_for_custom_endpoint_info(std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> monitor) {
@@ -96,11 +124,11 @@ void CUSTOM_ENDPOINT_PROXY::wait_for_custom_endpoint_info(std::shared_ptr<CUSTOM
   // custom endpoint info.
   MYLOG_TRACE(this->logger, 0,
               "Custom endpoint info for '%s' was not found. Waiting %dms for the endpoint monitor to fetch info...",
-              this->custom_endpoint_host_info->get_host().c_str(), this->wait_on_cached_info_duration_ms)
+              this->custom_endpoint_host.c_str(), this->wait_on_cached_info_duration_ms)
 
   const auto wait_for_endpoint_info_timeout_nanos =
-    std::chrono::steady_clock::now() + std::chrono::duration_cast<std::chrono::nanoseconds>(
-                                         std::chrono::milliseconds(this->wait_on_cached_info_duration_ms));
+      std::chrono::steady_clock::now() + std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                             std::chrono::milliseconds(this->wait_on_cached_info_duration_ms));
 
   while (!has_custom_endpoint_info && std::chrono::steady_clock::now() < wait_for_endpoint_info_timeout_nanos) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -110,24 +138,35 @@ void CUSTOM_ENDPOINT_PROXY::wait_for_custom_endpoint_info(std::shared_ptr<CUSTOM
   if (!has_custom_endpoint_info) {
     char buf[1024];
     myodbc_snprintf(
-      buf, sizeof(buf),
-      "The custom endpoint plugin timed out after %ld ms while waiting for custom endpoint info for host %s.",
-      this->wait_on_cached_info_duration_ms, this->custom_endpoint_host_info->get_host().c_str());
+        buf, sizeof(buf),
+        "The custom endpoint plugin timed out after %ld ms while waiting for custom endpoint info for host %s.",
+        this->wait_on_cached_info_duration_ms, this->custom_endpoint_host.c_str());
 
     set_custom_error_message(buf);
   }
 }
 
+std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> CUSTOM_ENDPOINT_PROXY::create_custom_endpoint_monitor(
+    const long long refresh_rate_nanos) {
+  return std::make_shared<CUSTOM_ENDPOINT_MONITOR>(this->topology_service, this->custom_endpoint_host,
+                                                   this->custom_endpoint_id, this->region, refresh_rate_nanos,
+                                                   this->dbc->env->custom_endpoint_thread_pool);
+}
+
 std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> CUSTOM_ENDPOINT_PROXY::create_monitor_if_absent(DataSource* ds) {
-  const auto refresh_rate_nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                                    std::chrono::milliseconds(ds->opt_CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS))
-                                    .count();
+  const long long refresh_rate_nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                           std::chrono::milliseconds(ds->opt_CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS))
+                                           .count();
 
   return monitors.compute_if_absent(
-    this->custom_endpoint_host_info->get_host(),
-    [=](std::string key) {
-      return std::make_shared<CUSTOM_ENDPOINT_MONITOR>(this->custom_endpoint_host_info, this->custom_endpoint_id,
-                                                       this->region, ds);
-    },
-    refresh_rate_nanos);
+      this->custom_endpoint_host,
+      [=](std::string key) { return this->create_custom_endpoint_monitor(refresh_rate_nanos); },
+      std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds(this->idle_monitor_expiration_ms))
+          .count());
+}
+
+void CUSTOM_ENDPOINT_PROXY::release_resources() {
+  if (!monitors.empty()) {
+    monitors.release_resources();
+  }
 }
