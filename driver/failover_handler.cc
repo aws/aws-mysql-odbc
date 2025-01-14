@@ -52,8 +52,7 @@ const char* MYSQL_READONLY_QUERY = "SELECT @@innodb_read_only AS is_reader";
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
     : FAILOVER_HANDLER(
-        dbc, ds, dbc ? dbc->connection_handler : nullptr,
-        std::make_shared<TOPOLOGY_SERVICE>(dbc ? dbc->id : 0, ds ? ds->opt_LOG_QUERY : false),
+        dbc, ds, dbc ? dbc->connection_handler : nullptr, dbc ? dbc->get_topology_service() : nullptr,
         std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds)) {}
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,

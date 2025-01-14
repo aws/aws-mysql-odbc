@@ -145,7 +145,7 @@ TEST_F(SlidingExpirationCacheTest, ExpirationTimeUpdateGet) {
 
 TEST_F(SlidingExpirationCacheTest, GetCacheExpireThread) {
   SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::string> cache(cache_exp_short);
-
+  cache.init_clean_up_thread();
   EXPECT_EQ(0, cache.size());
   cache.put(cache_key_a, cache_val_a, cache_exp_short);
   cache.put(cache_key_b, cache_val_b, cache_exp_long);

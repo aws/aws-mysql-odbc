@@ -27,8 +27,8 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#ifndef __CACHE_MAP__
-#define __CACHE_MAP__
+#ifndef __CACHE_MAP_H__
+#define __CACHE_MAP_H__
 
 #include <atomic>
 #include <chrono>

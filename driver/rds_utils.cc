@@ -31,7 +31,7 @@
 
 namespace {
 const std::regex AURORA_DNS_PATTERN(
-    R"#((.+)\.(proxy-|cluster-|cluster-ro-|cluster-custom-)?([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
+    R"#((.+)\.(proxy-|cluster-|cluster-ro-|cluster-custom-)?([a-zA-Z0-9]+\.([a-zA-Z0-9\-]+)\.rds\.amazonaws\.com))#",
     std::regex_constants::icase);
 const std::regex AURORA_PROXY_DNS_PATTERN(R"#((.+)\.(proxy-)+([a-zA-Z0-9]+\.[a-zA-Z0-9\-]+\.rds\.amazonaws\.com))#",
                                           std::regex_constants::icase);
@@ -136,30 +136,44 @@ std::string RDS_UTILS::get_rds_cluster_host_url(std::string host) {
 std::string RDS_UTILS::get_rds_cluster_id(std::string host) {
   auto f = [host](const std::regex pattern) {
     std::smatch m;
-    if (std::regex_search(host, m, pattern) && m.size() > 1) {
+    if (std::regex_search(host, m, pattern) && m.size() > 1 && !m.str(2).empty()) {
       return m.str(1);
     }
     return std::string();
   };
 
-  auto result = f(AURORA_CLUSTER_PATTERN);
+  auto result = f(AURORA_DNS_PATTERN);
   if (!result.empty()) {
     return result;
   }
 
-  return f(AURORA_CHINA_CLUSTER_PATTERN);
+  return f(AURORA_CHINA_DNS_PATTERN);
 }
 
+std::string RDS_UTILS::get_rds_instance_id(std::string host) {
+  auto f = [host](const std::regex pattern) {
+    std::smatch m;
+    if (std::regex_search(host, m, pattern) && m.size() > 1 && m.str(2).empty()) {
+      return m.str(1);
+    }
+    return std::string();
+  };
+
+  auto result = f(AURORA_DNS_PATTERN);
+  if (!result.empty()) {
+    return result;
+  }
+
+  return f(AURORA_CHINA_DNS_PATTERN);
+}
 std::string RDS_UTILS::get_rds_instance_host_pattern(std::string host) {
   auto f = [host](const std::regex pattern) {
     std::smatch m;
-    if (std::regex_search(host, m, pattern) && m.size() > 3) {
-      if (!m.str(3).empty()) {
-        std::string result("?.");
-        result.append(m.str(3));
+    if (std::regex_search(host, m, pattern) && m.size() > 4 && !m.str(3).empty()) {
+      std::string result("?.");
+      result.append(m.str(3));
 
-        return result;
-      }
+      return result;
     }
     return std::string();
   };
@@ -174,7 +188,10 @@ std::string RDS_UTILS::get_rds_instance_host_pattern(std::string host) {
 
 std::string RDS_UTILS::get_rds_region(std::string host) {
   auto f = [host](const std::regex pattern) {
-    // TODO: implement region
+    std::smatch m;
+    if (std::regex_search(host, m, pattern) && m.size() > 4 && !m.str(4).empty()) {
+      return m.str(4);
+    }
     return std::string();
   };
 

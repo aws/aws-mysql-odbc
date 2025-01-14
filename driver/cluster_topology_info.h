@@ -46,6 +46,7 @@ public:
     virtual ~CLUSTER_TOPOLOGY_INFO();
 
     void add_host(std::shared_ptr<HOST_INFO> host_info);
+    void remove_host(std::shared_ptr<HOST_INFO> host_info);
     size_t total_hosts();
     size_t num_readers(); // return number of readers in the cluster
     std::time_t time_last_updated();
@@ -58,6 +59,7 @@ public:
     std::shared_ptr<HOST_INFO> get_reader(int i);
     std::vector<std::shared_ptr<HOST_INFO>> get_writers();
     std::vector<std::shared_ptr<HOST_INFO>> get_readers();
+    std::vector<std::shared_ptr<HOST_INFO>> get_instances();
 
 private:
     int current_reader = -1;

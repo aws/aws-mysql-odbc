@@ -123,13 +123,9 @@ void DBC::close()
 // construct a proxy chain, example: iam->efm->mysql
 void DBC::init_proxy_chain(DataSource* dsrc)
 {
-    CONNECTION_PROXY *head = new MYSQL_PROXY(this, dsrc);
+    this->topology_service = std::make_shared<TOPOLOGY_SERVICE>(this->id, ds ? ds->opt_LOG_QUERY : false);
 
-    if (dsrc->opt_ENABLE_CUSTOM_ENDPOINT_MONITORING) {
-        CONNECTION_PROXY* custom_endpoint_proxy = new CUSTOM_ENDPOINT_PROXY(this, dsrc);
-        custom_endpoint_proxy->set_next_proxy(head);
-        head = custom_endpoint_proxy;
-    }
+    CONNECTION_PROXY* head = new MYSQL_PROXY(this, dsrc);
 
     if (dsrc->opt_ENABLE_FAILURE_DETECTION) {
         CONNECTION_PROXY* efm_proxy = new EFM_PROXY(this, dsrc);
@@ -165,6 +161,13 @@ void DBC::init_proxy_chain(DataSource* dsrc)
         }
     }
 
+    if (dsrc->opt_ENABLE_CUSTOM_ENDPOINT_MONITORING) {
+        CONNECTION_PROXY* custom_endpoint_proxy = new CUSTOM_ENDPOINT_PROXY(this, dsrc);
+        custom_endpoint_proxy->set_next_proxy(head);
+        head = custom_endpoint_proxy;
+    }
+
+
     this->connection_proxy = head;
 }
 
@@ -173,7 +176,8 @@ DBC::~DBC()
   if (env)
     env->remove_dbc(this);
 
-  if (connection_proxy)
+  this->topology_service.reset();
+  if (connection_proxy) 
     delete connection_proxy;
 
   if (fh)
@@ -253,6 +257,7 @@ SQLRETURN SQL_API SQLAllocEnv(SQLHENV *phenv)
 SQLRETURN SQL_API my_SQLFreeEnv(SQLHENV henv)
 {
     MONITOR_THREAD_CONTAINER::release_instance();
+    CUSTOM_ENDPOINT_PROXY::release_resources();
 
     ENV *env= (ENV *) henv;
     delete env;

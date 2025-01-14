@@ -29,6 +29,8 @@
 
 #include "host_info.h"
 
+#include "rds_utils.h"
+
 // TODO
 // the entire HOST_INFO needs to be reviewed based on needed interfaces and other objects like CLUSTER_TOPOLOGY_INFO
 // most/all of the HOST_INFO potentially could be internal to CLUSTER_TOPOLOGY_INFO and specfic information may be accessed
@@ -45,26 +47,29 @@ HOST_INFO::HOST_INFO(const char* host, int port)
     : HOST_INFO(host, port, UP, false) {}
 
 HOST_INFO::HOST_INFO(std::string host, int port, HOST_STATE state, bool is_writer)
-    : host{ host }, port{ port }, host_state{ state }, is_writer{ is_writer }
-{
-}
+    : host{host}, host_id{RDS_UTILS::get_rds_instance_id(host)}, port{port}, host_state{state}, is_writer{is_writer} {}
 
 // would need some checks for nulls
 HOST_INFO::HOST_INFO(const char* host, int port, HOST_STATE state, bool is_writer)
-    : host{ host }, port{ port }, host_state{ state }, is_writer{ is_writer }
-{
-}
+    : host{host}, host_id{RDS_UTILS::get_rds_instance_id(host)}, port{port}, host_state{state}, is_writer{is_writer} {}
 
 HOST_INFO::~HOST_INFO() {}
 
 /**
- * Returns the host.
+ * Returns the host endpoint.
  *
- * @return the host
+ * @return the host endpoint
  */
 std::string HOST_INFO::get_host() {
     return host;
 }
+
+/**
+ * Returns the host name.
+ *
+ * @return the host name
+ */
+std::string HOST_INFO::get_host_id() { return host_id; }
 
 /**
  * Returns the port.

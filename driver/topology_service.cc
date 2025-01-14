@@ -164,26 +164,46 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
     return get_from_cache();
 }
 
-//TODO consider the return value
-//Note to determine whether or not force_update succeeded one would compare
+// TODO consider the return value
+// Note to determine whether or not force_update succeeded one would compare
 // CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
 std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION_PROXY* connection, bool force_update)
 {
-    //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
+    // TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
-    auto cached_topology = get_from_cache();
-    if (!cached_topology
-        || force_update
-        || refresh_needed(cached_topology->time_last_updated()))
-    {
-        auto latest_topology = query_for_topology(connection);
-        if (latest_topology) {
+    auto topology = get_from_cache();
+    if (!topology || force_update || refresh_needed(topology->time_last_updated())) {
+        if (auto latest_topology = query_for_topology(connection)) {
             put_to_cache(latest_topology);
-            return latest_topology;
+            topology = latest_topology;
         }
     }
 
-    return cached_topology;
+    if (!this->allowed_and_blocked_hosts) {
+        return topology;
+    }
+
+    std::set<std::string> allowed_list = this->allowed_and_blocked_hosts->get_allowed_host_ids();
+    std::set<std::string> blocked_list = this->allowed_and_blocked_hosts->get_blocked_host_ids();
+
+    const std::shared_ptr<CLUSTER_TOPOLOGY_INFO> filtered_topology = topology;
+    if (allowed_list.size() > 0) {
+        for (const auto& host : topology->get_instances()) {
+            if (allowed_list.find(host->get_host_id()) != allowed_list.end()) {
+                filtered_topology->add_host(host);
+            }
+        }
+    }
+
+    if (blocked_list.size() > 0) {
+      for (const auto& host : filtered_topology->get_instances()) {
+            // Remove blocked hosts from the filtered_topology.
+            if (blocked_list.find(host->get_host_id()) != blocked_list.end()) {
+                filtered_topology->remove_host(host);
+            }
+        }
+    }
+    return filtered_topology;
 }
 
 // TODO consider thread safety and usage of pointers

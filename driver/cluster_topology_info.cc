@@ -30,6 +30,7 @@
 #include "cluster_topology_info.h"
 
 #include <stdexcept>
+#include <algorithm>
 
 /**
   Initialize and return random number.
@@ -74,6 +75,20 @@ void CLUSTER_TOPOLOGY_INFO::add_host(std::shared_ptr<HOST_INFO> host_info) {
     host_info->is_host_writer() ? writers.push_back(host_info) : readers.push_back(host_info);
     update_time();
 }
+
+void CLUSTER_TOPOLOGY_INFO::remove_host(std::shared_ptr<HOST_INFO> host_info) {
+  auto position = std::find(writers.begin(), writers.end(), host_info); 
+  if (position != writers.end()) {
+    writers.erase(position);
+  }
+
+  position = std::find(readers.begin(), readers.end(), host_info);
+  if (position != readers.end()) {
+    readers.erase(position);
+  }
+  update_time();
+}
+
 
 size_t CLUSTER_TOPOLOGY_INFO::total_hosts() {
     return writers.size() + readers.size();
@@ -134,6 +149,13 @@ std::vector<std::shared_ptr<HOST_INFO>> CLUSTER_TOPOLOGY_INFO::get_readers() {
 
 std::vector<std::shared_ptr<HOST_INFO>> CLUSTER_TOPOLOGY_INFO::get_writers() {
     return writers;
+}
+
+std::vector<std::shared_ptr<HOST_INFO>> CLUSTER_TOPOLOGY_INFO::get_instances() {
+  std::vector instances(writers);
+  instances.insert(instances.end(), writers.begin(), writers.end());
+
+  return instances;
 }
 
 std::shared_ptr<HOST_INFO> CLUSTER_TOPOLOGY_INFO::get_last_used_reader() {

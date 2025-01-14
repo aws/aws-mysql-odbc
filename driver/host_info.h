@@ -49,6 +49,7 @@ public:
 
     int get_port();
     std::string get_host();
+    std::string get_host_id();
     std::string get_host_port_pair();
     bool equal_host_port_pair(HOST_INFO& hi);
     HOST_STATE get_host_state();
@@ -69,6 +70,7 @@ public:
 private:
     const std::string HOST_PORT_SEPARATOR = ":";
     const std::string host;
+    const std::string host_id;
     const int port = NO_PORT;
 
     HOST_STATE host_state;

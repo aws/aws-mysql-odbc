@@ -47,6 +47,7 @@
 
 #include "connection_handler.h"
 #include "connection_proxy.h"
+#include "topology_service.h"
 #include "failover.h"
 
 /* Disable _attribute__ on non-gcc compilers. */
@@ -627,6 +628,7 @@ struct DBC
 
   FAILOVER_HANDLER *fh = nullptr; /* Failover handler */
   std::shared_ptr<CONNECTION_HANDLER> connection_handler = nullptr;
+  std::shared_ptr<TOPOLOGY_SERVICE> topology_service = nullptr;
 
   DBC(ENV *p_env);
   void free_explicit_descriptors();
@@ -639,6 +641,10 @@ struct DBC
   void execute_prep_stmt(MYSQL_STMT *pstmt, std::string &query,
     std::vector<MYSQL_BIND> &param_bind, MYSQL_BIND *result_bind);
   void init_proxy_chain(DataSource *dsrc);
+  std::shared_ptr<TOPOLOGY_SERVICE> get_topology_service() {
+    return this->topology_service ? this->topology_service
+                                  : std::make_shared<TOPOLOGY_SERVICE>(this->id, ds ? ds->opt_LOG_QUERY : false);
+  }
 
   inline bool transactions_supported() {
     return connection_proxy->get_server_capabilities() & CLIENT_TRANSACTIONS;

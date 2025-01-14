@@ -44,7 +44,7 @@ Write-Host $args
 # Make AWS SDK source directory
 New-Item -Path $SRC_DIR -ItemType Directory -Force | Out-Null
 # Clone the AWS SDK CPP repo
-git clone --recurse-submodules -b "1.11.394" "https://github.com/aws/aws-sdk-cpp.git" $SRC_DIR
+git clone --recurse-submodules -b "1.11.488" "https://github.com/aws/aws-sdk-cpp.git" $SRC_DIR
 
 # Make and move to build directory
 New-Item -Path $BUILD_DIR -ItemType Directory -Force | Out-Null

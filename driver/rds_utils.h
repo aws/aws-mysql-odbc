@@ -47,6 +47,7 @@ class RDS_UTILS {
   static std::string get_rds_cluster_host_url(std::string host);
   static std::string get_rds_cluster_id(std::string host);
   static std::string get_rds_instance_host_pattern(std::string host);
+  static std::string get_rds_instance_id(std::string host);
   static std::string get_rds_region(std::string host);
 };
 

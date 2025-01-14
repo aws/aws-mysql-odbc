@@ -33,10 +33,7 @@
 #include <aws/rds/model/DBClusterEndpoint.h>
 
 #include <set>
-#include <sstream>
-#include <utility>
-
-#include "MYODBC_MYSQL.h"
+#include "stringutil.h"
 #include "mylog.h"
 
 /**

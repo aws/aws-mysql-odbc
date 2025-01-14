@@ -27,13 +27,13 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#ifndef __CUSTOM_ENDPOINT_PROXY__
-#define __CUSTOM_ENDPOINT_PROXY__
+#ifndef __CUSTOM_ENDPOINT_PROXY_H__
+#define __CUSTOM_ENDPOINT_PROXY_H__
 
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/rds/RDSClient.h>
 #include "connection_proxy.h"
 #include "custom_endpoint_monitor.h"
+#include "driver.h"
 #include "sliding_expiration_cache_with_clean_up_thread.h"
 
 class CUSTOM_ENDPOINT_PROXY : public CONNECTION_PROXY {
@@ -43,6 +43,11 @@ class CUSTOM_ENDPOINT_PROXY : public CONNECTION_PROXY {
 
   bool connect(const char* host, const char* user, const char* password, const char* database, unsigned int port,
                const char* socket, unsigned long flags) override;
+
+  int query(const char* q) override;
+  int real_query(const char* q, unsigned long length) override;
+
+  static void release_resources();
 
   class CUSTOM_ENDPOINTS_SHOULD_DISPOSE_FUNC : public SHOULD_DISPOSE_FUNC<std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>> {
    public:
@@ -62,14 +67,15 @@ class CUSTOM_ENDPOINT_PROXY : public CONNECTION_PROXY {
   static constexpr long long CACHE_CLEANUP_RATE_NANO = 60000000000;
 
  protected:
+  static bool is_monitor_cache_initialized;
   std::string custom_endpoint_id;
   std::string region;
   std::string custom_endpoint_host;
-  std::shared_ptr<HOST_INFO> custom_endpoint_host_info;
   std::shared_ptr<Aws::RDS::RDSClient> rds_client;
   bool should_wait_for_info;
   long wait_on_cached_info_duration_ms;
   long idle_monitor_expiration_ms;
+  std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
 
   static SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>> monitors;
 
@@ -84,6 +90,11 @@ class CUSTOM_ENDPOINT_PROXY : public CONNECTION_PROXY {
 
  private:
   std::shared_ptr<FILE> logger;
+  virtual std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> create_custom_endpoint_monitor(long long refresh_rate_nanos);
+#ifdef UNIT_TEST_BUILD
+  // Allows for testing private/protected methods
+  friend class TEST_UTILS;
+#endif
 };
 
 #endif
