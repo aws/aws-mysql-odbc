@@ -1,9 +1,11 @@
 name: Failover Unit Tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
+      - fix/hanging-tests
   pull_request:
     branches:
       - '*'

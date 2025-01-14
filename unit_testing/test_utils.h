@@ -31,6 +31,8 @@
 #define __TESTUTILS_H__
 
 #include "driver/auth_util.h" 
+#include "driver/cache_map.h"
+#include "driver/custom_endpoint_info.h"
 #include "driver/driver.h"
 #include "driver/failover.h"
 #include "driver/iam_proxy.h"
@@ -69,7 +71,9 @@ public:
     static bool is_rds_writer_cluster_dns(std::string host);
     static bool is_rds_custom_cluster_dns(std::string host);
     static std::string get_rds_cluster_host_url(std::string host);
+    static std::string get_rds_cluster_id(std::string host);
     static std::string get_rds_instance_host_pattern(std::string host);
+    static CACHE_MAP<std::string, std::shared_ptr<CUSTOM_ENDPOINT_INFO>>& get_custom_endpoint_cache();
 };
 
 #endif /* __TESTUTILS_H__ */

@@ -71,7 +71,7 @@ V SLIDING_EXPIRATION_CACHE<K, V>::compute_if_absent(K key, std::function<V(K)> m
   this->clean_up();
   auto cache_item = std::make_shared<CACHE_ITEM>(mapping_function(key),
                                    std::chrono::steady_clock::now() + std::chrono::nanoseconds(item_expiration_nanos));
-  this->cache[key] = cache_item;
+  this->cache.emplace(key, cache_item);
   return cache_item->with_extend_expiration(item_expiration_nanos)->item;
 }
 

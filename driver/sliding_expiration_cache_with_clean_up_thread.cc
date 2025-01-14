@@ -31,6 +31,7 @@
 
 #include <string>
 #include <utility>
+#include <iostream>
 
 #include "custom_endpoint_monitor.h"
 
@@ -40,11 +41,12 @@ void SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::init_clean_up_thread()
     std::unique_lock lock(mutex_);
     if (!this->is_initialized) {
       this->clean_up_thread_pool.resize(this->clean_up_thread_pool.size() + 1);
+      std::cout << "clean up interval: " << this->clean_up_interval_nanos << std::endl;
 
       this->clean_up_thread_pool.push([=](int id) {
         while (!should_stop) {
           const std::chrono::nanoseconds clean_up_interval = std::chrono::nanoseconds(this->clean_up_interval_nanos);
-          std::this_thread::sleep_for(clean_up_interval);
+          //std::this_thread::sleep_for(clean_up_interval);
           this->clean_up_time_nanos.store(std::chrono::steady_clock::now() + clean_up_interval);
           std::vector<K> keys;
           keys.reserve(this->cache.size());

@@ -35,6 +35,7 @@
 #include <gmock/gmock.h>
 
 #include "driver/connection_proxy.h"
+#include "driver/custom_endpoint_proxy.h"
 #include "driver/failover.h"
 #include "driver/saml_http_client.h"
 #include "driver/monitor_thread_container.h"
@@ -222,6 +223,13 @@ public:
     MOCK_METHOD(Aws::SecretsManager::Model::GetSecretValueOutcome, GetSecretValue, (const Aws::SecretsManager::Model::GetSecretValueRequest&), (const));
 };
 
+class MOCK_RDS_CLIENT : public Aws::RDS::RDSClient {
+public:
+    MOCK_RDS_CLIENT() : RDSClient(){};
+
+    MOCK_METHOD(Aws::RDS::Model::DescribeDBClusterEndpointsOutcome, DescribeDBClusterEndpoints, (const Aws::RDS::Model::DescribeDBClusterEndpointsRequest&), (const));
+};
+
 class MOCK_AUTH_UTIL : public AUTH_UTIL {
 public:
     MOCK_AUTH_UTIL() : AUTH_UTIL() {};
@@ -234,4 +242,11 @@ public:
     MOCK_METHOD(nlohmann::json, post, (const std::string&, const std::string&, const std::string&));
     MOCK_METHOD(nlohmann::json, get, (const std::string&, const httplib::Headers&));
 };
+
+class TEST_CUSTOM_ENDPOINT_PROXY : public CUSTOM_ENDPOINT_PROXY {
+public:
+    TEST_CUSTOM_ENDPOINT_PROXY(DBC* dbc, DataSource* ds, CONNECTION_PROXY* next_proxy) : CUSTOM_ENDPOINT_PROXY(dbc, ds, next_proxy) {};
+    MOCK_METHOD(std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>, create_monitor_if_absent, (DataSource * ds));
+};
+
 #endif /* __MOCKOBJECTS_H__ */

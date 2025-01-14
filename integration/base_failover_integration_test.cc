@@ -36,7 +36,6 @@
 
 #include <aws/core/Aws.h>
 #include <aws/core/auth/AWSCredentialsProvider.h>
-#include <aws/rds/model/DBCluster.h>
 #include <aws/rds/model/DBClusterMember.h>
 #include <aws/rds/model/DescribeDBClustersRequest.h>
 #include <aws/rds/model/FailoverDBClusterRequest.h>

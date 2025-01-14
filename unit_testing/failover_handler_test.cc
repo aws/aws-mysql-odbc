@@ -43,6 +43,7 @@ using ::testing::StrEq;
 namespace {
     const std::string US_EAST_REGION_CLUSTER = "database-test-name.cluster-XYZ.us-east-2.rds.amazonaws.com";
     const std::string US_EAST_REGION_CLUSTER_READ_ONLY = "database-test-name.cluster-ro-XYZ.us-east-2.rds.amazonaws.com";
+    const std::string US_EAST_REGION_INSTANCE = "instance-test-name.XYZ.us-east-2.rds.amazonaws.com";
     const std::string US_EAST_REGION_PROXY = "proxy-test-name.proxy-XYZ.us-east-2.rds.amazonaws.com";
     const std::string US_EAST_REGION_CUSTON_DOMAIN = "custom-test-name.cluster-custom-XYZ.us-east-2.rds.amazonaws.com";
 
@@ -422,6 +423,20 @@ TEST_F(FailoverHandlerTest, GetRdsClusterHostUrl) {
     EXPECT_EQ(CHINA_REGION_CLUSTER, TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_CLUSTER_READ_ONLY));
     EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_PROXY));
     EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_host_url(CHINA_REGION_CUSTON_DOMAIN));
+}
+
+TEST_F(FailoverHandlerTest, GetRdsClusterId) {
+    EXPECT_EQ("database-test-name", TEST_UTILS::get_rds_cluster_id(US_EAST_REGION_CLUSTER));
+    EXPECT_EQ("database-test-name", TEST_UTILS::get_rds_cluster_id(US_EAST_REGION_CLUSTER_READ_ONLY));
+    EXPECT_EQ(std::string(), TEST_UTILS::get_rds_cluster_id(US_EAST_REGION_INSTANCE));
+
+    EXPECT_EQ("proxy-test-name", TEST_UTILS::get_rds_cluster_id(US_EAST_REGION_PROXY));
+    EXPECT_EQ("custom-test-name", TEST_UTILS::get_rds_cluster_id(US_EAST_REGION_CUSTON_DOMAIN));
+
+    EXPECT_EQ("database-test-name", TEST_UTILS::get_rds_cluster_id(CHINA_REGION_CLUSTER));
+    EXPECT_EQ("database-test-name", TEST_UTILS::get_rds_cluster_id(CHINA_REGION_CLUSTER_READ_ONLY));
+    EXPECT_EQ("proxy-test-name", TEST_UTILS::get_rds_cluster_id(CHINA_REGION_PROXY));
+    EXPECT_EQ("custom-test-name", TEST_UTILS::get_rds_cluster_id(CHINA_REGION_CUSTON_DOMAIN));
 }
 
 TEST_F(FailoverHandlerTest, ConnectToNewWriter) {

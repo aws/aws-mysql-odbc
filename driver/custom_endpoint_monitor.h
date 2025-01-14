@@ -34,15 +34,21 @@
 
 #include <ctpl_stl.h>
 #include "cache_map.h"
-#include "connection_handler.h"
-#include "connection_proxy.h"
 #include "custom_endpoint_info.h"
 #include "host_info.h"
 
 class CUSTOM_ENDPOINT_MONITOR : public std::enable_shared_from_this<CUSTOM_ENDPOINT_MONITOR> {
  public:
-  CUSTOM_ENDPOINT_MONITOR(const std::shared_ptr<HOST_INFO>& custom_endpoint_host_info, const std::string& endpoint_identifier,
-                          const std::string& region, DataSource* ds, bool enable_logging = false);
+  CUSTOM_ENDPOINT_MONITOR(const std::string& custom_endpoint_host,
+                          const std::string& endpoint_identifier, const std::string& region,
+                          long long refresh_rate_nanos, bool enable_logging = false);
+#ifdef UNIT_TEST_BUILD
+  CUSTOM_ENDPOINT_MONITOR(const std::string& custom_endpoint_host,
+                          const std::string& endpoint_identifier, const std::string& region,
+                          long long refresh_rate_nanos, bool enable_logging,
+                          std::shared_ptr<Aws::RDS::RDSClient> client);
+#endif
+
   ~CUSTOM_ENDPOINT_MONITOR() = default;
 
   static bool should_dispose();
@@ -54,7 +60,7 @@ class CUSTOM_ENDPOINT_MONITOR : public std::enable_shared_from_this<CUSTOM_ENDPO
  protected:
   static CACHE_MAP<std::string, std::shared_ptr<CUSTOM_ENDPOINT_INFO>> custom_endpoint_cache;
   static constexpr long long CUSTOM_ENDPOINT_INFO_EXPIRATION_NANOS = 300000000000;  // 5 minutes
-  std::shared_ptr<HOST_INFO> custom_endpoint_host_info;
+  std::string custom_endpoint_host;
   std::string endpoint_identifier;
   std::string region;
   long long refresh_rate_nanos;
@@ -66,6 +72,11 @@ class CUSTOM_ENDPOINT_MONITOR : public std::enable_shared_from_this<CUSTOM_ENDPO
 
  private:
   static std::string get_endpoints_as_string(const std::vector<Aws::RDS::Model::DBClusterEndpoint>& custom_endpoints);
+
+#ifdef UNIT_TEST_BUILD
+  // Allows for testing private/protected methods
+  friend class TEST_UTILS;
+#endif
 };
 
 #endif

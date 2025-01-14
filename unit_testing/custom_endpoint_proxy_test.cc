@@ -27,48 +27,49 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#ifndef __CACHE_MAP_H__
-#define __CACHE_MAP_H__
+#include <aws/core/Aws.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include <atomic>
-#include <chrono>
-#include <memory>
-#include <unordered_map>
+#include "test_utils.h"
+#include "mock_objects.h"
 
-template <class K, class V>
-class CACHE_MAP {
- public:
-  class CACHE_ITEM {
-   public:
-    CACHE_ITEM() = default;
-    CACHE_ITEM(V item, std::chrono::steady_clock::time_point expiration_time)
-        : item(item), expiration_time(expiration_time){};
-    ~CACHE_ITEM() = default;
-    V item;
+using ::testing::_;
+using ::testing::Return;
+using ::testing::StrEq;
 
-    bool is_expired() { return std::chrono::steady_clock::now() > this->expiration_time; }
+namespace {
+const std::string WRITER_CLUSTER_URL{"writer.cluster-XYZ.us-east-1.rds.amazonaws.com"};
+const std::string CUSTOM_ENDPOINT_URL{"custom.cluster-custom-XYZ.us-east-1.rds.amazonaws.com"};
+}
 
-   private:
-    std::chrono::steady_clock::time_point expiration_time;
-  };
+static SQLHENV env;
 
-  CACHE_MAP() = default;
-  ~CACHE_MAP() = default;
-
-  void put(K key, V value, long long item_expiration_nanos);
-  V get(K key, V default_value);
-  V get(K key, V default_value, long long item_expiration_nanos);
-  void remove(K key);
-  int size();
-  void clear();
-
+class CustomEndpointProxyTest : public testing::Test {
  protected:
-  void clean_up();
-  const long long clean_up_time_interval_nanos = 60000000000;  // 10 minute
-  std::atomic<std::chrono::steady_clock::time_point> clean_up_time_nanos;
+  DBC* dbc;
+  DataSource* ds;
+  MOCK_CONNECTION_PROXY* mock_connection_proxy;
 
- private:
-  std::unordered_map<K, std::shared_ptr<CACHE_ITEM>> cache;
+  static void SetUpTestSuite() { SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env); }
+
+  static void TearDownTestSuite() { SQLFreeHandle(SQL_HANDLE_ENV, env); }
+
+  void SetUp() override {
+    allocate_odbc_handles(env, dbc, ds);
+    ds->opt_ENABLE_CUSTOM_ENDPOINT_MONITORING = true;
+    ds->opt_WAIT_FOR_CUSTOM_ENDPOINT_INFO = true;
+    ds->opt_WAIT_FOR_CUSTOM_ENDPOINT_INFO_TIMEOUT_MS = 10000;
+    ds->opt_CUSTOM_ENDPOINT_MONITOR_EXPIRATION_MS = 60000;
+
+    mock_connection_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
+  }
+
+  void TearDown() override {
+    cleanup_odbc_handles(nullptr, dbc, ds);
+    delete mock_connection_proxy;
+  }
 };
 
-#endif
+TEST_F(CustomEndpointProxyTest, TestConnect_MonitorNotCreatedIfNotCustomEndpointHost) {
+}

@@ -27,16 +27,16 @@
 // along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
-#include "custom_endpoint_monitor.h"
-
 #include <aws/core/auth/AWSCredentialsProviderChain.h>
 #include <aws/rds/model/DBClusterEndpoint.h>
 #include <aws/rds/model/DescribeDBClusterEndpointsRequest.h>
 #include <aws/rds/model/Filter.h>
+#include <utility>
 #include <vector>
 
-#include "allowed_and_blocked_hosts.h"
 #include "aws_sdk_helper.h"
+#include "allowed_and_blocked_hosts.h"
+#include "custom_endpoint_monitor.h"
 #include "driver.h"
 #include "monitor_service.h"
 #include "mylog.h"
@@ -47,13 +47,14 @@ AWS_SDK_HELPER SDK_HELPER;
 
 CACHE_MAP<std::string, std::shared_ptr<CUSTOM_ENDPOINT_INFO>> CUSTOM_ENDPOINT_MONITOR::custom_endpoint_cache;
 
-CUSTOM_ENDPOINT_MONITOR::CUSTOM_ENDPOINT_MONITOR(const std::shared_ptr<HOST_INFO>& custom_endpoint_host_info,
+CUSTOM_ENDPOINT_MONITOR::CUSTOM_ENDPOINT_MONITOR(const std::string& custom_endpoint_host,
                                                  const std::string& endpoint_identifier, const std::string& region,
-                                                 DataSource* ds, bool enable_logging)
-  : custom_endpoint_host_info(custom_endpoint_host_info),
-    endpoint_identifier(endpoint_identifier),
-    region(region),
-    enable_logging(enable_logging) {
+                                                 long long refresh_rate_nanos, bool enable_logging)
+    : custom_endpoint_host(custom_endpoint_host),
+      endpoint_identifier(endpoint_identifier),
+      region(region),
+      refresh_rate_nanos(refresh_rate_nanos),
+      enable_logging(enable_logging) {
   if (enable_logging) {
     this->logger = init_log_file();
   }
@@ -66,23 +67,40 @@ CUSTOM_ENDPOINT_MONITOR::CUSTOM_ENDPOINT_MONITOR(const std::shared_ptr<HOST_INFO
   }
 
   this->rds_client = std::make_shared<Aws::RDS::RDSClient>(
-    Aws::Auth::DefaultAWSCredentialsProviderChain().GetAWSCredentials(), client_config);
+      Aws::Auth::DefaultAWSCredentialsProviderChain().GetAWSCredentials(), client_config);
 
   this->run();
 }
+
+#ifdef UNIT_TEST_BUILD
+CUSTOM_ENDPOINT_MONITOR::CUSTOM_ENDPOINT_MONITOR(const std::string& custom_endpoint_host,
+                                                 const std::string& endpoint_identifier, const std::string& region,
+                                                 long long refresh_rate_nanos, bool enable_logging,
+                                                 std::shared_ptr<Aws::RDS::RDSClient> client)
+    : custom_endpoint_host(custom_endpoint_host),
+      endpoint_identifier(endpoint_identifier),
+      region(region),
+      refresh_rate_nanos(refresh_rate_nanos),
+      enable_logging(enable_logging),
+      rds_client(std::move(client)) {
+  if (enable_logging) {
+    this->logger = init_log_file();
+  }
+  this->run();
+}
+#endif
 
 bool CUSTOM_ENDPOINT_MONITOR::should_dispose() { return true; }
 
 bool CUSTOM_ENDPOINT_MONITOR::has_custom_endpoint_info() const {
   auto default_val = std::shared_ptr<CUSTOM_ENDPOINT_INFO>(nullptr);
-  return custom_endpoint_cache.get(this->custom_endpoint_host_info->get_host(), default_val) != default_val;
+  return custom_endpoint_cache.get(this->custom_endpoint_host, default_val) != default_val;
 }
 
 void CUSTOM_ENDPOINT_MONITOR::run() {
   this->thread_pool.resize(1);
   this->thread_pool.push([=](int id) {
-    MYLOG_TRACE(this->logger, 0, "Starting custom endpoint monitor for '%s'",
-                this->custom_endpoint_host_info->get_host().c_str());
+    MYLOG_TRACE(this->logger, 0, "Starting custom endpoint monitor for '%s'", this->custom_endpoint_host.c_str());
 
     try {
       while (!this->should_stop.load()) {
@@ -92,7 +110,7 @@ void CUSTOM_ENDPOINT_MONITOR::run() {
         filter.SetValues({"custom"});
 
         Aws::RDS::Model::DescribeDBClusterEndpointsRequest request;
-        request.SetDBClusterIdentifier(this->endpoint_identifier);
+        request.SetDBClusterEndpointIdentifier(this->endpoint_identifier);
         request.SetFilters({filter});
         const auto response = this->rds_client->DescribeDBClusterEndpoints(request);
 
@@ -108,37 +126,36 @@ void CUSTOM_ENDPOINT_MONITOR::run() {
           continue;
         }
         const std::shared_ptr<CUSTOM_ENDPOINT_INFO> endpoint_info =
-          CUSTOM_ENDPOINT_INFO::from_db_cluster_endpoint(custom_endpoints[0]);
+            CUSTOM_ENDPOINT_INFO::from_db_cluster_endpoint(custom_endpoints[0]);
         const std::shared_ptr<CUSTOM_ENDPOINT_INFO> cache_endpoint_info =
-          custom_endpoint_cache.get(this->custom_endpoint_host_info->get_host(), nullptr);
+            custom_endpoint_cache.get(this->custom_endpoint_host, nullptr);
 
         if (cache_endpoint_info != nullptr && cache_endpoint_info == endpoint_info) {
           const long long elapsed_time =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
+              std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
           std::this_thread::sleep_for(
-            std::chrono::nanoseconds(std::max(static_cast<long long>(0), this->refresh_rate_nanos - elapsed_time)));
+              std::chrono::nanoseconds(std::max(static_cast<long long>(0), this->refresh_rate_nanos - elapsed_time)));
           continue;
         }
 
         MYLOG_TRACE(this->logger, 0, "Detected change in custom endpoint info for '%s':\n{%s}",
-                    custom_endpoint_host_info->get_host().c_str(), endpoint_info->to_string().c_str());
+                    custom_endpoint_host.c_str(), endpoint_info->to_string().c_str());
 
         // The custom endpoint info has changed, so we need to update the set of allowed/blocked hosts.
         std::shared_ptr<ALLOWED_AND_BLOCKED_HOSTS> allowed_and_blocked_hosts;
         if (endpoint_info->get_member_list_type() == STATIC_LIST) {
           allowed_and_blocked_hosts =
-            std::make_shared<ALLOWED_AND_BLOCKED_HOSTS>(endpoint_info->get_static_members(), std::set<std::string>());
+              std::make_shared<ALLOWED_AND_BLOCKED_HOSTS>(endpoint_info->get_static_members(), std::set<std::string>());
         } else {
-          allowed_and_blocked_hosts =
-            std::make_shared<ALLOWED_AND_BLOCKED_HOSTS>(std::set<std::string>(), endpoint_info->get_excluded_members());
+          allowed_and_blocked_hosts = std::make_shared<ALLOWED_AND_BLOCKED_HOSTS>(
+              std::set<std::string>(), endpoint_info->get_excluded_members());
         }
 
-        custom_endpoint_cache.put(this->custom_endpoint_host_info->get_host(), endpoint_info,
-                                  CUSTOM_ENDPOINT_INFO_EXPIRATION_NANOS);
+        custom_endpoint_cache.put(this->custom_endpoint_host, endpoint_info, CUSTOM_ENDPOINT_INFO_EXPIRATION_NANOS);
         const long long elapsed_time =
-          std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
+            std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count();
         std::this_thread::sleep_for(
-          std::chrono::nanoseconds(std::max(static_cast<long long>(0), this->refresh_rate_nanos - elapsed_time)));
+            std::chrono::nanoseconds(std::max(static_cast<long long>(0), this->refresh_rate_nanos - elapsed_time)));
       }
 
     } catch (const std::exception& e) {
@@ -149,7 +166,7 @@ void CUSTOM_ENDPOINT_MONITOR::run() {
 }
 
 std::string CUSTOM_ENDPOINT_MONITOR::get_endpoints_as_string(
-  const std::vector<Aws::RDS::Model::DBClusterEndpoint>& custom_endpoints) {
+    const std::vector<Aws::RDS::Model::DBClusterEndpoint>& custom_endpoints) {
   if (custom_endpoints.empty()) {
     return "<no endpoints>";
   }
@@ -171,9 +188,10 @@ void CUSTOM_ENDPOINT_MONITOR::stop() {
   this->should_stop.store(true);
   this->thread_pool.stop(true);
   this->thread_pool.resize(0);
-  custom_endpoint_cache.remove(this->custom_endpoint_host_info->get_host());
+  custom_endpoint_cache.remove(this->custom_endpoint_host);
+  this->rds_client.reset();
   --SDK_HELPER;
-  MYLOG_TRACE(this->logger, 0, "Stopped custom endpoint monitor for '%s'", this->custom_endpoint_host_info->get_host().c_str());
+  MYLOG_TRACE(this->logger, 0, "Stopped custom endpoint monitor for '%s'", this->custom_endpoint_host.c_str());
 }
 
 void CUSTOM_ENDPOINT_MONITOR::clear_cache() { custom_endpoint_cache.clear(); }

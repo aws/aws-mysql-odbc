@@ -73,9 +73,9 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     connect.cc
     connection_handler.cc
     connection_proxy.cc
-    custom_endpoint_proxy.cc
     custom_endpoint_info.cc
     custom_endpoint_monitor.cc
+    custom_endpoint_proxy.cc
     cursor.cc
     desc.cc
     dll.cc
@@ -148,9 +148,9 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    cluster_topology_info.h
                                    connection_handler.h
                                    connection_proxy.h
-                                   custom_endpoint_proxy.h
                                    custom_endpoint_info.h
                                    custom_endpoint_monitor.h
+                                   custom_endpoint_proxy.h
                                    driver.h
                                    efm_proxy.h
                                    error.h
