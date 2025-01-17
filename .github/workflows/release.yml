@@ -149,6 +149,61 @@ jobs:
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
           if-no-files-found: error
 
+  build-al2023:
+    name: Amazon Linux 2023
+    runs-on:
+      - codebuild-mysql-odbc-AL2023-${{ github.run_id }}-${{ github.run_attempt }}
+    env:
+      CMAKE_GENERATOR: Unix Makefiles
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+      - name: Print OS version
+        run: cat /etc/os-release
+      - name: Print default working directory
+        run: pwd
+      - name: Install build dependencies
+        run: |
+          sudo dnf update -y
+          sudo dnf install cmake unixODBC unixODBC-devel libcurl-devel openssl-devel gcc -y
+          sudo yum groupinstall "Development Tools" -y
+      - name: Install MySQL client libs and include files
+        run: |
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz
+          tar xf mysql.tar.gz
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        run: |
+          ./build_aws_sdk_unix.sh $BUILD_TYPE
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B build -G "$CMAKE_GENERATOR"
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          -DMYSQLCLIENT_STATIC_LINKING=FALSE
+          -DWITH_UNIXODBC=1
+          -DCONNECTOR_PLATFORM=linux
+          -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64
+          -DENABLE_UNIT_TESTS=FALSE
+          -DDISABLE_GUI=TRUE
+          -DBUNDLE_DEPENDENCIES=TRUE
+      - name: Copy AWS SDK
+        run: cp -r ./aws_sdk/install/lib64/*.so ./build/lib/
+      - name: Build driver
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE
+      - name: Build Installer
+        working-directory: ${{ github.workspace }}/build
+        if: success()
+        run: cpack .
+      - name: Upload AL2023 installer as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-al2023
+          path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
+          if-no-files-found: error
+
   build-windows:
     name: Windows
     runs-on: windows-latest
