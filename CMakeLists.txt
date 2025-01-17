@@ -909,7 +909,7 @@ macro(bundle_libs to_bundle ignored)
     file(GLOB _bundled
       "${MYSQL_LIB_DIR}/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
       "${MYSQL_LIB_DIR}/private/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
-      "${CMAKE_SOURCE_DIR}/aws_sdk/install/lib/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
+      "${CMAKE_SOURCE_DIR}/aws_sdk/install/lib*/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
     )
 
     # On windows, libs are in bin directory
