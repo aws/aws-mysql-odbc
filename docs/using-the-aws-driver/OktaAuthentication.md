@@ -1,12 +1,12 @@
-# Okta Authentication Plugin
+# Okta Authentication Support
 
-The Okta Authentication Plugin adds support for authentication via Federated Identity and then database access via IAM.
+Okta Authentication support allows authentication via Federated Identity and then database access via IAM.
 
 ## What is Federated Identity
 
 Federated Identity allows users to use the same set of credentials to access multiple services or resources across different organizations. This works by having Identity Providers (IdP) that manage and authenticate user credentials, and Service Providers (SP) that are services or resources that can be internal, external, and/or belonging to various organizations. Multiple SPs can establish trust relationships with a single IdP.
 
-When a user wants access to a resource, it authenticates with the IdP. From this an authentication token is generated and is passed to the SP then grants access to said resource. In the case of AD FS, the user signs into the AD FS sign in page. This generates a SAML Assertion which acts as a security token. The user then passes the SAML Assertion to the SP when requesting access to resources. The SP verifies the SAML Assertion and grants access to the user.
+When a user wants access to a resource, it authenticates with the IdP. From this an authentication token is generated and is passed to the SP then grants access to said resource. To learn more about Okta, see Okta's documentation [here](https://help.okta.com/en-us/content/topics/apps/apps-about-saml.htm).
 
 ## How to use Okta Authentication?
 
