@@ -24,80 +24,47 @@
 // See the GNU General Public License, version 2.0, for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program. If not, see 
+// along with this program. If not, see
 // http://www.gnu.org/licenses/gpl-2.0.html.
 
 #include <gtest/gtest.h>
 
 #include "connection_string_builder.h"
 
-class ConnectionStringBuilderTest : public testing::Test {
-};
-
-// No fields are set in the builder. Error expected.
-TEST_F(ConnectionStringBuilderTest, test_empty_builder) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  EXPECT_THROW(builder.build(), std::runtime_error);
-}
-
-// More than one required field is not set in the builder. Error expected.
-TEST_F(ConnectionStringBuilderTest, test_missing_fields) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  EXPECT_THROW(builder.withServer("testServer").build(), std::runtime_error);
-}
-
-// Required field DSN is not set in the builder. Error expected.
-TEST_F(ConnectionStringBuilderTest, test_missing_dsn) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  EXPECT_THROW(builder.withServer("testServer").withPort(3306).build(), std::runtime_error);
-}
-
-// Required field Server is not set in the builder. Error expected.
-TEST_F(ConnectionStringBuilderTest, test_missing_server) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  EXPECT_THROW(builder.withDSN("testDSN").withPort(3306).build(), std::runtime_error);
-}
-
-// Required field Port is not set in the builder. Error expected.
-TEST_F(ConnectionStringBuilderTest, test_missing_port) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  EXPECT_THROW(builder.withDSN("testDSN").withServer("testServer").build(), std::runtime_error);
-}
+class ConnectionStringBuilderTest : public testing::Test {};
 
 // All connection string fields are set in the builder.
 TEST_F(ConnectionStringBuilderTest, test_complete_string) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  const std::string connection_string = builder.withServer("testServer")
-                                   .withUID("testUser")
-                                   .withPWD("testPwd")
-                                   .withLogQuery(false)
-                                   .withMultiStatements(false)
-                                   .withDSN("testDSN")
-                                   .withFailoverTimeout(120000)
-                                   .withPort(3306)
-                                   .withDatabase("testDb")
-                                   .withConnectTimeout(20)
-                                   .withNetworkTimeout(20)
-                                   .withHostPattern("?.testDomain")
-                                   .withEnableFailureDetection(true)
-                                   .withFailureDetectionTime(10000)
-                                   .withFailureDetectionInterval(100)
-                                   .withFailureDetectionCount(4)
-                                   .withMonitorDisposalTime(300)
-                                   .withEnableClusterFailover(true)
-                                   .build();
+  ConnectionStringBuilder builder("testDSN", "testServer", 3306);
+  const std::string connection_string = builder.withUID("testUser")
+                                            .withPWD("testPwd")
+                                            .withLogQuery(false)
+                                            .withMultiStatements(false)
+                                            .withFailoverTimeout(120000)
+                                            .withDatabase("testDb")
+                                            .withConnectTimeout(20)
+                                            .withNetworkTimeout(20)
+                                            .withHostPattern("?.testDomain")
+                                            .withEnableFailureDetection(true)
+                                            .withFailureDetectionTime(10000)
+                                            .withFailureDetectionInterval(100)
+                                            .withFailureDetectionCount(4)
+                                            .withMonitorDisposalTime(300)
+                                            .withEnableClusterFailover(true)
+                                            .get_string();
 
-  const std::string expected = "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;DATABASE=testDb;LOG_QUERY=0;MULTI_STATEMENTS=0;ENABLE_CLUSTER_FAILOVER=1;FAILOVER_TIMEOUT=120000;CONNECT_TIMEOUT=20;NETWORK_TIMEOUT=20;HOST_PATTERN=?.testDomain;ENABLE_FAILURE_DETECTION=1;FAILURE_DETECTION_TIME=10000;FAILURE_DETECTION_INTERVAL=100;FAILURE_DETECTION_COUNT=4;MONITOR_DISPOSAL_TIME=300;";
+  const std::string expected =
+      "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;DATABASE=testDb;LOG_QUERY=0;MULTI_STATEMENTS=0;"
+      "ENABLE_CLUSTER_FAILOVER=1;FAILOVER_TIMEOUT=120000;CONNECT_TIMEOUT=20;NETWORK_TIMEOUT=20;HOST_PATTERN=?."
+      "testDomain;ENABLE_FAILURE_DETECTION=1;FAILURE_DETECTION_TIME=10000;FAILURE_DETECTION_INTERVAL=100;FAILURE_"
+      "DETECTION_COUNT=4;MONITOR_DISPOSAL_TIME=300;";
   EXPECT_EQ(0, expected.compare(connection_string));
 }
 
 // No optional fields are set in the builder. Build will succeed. Connection string with required fields.
 TEST_F(ConnectionStringBuilderTest, test_only_required_fields) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  const std::string connection_string = builder.withDSN("testDSN")
-                                   .withServer("testServer")
-                                   .withPort(3306)
-                                   .build();
+  ConnectionStringBuilder builder("testDSN", "testServer", 3306);
+  const std::string connection_string = builder.get_string();
 
   const std::string expected = "DSN=testDSN;SERVER=testServer;PORT=3306;";
   EXPECT_EQ(0, expected.compare(connection_string));
@@ -106,13 +73,8 @@ TEST_F(ConnectionStringBuilderTest, test_only_required_fields) {
 // Some optional fields are set and others not set in the builder. Build will succeed.
 // Connection string with required fields and ONLY the fields that were set.
 TEST_F(ConnectionStringBuilderTest, test_some_optional) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  const std::string connection_string = builder.withDSN("testDSN")
-                                   .withServer("testServer")
-                                   .withPort(3306)
-                                   .withUID("testUser")
-                                   .withPWD("testPwd")
-                                   .build();
+  ConnectionStringBuilder builder("testDSN", "testServer", 3306);
+  const std::string connection_string = builder.withUID("testUser").withPWD("testPwd").get_string();
 
   const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;");
   EXPECT_EQ(0, expected.compare(connection_string));
@@ -120,51 +82,27 @@ TEST_F(ConnectionStringBuilderTest, test_some_optional) {
 
 // Boolean values are set in the builder. Build will succeed. True will be marked as 1 in the string, false 0.
 TEST_F(ConnectionStringBuilderTest, test_setting_boolean_fields) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  const std::string connection_string = builder.withDSN("testDSN")
-                                   .withServer("testServer")
-                                   .withPort(3306)
-                                   .withUID("testUser")
-                                   .withPWD("testPwd")
-                                   .withLogQuery(false)
-                                   .withMultiStatements(true)
-                                   .withEnableClusterFailover(false)
-                                   .withEnableFailureDetection(true)
-                                   .build();
+  ConnectionStringBuilder builder("testDSN", "testServer", 3306);
+  const std::string connection_string = builder.withUID("testUser")
+                                            .withPWD("testPwd")
+                                            .withLogQuery(false)
+                                            .withMultiStatements(true)
+                                            .withEnableClusterFailover(false)
+                                            .withEnableFailureDetection(true)
+                                            .get_string();
 
-  const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=0;MULTI_STATEMENTS=1;ENABLE_CLUSTER_FAILOVER=0;ENABLE_FAILURE_DETECTION=1;");
+  const std::string expected(
+      "DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=0;MULTI_STATEMENTS=1;ENABLE_CLUSTER_"
+      "FAILOVER=0;ENABLE_FAILURE_DETECTION=1;");
   EXPECT_EQ(0, expected.compare(connection_string));
 }
 
-// Create a builder with required values. Then append other properties to the builder. Then build the connection string. Build will succeed.
+// Create a builder with required values. Then append other properties to the builder. Then build the connection string.
+// Build will succeed.
 TEST_F(ConnectionStringBuilderTest, test_setting_multiple_steps_1) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  builder.withDSN("testDSN").withServer("testServer").withPort(3306);
-
-  builder.withUID("testUser").withPWD("testPwd").withLogQuery(true);
-  const std::string connection_string = builder.build();
+  ConnectionStringBuilder builder("testDSN", "testServer", 3306);
+  const std::string connection_string = builder.withUID("testUser").withPWD("testPwd").withLogQuery(true).get_string();
 
   const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=1;");
   EXPECT_EQ(0, expected.compare(connection_string));
-}
-
-// Create a builder initially without all required values. Then append other properties to the builder.
-// After second round of values, all required values are set. Build the connection string. Build will succeed.
-TEST_F(ConnectionStringBuilderTest, test_setting_multiple_steps_2) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  builder.withDSN("testDSN").withServer("testServer").withUID("testUser").withPWD("testPwd");
-
-  builder.withPort(3306).withLogQuery(true);
-  const std::string connection_string = builder.build();
-
-  const std::string expected("DSN=testDSN;SERVER=testServer;PORT=3306;UID=testUser;PWD=testPwd;LOG_QUERY=1;");
-  EXPECT_EQ(0, expected.compare(connection_string));
-}
-
-// Create a builder with some values. Then append more values to the builder, but leaving required values unset.
-// Then build the connection string. Error expected.
-TEST_F(ConnectionStringBuilderTest, test_multiple_steps_without_required) {
-  ConnectionStringBuilder builder = ConnectionStringBuilder();
-  builder.withServer("testServer").withPort(3306);
-  EXPECT_THROW(builder.withUID("testUser").withPWD("testPwd").withLogQuery(true).build(), std::runtime_error);
 }
