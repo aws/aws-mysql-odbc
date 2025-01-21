@@ -39,6 +39,8 @@ class ConnectionStringBuilder {
     length += sprintf(conn_in, "DSN=%s;SERVER=%s;PORT=%d;", dsn.c_str(), server.c_str(), port);
   }
 
+  ConnectionStringBuilder(const std::string& str) { length += sprintf(conn_in, "%s", str.c_str()); }
+
   ConnectionStringBuilder& withUID(const std::string& uid) {
     length += sprintf(conn_in + length, "UID=%s;", uid.c_str());
     return *this;
@@ -164,7 +166,7 @@ class ConnectionStringBuilder {
     return *this;
   }
 
-  std::string get_string() const { return conn_in; }
+  std::string getString() const { return conn_in; }
 
  private:
   char conn_in[4096] = "\0";

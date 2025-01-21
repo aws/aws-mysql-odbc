@@ -52,11 +52,13 @@
 #include <sql.h>
 #include <sqlext.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
+#if defined(__APPLE__) || defined(__linux__)
+  #include <arpa/inet.h>
+  #include <netdb.h>
+  #include <netinet/in.h>
+  #include <sys/socket.h>
+  #include <sys/types.h>
+#endif
 
 #include "connection_string_builder.h"
 #include "integration_test_utils.h"
@@ -90,7 +92,7 @@ protected:
   int MYSQL_PROXY_PORT = INTEGRATION_TEST_UTILS::str_to_int(std::getenv("MYSQL_PROXY_PORT"));
   Aws::String cluster_id = MYSQL_CLUSTER_URL.substr(0, MYSQL_CLUSTER_URL.find('.'));
 
-  ConnectionStringBuilder builder;
+  std::string default_connection_string;
   std::string connection_string;
 
   SQLCHAR conn_in[4096] = "\0", conn_out[4096] = "\0", sqlstate[6] = "\0", message[SQL_MAX_MESSAGE_LENGTH] = "\0";
