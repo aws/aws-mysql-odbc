@@ -23,7 +23,7 @@ env:
 jobs:
   community-tests:
     name: Dockerized Community Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       CMAKE_GENERATOR: Unix Makefiles
 
