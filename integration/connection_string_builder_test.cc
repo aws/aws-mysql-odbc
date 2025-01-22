@@ -38,10 +38,11 @@ TEST_F(ConnectionStringBuilderTest, test_complete_string) {
   ConnectionStringBuilder builder("testDSN", "testServer", 3306);
   const std::string connection_string = builder.withUID("testUser")
                                             .withPWD("testPwd")
+                                            .withDatabase("testDb")
                                             .withLogQuery(false)
                                             .withMultiStatements(false)
+                                            .withEnableClusterFailover(true)
                                             .withFailoverTimeout(120000)
-                                            .withDatabase("testDb")
                                             .withConnectTimeout(20)
                                             .withNetworkTimeout(20)
                                             .withHostPattern("?.testDomain")
@@ -50,7 +51,6 @@ TEST_F(ConnectionStringBuilderTest, test_complete_string) {
                                             .withFailureDetectionInterval(100)
                                             .withFailureDetectionCount(4)
                                             .withMonitorDisposalTime(300)
-                                            .withEnableClusterFailover(true)
                                             .getString();
 
   const std::string expected =
