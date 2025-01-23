@@ -151,21 +151,35 @@ TEST_F(CustomEndpointIntegrationTest, test_CustomeEndpointFailover) {
                           .getString();
   SQLCHAR conn_out[4096] = "\0";
   SQLSMALLINT len;
+  std::cout << "Establishing connection to " << connection_string.c_str() << std::endl;
   EXPECT_EQ(SQL_SUCCESS, SQLDriverConnect(dbc, nullptr, AS_SQLCHAR(connection_string.c_str()), SQL_NTS, conn_out,
                                           MAX_NAME_LEN, &len, SQL_DRIVER_NOPROMPT));
 
+  std::cout << "Established connection to " << connection_string.c_str() << std::endl;
   const std::vector<std::string>& endpoint_members = endpoint_info.GetStaticMembers();
   const std::string current_connection_id = query_instance_id(dbc);
 
   EXPECT_NE(std::find(endpoint_members.begin(), endpoint_members.end(), current_connection_id), endpoint_members.end());
 
+  std::cout << "Triggering failover from " << writer_id.c_str() << " to " << current_connection_id.c_str() << std::endl;
   failover_cluster_and_wait_until_writer_changed(
       rds_client, cluster_id, writer_id, current_connection_id == writer_id ? target_writer_id : current_connection_id);
 
   assert_query_failed(dbc, SERVER_ID_QUERY, ERROR_COMM_LINK_CHANGED);
 
+  std::cout << "Failover triggered" << std::endl;
+
   const std::string new_connection_id = query_instance_id(dbc);
+
+  std::cout << "New connection ID " << new_connection_id.c_str() << std::endl;
 
   EXPECT_NE(std::find(endpoint_members.begin(), endpoint_members.end(), new_connection_id), endpoint_members.end());
   EXPECT_EQ(SQL_SUCCESS, SQLDisconnect(dbc));
+
+  if (nullptr != dbc) {
+    SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+  }
+  if (nullptr != env) {
+    SQLFreeHandle(SQL_HANDLE_ENV, env);
+  }
 }

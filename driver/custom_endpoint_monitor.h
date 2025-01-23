@@ -42,13 +42,14 @@ class CUSTOM_ENDPOINT_MONITOR : public std::enable_shared_from_this<CUSTOM_ENDPO
  public:
   CUSTOM_ENDPOINT_MONITOR(const std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
                           const std::string& custom_endpoint_host, const std::string& endpoint_identifier,
-                          const std::string& region, long long refresh_rate_nanos, bool enable_logging = false);
+                          const std::string& region, long long refresh_rate_nanos, ctpl::thread_pool& thread_pool,
+                          bool enable_logging = false);
 #ifdef UNIT_TEST_BUILD
-  CUSTOM_ENDPOINT_MONITOR() = default;
+  CUSTOM_ENDPOINT_MONITOR(ctpl::thread_pool& pool): thread_pool(pool){};
   CUSTOM_ENDPOINT_MONITOR(const std::shared_ptr<TOPOLOGY_SERVICE> topology_service,
                           const std::string& custom_endpoint_host, const std::string& endpoint_identifier,
-                          const std::string& region, long long refresh_rate_nanos, bool enable_logging,
-                          std::shared_ptr<Aws::RDS::RDSClient> client);
+                          const std::string& region, long long refresh_rate_nanos, ctpl::thread_pool& thread_pool,
+                          bool enable_logging, std::shared_ptr<Aws::RDS::RDSClient> client);
 #endif
 
   static bool should_dispose();
@@ -66,7 +67,7 @@ class CUSTOM_ENDPOINT_MONITOR : public std::enable_shared_from_this<CUSTOM_ENDPO
   long long refresh_rate_nanos;
   bool enable_logging;
   std::shared_ptr<FILE> logger;
-  std::thread thread_pool;
+  ctpl::thread_pool& thread_pool;
   bool should_stop;
   std::shared_ptr<TOPOLOGY_SERVICE> topology_service;
 

@@ -83,6 +83,7 @@ CONNECTION_PROXY* CONNECTION_HANDLER::connect(std::shared_ptr<HOST_INFO> host_in
     }
 
     my_SQLFreeConnect(dbc_clone);
+    new_connection->set_dbc(dbc);
 
     return new_connection;
 }

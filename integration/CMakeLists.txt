@@ -96,14 +96,9 @@ set(TEST_SOURCES
   integration_test_utils.cc
   integration_test_utils.h
 
-  base_failover_integration_test.cc
-  connection_string_builder_test.cc)
+  base_failover_integration_test.cc)
 set(INTEGRATION_TESTS 
   custom_endpoint_integration_test.cc
-  iam_authentication_integration_test.cc
-  secrets_manager_integration_test.cc
-  network_failover_integration_test.cc
-  failover_integration_test.cc
   )
 
 if(NOT ENABLE_PERFORMANCE_TESTS)

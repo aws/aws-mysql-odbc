@@ -51,7 +51,9 @@ class CustomEndpointProxyTest : public testing::Test {
   DBC* dbc;
   DataSource* ds;
   MOCK_CONNECTION_PROXY* mock_connection_proxy;
-  std::shared_ptr<MOCK_CUSTOM_ENDPOINT_MONITOR> mock_monitor = std::make_shared<MOCK_CUSTOM_ENDPOINT_MONITOR>();
+  ctpl::thread_pool monitor_thread_pool;
+  std::shared_ptr<MOCK_CUSTOM_ENDPOINT_MONITOR> mock_monitor =
+      std::make_shared<MOCK_CUSTOM_ENDPOINT_MONITOR>(monitor_thread_pool);
 
   static void SetUpTestSuite() {}
 

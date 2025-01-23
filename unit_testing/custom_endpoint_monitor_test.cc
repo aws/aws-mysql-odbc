@@ -63,10 +63,9 @@ class CustomEndpointMonitorTest : public testing::Test {
   MOCK_CONNECTION_PROXY* mock_connection_proxy;
   std::shared_ptr<MOCK_RDS_CLIENT> mock_rds_client;
   std::shared_ptr<MOCK_TOPOLOGY_SERVICE> mock_topology_service;
+  ctpl::thread_pool monitor_thread_pool;
 
-  static void SetUpTestSuite() {
-    Aws::InitAPI(sdk_options);
-  }
+  static void SetUpTestSuite() { Aws::InitAPI(sdk_options); }
 
   static void TearDownTestSuite() {
     Aws::ShutdownAPI(sdk_options);
@@ -94,15 +93,14 @@ TEST_F(CustomEndpointMonitorTest, TestRun) {
   const auto expected_result = Model::DescribeDBClusterEndpointsResult().WithDBClusterEndpoints(endpoints);
   const auto expected_outcome = Model::DescribeDBClusterEndpointsOutcome(expected_result);
 
-  EXPECT_CALL(*mock_rds_client, DescribeDBClusterEndpoints(Property(
-                                    "GetDBClusterEndpointIdentifier",
-                                    &Model::DescribeDBClusterEndpointsRequest::GetDBClusterEndpointIdentifier,
-                                    StrEq("custom"))))
+  EXPECT_CALL(*mock_rds_client,
+              DescribeDBClusterEndpoints(
+                  Property("GetDBClusterEndpointIdentifier",
+                           &Model::DescribeDBClusterEndpointsRequest::GetDBClusterEndpointIdentifier, StrEq("custom"))))
       .WillRepeatedly(Return(expected_outcome));
 
   CUSTOM_ENDPOINT_MONITOR monitor(mock_topology_service, CUSTOM_ENDPOINT_URL, "custom", "us-east-1", REFRESH_RATE_NANOS,
-                                  true,
-                                  mock_rds_client);
+                                  monitor_thread_pool, true, mock_rds_client);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   monitor.stop();

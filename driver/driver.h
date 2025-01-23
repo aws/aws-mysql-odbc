@@ -569,6 +569,7 @@ struct	ENV
   MYERROR      error;
   std::mutex lock;
   ctpl::thread_pool failover_thread_pool;
+  ctpl::thread_pool custom_endpoint_thread_pool;
 
   ENV(SQLINTEGER ver) : odbc_ver(ver)
   {}

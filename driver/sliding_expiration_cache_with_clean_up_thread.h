@@ -41,11 +41,11 @@ class SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD : public SLIDING_EXPIRATION_
   SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD() = default;
   SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func,
                                                 std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func)
-      : SLIDING_EXPIRATION_CACHE(std::move(should_dispose_func), std::move(item_disposal_func)){};
+      : SLIDING_EXPIRATION_CACHE<K, V>(std::move(should_dispose_func), std::move(item_disposal_func)){};
   SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func,
                                                 std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func,
                                                 long long clean_up_interval_nanos)
-      : SLIDING_EXPIRATION_CACHE(std::move(should_dispose_func), std::move(item_disposal_func),
+      : SLIDING_EXPIRATION_CACHE<K, V>(std::move(should_dispose_func), std::move(item_disposal_func),
                                  clean_up_interval_nanos){};
   ~SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD() = default;
 

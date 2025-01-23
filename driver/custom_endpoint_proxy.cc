@@ -145,7 +145,8 @@ void CUSTOM_ENDPOINT_PROXY::wait_for_custom_endpoint_info(std::shared_ptr<CUSTOM
 std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> CUSTOM_ENDPOINT_PROXY::create_custom_endpoint_monitor(
     const long long refresh_rate_nanos) {
   return std::make_shared<CUSTOM_ENDPOINT_MONITOR>(this->topology_service, this->custom_endpoint_host,
-                                                   this->custom_endpoint_id, this->region, refresh_rate_nanos);
+                                                   this->custom_endpoint_id, this->region, refresh_rate_nanos,
+                                                   this->dbc->env->custom_endpoint_thread_pool);
 }
 
 std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> CUSTOM_ENDPOINT_PROXY::create_monitor_if_absent(DataSource* ds) {

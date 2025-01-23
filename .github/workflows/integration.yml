@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - test/custom-endpoints-integration-tests
   pull_request:
     branches:
       - '*'
