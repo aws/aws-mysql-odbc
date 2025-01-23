@@ -47,7 +47,7 @@ static std::string test_endpoint;
 
 class IamAuthenticationIntegrationTest : public testing::Test {
 protected:
-    ConnectionStringBuilder builder;
+    std::string default_connection_string = "";
     SQLHENV env = nullptr;
     SQLHDBC dbc = nullptr;
 
@@ -63,14 +63,11 @@ protected:
         iam_user = INTEGRATION_TEST_UTILS::get_env_var("IAM_USER", "john_doe");
         test_region = INTEGRATION_TEST_UTILS::get_env_var("RDS_REGION", "us-east-2");
 
-        auto conn_str_builder = ConnectionStringBuilder();
-        auto conn_str = conn_str_builder
-            .withDSN(test_dsn)
-            .withServer(test_endpoint)
-            .withUID(test_user)
-            .withPWD(test_pwd)
-            .withPort(test_port)
-            .withDatabase(test_db).build();
+        auto conn_str = ConnectionStringBuilder(test_dsn, test_endpoint, test_port)
+                            .withUID(test_user)
+                            .withPWD(test_pwd)
+                            .withDatabase(test_db)
+                            .getString();
 
         SQLHENV env1 = nullptr;
         SQLHDBC dbc1 = nullptr;
@@ -122,14 +119,12 @@ protected:
         SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
         SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
-        builder = ConnectionStringBuilder();
-        builder
-            .withDSN(test_dsn)
-            .withDatabase(test_db)
-            .withEnableClusterFailover(false) // Failover interferes with some of our tests
-            .withAuthMode("IAM")
-            .withAuthRegion(test_region)
-            .withAuthExpiration(900);
+        default_connection_string = ConnectionStringBuilder(test_dsn, test_endpoint, test_port)
+                                        .withEnableClusterFailover(false)  // Failover interferes with some of our tests
+                                        .withAuthMode("IAM")
+                                        .withAuthRegion(test_region)
+                                        .withAuthExpiration(900)
+                                        .getString();
     }
 
     void TearDown() override {
@@ -144,12 +139,11 @@ protected:
 
 // Tests a simple IAM connection with all expected fields provided.
 TEST_F(IamAuthenticationIntegrationTest, SimpleIamConnection) {
-    auto connection_string = builder
-        .withServer(test_endpoint)
-        .withAuthHost(test_endpoint)
-        .withUID(iam_user)
-        .withPort(test_port)
-        .withAuthPort(test_port).build();
+    auto connection_string = ConnectionStringBuilder(default_connection_string)
+                                 .withAuthHost(test_endpoint)
+                                 .withUID(iam_user)
+                                 .withAuthPort(test_port)
+                                 .getString();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -164,11 +158,11 @@ TEST_F(IamAuthenticationIntegrationTest, SimpleIamConnection) {
 // Tests that IAM connection will still connect to the provided server
 // when the Auth host is not provided.
 TEST_F(IamAuthenticationIntegrationTest, ServerWithNoAuthHost) {
-    auto connection_string = builder
-        .withServer(test_endpoint)
-        .withUID(iam_user)
-        .withPort(test_port)
-        .withAuthPort(test_port).build();
+    auto connection_string = ConnectionStringBuilder(default_connection_string)
+                                 .withAuthHost(test_endpoint)
+                                 .withUID(iam_user)
+                                 .withAuthPort(test_port)
+                                 .getString();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -183,11 +177,11 @@ TEST_F(IamAuthenticationIntegrationTest, ServerWithNoAuthHost) {
 // Tests that IAM connection will still connect via the provided port
 // when the auth port is not provided.
 TEST_F(IamAuthenticationIntegrationTest, PortWithNoAuthPort) {
-    auto connection_string = builder
-        .withServer(test_endpoint)
-        .withAuthHost(test_endpoint)
-        .withUID(iam_user)
-        .withPort(test_port).build();
+    auto connection_string = ConnectionStringBuilder(default_connection_string)
+                                 .withAuthHost(test_endpoint)
+                                 .withUID(iam_user)
+                                 .withAuthPort(test_port)
+                                 .getString();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -204,11 +198,14 @@ TEST_F(IamAuthenticationIntegrationTest, PortWithNoAuthPort) {
 TEST_F(IamAuthenticationIntegrationTest, ConnectToIpAddress) {
     auto ip_address = INTEGRATION_TEST_UTILS::host_to_IP(test_endpoint);
     
-    auto connection_string = builder
-        .withServer(ip_address)
-        .withAuthHost(test_endpoint)
-        .withUID(iam_user)
-        .withPort(test_port).build();
+    auto connection_string = ConnectionStringBuilder(test_dsn, ip_address, test_port)
+                                 .withEnableClusterFailover(false)  // Failover interferes with some of our tests
+                                 .withAuthMode("IAM")
+                                 .withAuthRegion(test_region)
+                                 .withAuthExpiration(900)
+                                 .withAuthHost(test_endpoint)
+                                 .withUID(iam_user)
+                                 .getString();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -223,12 +220,12 @@ TEST_F(IamAuthenticationIntegrationTest, ConnectToIpAddress) {
 // Tests that IAM connection will still connect
 // when given a wrong password (because the password gets replaced by the auth token).
 TEST_F(IamAuthenticationIntegrationTest, WrongPassword) {
-    auto connection_string = builder
-        .withServer(test_endpoint)
-        .withAuthHost(test_endpoint)
-        .withUID(iam_user)
-        .withPWD("WRONG_PASSWORD")
-        .withPort(test_port).build();
+    auto connection_string = ConnectionStringBuilder(default_connection_string)
+                                 .withAuthHost(test_endpoint)
+                                 .withUID(iam_user)
+                                 .withPWD("WRONG_PASSWORD")
+                                 .withAuthPort(test_port)
+                                 .getString();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -242,11 +239,11 @@ TEST_F(IamAuthenticationIntegrationTest, WrongPassword) {
 
 // Tests that the IAM connection will fail when provided a wrong user.
 TEST_F(IamAuthenticationIntegrationTest, WrongUser) {
-    auto connection_string = builder
-        .withServer(test_endpoint)
-        .withAuthHost(test_endpoint)
-        .withUID("WRONG_USER")
-        .withPort(test_port).build();
+    auto connection_string = ConnectionStringBuilder(default_connection_string)
+                                 .withAuthHost(test_endpoint)
+                                 .withUID("WRONG_USER")
+                                 .withAuthPort(test_port)
+                                 .getString();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
@@ -267,11 +264,11 @@ TEST_F(IamAuthenticationIntegrationTest, WrongUser) {
 
 // Tests that the IAM connection will fail when provided an empty user.
 TEST_F(IamAuthenticationIntegrationTest, EmptyUser) {
-    auto connection_string = builder
-        .withServer(test_endpoint)
-        .withAuthHost(test_endpoint)
-        .withUID("")
-        .withPort(test_port).build();
+    auto connection_string = ConnectionStringBuilder(default_connection_string)
+                                 .withAuthHost(test_endpoint)
+                                 .withUID("")
+                                 .withAuthPort(test_port)
+                                 .getString();
 
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;

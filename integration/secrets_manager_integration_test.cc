@@ -55,7 +55,6 @@ class SecretsManagerIntegrationTest : public testing::Test {
     SQLHENV env = nullptr;
     SQLHDBC dbc = nullptr;
 
-    ConnectionStringBuilder builder;
     std::string connection_string;
 
     static void SetUpTestSuite() {
@@ -69,8 +68,11 @@ class SecretsManagerIntegrationTest : public testing::Test {
         SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
         SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
-        builder = ConnectionStringBuilder();
-        builder.withPort(MYSQL_PORT).withLogQuery(true);
+        connection_string = ConnectionStringBuilder(dsn, MYSQL_CLUSTER_URL, MYSQL_PORT)
+                                .withLogQuery(true)
+                                .withAuthMode("SECRETS MANAGER")
+                                .withSecretId(SECRETS_ARN)
+                                .getString();
     }
 
     void TearDown() override {
@@ -84,13 +86,7 @@ class SecretsManagerIntegrationTest : public testing::Test {
 };
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWithRegion) {
-    connection_string = builder
-                            .withDSN(dsn)
-                            .withServer(MYSQL_CLUSTER_URL)
-                            .withAuthMode("SECRETS MANAGER")
-                            .withAuthRegion(TEST_REGION)
-                            .withSecretId(SECRETS_ARN)
-                            .build();
+    connection_string = ConnectionStringBuilder(connection_string).withAuthRegion(TEST_REGION).getString();
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
 
@@ -99,12 +95,7 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWithRegion) {
 }
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWithoutRegion) {
-    connection_string = builder
-                            .withDSN(dsn)
-                            .withServer(MYSQL_CLUSTER_URL)
-                            .withAuthMode("SECRETS MANAGER")
-                            .withSecretId(SECRETS_ARN)
-                            .build();
+    connection_string = ConnectionStringBuilder(connection_string).getString();
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
 
@@ -113,13 +104,7 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWithoutRegion) {
 }
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWrongRegion) {
-    connection_string = builder
-                            .withDSN(dsn)
-                            .withServer(MYSQL_CLUSTER_URL)
-                            .withAuthMode("SECRETS MANAGER")
-                            .withAuthRegion("us-east-1")
-                            .withSecretId(SECRETS_ARN)
-                            .build();
+    connection_string = ConnectionStringBuilder(connection_string).withAuthRegion("us-east-1").getString();
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
 
@@ -135,13 +120,11 @@ TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerWrongRegion) {
 }
 
 TEST_F(SecretsManagerIntegrationTest, EnableSecretsManagerInvalidSecretID) {
-    connection_string = builder
-                            .withDSN(dsn)
-                            .withServer(MYSQL_CLUSTER_URL)
+    connection_string = ConnectionStringBuilder(dsn, MYSQL_CLUSTER_URL, MYSQL_PORT)
+                            .withLogQuery(true)
                             .withAuthMode("SECRETS MANAGER")
-                            .withAuthRegion(TEST_REGION)
                             .withSecretId("invalid-id")
-                            .build();
+                            .getString();
     SQLCHAR conn_out[4096] = "\0";
     SQLSMALLINT len;
 
