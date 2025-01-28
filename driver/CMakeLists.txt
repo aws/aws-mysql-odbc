@@ -62,6 +62,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     auth_util.cc
     aws_sdk_helper.cc
     base_metrics_holder.cc
+    cache_map.cc
     catalog.cc
     catalog_no_i_s.cc
     cluster_topology_info.cc
@@ -72,6 +73,9 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     connect.cc
     connection_handler.cc
     connection_proxy.cc
+    custom_endpoint_info.cc
+    custom_endpoint_monitor.cc
+    custom_endpoint_proxy.cc
     cursor.cc
     desc.cc
     dll.cc
@@ -131,9 +135,11 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/driver/driver.rc.cmake ${CMAKE_SOURCE_DIR}/driver/driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc @ONLY)
     SET(DRIVER_SRCS ${DRIVER_SRCS} driver${CONNECTOR_DRIVER_TYPE_SHORT}.def driver${CONNECTOR_DRIVER_TYPE_SHORT}.rc
                                    adfs_proxy.h
+                                   allowed_and_blocked_hosts.h
                                    auth_util.h
                                    aws_sdk_helper.h
                                    base_metrics_holder.h
+                                   cache_map.h
                                    catalog.h
                                    cluster_aware_hit_metrics_holder.h
                                    cluster_aware_metrics_container.h
@@ -142,6 +148,9 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
                                    cluster_topology_info.h
                                    connection_handler.h
                                    connection_proxy.h
+                                   custom_endpoint_info.h
+                                   custom_endpoint_monitor.h
+                                   custom_endpoint_proxy.h
                                    driver.h
                                    efm_proxy.h
                                    error.h

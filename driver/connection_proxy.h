@@ -177,6 +177,8 @@ public:
 
     void set_custom_error_message(const char* error_message);
 
+    void set_dbc(DBC* dbc) { this->dbc = dbc; };
+
 protected:
     DBC* dbc = nullptr;
     DataSource* ds = nullptr;

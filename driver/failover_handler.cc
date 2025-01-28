@@ -52,8 +52,7 @@ const char* MYSQL_READONLY_QUERY = "SELECT @@innodb_read_only AS is_reader";
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds)
     : FAILOVER_HANDLER(
-        dbc, ds, dbc ? dbc->connection_handler : nullptr,
-        std::make_shared<TOPOLOGY_SERVICE>(dbc ? dbc->id : 0, ds ? ds->opt_LOG_QUERY : false),
+        dbc, ds, dbc ? dbc->connection_handler : nullptr, dbc ? dbc->get_topology_service() : nullptr,
         std::make_shared<CLUSTER_AWARE_METRICS_CONTAINER>(dbc, ds)) {}
 
 FAILOVER_HANDLER::FAILOVER_HANDLER(DBC* dbc, DataSource* ds,
@@ -431,6 +430,7 @@ void FAILOVER_HANDLER::initialize_topology() {
         MYLOG_DBC_TRACE(dbc,
                     "[FAILOVER_HANDLER] m_is_cluster_topology_available=%s",
                     m_is_cluster_topology_available ? "true" : "false");
+        MYLOG_DBC_TRACE(dbc, topology_service->log_topology(current_topology).c_str());
         if (is_failover_enabled()) {
             this->dbc->env->failover_thread_pool.resize(current_topology->total_hosts());
         }
@@ -505,13 +505,13 @@ bool FAILOVER_HANDLER::trigger_failover_if_needed(const char* error_code,
 }
 
 bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const char*& error_msg) {
-    MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting reader failover procedure.");
-    auto result = failover_reader_handler->failover(current_topology);
+    MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Starting reader failover procedure with filtered topology: %s", this->topology_service->log_topology(this->topology_service->get_filtered_topology(current_topology)).c_str());
+    auto result = failover_reader_handler->failover(this->topology_service->get_filtered_topology(current_topology));
 
     if (result->connected) {
         current_host = result->new_host;
         connection_handler->update_connection(result->new_connection, current_host->get_host());
-        new_error_code = "08S02";
+        new_error_code = "08S02"; // Failover succeeded error code.
         error_msg = "The active SQL connection has changed.";
         MYLOG_DBC_TRACE(dbc,
                     "[FAILOVER_HANDLER] The active SQL connection has changed "
@@ -520,7 +520,7 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const cha
         return true;
     } else {
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Unable to establish SQL connection to reader node.");
-        new_error_code = "08S01";
+        new_error_code = "08S01"; // Failover failed error code.
         error_msg = "The active SQL connection was lost.";
         return false;
     }
@@ -537,16 +537,32 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code, const cha
         error_msg = "The active SQL connection was lost.";
         return false;
     }
+
+    const auto new_topology = result->new_topology;
+    const auto new_host = new_topology->get_writer();
+
     if (result->is_new_host) {
         // connected to a new writer host; take it over
-        current_topology = result->new_topology;
-        current_host = current_topology->get_writer();
+        current_topology = new_topology;
+        current_host = new_host;
+    }
+    const auto filtered_topology = this->topology_service->get_filtered_topology(new_topology);
+    const auto allowed_hosts = filtered_topology->get_instances();
+    if (std::find(allowed_hosts.begin(), allowed_hosts.end(), new_host) == allowed_hosts.end()) {
+        new_error_code = "08S01"; // Failover failed error code.
+        error_msg = "The active SQL connection was lost.";
+        MYLOG_DBC_TRACE(
+            dbc,
+            "[FAILOVER_HANDLER] The failover process identified the new writer but the host is not in the list of allowed hosts. "
+            "New writer host: '%s'. Allowed hosts: '%s'",
+            new_host->get_host().c_str(), 
+            this->topology_service->log_topology(filtered_topology).c_str());
+        return false;
     }
 
-    connection_handler->update_connection(
-        result->new_connection, result->new_topology->get_writer()->get_host());
+    connection_handler->update_connection(result->new_connection, new_host->get_host());
     
-    new_error_code = "08S02";
+    new_error_code = "08S02"; // Failover succeeded error code.
     error_msg = "The active SQL connection has changed.";
     MYLOG_DBC_TRACE(
         dbc,

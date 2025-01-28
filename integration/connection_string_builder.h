@@ -166,6 +166,38 @@ class ConnectionStringBuilder {
     return *this;
   }
 
+  ConnectionStringBuilder& withEnableCustomEndpointMonitoring(const bool& enable_custom_endpoint_monitoring) {
+    length +=
+        sprintf(conn_in + length, "ENABLE_CUSTOM_ENDPOINT_MONITORING=%d;", enable_custom_endpoint_monitoring ? 1 : 0);
+    return *this;
+  }
+  ConnectionStringBuilder& withCustomEndpointRegion(const std::string& region) {
+    length += sprintf(conn_in + length, "CUSTOM_ENDPOINT_REGION=%s;", region.c_str());
+    return *this;
+  }
+
+  ConnectionStringBuilder& withShouldWaitForInfo(const bool& should_wait_for_info) {
+    length += sprintf(conn_in + length, "WAIT_FOR_CUSTOM_ENDPOINT_INFO=%d;", should_wait_for_info ? 1 : 0);
+    return *this;
+  }
+
+  ConnectionStringBuilder& withCustomEndpointInfoRefreshRateMs(const long& custom_endpoint_info_refresh_rate_ms) {
+    length +=
+        sprintf(conn_in + length, "CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS=%ld;", custom_endpoint_info_refresh_rate_ms);
+    return *this;
+  }
+
+  ConnectionStringBuilder& withWaitOnCachedInfoDurationMs(const long& wait_on_cached_info_duration_ms) {
+    length +=
+        sprintf(conn_in + length, "WAIT_FOR_CUSTOM_ENDPOINT_INFO_TIMEOUT_MS=%ld;", wait_on_cached_info_duration_ms);
+    return *this;
+  }
+
+  ConnectionStringBuilder& withIdleMonitorExpirationMs(const long& idle_monitor_expiration_ms) {
+    length += sprintf(conn_in + length, "CUSTOM_ENDPOINT_MONITOR_EXPIRATION_MS=%ld;", idle_monitor_expiration_ms);
+    return *this;
+  }
+
   std::string getString() const { return conn_in; }
 
  private:

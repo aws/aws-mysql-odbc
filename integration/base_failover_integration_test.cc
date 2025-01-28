@@ -37,7 +37,9 @@
 #include <aws/core/Aws.h>
 #include <aws/core/auth/AWSCredentialsProvider.h>
 #include <aws/rds/model/DBCluster.h>
+#include <aws/rds/model/DBClusterEndpoint.h>
 #include <aws/rds/model/DBClusterMember.h>
+#include <aws/rds/model/DescribeDBClusterEndpointsRequest.h>
 #include <aws/rds/model/DescribeDBClustersRequest.h>
 #include <aws/rds/model/FailoverDBClusterRequest.h>
 
@@ -49,6 +51,7 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <sql.h>
 #include <sqlext.h>
 
@@ -267,6 +270,13 @@ protected:
       std::this_thread::sleep_for(std::chrono::seconds(1));
       status = get_DB_cluster(client, cluster_id).GetStatus();
     }
+  }
+
+  static Aws::RDS::Model::DBClusterEndpoint get_custom_endpoint_info(const Aws::RDS::RDSClient& client, const std::string& endpoint_id) {
+    Aws::RDS::Model::DescribeDBClusterEndpointsRequest request;
+    request.SetDBClusterEndpointIdentifier(endpoint_id);
+    const auto response = client.DescribeDBClusterEndpoints(request);
+    return response.GetResult().GetDBClusterEndpoints()[0];
   }
 
   static Aws::RDS::Model::DBClusterMember get_DB_cluster_writer_instance(const Aws::RDS::RDSClient& client, const Aws::String& cluster_id) {

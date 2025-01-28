@@ -57,6 +57,8 @@ add_executable(
 
   adfs_proxy_test.cc
   cluster_aware_metrics_test.cc
+  custom_endpoint_monitor_test.cc
+  custom_endpoint_proxy_test.cc
   efm_proxy_test.cc
   iam_proxy_test.cc
   failover_handler_test.cc

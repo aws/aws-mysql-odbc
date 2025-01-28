@@ -60,6 +60,7 @@
 #define IDD_TAB9                        140
 #define IDD_TAB10                       141
 #define IDD_TAB11                       142
+#define IDD_TAB12                       143
 #define IDC_LOGO                        1000
 #define IDC_EDIT                        1010
 #define IDC_EDIT_PASSWORD               1010
@@ -199,6 +200,12 @@
 #define IDC_EDIT_FED_AUTH_HOST          11032
 #define IDC_EDIT_FED_AUTH_PORT          11033
 #define IDC_EDIT_FED_AUTH_EXPIRATION    11034
+#define IDC_CHECK_ENABLE_CUSTOM_ENDPOINT_MONITORING 11040
+#define IDC_CHECK_WAIT_FOR_CUSTOM_ENDPOINT_INFO 11041
+#define IDC_EDIT_CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS 11042
+#define IDC_EDIT_WAIT_FOR_CUSTOM_ENDPOINT_INFO_TIMEOUT_MS 11043
+#define IDC_EDIT_CUSTOM_ENDPOINT_MONITOR_EXPIRATION_MS 11044
+#define IDC_EDIT_CUSTOM_ENDPOINT_REGION 11045
 #define MYSQL_ADMIN_PORT                33062
 #define IDC_STATIC                      -1
 

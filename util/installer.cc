@@ -284,6 +284,14 @@ static SQLWCHAR W_FAILURE_DETECTION_COUNT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E
 static SQLWCHAR W_MONITOR_DISPOSAL_TIME[] = { 'M', 'O', 'N', 'I', 'T', 'O', 'R', '_', 'D', 'I', 'S', 'P', 'O', 'S', 'A', 'L', '_', 'T', 'I', 'M', 'E', 0 };
 static SQLWCHAR W_FAILURE_DETECTION_TIMEOUT[] = { 'F', 'A', 'I', 'L', 'U', 'R', 'E', '_', 'D', 'E', 'T', 'E', 'C', 'T', 'I', 'O', 'N', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', 0 };
 
+/* Custom Endpoint */
+static SQLWCHAR W_ENABLE_CUSTOM_ENDPOINT_MONITORING[] = {'E', 'N', 'A', 'B', 'L', 'E', '_', 'C', 'U', 'S', 'T', 'O', 'M', '_', 'E', 'N', 'D', 'P', 'O', 'I', 'N', 'T', '_', 'M', 'O', 'N', 'I', 'T', 'O', 'R', 'I', 'N', 'G', 0};
+static SQLWCHAR W_CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS[] = { 'C', 'U', 'S', 'T', 'O', 'M', '_', 'E', 'N', 'D', 'P', 'O', 'I', 'N', 'T', '_', 'I', 'N', 'F', 'O', '_', 'R', 'E', 'F', 'R', 'E', 'S', 'H', '_', 'R', 'A', 'T', 'E', '_', 'M', 'S', 0 };
+static SQLWCHAR W_WAIT_FOR_CUSTOM_ENDPOINT_INFO[] = { 'W', 'A', 'I', 'T', '_', 'F', 'O', 'R', '_', 'C', 'U', 'S', 'T', 'O', 'M', '_', 'E', 'N', 'D', 'P', 'O', 'I', 'N', 'T', '_', 'I', 'N', 'F', 'O', 0 };
+static SQLWCHAR W_WAIT_FOR_CUSTOM_ENDPOINT_INFO_TIMEOUT_MS[] = { 'W', 'A', 'I', 'T', '_', 'F', 'O', 'R', '_', 'C', 'U', 'S', 'T', 'O', 'M', '_', 'E', 'N', 'D', 'P', 'O', 'I', 'N', 'T', '_', 'I', 'N', 'F', 'O', '_', 'T', 'I', 'M', 'E', 'O', 'U', 'T', '_', 'M', 'S', 0 };
+static SQLWCHAR W_CUSTOM_ENDPOINT_MONITOR_EXPIRATION_MS[] = { 'C', 'U', 'S', 'T', 'O', 'M', '_', 'E', 'N', 'D', 'P', 'O', 'I', 'N', 'T', '_', 'M', 'O', 'N', 'I', 'T', 'O', 'R', '_', 'E', 'X', 'P', 'I', 'R', 'A', 'T', 'I', 'O', 'N', '_', 'M', 'S', 0 };
+static SQLWCHAR W_CUSTOM_ENDPOINT_REGION[] = { 'C', 'U', 'S', 'T', 'O', 'M', '_', 'E', 'N', 'D', 'P', 'O', 'I', 'N', 'T', '_', 'R', 'E', 'G', 'I', 'O', 'N', 0 };
+
 /* DS_PARAM */
 /* externally used strings */
 const SQLWCHAR W_DRIVER_PARAM[]= {';', 'D', 'R', 'I', 'V', 'E', 'R', '=', 0};
@@ -341,7 +349,12 @@ SQLWCHAR *dsnparams[]= {W_DSN, W_DRIVER, W_DESCRIPTION, W_SERVER,
                         /* Monitoring */
                         W_ENABLE_FAILURE_DETECTION, W_FAILURE_DETECTION_TIME,
                         W_FAILURE_DETECTION_INTERVAL, W_FAILURE_DETECTION_COUNT,
-                        W_MONITOR_DISPOSAL_TIME, W_FAILURE_DETECTION_TIMEOUT};
+                        W_MONITOR_DISPOSAL_TIME, W_FAILURE_DETECTION_TIMEOUT,
+                        /* Custom Endpoints */
+                        W_ENABLE_CUSTOM_ENDPOINT_MONITORING,
+                        W_CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS, W_WAIT_FOR_CUSTOM_ENDPOINT_INFO,
+                        W_WAIT_FOR_CUSTOM_ENDPOINT_INFO_TIMEOUT_MS, W_CUSTOM_ENDPOINT_MONITOR_EXPIRATION_MS, W_CUSTOM_ENDPOINT_REGION};
+
 static const
 int dsnparamcnt= sizeof(dsnparams) / sizeof(SQLWCHAR *);
 /* DS_PARAM */
@@ -675,7 +688,7 @@ int Driver::from_kvpair_semicolon(const SQLWCHAR *attrs)
     memcpy(attribute, attrs, (split - attrs) * sizeof(SQLWCHAR));
     attribute[split - attrs]= 0; /* add null term */
     ++split;
-
+     
     /* if its one we want, copy it over */
     if (!sqlwcharcasecmp(W_DRIVER, attribute))
       dest = &lib;
@@ -1059,6 +1072,11 @@ void DataSource::reset() {
   this->opt_FAILURE_DETECTION_COUNT.set_default(DEFAULT_FAILURE_DETECTION_COUNT);
   this->opt_MONITOR_DISPOSAL_TIME.set_default(MONITOR_DISPOSAL_TIME_MS);
   this->opt_FAILURE_DETECTION_TIMEOUT.set_default(FAILURE_DETECTION_TIMEOUT_SECS);
+
+  this->opt_WAIT_FOR_CUSTOM_ENDPOINT_INFO.set_default(true);
+  this->opt_WAIT_FOR_CUSTOM_ENDPOINT_INFO_TIMEOUT_MS.set_default(5000);
+  this->opt_CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS.set_default(30000);
+  this->opt_CUSTOM_ENDPOINT_MONITOR_EXPIRATION_MS.set_default(900000);
 
   this->opt_AUTH_PORT.set_default(opt_PORT);
   this->opt_AUTH_EXPIRATION.set_default(900); // 15 minutes

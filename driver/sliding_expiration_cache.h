@@ -39,13 +39,15 @@
 template <class T>
 class SHOULD_DISPOSE_FUNC {
  public:
-  virtual bool should_dispose(T item);
+  virtual ~SHOULD_DISPOSE_FUNC() = default;
+  virtual bool should_dispose(T item) { return true; };
 };
 
 template <class T>
 class ITEM_DISPOSAL_FUNC {
  public:
-  virtual void dispose(T item);
+  virtual ~ITEM_DISPOSAL_FUNC() = default;
+  virtual void dispose(T item) {/* Do nothing. */};
 };
 
 template <class K, class V>
@@ -55,7 +57,7 @@ class SLIDING_EXPIRATION_CACHE {
    public:
     CACHE_ITEM() = default;
     CACHE_ITEM(V item, std::chrono::steady_clock::time_point expiration_time)
-        : item(item), expiration_time(expiration_time){};
+      : item(item), expiration_time(expiration_time){};
     ~CACHE_ITEM() = default;
     V item;
 
@@ -64,7 +66,7 @@ class SLIDING_EXPIRATION_CACHE {
       return this;
     }
 
-    bool should_clean_up(SHOULD_DISPOSE_FUNC<V>* should_dispose_func) {
+    bool should_clean_up(std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func) {
       if (should_dispose_func != nullptr) {
         return std::chrono::steady_clock::now() > this->expiration_time &&
                should_dispose_func->should_dispose(this->item);
@@ -82,15 +84,16 @@ class SLIDING_EXPIRATION_CACHE {
     this->item_disposal_func = nullptr;
   }
 
-  SLIDING_EXPIRATION_CACHE(SHOULD_DISPOSE_FUNC<V>* should_dispose_func, ITEM_DISPOSAL_FUNC<V>* item_disposal_func)
-      : should_dispose_func(should_dispose_func), item_disposal_func(item_disposal_func){};
-  SLIDING_EXPIRATION_CACHE(SHOULD_DISPOSE_FUNC<V>* should_dispose_func, ITEM_DISPOSAL_FUNC<V>* item_disposal_func,
-                           long long clean_up_interval_nanos)
-      : clean_up_interval_nanos(clean_up_interval_nanos),
-        should_dispose_func(should_dispose_func),
-        item_disposal_func(item_disposal_func){};
+  SLIDING_EXPIRATION_CACHE(std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func,
+                           std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func)
+    : should_dispose_func(should_dispose_func), item_disposal_func(item_disposal_func){};
+  SLIDING_EXPIRATION_CACHE(std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func,
+                           std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func, long long clean_up_interval_nanos)
+    : clean_up_interval_nanos(clean_up_interval_nanos),
+      should_dispose_func(std::move(should_dispose_func)),
+      item_disposal_func(std::move(item_disposal_func)){};
 
-  V compute_if_absent(K key, std::function<K(V)> mapping_function, long long item_expiration_nanos);
+  V compute_if_absent(K key, std::function<V(K)> mapping_function, long long item_expiration_nanos);
 
   V put(K key, V value, long long item_expiration_nanos);
   V get(K key, long long item_expiration_nanos, V default_value);
@@ -121,17 +124,16 @@ class SLIDING_EXPIRATION_CACHE {
   std::unordered_map<K, std::shared_ptr<CACHE_ITEM>> cache;
   long long clean_up_interval_nanos = 6000000000;  // 1 minutes
   std::atomic<std::chrono::steady_clock::time_point> clean_up_time_nanos;
-  SHOULD_DISPOSE_FUNC<V>* should_dispose_func;
-  ITEM_DISPOSAL_FUNC<V>* item_disposal_func;
+  std::shared_ptr<SHOULD_DISPOSE_FUNC<V>> should_dispose_func;
+  std::shared_ptr<ITEM_DISPOSAL_FUNC<V>> item_disposal_func;
 
   void remove_and_dispose(K key);
   void remove_if_expired(K key) {
-    std::vector<V> items;
     if (this->cache.count(key)) {
       std::shared_ptr<CACHE_ITEM> cache_item = this->cache[key];
       if (cache_item != nullptr && cache_item->should_clean_up(this->should_dispose_func)) {
         if (item_disposal_func != nullptr) {
-          item_disposal_func->dispose(items[0]);
+          item_disposal_func->dispose(cache_item->item);
         }
         this->cache.erase(key);
       }

@@ -364,49 +364,53 @@ unsigned int get_network_timeout(unsigned int seconds);
   X(FAILURE_DETECTION_TIMEOUT)         \
   X(MONITOR_DISPOSAL_TIME)
 
+#define CUSTOM_ENDPOINT_BOOL_OPTIONS_LIST(X) X(WAIT_FOR_CUSTOM_ENDPOINT_INFO) \
+  X(ENABLE_CUSTOM_ENDPOINT_MONITORING)
+
+#define CUSTOM_ENDPOINT_INT_OPTIONS_LIST(X)   \
+  X(CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS)     \
+  X(WAIT_FOR_CUSTOM_ENDPOINT_INFO_TIMEOUT_MS) \
+  X(CUSTOM_ENDPOINT_MONITOR_EXPIRATION_MS)
+
+#define CUSTOM_ENDPOINT_STR_OPTIONS_LIST(X) X(CUSTOM_ENDPOINT_REGION)
+
 #define STR_OPTIONS_LIST(X)                                                   \
   X(DSN)                                                                      \
   X(DRIVER)                                                                   \
   X(DESCRIPTION)                                                              \
-  X(SERVER)                                                                   \
-  X(UID)                                                                      \
-  X(PWD) MFA_OPTS(X) X(DATABASE) X(SOCKET) X(INITSTMT) X(CHARSET) X(SSL_KEY)  \
-      X(SSL_CERT) X(SSL_CA) X(SSL_CAPATH) X(SSL_CIPHER) X(SSL_MODE) X(RSAKEY) \
-          X(SAVEFILE) X(PLUGIN_DIR) X(DEFAULT_AUTH) X(LOAD_DATA_LOCAL_DIR)    \
-              X(OCI_CONFIG_FILE) X(OCI_CONFIG_PROFILE)                        \
-                  X(AUTHENTICATION_KERBEROS_MODE) X(TLS_VERSIONS) X(SSL_CRL)  \
-                      X(SSL_CRLPATH) X(SSLVERIFY) X(OPENTELEMETRY)            \
-                          AWS_AUTH_STR_OPTIONS_LIST(X) FAILOVER_STR_OPTIONS_LIST(X) FED_AUTH_STR_OPTIONS_LIST(X)
+  X(SERVER)                                                                                                          \
+  X(UID)                                                                                                             \
+  X(PWD)                                                                                                             \
+  MFA_OPTS(X) X(DATABASE) X(SOCKET) X(INITSTMT) X(CHARSET) X(SSL_KEY) X(SSL_CERT) X(SSL_CA) X(SSL_CAPATH)            \
+      X(SSL_CIPHER) X(SSL_MODE) X(RSAKEY) X(SAVEFILE) X(PLUGIN_DIR) X(DEFAULT_AUTH) X(LOAD_DATA_LOCAL_DIR)           \
+          X(OCI_CONFIG_FILE) X(OCI_CONFIG_PROFILE) X(AUTHENTICATION_KERBEROS_MODE) X(TLS_VERSIONS) X(SSL_CRL)        \
+              X(SSL_CRLPATH) X(SSLVERIFY) X(OPENTELEMETRY) AWS_AUTH_STR_OPTIONS_LIST(X) FAILOVER_STR_OPTIONS_LIST(X) \
+                  CUSTOM_ENDPOINT_STR_OPTIONS_LIST(X) FED_AUTH_STR_OPTIONS_LIST(X)
 
-#define INT_OPTIONS_LIST(X)                                      \
-  X(PORT)                                                        \
-  X(READTIMEOUT)                                                 \
-  X(WRITETIMEOUT)                                                \
-  X(CLIENT_INTERACTIVE) X(PREFETCH) FAILOVER_INT_OPTIONS_LIST(X) \
-      AWS_AUTH_INT_OPTIONS_LIST(X) MONITORING_INT_OPTIONS_LIST(X) FED_AUTH_INT_OPTIONS_LIST(X)
+#define INT_OPTIONS_LIST(X)                                                                            \
+  X(PORT)                                                                                              \
+  X(READTIMEOUT)                                                                                       \
+  X(WRITETIMEOUT)                                                                                      \
+  X(CLIENT_INTERACTIVE)                                                                                \
+  X(PREFETCH) FAILOVER_INT_OPTIONS_LIST(X) AWS_AUTH_INT_OPTIONS_LIST(X) MONITORING_INT_OPTIONS_LIST(X) \
+      CUSTOM_ENDPOINT_INT_OPTIONS_LIST(X) FED_AUTH_INT_OPTIONS_LIST(X)
 
 // TODO: remove AUTO_RECONNECT when special handling (warning)
 //       is not needed anymore.
-#define BOOL_OPTIONS_LIST(X)                                                   \
-  X(FOUND_ROWS)                                                                \
-  X(BIG_PACKETS)                                                               \
-  X(COMPRESSED_PROTO)                                                          \
-  X(NO_BIGINT)                                                                 \
-  X(SAFE)                                                                      \
-  X(AUTO_RECONNECT) X(AUTO_IS_NULL) X(NO_BINARY_RESULT) X(CAN_HANDLE_EXP_PWD)  \
-      X(ENABLE_CLEARTEXT_PLUGIN) X(GET_SERVER_PUBLIC_KEY) X(NO_PROMPT)         \
-          X(DYNAMIC_CURSOR) X(NO_DEFAULT_CURSOR) X(NO_LOCALE) X(PAD_SPACE)     \
-              X(NO_CACHE) X(FULL_COLUMN_NAMES) X(IGNORE_SPACE) X(NAMED_PIPE)   \
-                  X(NO_CATALOG) X(NO_SCHEMA) X(USE_MYCNF) X(NO_TRANSACTIONS)   \
-                      X(FORWARD_CURSOR) X(MULTI_STATEMENTS) X(COLUMN_SIZE_S32) \
-                          X(MIN_DATE_TO_ZERO) X(ZERO_DATE_TO_MIN) X(           \
-                              DFLT_BIGINT_BIND_STR) X(LOG_QUERY) X(NO_SSPS)    \
-                              X(NO_TLS_1_2) X(NO_TLS_1_3) X(NO_DATE_OVERFLOW)  \
-                                  X(ENABLE_LOCAL_INFILE) X(ENABLE_DNS_SRV)     \
-                                      X(MULTI_HOST)                            \
-                                          FAILOVER_BOOL_OPTIONS_LIST(X)        \
-                                              MONITORING_BOOL_OPTIONS_LIST(X) \
-                                                FED_AUTH_BOOL_OPTIONS_LIST(X)
+#define BOOL_OPTIONS_LIST(X)                                                                                         \
+  X(FOUND_ROWS)                                                                                                      \
+  X(BIG_PACKETS)                                                                                                     \
+  X(COMPRESSED_PROTO)                                                                                                \
+  X(NO_BIGINT)                                                                                                       \
+  X(SAFE)                                                                                                            \
+  X(AUTO_RECONNECT)                                                                                                  \
+  X(AUTO_IS_NULL) X(NO_BINARY_RESULT) X(CAN_HANDLE_EXP_PWD) X(ENABLE_CLEARTEXT_PLUGIN) X(GET_SERVER_PUBLIC_KEY)      \
+      X(NO_PROMPT) X(DYNAMIC_CURSOR) X(NO_DEFAULT_CURSOR) X(NO_LOCALE) X(PAD_SPACE) X(NO_CACHE) X(FULL_COLUMN_NAMES) \
+          X(IGNORE_SPACE) X(NAMED_PIPE) X(NO_CATALOG) X(NO_SCHEMA) X(USE_MYCNF) X(NO_TRANSACTIONS) X(FORWARD_CURSOR) \
+              X(MULTI_STATEMENTS) X(COLUMN_SIZE_S32) X(MIN_DATE_TO_ZERO) X(ZERO_DATE_TO_MIN) X(DFLT_BIGINT_BIND_STR) \
+                  X(LOG_QUERY) X(NO_SSPS) X(NO_TLS_1_2) X(NO_TLS_1_3) X(NO_DATE_OVERFLOW) X(ENABLE_LOCAL_INFILE)     \
+                      X(ENABLE_DNS_SRV) X(MULTI_HOST) FAILOVER_BOOL_OPTIONS_LIST(X) MONITORING_BOOL_OPTIONS_LIST(X)  \
+                          CUSTOM_ENDPOINT_BOOL_OPTIONS_LIST(X) FED_AUTH_BOOL_OPTIONS_LIST(X)
 
 #define FULL_OPTIONS_LIST(X) \
   STR_OPTIONS_LIST(X) INT_OPTIONS_LIST(X) BOOL_OPTIONS_LIST(X)

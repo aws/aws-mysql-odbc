@@ -29,6 +29,7 @@
 
 #include "cluster_aware_metrics_container.h"
 #include "topology_service.h"
+#include <sstream>
 
 TOPOLOGY_SERVICE::TOPOLOGY_SERVICE(unsigned long dbc_id, bool enable_logging)
     : dbc_id{dbc_id},
@@ -164,26 +165,54 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_cached_topology() {
     return get_from_cache();
 }
 
-//TODO consider the return value
-//Note to determine whether or not force_update succeeded one would compare
-// CLUSTER_TOPOLOGY_INFO->time_last_updated() prior and after the call if non-null information was given prior.
-std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION_PROXY* connection, bool force_update)
-{
-    //TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION_PROXY* connection, bool force_update) {
+    // TODO reconsider using this cache. It appears that we only store information for the current cluster Id.
     // therefore instead of a map we can just keep CLUSTER_TOPOLOGY_INFO* topology_info member variable.
     auto cached_topology = get_from_cache();
     if (!cached_topology
         || force_update
         || refresh_needed(cached_topology->time_last_updated()))
     {
-        auto latest_topology = query_for_topology(connection);
-        if (latest_topology) {
+        if (auto latest_topology = query_for_topology(connection)) {
             put_to_cache(latest_topology);
             return latest_topology;
         }
     }
 
     return cached_topology;
+}
+
+std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_filtered_topology(std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology) {
+    if (!this->allowed_and_blocked_hosts) {
+        return topology;
+    }
+
+    std::set<std::string> allowed_list = this->allowed_and_blocked_hosts->get_allowed_host_ids();
+    std::set<std::string> blocked_list = this->allowed_and_blocked_hosts->get_blocked_host_ids();
+
+    const std::shared_ptr<CLUSTER_TOPOLOGY_INFO> filtered_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
+    for (const auto& host : topology->get_instances()) {
+        const auto host_id = host->get_host_id();
+        if (allowed_list.find(host_id) != allowed_list.end() && blocked_list.find(host_id) == blocked_list.end()) {
+            filtered_topology->add_host(host);
+        }
+    }
+
+    return filtered_topology;
+}
+
+std::string TOPOLOGY_SERVICE::log_topology(const std::shared_ptr<CLUSTER_TOPOLOGY_INFO> topology) {
+    std::stringstream topology_str;
+    topology_str << "[TOPOLOGY_SERVICE] Topology: ";
+    if (topology->total_hosts() == 0) {
+        topology_str << "<empty topology>";
+        return topology_str.str();
+    }
+    for (const auto& host : topology->get_instances()) {
+        topology_str << "\n\t" << *host;
+    }
+
+    return topology_str.str();
 }
 
 // TODO consider thread safety and usage of pointers

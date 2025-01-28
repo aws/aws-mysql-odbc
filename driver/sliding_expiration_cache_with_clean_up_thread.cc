@@ -31,13 +31,14 @@
 
 #include <string>
 
+#include "custom_endpoint_monitor.h"
+
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::init_clean_up_thread() {
   if (!this->is_initialized) {
     std::unique_lock lock(mutex_);
     if (!this->is_initialized) {
       this->clean_up_thread_pool.resize(this->clean_up_thread_pool.size() + 1);
-
       this->clean_up_thread_pool.push([=](int id) {
         while (!should_stop) {
           const std::chrono::nanoseconds clean_up_interval = std::chrono::nanoseconds(this->clean_up_interval_nanos);
@@ -58,41 +59,23 @@ void SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::init_clean_up_thread()
   }
 }
 
-template <class K, class V>
-SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD() {
-  this->init_clean_up_thread();
-}
 
 template <class K, class V>
-SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(
-    SHOULD_DISPOSE_FUNC<V>* should_dispose_func, ITEM_DISPOSAL_FUNC<V>* item_disposal_func)
-    : SLIDING_EXPIRATION_CACHE<K, V>(should_dispose_func, item_disposal_func) {
-  this->init_clean_up_thread();
+bool SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::empty() {
+  return this->cache.empty();
 }
-
-template <class K, class V>
-SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(
-    SHOULD_DISPOSE_FUNC<V>* should_dispose_func, ITEM_DISPOSAL_FUNC<V>* item_disposal_func,
-    long long clean_up_interval_nanos)
-    : SLIDING_EXPIRATION_CACHE<K, V>(should_dispose_func, item_disposal_func, clean_up_interval_nanos) {
-  this->init_clean_up_thread();
-}
-
-#ifdef UNIT_TEST_BUILD
-template <class K, class V>
-SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD(
-    long long clean_up_interval_nanos) {
-  this->clean_up_interval_nanos = clean_up_interval_nanos;
-  this->init_clean_up_thread();
-}
-#endif
 
 template <class K, class V>
 void SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<K, V>::release_resources() {
-  this->should_stop = true;
-  this->clean_up_thread_pool.stop(true);
-  this->clean_up_thread_pool.resize(0);
-  this->is_initialized = false;
+  std::unique_lock lock(mutex_);
+  {
+    this->clear();
+    this->should_stop = true;
+    this->clean_up_thread_pool.stop(true);
+    this->clean_up_thread_pool.resize(0);
+    this->is_initialized = false;
+  }
 }
 
 template class SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::string>;
+template class SLIDING_EXPIRATION_CACHE_WITH_CLEAN_UP_THREAD<std::string, std::shared_ptr<CUSTOM_ENDPOINT_MONITOR>>;
