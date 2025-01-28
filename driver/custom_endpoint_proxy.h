@@ -83,8 +83,8 @@ class CUSTOM_ENDPOINT_PROXY : public CONNECTION_PROXY {
 
   /**
    * If custom endpoint info does not exist for the current custom endpoint, waits a short time for the info to be
-   * made available by the custom endpoint monitor. This is necessary so that other plugins can rely on accurate custom
-   * endpoint info. Since custom endpoint monitors and information are shared, we should not have to wait often.
+   * made available by the custom endpoint monitor.
+   * Since custom endpoint monitors and information are shared, we should not have to wait often.
    */
   void wait_for_custom_endpoint_info(std::shared_ptr<CUSTOM_ENDPOINT_MONITOR> monitor);
 

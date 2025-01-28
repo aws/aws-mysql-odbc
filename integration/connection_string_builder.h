@@ -183,7 +183,7 @@ class ConnectionStringBuilder {
 
   ConnectionStringBuilder& withCustomEndpointInfoRefreshRateMs(const long& custom_endpoint_info_refresh_rate_ms) {
     length +=
-        sprintf(conn_in + length, "CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS=%d;", custom_endpoint_info_refresh_rate_ms);
+        sprintf(conn_in + length, "CUSTOM_ENDPOINT_INFO_REFRESH_RATE_MS=%ld;", custom_endpoint_info_refresh_rate_ms);
     return *this;
   }
 

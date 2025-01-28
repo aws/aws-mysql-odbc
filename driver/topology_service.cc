@@ -192,8 +192,8 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_filtered_topology(s
 
     const std::shared_ptr<CLUSTER_TOPOLOGY_INFO> filtered_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     for (const auto& host : topology->get_instances()) {
-        if (allowed_list.find(host->get_host_id()) != allowed_list.end()
-        || blocked_list.find(host->get_host_id()) == blocked_list.end()) {
+        const auto host_id = host->get_host_id();
+        if (allowed_list.find(host_id) != allowed_list.end() && blocked_list.find(host_id) == blocked_list.end()) {
             filtered_topology->add_host(host);
         }
     }
