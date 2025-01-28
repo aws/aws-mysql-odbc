@@ -127,8 +127,7 @@ void CUSTOM_ENDPOINT_PROXY::wait_for_custom_endpoint_info(std::shared_ptr<CUSTOM
               this->custom_endpoint_host.c_str(), this->wait_on_cached_info_duration_ms)
 
   const auto wait_for_endpoint_info_timeout_nanos =
-      std::chrono::steady_clock::now() + std::chrono::duration_cast<std::chrono::nanoseconds>(
-                                             std::chrono::milliseconds(this->wait_on_cached_info_duration_ms));
+      std::chrono::steady_clock::now() + std::chrono::milliseconds(this->wait_on_cached_info_duration_ms);
 
   while (!has_custom_endpoint_info && std::chrono::steady_clock::now() < wait_for_endpoint_info_timeout_nanos) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

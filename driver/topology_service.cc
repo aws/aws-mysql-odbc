@@ -173,8 +173,7 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_topology(CONNECTION
         || force_update
         || refresh_needed(cached_topology->time_last_updated()))
     {
-        auto latest_topology = query_for_topology(connection);
-        if (latest_topology) {
+        if (auto latest_topology = query_for_topology(connection)) {
             put_to_cache(latest_topology);
             return latest_topology;
         }
@@ -201,10 +200,9 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_filtered_topology(s
     }
 
     if (blocked_list.size() > 0) {
-        for (const auto& host : filtered_topology->get_instances()) {
-            // Remove blocked hosts from the filtered_topology.
-            if (blocked_list.find(host->get_host_id()) != blocked_list.end()) {
-                filtered_topology->remove_host(host);
+      for (const auto& host : topology->get_instances()) {
+            if (blocked_list.find(host->get_host_id()) == blocked_list.end()) {
+                filtered_topology->add_host(host);
             }
         }
     }
