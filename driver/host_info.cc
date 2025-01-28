@@ -56,8 +56,6 @@ HOST_INFO::HOST_INFO(const char* host, int port, HOST_STATE state, bool is_write
 HOST_INFO::~HOST_INFO() {}
 
 /**
- * Returns the host endpoint.
- *
  * @return the host endpoint
  */
 std::string HOST_INFO::get_host() {
@@ -65,15 +63,11 @@ std::string HOST_INFO::get_host() {
 }
 
 /**
- * Returns the host name.
- *
  * @return the host name
  */
 std::string HOST_INFO::get_host_id() { return host_id; }
 
 /**
- * Returns the port.
- *
  * @return the port
  */
 int HOST_INFO::get_port() {
@@ -81,8 +75,6 @@ int HOST_INFO::get_port() {
 }
 
 /**
- * Returns a host:port representation of this host.
- *
  * @return the host:port representation of this host
  */
 std::string HOST_INFO::get_host_port_pair() {

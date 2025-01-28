@@ -511,7 +511,7 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const cha
     if (result->connected) {
         current_host = result->new_host;
         connection_handler->update_connection(result->new_connection, current_host->get_host());
-        new_error_code = "08S02";
+        new_error_code = "08S02"; // Failover succeeded error code.
         error_msg = "The active SQL connection has changed.";
         MYLOG_DBC_TRACE(dbc,
                     "[FAILOVER_HANDLER] The active SQL connection has changed "
@@ -520,7 +520,7 @@ bool FAILOVER_HANDLER::failover_to_reader(const char*& new_error_code, const cha
         return true;
     } else {
         MYLOG_DBC_TRACE(dbc, "[FAILOVER_HANDLER] Unable to establish SQL connection to reader node.");
-        new_error_code = "08S01";
+        new_error_code = "08S01"; // Failover failed error code.
         error_msg = "The active SQL connection was lost.";
         return false;
     }
@@ -549,7 +549,7 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code, const cha
     const auto filtered_topology = this->topology_service->get_filtered_topology(new_topology);
     const auto allowed_hosts = filtered_topology->get_instances();
     if (std::find(allowed_hosts.begin(), allowed_hosts.end(), new_host) == allowed_hosts.end()) {
-        new_error_code = "08S01";
+        new_error_code = "08S01"; // Failover failed error code.
         error_msg = "The active SQL connection was lost.";
         MYLOG_DBC_TRACE(
             dbc,
@@ -562,7 +562,7 @@ bool FAILOVER_HANDLER::failover_to_writer(const char*& new_error_code, const cha
 
     connection_handler->update_connection(result->new_connection, new_host->get_host());
     
-    new_error_code = "08S02";
+    new_error_code = "08S02"; // Failover succeeded error code.
     error_msg = "The active SQL connection has changed.";
     MYLOG_DBC_TRACE(
         dbc,

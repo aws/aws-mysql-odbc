@@ -52,9 +52,13 @@ class CustomEndpointIntegrationTest : public BaseFailoverIntegrationTest {
 
   static void TearDownTestSuite() { Aws::ShutdownAPI(options); }
   void SetUp() override {
-    SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env);
+    if (SQLAllocHandle(SQL_HANDLE_ENV, nullptr, &env) != SQL_SUCCESS) {
+      throw std::runtime_error("Failed to allocate handles for integration tests.");
+    }
     SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
-    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+    if (SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc) != SQL_SUCCESS) {
+      throw std::runtime_error("Failed to allocate handles for integration tests.");
+    }
 
     Aws::Auth::AWSCredentials credentials =
         SESSION_TOKEN.empty() ? Aws::Auth::AWSCredentials(Aws::String(ACCESS_KEY), Aws::String(SECRET_ACCESS_KEY))

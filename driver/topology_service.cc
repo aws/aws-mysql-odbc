@@ -191,21 +191,13 @@ std::shared_ptr<CLUSTER_TOPOLOGY_INFO> TOPOLOGY_SERVICE::get_filtered_topology(s
     std::set<std::string> blocked_list = this->allowed_and_blocked_hosts->get_blocked_host_ids();
 
     const std::shared_ptr<CLUSTER_TOPOLOGY_INFO> filtered_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
-    if (allowed_list.size() > 0) {
-        for (const auto& host : topology->get_instances()) {
-            if (allowed_list.find(host->get_host_id()) != allowed_list.end()) {
-                filtered_topology->add_host(host);
-            }
+    for (const auto& host : topology->get_instances()) {
+        if (allowed_list.find(host->get_host_id()) != allowed_list.end()
+        || blocked_list.find(host->get_host_id()) == blocked_list.end()) {
+            filtered_topology->add_host(host);
         }
     }
 
-    if (blocked_list.size() > 0) {
-      for (const auto& host : topology->get_instances()) {
-            if (blocked_list.find(host->get_host_id()) == blocked_list.end()) {
-                filtered_topology->add_host(host);
-            }
-        }
-    }
     return filtered_topology;
 }
 

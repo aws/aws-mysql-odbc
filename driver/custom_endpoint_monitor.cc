@@ -93,11 +93,11 @@ bool CUSTOM_ENDPOINT_MONITOR::has_custom_endpoint_info() const {
 }
 
 void CUSTOM_ENDPOINT_MONITOR::run() {
-  MYLOG_TRACE(this->logger, 0, "Starting custom endpoint monitor for '%s'", this->custom_endpoint_host.c_str());
   if (thread_pool.size() == 1) {
     // Each monitor should only have 1 thread.
     return;
   }
+  MYLOG_TRACE(this->logger, 0, "Starting custom endpoint monitor for '%s'", this->custom_endpoint_host.c_str());
   thread_pool.resize(1);
   thread_pool.push([=](int id) {
     ++SDK_HELPER;
