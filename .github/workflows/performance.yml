@@ -7,6 +7,10 @@ on:
 env:
   BUILD_TYPE: Release
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-dockerized-performance-tests:
     concurrency: # Cancel previous runs in the same branch

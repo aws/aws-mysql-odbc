@@ -22,6 +22,10 @@ env:
   WINDOWS_BUILD_TYPE: Debug
   MAC_BUILD_TYPE: Debug
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-windows:
     name: Windows

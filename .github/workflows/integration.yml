@@ -26,6 +26,10 @@ concurrency:
   group: environment-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   integration-tests:
     strategy:
