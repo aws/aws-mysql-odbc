@@ -57,7 +57,7 @@ jobs:
       - name: Run build installer script
         shell: pwsh
         run: |
-          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}"
+          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" "C:/openssl-3/x64/include/"
 
       - name: Configure AWS credentials OIDC
         uses: aws-actions/configure-aws-credentials@v4
