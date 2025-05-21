@@ -32,6 +32,7 @@ function Invoke-SignFile {
     # Upload unsigned .msi to S3 Bucket
     Write-Host "Obtaining version id and uploading unsigned .msi to S3 Bucket"
     $versionId = $( aws s3api put-object --bucket $AwsUnsignedBucket --key $AwsKey --body $SourcePath --acl bucket-owner-full-control | jq '.VersionId' )
+    $versionId = $versionId.Replace("`"","")
     $jobId = ""
 
     if ([string]::IsNullOrEmpty($versionId)) {
