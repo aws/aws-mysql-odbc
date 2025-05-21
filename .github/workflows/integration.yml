@@ -55,12 +55,6 @@ jobs:
             aws_sdk
           key: ${{ runner.os }}-aws-sdk-dynamic-lib
 
-      - name: Build and install AWS SDK C++
-        working-directory: ./scripts
-        if: steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
-        run: |
-          ./build_aws_sdk_unix.sh $BUILD_TYPE
-
       - name: 'Set up JDK'
         uses: actions/setup-java@v4
         with:
