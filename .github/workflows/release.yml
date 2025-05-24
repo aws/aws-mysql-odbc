@@ -8,6 +8,10 @@ on:
 env:
   BUILD_TYPE: Release
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-mac:
     name: macOS
@@ -242,16 +246,22 @@ jobs:
         run: |
           .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" C:/openssl-3/x64/include/
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4.0.2
+      - name: Configure AWS credentials OIDC
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-skip-session-tagging: true
-          aws-access-key-id: ${{ secrets.AWS_BUILD_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_BUILD_SECRET_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_DEPLOY_ROLE }}
+          role-session-name: mysql-win-signer
+
+      - name: Configure AWS credentials Signer
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-skip-session-tagging: true
+          role-chaining: true
           aws-region: us-west-2
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
-          role-duration-seconds: 3600
 
       - name: Run signer script
         shell: pwsh
