@@ -22,6 +22,9 @@ env:
   WINDOWS_BUILD_TYPE: Debug
   MAC_BUILD_TYPE: Debug
 
+permissions:
+  contents: read
+
 jobs:
   build-windows:
     name: Windows
