@@ -20,6 +20,9 @@ on:
 env:
   BUILD_TYPE: Release
 
+permissions:
+  contents: read
+
 jobs:
   community-tests:
     name: Dockerized Community Tests
