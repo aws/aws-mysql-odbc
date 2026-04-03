@@ -45,7 +45,7 @@ jobs:
 
       - name: Install OpenSSL 3
         run: |
-          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.3.1.zip -o openssl3.zip
+          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
           unzip -d C:/ openssl3.zip
 
       - name: Add msbuild to PATH
