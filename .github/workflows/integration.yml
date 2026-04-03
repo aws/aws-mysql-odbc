@@ -83,7 +83,7 @@ jobs:
       - name: 'Get Github Action IP'
         if: always()
         id: ip
-        uses: haythem/public-ip@v1.3
+        run: echo "ipv4=$(curl -s https://checkip.amazonaws.com)" >> $GITHUB_OUTPUT
         
       - name: 'Remove Github Action IP'
         if: always()
