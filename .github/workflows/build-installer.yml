@@ -31,8 +31,8 @@ jobs:
         run: |
           curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
           unzip -d C:/ openssl3.zip
-          cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/
-          cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
+          cp -r C:/openssl-3.5.5/x64/bin/libssl-3-x64.dll C:/Windows/System32/
+          cp -r C:/openssl-3.5.5/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
@@ -57,7 +57,7 @@ jobs:
       - name: Run build installer script
         shell: pwsh
         run: |
-          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" "C:/openssl-3/x64/include/"
+          .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" "C:/openssl-3.5.5/x64/include/"
 
       - name: Configure AWS credentials OIDC
         uses: aws-actions/configure-aws-credentials@v4
