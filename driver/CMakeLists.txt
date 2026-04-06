@@ -329,6 +329,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
           URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.16.1.zip
   )
 
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
   FetchContent_MakeAvailable(httplib json)
 
   TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME} PUBLIC "${httplib_SOURCE_DIR}" ${OPENSSL_INCLUDE_DIR})
