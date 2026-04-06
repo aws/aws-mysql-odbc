@@ -46,8 +46,8 @@ jobs:
       - name: Install OpenSSL 3
         run: |
           curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
-          mkdir C:/openssl-3.5.5
-          unzip -d C:/openssl-3.5.5 openssl3.zip
+          mkdir C:/openssl-3
+          unzip -d C:/openssl-3 openssl3.zip
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
@@ -78,9 +78,9 @@ jobs:
                 -DMYSQLCLIENT_STATIC_LINKING=TRUE
                 -DENABLE_UNIT_TESTS=TRUE
                 -DENABLE_INTEGRATION_TESTS=FALSE
-                -DOPENSSL_INCLUDE_DIR="C:/openssl-3.5.5/x64/include/"
-                -DOPENSSL_LIBRARY="C:/openssl-3.5.5/x64/bin/libssl-3-x64.dll"
-                -DCRYPTO_LIBRARY="C:/openssl-3.5.5/x64/bin/libcrypto-3-x64.dll"
+                -DOPENSSL_INCLUDE_DIR="C:/openssl-3/x64/include/"
+                -DOPENSSL_LIBRARY="C:/openssl-3/x64/bin/libssl-3-x64.dll"
+                -DCRYPTO_LIBRARY="C:/openssl-3/x64/bin/libcrypto-3-x64.dll"
 
       # Configure test environment
       - name: Build Driver
@@ -223,7 +223,7 @@ jobs:
 
   build-mac:
     name: MacOS
-    runs-on: macos-13
+    runs-on: macos-15-intel
     env:
       CMAKE_GENERATOR: Unix Makefiles
       ODBC_DM_INCLUDES: /usr/local/include
