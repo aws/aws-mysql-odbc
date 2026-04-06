@@ -25,9 +25,9 @@
 
 ##########################################################################
 
-PROJECT(MySQL_Connector_ODBC)
-
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5...3.31 FATAL_ERROR)
+
+PROJECT(MySQL_Connector_ODBC)
 
 if(COMMAND cmake_policy)
   cmake_policy(VERSION 3.5)
