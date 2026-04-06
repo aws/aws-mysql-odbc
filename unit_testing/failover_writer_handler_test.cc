@@ -158,8 +158,8 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
+    mock_reader_a_proxy->release_ds();
     Mock::AllowLeak(mock_reader_a_proxy);
-    Mock::AllowLeak(mock_reader_a_proxy->get_ds());
 
     const auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
@@ -265,8 +265,8 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
 
     // May not have actually connected during failover
     // Cannot delete at the end as it may cause double delete
+    mock_writer_proxy->release_ds();
     Mock::AllowLeak(mock_writer_proxy);
-    Mock::AllowLeak(mock_writer_proxy->get_ds());
 
     const auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
     new_topology->add_host(new_writer_host);
