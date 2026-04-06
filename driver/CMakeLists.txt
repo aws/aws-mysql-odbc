@@ -321,7 +321,7 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
 
   FetchContent_Declare(
           json
-          URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
+          URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
   )
 
   FetchContent_Declare(
