@@ -17,6 +17,10 @@ on:
       - 'ISSUE_TEMPLATE/**'
       - '**/remove-old-artifacts.yml'
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   BUILD_TYPE: Release
 
@@ -40,6 +44,7 @@ jobs:
       - name: Install OpenSSL 3
         run: |
           curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
+          echo "3739c845f86906eed4b8e1c321a240a756e2eb5140537cddc796a85e36dc71d9  openssl3.zip" | shasum -a 256 -c
           mkdir C:/openssl-3
           unzip -d C:/openssl-3 openssl3.zip
           cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/

@@ -84,6 +84,7 @@ include(FetchContent)
 FetchContent_Declare(
   ctpl
   URL https://github.com/vit-vit/CTPL/archive/refs/tags/ctpl_v.0.0.2.zip
+  URL_HASH SHA256=040565426fd24665c67402b1b93cb8f18e2275369637fc84e0601c7b31085cbb
 )
 
 FetchContent_MakeAvailable(ctpl)
