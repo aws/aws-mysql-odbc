@@ -65,10 +65,10 @@ class FailoverWriterHandlerTest : public testing::Test {
     std::shared_ptr<MOCK_TOPOLOGY_SERVICE> mock_ts;
     std::shared_ptr<MOCK_READER_HANDLER> mock_reader_handler;
     std::shared_ptr<MOCK_CONNECTION_HANDLER> mock_connection_handler;
-    MOCK_CONNECTION_PROXY* mock_reader_a_proxy;
-    MOCK_CONNECTION_PROXY* mock_reader_b_proxy;
-    MOCK_CONNECTION_PROXY* mock_writer_proxy;
-    MOCK_CONNECTION_PROXY* mock_new_writer_proxy;
+    MOCK_CONNECTION_PROXY* mock_reader_a_proxy = nullptr;
+    MOCK_CONNECTION_PROXY* mock_reader_b_proxy = nullptr;
+    MOCK_CONNECTION_PROXY* mock_writer_proxy = nullptr;
+    MOCK_CONNECTION_PROXY* mock_new_writer_proxy = nullptr;
     ctpl::thread_pool failover_thread_pool;
 
     static void SetUpTestSuite() {}
@@ -103,6 +103,7 @@ class FailoverWriterHandlerTest : public testing::Test {
     }
 
     void TearDown() override {
+        failover_thread_pool.stop(true);
         cleanup_odbc_handles(env, dbc, ds);
     }
 };
@@ -156,9 +157,6 @@ TEST_F(FailoverWriterHandlerTest, ReconnectToWriter_SlowReaderA) {
     mock_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
     mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
-    // May not have actually connected during failover
-    // Cannot delete at the end as it may cause double delete
-    mock_reader_b_proxy->release_ds();
     Mock::AllowLeak(mock_reader_a_proxy);
     
     const auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
@@ -263,9 +261,6 @@ TEST_F(FailoverWriterHandlerTest, ConnectToReaderA_SlowWriter) {
     mock_new_writer_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
     mock_reader_a_proxy = new MOCK_CONNECTION_PROXY(dbc, ds);
 
-    // May not have actually connected during failover
-    // Cannot delete at the end as it may cause double delete
-    mock_reader_b_proxy->release_ds();
     Mock::AllowLeak(mock_writer_proxy);
     
     const auto new_topology = std::make_shared<CLUSTER_TOPOLOGY_INFO>();
