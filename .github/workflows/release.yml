@@ -21,7 +21,7 @@ jobs:
       ODBC_DM_INCLUDES: /usr/local/include
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       # Configure build environment/dependencies
       # Removing some /usr/local/bin files to avoid symlink issues wih brew update
@@ -83,7 +83,7 @@ jobs:
 
       - name: Upload macOS installer as artifact
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-mac
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
@@ -97,7 +97,7 @@ jobs:
       CXX: g++-11
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       # Configure build environment/dependencies
       - name: Install build dependencies
@@ -147,7 +147,7 @@ jobs:
 
       - name: Upload Linux installer as artifact
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-linux
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
@@ -161,7 +161,7 @@ jobs:
       CMAKE_GENERATOR: Unix Makefiles
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Print OS version
         run: cat /etc/os-release
       - name: Print default working directory
@@ -202,7 +202,7 @@ jobs:
         run: cpack .
       - name: Upload AL2023 installer as artifact
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-al2023
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
@@ -216,7 +216,7 @@ jobs:
       WIX_DIR: "C:/Program Files (x86)/WiX Toolset v3.14/bin"
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs
@@ -234,7 +234,7 @@ jobs:
           cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
 
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
@@ -242,14 +242,14 @@ jobs:
           .\build_aws_sdk_win.ps1 x64 ${{ env.BUILD_TYPE}} ON "${{env.CMAKE_GENERATOR}}"
 
       - name: Setup nmake
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
 
       - name: Run build installer script
         run: |
           .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" C:/openssl-3/x64/include/
 
       - name: Configure AWS credentials OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
         with:
           role-skip-session-tagging: true
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
@@ -257,7 +257,7 @@ jobs:
           role-session-name: mysql-win-signer
 
       - name: Configure AWS credentials Signer
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
         with:
           role-skip-session-tagging: true
           role-chaining: true
@@ -275,7 +275,7 @@ jobs:
       
       - name: Upload Windows installer as artifact
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-windows
           path: ${{ github.workspace }}/wix/*.msi
@@ -287,9 +287,9 @@ jobs:
     needs: [build-mac, build-linux, build-windows]
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Download all installers
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
           path: installers
           pattern: installers-*
@@ -306,7 +306,7 @@ jobs:
           touch RELEASE_DETAILS.md
           echo "$RELEASE_DETAILS" > RELEASE_DETAILS.md
       - name: Upload to Draft Release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1
         with:
           draft: true
           name: "AWS ODBC Driver for MySQL - v${{ env.RELEASE_VERSION }}"
