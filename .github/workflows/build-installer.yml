@@ -62,7 +62,7 @@ jobs:
           .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" "C:/openssl-3/x64/include/"
 
       - name: Configure AWS credentials OIDC
-        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-skip-session-tagging: true
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
@@ -70,7 +70,7 @@ jobs:
           role-session-name: mysql-win-signer
 
       - name: Configure AWS credentials Signer
-        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-skip-session-tagging: true
           role-chaining: true
