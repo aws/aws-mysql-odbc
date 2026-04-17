@@ -17,6 +17,10 @@ on:
       - 'ISSUE_TEMPLATE/**'
       - '**/remove-old-artifacts.yml'
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   BUILD_TYPE: Release
 
@@ -29,7 +33,7 @@ jobs:
       MYSQL_DIR: C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs
@@ -39,17 +43,19 @@ jobs:
 
       - name: Install OpenSSL 3
         run: |
-          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.3.1.zip -o openssl3.zip
-          unzip -d C:/ openssl3.zip
+          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
+          echo "3739c845f86906eed4b8e1c321a240a756e2eb5140537cddc796a85e36dc71d9  openssl3.zip" | shasum -a 256 -c
+          mkdir C:/openssl-3
+          unzip -d C:/openssl-3 openssl3.zip
           cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/
           cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         if: always() && steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
         with:
           path: |
@@ -115,38 +121,38 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-sln
           path: ${{ github.workspace }}/build/MySQL_Connector_ODBC.sln
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-community-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload community test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-community-results
           path: ${{ github.workspace }}/build/test/Testing/Temporary/LastTest.log
 
   build-mac:
     name: MacOS
-    runs-on: macos-13
+    runs-on: macos-15-intel
     env:
       CMAKE_GENERATOR: Unix Makefiles
       ODBC_DM_INCLUDES: /usr/local/include
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       # Configure build environment/dependencies
       # Removing some /usr/local/bin files to avoid symlink issues wih brew update
@@ -184,7 +190,7 @@ jobs:
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         if: always() && steps.cache-dynamic-aws-sdk.outputs.cache-hit != 'true'
         with:
           path: |
@@ -252,19 +258,19 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: macos-community-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: macos-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: macos-community-results
           path: ${{ github.workspace }}/build/test/Testing/Temporary/LastTest.log

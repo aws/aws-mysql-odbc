@@ -29,6 +29,12 @@
  
 #include "gtest/gtest.h"
 
+#ifdef WIN32
+#ifndef _UNIX_
+extern void myodbc_end();
+#endif
+#endif
+
 int main(int argc, char** argv) {
 #ifdef WIN32
 #ifdef _DEBUG
@@ -52,6 +58,11 @@ int main(int argc, char** argv) {
 #ifdef __APPLE__
   // Disable malloc logging
   system("unset MallocStackLogging");
+#endif
+#ifdef WIN32
+#ifndef _UNIX_
+  myodbc_end();
+#endif
 #endif
   return failures;
 }

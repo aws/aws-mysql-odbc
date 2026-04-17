@@ -19,7 +19,7 @@ jobs:
       WIX_DIR: "C:/Program Files (x86)/WiX Toolset v3.14/bin"
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs
@@ -29,17 +29,19 @@ jobs:
       
       - name: Install OpenSSL 3
         run: |
-          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.3.1.zip -o openssl3.zip
-          unzip -d C:/ openssl3.zip
+          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
+          echo "3739c845f86906eed4b8e1c321a240a756e2eb5140537cddc796a85e36dc71d9  openssl3.zip" | shasum -a 256 -c
+          mkdir C:/openssl-3
+          unzip -d C:/openssl-3 openssl3.zip
           cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/
           cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             aws_sdk
@@ -52,7 +54,7 @@ jobs:
           .\build_aws_sdk_win.ps1 x64 ${{ env.BUILD_TYPE}} ON "${{env.CMAKE_GENERATOR}}"
 
       - name: Setup nmake
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
 
       - name: Run build installer script
         shell: pwsh
@@ -60,7 +62,7 @@ jobs:
           .\build_installer.ps1 x64 ${{ env.BUILD_TYPE}} "${{env.CMAKE_GENERATOR}}" C:/mysql-${{ vars.MYSQL_VERSION }}-winx64 "${{env.WIX_DIR}}" "C:/openssl-3/x64/include/"
 
       - name: Configure AWS credentials OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
         with:
           role-skip-session-tagging: true
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
@@ -68,7 +70,7 @@ jobs:
           role-session-name: mysql-win-signer
 
       - name: Configure AWS credentials Signer
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
         with:
           role-skip-session-tagging: true
           role-chaining: true
@@ -86,7 +88,7 @@ jobs:
       
       - name: Upload Windows installer as artifact
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers
           path: ${{ github.workspace }}/wix/*.msi

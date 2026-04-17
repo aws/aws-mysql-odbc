@@ -321,14 +321,17 @@ WHILE(${DRIVER_INDEX} LESS ${DRIVERS_COUNT})
 
   FetchContent_Declare(
           json
-          URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
+          URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+          URL_HASH SHA256=42f6e95cad6ec532fd372391373363b62a14af6d771056dbfc86160e6dfff7aa
   )
 
   FetchContent_Declare(
           httplib
           URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.16.1.zip
+          URL_HASH SHA256=81df7d70c7e56c0010650d7f6d0a6471bb59b17a5d7db339c7d82f39e3988640
   )
 
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
   FetchContent_MakeAvailable(httplib json)
 
   TARGET_INCLUDE_DIRECTORIES(${DRIVER_NAME} PUBLIC "${httplib_SOURCE_DIR}" ${OPENSSL_INCLUDE_DIR})

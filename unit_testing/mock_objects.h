@@ -69,6 +69,11 @@ public:
         return this->ds;
     };
 
+    void release_ds() {
+        delete this->ds;
+        this->ds = nullptr;
+    };
+    
     MOCK_METHOD(bool, is_connected, ());
     MOCK_METHOD(std::string, get_host, ());
     MOCK_METHOD(unsigned int, get_port, ());
