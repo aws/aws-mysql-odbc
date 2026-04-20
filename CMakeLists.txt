@@ -810,10 +810,14 @@ if(WIN32)
   )
 else(WIN32)
   set(BUNDLED_LIBS
-    libssl libcrypto ssleay libeay
     libaws-c-auth libaws-c-cal libaws-c-common libaws-c-compression libaws-c-event-stream libaws-c-http libaws-c-io
     libaws-c-mqtt libaws-c-s3 libaws-c-sdkutils libaws-checksums libaws-cpp-sdk-core libaws-cpp-sdk-rds libaws-cpp-sdk-secretsmanager libaws-cpp-sdk-sts libaws-crt-cpp
   )
+  if(APPLE)
+    list(PREPEND BUNDLED_LIBS libssl libcrypto ssleay libeay)
+  else()
+    list(APPEND BUNDLED_LIBS libs2n)
+  endif()
 endif(WIN32)
 
 # List plugins and other libraries that can be found bundled with the server
