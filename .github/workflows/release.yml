@@ -10,11 +10,78 @@ env:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   build-mac:
     name: macOS
+    runs-on: macos-15
+    env:
+      CMAKE_GENERATOR: Unix Makefiles
+      ODBC_DM_INCLUDES: /opt/homebrew/include
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Configure build environment/dependencies
+      - name: Install MySQL client libs & other dependencies
+        run: |
+          brew update
+          brew install libiodbc mysql-client
+          brew link --overwrite --force libiodbc
+
+          brew install openssl@3
+
+          curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos14-arm64.tar.gz -o mysql.tar.gz
+          tar -xzvf mysql.tar.gz
+
+      - name: Build and install AWS SDK C++
+        working-directory: ./scripts
+        run: |
+          ./build_aws_sdk_unix.sh $BUILD_TYPE
+
+      - name: Create build environment
+        run: cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        run: cmake -S . -B build
+          -G "$CMAKE_GENERATOR"
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          -DMYSQLCLIENT_STATIC_LINKING=true
+          -DODBC_INCLUDES=$ODBC_DM_INCLUDES
+          -DCONNECTOR_PLATFORM=macos
+          -DBUNDLE_DEPENDENCIES=true
+          -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-macos14-arm64
+
+      - name: Build driver
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
+          cmake --build .
+
+      - name: Build installer
+        working-directory: ${{ github.workspace }}/build
+        if: success()
+        run: cpack .
+
+      - name: Rename installer with architecture suffix
+        working-directory: ${{ github.workspace }}/build
+        if: success()
+        run: |
+          for pkg in aws-mysql-odbc-*-macos.pkg; do
+            mv "$pkg" "${pkg%-macos.pkg}-macos-arm64.pkg"
+          done
+
+      - name: Upload macOS installer as artifact
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: installers-mac
+          path: ${{ github.workspace }}/build/aws-mysql-odbc-*-macos-arm64.pkg
+          if-no-files-found: error
+
+  build-mac-intel:
+    name: macOS Intel
     runs-on: macos-15-intel
     env:
       CMAKE_GENERATOR: Unix Makefiles
@@ -51,7 +118,7 @@ jobs:
 
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
-          
+
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
         run: |
@@ -62,31 +129,39 @@ jobs:
 
       - name: Configure CMake
         run: cmake -S . -B build
-                -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-                -DMYSQLCLIENT_STATIC_LINKING=true
-                -DODBC_INCLUDES=$ODBC_DM_INCLUDES
-                -DCONNECTOR_PLATFORM=macos
-                -DBUNDLE_DEPENDENCIES=true
-                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64
+          -G "$CMAKE_GENERATOR"
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          -DMYSQLCLIENT_STATIC_LINKING=true
+          -DODBC_INCLUDES=$ODBC_DM_INCLUDES
+          -DCONNECTOR_PLATFORM=macos
+          -DBUNDLE_DEPENDENCIES=true
+          -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64
 
       - name: Build driver
         working-directory: ${{ github.workspace }}/build
         run: |
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
           cmake --build .
-          
+
       - name: Build installer
         working-directory: ${{ github.workspace }}/build
         if: success()
         run: cpack .
 
-      - name: Upload macOS installer as artifact
+      - name: Rename installer with architecture suffix
+        working-directory: ${{ github.workspace }}/build
+        if: success()
+        run: |
+          for pkg in aws-mysql-odbc-*-macos.pkg; do
+            mv "$pkg" "${pkg%-macos.pkg}-macos-x86_64.pkg"
+          done
+
+      - name: Upload macOS Intel installer as artifact
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: installers-mac
-          path: ${{ github.workspace }}/build/aws-mysql-odbc-*.pkg
+          name: installers-mac-intel
+          path: ${{ github.workspace }}/build/aws-mysql-odbc-*-macos-x86_64.pkg
           if-no-files-found: error
 
   build-linux:
@@ -126,13 +201,13 @@ jobs:
       - name: Configure CMake
         shell: bash
         run: cmake -S . -B build
-                -G "$CMAKE_GENERATOR"
-                -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-                -DMYSQLCLIENT_STATIC_LINKING=true
-                -DWITH_UNIXODBC=1
-                -DCONNECTOR_PLATFORM=linux
-                -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64/
-                -DBUNDLE_DEPENDENCIES=true
+          -G "$CMAKE_GENERATOR"
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          -DMYSQLCLIENT_STATIC_LINKING=true
+          -DWITH_UNIXODBC=1
+          -DCONNECTOR_PLATFORM=linux
+          -DMYSQL_DIR=./mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64/
+          -DBUNDLE_DEPENDENCIES=true
 
       # Build driver
       - name: Build driver
@@ -145,12 +220,20 @@ jobs:
         if: success()
         run: cpack .
 
+      - name: Rename installer with platform suffix
+        working-directory: ${{ github.workspace }}/build
+        if: success()
+        run: |
+          for f in aws-mysql-odbc-*-linux.tar.gz; do
+            mv "$f" "${f%-linux.tar.gz}-linux-ubuntu.tar.gz"
+          done
+
       - name: Upload Linux installer as artifact
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-linux
-          path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
+          path: ${{ github.workspace }}/build/aws-mysql-odbc-*-linux-ubuntu.tar.gz
           if-no-files-found: error
 
   build-al2023:
@@ -200,12 +283,20 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         if: success()
         run: cpack .
+      - name: Rename installer with platform suffix
+        working-directory: ${{ github.workspace }}/build
+        if: success()
+        run: |
+          for f in aws-mysql-odbc-*-linux.tar.gz; do
+            mv "$f" "${f%-linux.tar.gz}-linux-al2023.tar.gz"
+          done
+
       - name: Upload AL2023 installer as artifact
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-al2023
-          path: ${{ github.workspace }}/build/aws-mysql-odbc-*.tar.gz
+          path: ${{ github.workspace }}/build/aws-mysql-odbc-*-linux-al2023.tar.gz
           if-no-files-found: error
 
   build-windows:
@@ -272,7 +363,7 @@ jobs:
           choco upgrade jq -y
           . ".\sign_installer.ps1"
           Invoke-SignInstaller ${{ github.workspace }}\wix winx64a ${{github.ref_name}} ${{ secrets.AWS_UNSIGNED_BUCKET }} ${{ secrets.AWS_SIGNED_BUCKET }} ${{ secrets.AWS_S3_KEY }}aws-mysql-odbc-${{github.ref_name}}-winx64a.msi
-      
+
       - name: Upload Windows installer as artifact
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -284,7 +375,7 @@ jobs:
   draft-release:
     name: Create Draft Release
     runs-on: ubuntu-latest
-    needs: [build-mac, build-linux, build-windows]
+    needs: [ build-mac, build-mac-intel, build-linux, build-windows, build-al2023 ]
     steps:
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

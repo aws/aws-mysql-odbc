@@ -4,7 +4,7 @@ on:
 
 env:
   BUILD_TYPE: Release
-  DRIVER_VERSION: 1.1.0
+  DRIVER_VERSION: 1.2.0
 
 permissions:
   id-token: write
