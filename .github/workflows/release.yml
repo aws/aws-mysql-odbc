@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload macOS installer as artifact
         if: success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: installers-mac
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*-macos-arm64.pkg
@@ -158,7 +158,7 @@ jobs:
 
       - name: Upload macOS Intel installer as artifact
         if: success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: installers-mac-intel
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*-macos-x86_64.pkg
@@ -230,7 +230,7 @@ jobs:
 
       - name: Upload Linux installer as artifact
         if: success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: installers-linux
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*-linux-ubuntu.tar.gz
@@ -293,7 +293,7 @@ jobs:
 
       - name: Upload AL2023 installer as artifact
         if: success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: installers-al2023
           path: ${{ github.workspace }}/build/aws-mysql-odbc-*-linux-al2023.tar.gz
@@ -366,7 +366,7 @@ jobs:
 
       - name: Upload Windows installer as artifact
         if: success()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: installers-windows
           path: ${{ github.workspace }}/wix/*.msi

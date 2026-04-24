@@ -112,25 +112,25 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-failover-sln
           path: ${{ github.workspace }}/build/MySQL_Connector_ODBC.sln
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-failover-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-failover-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload failover test artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-failover-results
           path: ${{ github.workspace }}/build/unit_testing/Testing/Temporary/LastTest.log
@@ -209,7 +209,7 @@ jobs:
 #      # Upload artifacts
 #      - name: Upload build artifacts - Binaries
 #        if: always()
-#        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+#        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
 #        with:
 #          name: linux-failover-binaries
 #          path: ${{ github.workspace }}/build/bin/
@@ -326,25 +326,25 @@ jobs:
       # Upload artifacts
       - name: Upload build artifacts - Binaries
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-binaries
           path: ${{ github.workspace }}/build/bin/
       - name: Upload build artifacts - Libraries
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-libraries
           path: ${{ github.workspace }}/build/lib/
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-failover-results
           path: ${{ github.workspace }}/build/unit_testing/Testing/Temporary/LastTest.log
       - name: Upload memory leaks check
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-memory-leaks-results
           path: ${{ github.workspace }}/build/unit_testing/leaks_unit_testing.txt
