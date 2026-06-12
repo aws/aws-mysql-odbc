@@ -4,6 +4,11 @@ title: "(short issue description)"
 labels: [documentation, needs-triage]
 assignees: []
 body:
+  - type: markdown
+    id: deprecation
+    attributes:
+      value: |
+        Support for this project will end on 2026-12-31. Please consider migrating to https://www.github.com/aws/aws-advanced-odbc-wrapper
   - type: textarea
     id: description
     attributes:

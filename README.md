@@ -5,6 +5,9 @@
 
 **The Amazon Web Services (AWS) ODBC Driver for MySQL** allows an application to take advantage of the features of clustered MySQL databases. It is based on and can be used as a drop-in compatible for the [MySQL Connector/ODBC driver](https://github.com/mysql/mysql-connector-odbc/), and is compatible with all MySQL deployments.
 
+## End of Support
+Support for this project will end on December 31st 2026 as per our [maintenance policy](./Maintenance.md). We recommend migrating to the new [AWS Advanced ODBC Wrapper](https://github.com/aws/aws-advanced-odbc-wrapper) for additional features and support.
+
 ## Table of Contents
 - [Amazon Web Services (AWS) ODBC Driver for MySQL](#amazon-web-services-aws-odbc-driver-for-mysql)
   - [Table of Contents](#table-of-contents)
