@@ -237,6 +237,7 @@ get_constmt_attr(SQLSMALLINT  HandleType,
         case SQL_ATTR_FETCH_BOOKMARK_PTR:
           *((void **) ValuePtr) = options->bookmark_ptr;
           *StringLengthPtr= sizeof(SQLPOINTER);
+          break;
 
         case 1226:/* MS SQL Server Extension */
         case 1227:

@@ -1065,7 +1065,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
     }
     else if (autocommit_is_on() && connection_proxy->autocommit(FALSE))
     {
-      /** @todo set error */
+      set_error("HY000", "Failed to disable autocommit", 0);
       return SQL_ERROR;
     }
   }
@@ -1074,7 +1074,7 @@ SQLRETURN DBC::connect(DataSource *dsrc, bool failover_enabled, bool is_monitor_
   {
     if (connection_proxy->autocommit(TRUE))
     {
-      /** @todo set error */
+      set_error("HY000", "Failed to enable autocommit", 0);
       return SQL_ERROR;
     }
   }
