@@ -19,6 +19,7 @@ jobs:
     env:
       CMAKE_GENERATOR: Unix Makefiles
       ODBC_DM_INCLUDES: /opt/homebrew/include
+      OPENSSL_ROOT_DIR: /Users/runner/openssl-3
     steps:
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -30,10 +31,26 @@ jobs:
           brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
 
-          brew install openssl@3
-
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos14-arm64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
+
+      - name: Cache OpenSSL 3
+        id: cache-openssl
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/openssl-3
+          key: ${{ runner.os }}-${{ runner.arch }}-openssl-3.5.8
+
+      - name: Build and install OpenSSL 3
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz -o openssl-3.5.8.tar.gz
+          echo "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2  openssl-3.5.8.tar.gz" | shasum -a 256 -c
+          tar xf openssl-3.5.8.tar.gz
+          cd openssl-3.5.8
+          ./config no-tests --release --prefix=$HOME/openssl-3 --openssldir=$HOME/openssl-3/ssl --libdir=lib
+          make -j$(sysctl -n hw.ncpu)
+          make install_sw
 
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
@@ -86,6 +103,7 @@ jobs:
     env:
       CMAKE_GENERATOR: Unix Makefiles
       ODBC_DM_INCLUDES: /usr/local/include
+      OPENSSL_ROOT_DIR: /Users/runner/openssl-3
     steps:
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -110,14 +128,33 @@ jobs:
           brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
 
-          brew install openssl@3
-          rm -f /usr/local/lib/libssl.3.dylib
-          rm -f /usr/local/lib/libcrypto.3.dylib
-          ln -s /usr/local/opt/openssl@3/lib/libssl.3.dylib /usr/local/lib/
-          ln -s /usr/local/opt/openssl@3/lib/libcrypto.3.dylib /usr/local/lib/
-
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
+
+      - name: Cache OpenSSL 3
+        id: cache-openssl
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/openssl-3
+          key: ${{ runner.os }}-${{ runner.arch }}-openssl-3.5.8
+
+      - name: Build and install OpenSSL 3
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz -o openssl-3.5.8.tar.gz
+          echo "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2  openssl-3.5.8.tar.gz" | shasum -a 256 -c
+          tar xf openssl-3.5.8.tar.gz
+          cd openssl-3.5.8
+          ./config no-tests --release --prefix=$HOME/openssl-3 --openssldir=$HOME/openssl-3/ssl --libdir=lib
+          make -j$(sysctl -n hw.ncpu)
+          make install_sw
+
+      - name: Install OpenSSL 3 libs
+        run: |
+          rm -f /usr/local/lib/libssl.3.dylib
+          rm -f /usr/local/lib/libcrypto.3.dylib
+          ln -s $HOME/openssl-3/lib/libssl.3.dylib /usr/local/lib/
+          ln -s $HOME/openssl-3/lib/libcrypto.3.dylib /usr/local/lib/
 
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
@@ -170,6 +207,7 @@ jobs:
     env:
       CMAKE_GENERATOR: Unix Makefiles
       CXX: g++-11
+      OPENSSL_ROOT_DIR: /home/runner/openssl-3
     steps:
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -182,12 +220,30 @@ jobs:
           libgtk-3-dev
           unixodbc
           unixodbc-dev
-          libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
+          libcurl4-openssl-dev uuid-dev zlib1g-dev # AWS SDK dependencies
 
       - name: Install MySQL client libs and include files
         run: |
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz
           tar xf mysql.tar.gz
+
+      - name: Cache OpenSSL 3
+        id: cache-openssl
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/openssl-3
+          key: ${{ runner.os }}-${{ runner.arch }}-openssl-3.5.8
+
+      - name: Build and install OpenSSL 3
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz -o openssl-3.5.8.tar.gz
+          echo "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2  openssl-3.5.8.tar.gz" | sha256sum -c
+          tar xf openssl-3.5.8.tar.gz
+          cd openssl-3.5.8
+          ./config no-tests --release --prefix=$HOME/openssl-3 --openssldir=$HOME/openssl-3/ssl --libdir=lib
+          make -j$(nproc)
+          make install_sw
 
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
@@ -242,6 +298,7 @@ jobs:
       - codebuild-mysql-odbc-AL2023-${{ github.run_id }}-${{ github.run_attempt }}
     env:
       CMAKE_GENERATOR: Unix Makefiles
+      OPENSSL_ROOT_DIR: /usr/local/openssl-3
     steps:
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -252,12 +309,21 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo dnf update -y
-          sudo dnf install cmake unixODBC unixODBC-devel libcurl-devel openssl-devel gcc -y
+          sudo dnf install cmake unixODBC unixODBC-devel libcurl-devel perl-core gcc -y
           sudo yum groupinstall "Development Tools" -y
       - name: Install MySQL client libs and include files
         run: |
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-linux-glibc2.28-x86_64.tar.xz -o mysql.tar.gz
           tar xf mysql.tar.gz
+      - name: Build and install OpenSSL 3
+        run: |
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz -o openssl-3.5.8.tar.gz
+          echo "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2  openssl-3.5.8.tar.gz" | sha256sum -c
+          tar xf openssl-3.5.8.tar.gz
+          cd openssl-3.5.8
+          ./config no-tests --release --prefix=/usr/local/openssl-3 --openssldir=/usr/local/openssl-3/ssl --libdir=lib
+          make -j$(nproc)
+          sudo make install_sw
       - name: Build and install AWS SDK C++
         working-directory: ./scripts
         run: |
@@ -303,8 +369,9 @@ jobs:
     name: Windows
     runs-on: windows-latest
     env:
-      CMAKE_GENERATOR: Visual Studio 17 2022
+      CMAKE_GENERATOR: Visual Studio 18 2026
       WIX_DIR: "C:/Program Files (x86)/WiX Toolset v3.14/bin"
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     steps:
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -315,12 +382,35 @@ jobs:
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
 
-      - name: Install OpenSSL 3
+      - name: Cache OpenSSL 3
+        id: cache-openssl
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: C:/openssl-3
+          key: ${{ runner.os }}-openssl-3.5.8
+
+      - name: Download OpenSSL 3 source
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
-          echo "3739c845f86906eed4b8e1c321a240a756e2eb5140537cddc796a85e36dc71d9  openssl3.zip" | shasum -a 256 -c
-          mkdir C:/openssl-3
-          unzip -d C:/openssl-3 openssl3.zip
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz -o openssl-3.5.8.tar.gz
+          echo "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2  openssl-3.5.8.tar.gz" | sha256sum -c
+          tar xf openssl-3.5.8.tar.gz
+          choco install nasm -y --no-progress
+
+      - name: Build and install OpenSSL 3
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        shell: cmd
+        working-directory: openssl-3.5.8
+        run: |
+          for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+          set "PATH=%ProgramFiles%\NASM;%PATH%"
+          perl Configure VC-WIN64A no-tests --release --prefix=C:\openssl-3\x64 --openssldir=C:\openssl-3\x64\ssl
+          nmake /NOLOGO
+          nmake /NOLOGO install_sw
+
+      - name: Install OpenSSL 3 DLLs
+        run: |
           cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/
           cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
 

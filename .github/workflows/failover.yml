@@ -31,7 +31,7 @@ jobs:
     name: Windows
     runs-on: windows-latest
     env:
-      CMAKE_GENERATOR: Visual Studio 17 2022
+      CMAKE_GENERATOR: Visual Studio 18 2026
       MYSQL_DIR: C:/mysql-${{ vars.MYSQL_VERSION }}-winx64
     steps:
       - name: Checkout source code
@@ -47,12 +47,32 @@ jobs:
           unzip -d C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug mysql-debug.zip
           mv -Force C:/mysql-${{ vars.MYSQL_VERSION }}-winx64-debug/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/debug/mysqlclient.lib C:/mysql-${{ vars.MYSQL_VERSION }}-winx64/lib/mysqlclient.lib
 
-      - name: Install OpenSSL 3
+      - name: Cache OpenSSL 3
+        id: cache-openssl
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: C:/openssl-3
+          key: ${{ runner.os }}-openssl-3.5.8
+
+      - name: Download OpenSSL 3 source
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
-          echo "3739c845f86906eed4b8e1c321a240a756e2eb5140537cddc796a85e36dc71d9  openssl3.zip" | shasum -a 256 -c
-          mkdir C:/openssl-3
-          unzip -d C:/openssl-3 openssl3.zip
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz -o openssl-3.5.8.tar.gz
+          echo "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2  openssl-3.5.8.tar.gz" | sha256sum -c
+          tar xf openssl-3.5.8.tar.gz
+          choco install nasm -y --no-progress
+
+      - name: Build and install OpenSSL 3
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        shell: cmd
+        working-directory: openssl-3.5.8
+        run: |
+          for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+          set "PATH=%ProgramFiles%\NASM;%PATH%"
+          perl Configure VC-WIN64A no-tests --release --prefix=C:\openssl-3\x64 --openssldir=C:\openssl-3\x64\ssl
+          nmake /NOLOGO
+          nmake /NOLOGO install_sw
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3.0.0
@@ -232,6 +252,7 @@ jobs:
     env:
       CMAKE_GENERATOR: Unix Makefiles
       ODBC_DM_INCLUDES: /usr/local/include
+      OPENSSL_ROOT_DIR: /Users/runner/openssl-3
     steps:
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -256,16 +277,35 @@ jobs:
           brew install libiodbc mysql-client
           brew link --overwrite --force libiodbc
 
-          brew install openssl@3
-          rm -f /usr/local/lib/libssl.3.dylib
-          rm -f /usr/local/lib/libcrypto.3.dylib
-          ln -s /usr/local/opt/openssl@3/lib/libssl.3.dylib /usr/local/lib/
-          ln -s /usr/local/opt/openssl@3/lib/libcrypto.3.dylib /usr/local/lib/
-
           source /Users/runner/.bash_profile
           
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-macos14-x86_64.tar.gz -o mysql.tar.gz
           tar -xzvf mysql.tar.gz
+
+      - name: Cache OpenSSL 3
+        id: cache-openssl-mac
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/openssl-3
+          key: ${{ runner.os }}-${{ runner.arch }}-openssl-3.5.8
+
+      - name: Build and install OpenSSL 3
+        if: steps.cache-openssl-mac.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz -o openssl-3.5.8.tar.gz
+          echo "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2  openssl-3.5.8.tar.gz" | shasum -a 256 -c
+          tar xf openssl-3.5.8.tar.gz
+          cd openssl-3.5.8
+          ./config no-tests --release --prefix=$HOME/openssl-3 --openssldir=$HOME/openssl-3/ssl --libdir=lib
+          make -j$(sysctl -n hw.ncpu)
+          make install_sw
+
+      - name: Install OpenSSL 3 libs
+        run: |
+          rm -f /usr/local/lib/libssl.3.dylib
+          rm -f /usr/local/lib/libcrypto.3.dylib
+          ln -s $HOME/openssl-3/lib/libssl.3.dylib /usr/local/lib/
+          ln -s $HOME/openssl-3/lib/libcrypto.3.dylib /usr/local/lib/
 
       - name: Cache AWS SDK libraries
         id: cache-dynamic-aws-sdk
@@ -303,10 +343,10 @@ jobs:
         run: |
           export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
           cmake --build .
-          ln -s /usr/local/opt/openssl@3/lib/libssl.3.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/
-          ln -s /usr/local/opt/openssl@3/lib/libssl.3.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/bin/
-          ln -s /usr/local/opt/openssl@3/lib/libcrypto.3.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/
-          ln -s /usr/local/opt/openssl@3/lib/libcrypto.3.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/bin/
+          ln -s $HOME/openssl-3/lib/libssl.3.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/
+          ln -s $HOME/openssl-3/lib/libssl.3.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/bin/
+          ln -s $HOME/openssl-3/lib/libcrypto.3.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/
+          ln -s $HOME/openssl-3/lib/libcrypto.3.dylib /Users/runner/work/aws-mysql-odbc/aws-mysql-odbc/build/unit_testing/bin/
 
       # Test driver
       - name: Run driver tests

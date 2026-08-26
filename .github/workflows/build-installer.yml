@@ -15,8 +15,9 @@ jobs:
     name: Windows
     runs-on: windows-latest
     env:
-      CMAKE_GENERATOR: Visual Studio 17 2022
+      CMAKE_GENERATOR: Visual Studio 18 2026
       WIX_DIR: "C:/Program Files (x86)/WiX Toolset v3.14/bin"
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     steps:
       - name: Checkout source code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -27,12 +28,35 @@ jobs:
           curl -L https://dev.mysql.com/get/Downloads/MySQL-8.3/mysql-${{ vars.MYSQL_VERSION }}-winx64.zip -o mysql.zip
           unzip -d C:/ mysql.zip
       
-      - name: Install OpenSSL 3
+      - name: Cache OpenSSL 3
+        id: cache-openssl
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: C:/openssl-3
+          key: ${{ runner.os }}-openssl-3.5.8
+
+      - name: Download OpenSSL 3 source
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          curl -L https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.5.5.zip -o openssl3.zip
-          echo "3739c845f86906eed4b8e1c321a240a756e2eb5140537cddc796a85e36dc71d9  openssl3.zip" | shasum -a 256 -c
-          mkdir C:/openssl-3
-          unzip -d C:/openssl-3 openssl3.zip
+          curl -L https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz -o openssl-3.5.8.tar.gz
+          echo "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2  openssl-3.5.8.tar.gz" | sha256sum -c
+          tar xf openssl-3.5.8.tar.gz
+          choco install nasm -y --no-progress
+
+      - name: Build and install OpenSSL 3
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
+        shell: cmd
+        working-directory: openssl-3.5.8
+        run: |
+          for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"
+          set "PATH=%ProgramFiles%\NASM;%PATH%"
+          perl Configure VC-WIN64A no-tests --release --prefix=C:\openssl-3\x64 --openssldir=C:\openssl-3\x64\ssl
+          nmake /NOLOGO
+          nmake /NOLOGO install_sw
+
+      - name: Install OpenSSL 3 DLLs
+        run: |
           cp -r C:/openssl-3/x64/bin/libssl-3-x64.dll C:/Windows/System32/
           cp -r C:/openssl-3/x64/bin/libcrypto-3-x64.dll C:/Windows/System32/
 
