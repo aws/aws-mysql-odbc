@@ -685,7 +685,11 @@ sql_get_data(STMT *stmt, SQLSMALLINT fCType, uint column_number,
     case SQL_C_INTERVAL_HOUR_TO_SECOND:
     case SQL_C_INTERVAL_HOUR_TO_MINUTE:
       {
-        if (field->type == MYSQL_TYPE_TIME)
+        if (field->type == MYSQL_TYPE_TIME ||
+            field->type == MYSQL_TYPE_STRING ||
+            field->type == MYSQL_TYPE_VAR_STRING ||
+            field->type == MYSQL_TYPE_VARCHAR ||
+            field->type == MYSQL_TYPE_BLOB)
         {
           SQL_TIME_STRUCT ts;
           char *tmp= get_string(stmt,
