@@ -22,7 +22,7 @@ jobs:
       OPENSSL_ROOT_DIR: /Users/runner/openssl-3
     steps:
       - name: Checkout source code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs & other dependencies
@@ -106,7 +106,7 @@ jobs:
       OPENSSL_ROOT_DIR: /Users/runner/openssl-3
     steps:
       - name: Checkout source code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # Configure build environment/dependencies
       # Removing some /usr/local/bin files to avoid symlink issues wih brew update
@@ -210,7 +210,7 @@ jobs:
       OPENSSL_ROOT_DIR: /home/runner/openssl-3
     steps:
       - name: Checkout source code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # Configure build environment/dependencies
       - name: Install build dependencies
@@ -301,7 +301,7 @@ jobs:
       OPENSSL_ROOT_DIR: /usr/local/openssl-3
     steps:
       - name: Checkout source code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print OS version
         run: cat /etc/os-release
       - name: Print default working directory
@@ -374,7 +374,7 @@ jobs:
       CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     steps:
       - name: Checkout source code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # Configure build environment/dependencies
       - name: Install MySQL client libs
@@ -468,7 +468,7 @@ jobs:
     needs: [ build-mac, build-mac-intel, build-linux, build-windows, build-al2023 ]
     steps:
       - name: Checkout source code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Download all installers
         uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
